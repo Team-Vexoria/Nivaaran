@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base: #FAF8F3;
+  --bg-surface: #F3F0E8;
+  --bg-muted: #EAE6DA;
+  --color-primary: #1E3A5F;
+  --color-primary-hover: #16293F;
+  --color-secondary: #0F766E;
+  --color-accent: #C2760C;
+  --color-danger: #B3261E;
+  --color-warning: #B45309;
+  --text-primary: #22201B;
+  --text-secondary: #5C574C;
+  --border: #DCD6C6;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+}
