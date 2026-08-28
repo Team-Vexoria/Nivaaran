@@ -1,6 +1,7 @@
 import React from 'react';
-import { Camera, Search, Sparkles, CheckCircle2, TrendingUp, ShieldCheck, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck } from 'lucide-react';
+import { Camera, Search, CheckCircle2, TrendingUp, ShieldCheck, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck } from 'lucide-react';
 import { TRANSLATIONS, SupportedLanguage } from '../../i18n/translations';
+import { tr } from '../../i18n/translationEngine';
 
 interface CitizenHomeTabProps {
   onOpenReportModal: () => void;
@@ -17,18 +18,18 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
 
   // Real before vs after metrics
   const impactStats = [
-    { label: 'Avg. Problem Resolution Time', before: '180+ Days (Fragmented)', after: '14 Days (Verified Pipeline)', change: '-92% Time Reduced', positive: true },
-    { label: 'University Engineering Labs Involved', before: '0 Labs Connected', after: '48+ HEI Labs & IIT/BIT Teams', change: '100% Academic Coverage', positive: true },
-    { label: 'Government Action Verification Rate', before: 'Unverified Phone Calls', after: '100% Geotagged & Audit Proven', change: 'Full Transparency', positive: true },
-    { label: 'Citizen Feedback & Rating Satisfaction', before: '32%', after: '94.8% Verified Positive', change: '+62.8% Improvement', positive: true },
+    { label: tr('Avg. Problem Resolution Time', currentLang), before: tr('Before: 180+ Days (Fragmented)', currentLang), after: tr('Now: 14 Days (Verified Pipeline)', currentLang), change: tr('-92% Time Reduced', currentLang), positive: true },
+    { label: tr('University Engineering Labs Involved', currentLang), before: tr('Before: 0 Labs Connected', currentLang), after: tr('Now: 48+ HEI Labs & IIT/BIT Teams', currentLang), change: tr('100% Academic Coverage', currentLang), positive: true },
+    { label: tr('Government Action Verification Rate', currentLang), before: tr('Before: Unverified Phone Calls', currentLang), after: tr('Now: 100% Geotagged & Audit Proven', currentLang), change: tr('Full Transparency', currentLang), positive: true },
+    { label: tr('Citizen Feedback & Rating Satisfaction', currentLang), before: tr('Before: 32%', currentLang), after: tr('Now: 94.8% Verified Positive', currentLang), change: tr('+62.8% Improvement', currentLang), positive: true },
   ];
 
   const districtData = [
-    { name: 'Ranchi', reports: 142, resolved: 128, hei: 'BIT Mesra' },
-    { name: 'Dhanbad', reports: 98, resolved: 89, hei: 'IIT (ISM) Dhanbad' },
-    { name: 'East Singhbhum', reports: 86, resolved: 81, hei: 'NIT Jamshedpur' },
-    { name: 'Palamu', reports: 114, resolved: 95, hei: 'Birsa Agri Univ' },
-    { name: 'Hazaribagh', reports: 65, resolved: 59, hei: 'VBU Hazaribagh' },
+    { name: tr('Ranchi', currentLang), reports: 142, resolved: 128, hei: 'BIT Mesra' },
+    { name: tr('Dhanbad', currentLang), reports: 98, resolved: 89, hei: 'IIT (ISM) Dhanbad' },
+    { name: tr('East Singhbhum', currentLang), reports: 86, resolved: 81, hei: 'NIT Jamshedpur' },
+    { name: tr('Palamu', currentLang), reports: 114, resolved: 95, hei: 'Birsa Agri Univ' },
+    { name: tr('Hazaribagh', currentLang), reports: 65, resolved: 59, hei: 'VBU Hazaribagh' },
   ];
 
   return (
@@ -38,27 +39,21 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
       <section className="min-h-[calc(100vh-64px)] flex flex-col justify-between py-8 px-6 bg-gradient-to-b from-slate-50 via-white to-slate-50/80 text-slate-900 border-b border-slate-300">
         <div className="max-w-6xl mx-auto text-center space-y-6 my-auto">
           
-          {/* Official Badge */}
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-extrabold shadow-2xs">
-            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Government of Jharkhand · Directorate of Higher & Technical Education</span>
-          </div>
-
           {/* Main Title - Increased Size */}
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-heading text-slate-900 tracking-tight leading-[1.12] max-w-5xl mx-auto">
-            Report Local Community Problems. Get Verified University & Government Solutions.
+            {t.title}
           </h1>
 
           {/* Concise Subtitle - Increased Size */}
           <p className="text-sm sm:text-base lg:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
-            Report local floods, water crisis, road damage, or wildlife hazards across Jharkhand. Government officers and university research teams build verified solutions for your community.
+            {t.subtitle}
           </p>
 
           {/* Primary Action Buttons - Increased Size */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
               onClick={onOpenReportModal}
-              className="w-full sm:w-auto px-7 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base rounded-xl shadow-md transition-all flex items-center justify-center space-x-2.5 active:scale-95"
+              className="w-full sm:w-auto px-7 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base rounded-xl shadow-md transition-all flex items-center justify-center space-x-2.5 active:scale-95 cursor-pointer"
             >
               <Camera className="w-5 h-5 shrink-0" />
               <span>{t.heroCtaPrimary}</span>
@@ -66,10 +61,10 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
 
             <button
               onClick={() => onNavigateTab('community-feed')}
-              className="w-full sm:w-auto px-7 py-3.5 bg-white hover:bg-slate-50 text-slate-900 font-extrabold text-sm sm:text-base rounded-xl border border-slate-300 shadow-2xs transition-all flex items-center justify-center space-x-2"
+              className="w-full sm:w-auto px-7 py-3.5 bg-white hover:bg-slate-50 text-slate-900 font-extrabold text-sm sm:text-base rounded-xl border border-slate-300 shadow-2xs transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
               <Search className="w-5 h-5 text-slate-500 shrink-0" />
-              <span>View Live Community Feed</span>
+              <span>{t.viewLiveFeed}</span>
             </button>
           </div>
 
@@ -77,64 +72,64 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 pt-6 max-w-5xl mx-auto">
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
-                <span>Incidents Logged</span>
+                <span>{t.metricIncidentsLogged}</span>
                 <Activity className="w-4 h-4 text-emerald-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">1,284</p>
-              <p className="text-xs text-emerald-700 font-bold">Across 24 Districts</p>
+              <p className="text-xs text-emerald-700 font-bold">{t.metricAcrossDistricts}</p>
             </div>
 
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
-                <span>Active R&D Labs</span>
+                <span>{t.metricActiveLabs}</span>
                 <Building2 className="w-4 h-4 text-blue-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">48</p>
-              <p className="text-xs text-blue-700 font-bold">BIT, IIT, NIT & BAU</p>
+              <p className="text-xs text-blue-700 font-bold">{t.metricLabsList}</p>
             </div>
 
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
-                <span>Verification Rate</span>
+                <span>{t.metricVerificationRate}</span>
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">94.8%</p>
-              <p className="text-xs text-emerald-700 font-bold">Audit Geotag Verified</p>
+              <p className="text-xs text-emerald-700 font-bold">{t.metricGeotagVerified}</p>
             </div>
 
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
-                <span>Citizen Rewards</span>
+                <span>{t.metricCitizenRewards}</span>
                 <Award className="w-4 h-4 text-amber-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">3,420+</p>
-              <p className="text-xs text-amber-700 font-bold">Tree Vouchers Issued</p>
+              <p className="text-xs text-amber-700 font-bold">{t.metricVouchersIssued}</p>
             </div>
           </div>
 
           {/* Quick Category Shortcut Badges - Increased Size */}
           <div className="pt-3 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm font-bold">
-            <span className="text-slate-500 text-xs font-semibold mr-1">Quick Browse:</span>
+            <span className="text-slate-500 text-xs font-semibold mr-1">{t.quickBrowse}</span>
             <button 
               onClick={() => onNavigateTab('community-feed')}
-              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg flex items-center space-x-1.5 transition-colors text-xs font-bold shadow-2xs"
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg flex items-center space-x-1.5 transition-colors text-xs font-bold shadow-2xs cursor-pointer"
             >
               <Waves className="w-3.5 h-3.5 text-blue-600" />
-              <span>Floods & Drainage (342)</span>
+              <span>{t.catFloods} (342)</span>
             </button>
             <button 
               onClick={() => onNavigateTab('community-feed')}
-              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg flex items-center space-x-1.5 transition-colors text-xs font-bold shadow-2xs"
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg flex items-center space-x-1.5 transition-colors text-xs font-bold shadow-2xs cursor-pointer"
             >
               <Trees className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Wildlife & Elephants (184)</span>
+              <span>{t.catWildlife} (184)</span>
             </button>
             <button 
               onClick={() => onNavigateTab('community-feed')}
-              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg flex items-center space-x-1.5 transition-colors text-xs font-bold shadow-2xs"
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg flex items-center space-x-1.5 transition-colors text-xs font-bold shadow-2xs cursor-pointer"
             >
-              <Truck className="w-3.5 h-3.5 text-amber-600" />
-              <span>Roads & Infrastructure (512)</span>
+              <Truck className="w-3.5 h-3.5 text-purple-600" />
+              <span>{t.catInfrastructure} (291)</span>
             </button>
           </div>
 

@@ -56,6 +56,14 @@ export interface TranslationStrings {
   title: string;
   subtitle: string;
   tagline: string;
+  govDeptBanner: string;
+  navHome: string;
+  navMyReports: string;
+  navCommunityFeed: string;
+  navRegionChat: string;
+  navLeaderboard: string;
+  navHeiPortal: string;
+  navLogout: string;
   reportProblem: string;
   signIn: string;
   exploreChallenges: string;
@@ -64,6 +72,20 @@ export interface TranslationStrings {
   impactLedger: string;
   heroCtaPrimary: string;
   heroCtaSecondary: string;
+  viewLiveFeed: string;
+  metricIncidentsLogged: string;
+  metricAcrossDistricts: string;
+  metricActiveLabs: string;
+  metricLabsList: string;
+  metricVerificationRate: string;
+  metricGeotagVerified: string;
+  metricCitizenRewards: string;
+  metricVouchersIssued: string;
+  quickBrowse: string;
+  catFloods: string;
+  catInfrastructure: string;
+  catSchools: string;
+  catWildlife: string;
   districtsCovered: string;
   districtsSub: string;
   heiLabs: string;
@@ -141,6 +163,14 @@ const en: TranslationStrings = {
   title: 'Report Local Community Problems. Get Verified University & Government Solutions.',
   subtitle: 'Citizens report local floods, water crisis, road damage, or school safety hazards across Jharkhand. Government officers and university research teams build verified solutions for your community.',
   tagline: 'Jharkhand Citizen Societal Innovation Portal',
+  govDeptBanner: 'Government of Jharkhand · Directorate of Higher & Technical Education',
+  navHome: 'Home',
+  navMyReports: 'My Reports',
+  navCommunityFeed: 'Community Feed',
+  navRegionChat: 'Region Chat',
+  navLeaderboard: 'Leaderboard',
+  navHeiPortal: 'HEI R&D Portal',
+  navLogout: 'Logout',
   reportProblem: 'Report Problem',
   signIn: 'Sign In / Login',
   exploreChallenges: 'Report Problem',
@@ -149,6 +179,20 @@ const en: TranslationStrings = {
   impactLedger: 'Community Impact',
   heroCtaPrimary: 'Report Problem / Upload Photo & Video',
   heroCtaSecondary: 'Track My Report Status',
+  viewLiveFeed: 'View Live Community Feed',
+  metricIncidentsLogged: 'Incidents Logged',
+  metricAcrossDistricts: 'Across 24 Districts',
+  metricActiveLabs: 'Active R&D Labs',
+  metricLabsList: 'BIT, IIT, NIT & BAU',
+  metricVerificationRate: 'Verification Rate',
+  metricGeotagVerified: 'Audit Geotag Verified',
+  metricCitizenRewards: 'Citizen Rewards',
+  metricVouchersIssued: 'Tree Vouchers Issued',
+  quickBrowse: 'Quick Browse:',
+  catFloods: 'Floods & Water Hazards',
+  catInfrastructure: 'Roads & Infrastructure',
+  catSchools: 'School Safety',
+  catWildlife: 'Wildlife Hazards',
   districtsCovered: '24 / 24 Districts Covered',
   districtsSub: 'Statewide Citizen Network',
   heiLabs: '48+ Universities',
@@ -266,6 +310,14 @@ const hi: TranslationStrings = {
   title: 'स्थानीय समस्याएं दर्ज करें। विश्वविद्यालय और सरकार से पाएं सत्यापित समाधान।',
   subtitle: 'झारखंड के नागरिक बाढ़, जल संकट, टूटी सड़क या स्कूल सुरक्षा खतरों की रिपोर्ट दर्ज करें। स्थानीय प्रशासन और विश्वविद्यालय की टीमें आपके गांव के लिए समाधान तैयार करती हैं।',
   tagline: 'झारखंड नागरिक सामाजिक नवाचार पोर्टल',
+  govDeptBanner: 'झारखंड सरकार · उच्च एवं तकनीकी शिक्षा निदेशालय',
+  navHome: 'होम',
+  navMyReports: 'मेरी रिपोर्ट',
+  navCommunityFeed: 'कम्युनिटी फीड',
+  navRegionChat: 'क्षेत्र चैट',
+  navLeaderboard: 'लीडरबोर्ड',
+  navHeiPortal: 'विश्वविद्यालय आरएंडडी पोर्टल',
+  navLogout: 'लॉगआउट',
   reportProblem: 'समस्या दर्ज करें',
   signIn: 'लॉग इन करें',
   exploreChallenges: 'समस्या दर्ज करें',
@@ -274,6 +326,20 @@ const hi: TranslationStrings = {
   impactLedger: 'सामुदायिक प्रभाव',
   heroCtaPrimary: 'समस्या दर्ज करें / फोटो-वीडियो अपलोड करें',
   heroCtaSecondary: 'अपनी रिपोर्ट की स्थिति जांचें',
+  viewLiveFeed: 'लाइव कम्युनिटी फीड देखें',
+  metricIncidentsLogged: 'कुल दर्ज समस्याएं',
+  metricAcrossDistricts: '24 जिलों में सक्रिय',
+  metricActiveLabs: 'सक्रिय आरएंडडी लैब',
+  metricLabsList: 'बीआईटी, आईआईटी, एनआईटी व बीएयू',
+  metricVerificationRate: 'सत्यापन दर',
+  metricGeotagVerified: 'जीपीएस ऑ‌डिट सत्यापित',
+  metricCitizenRewards: 'नागरिक पुरस्कार',
+  metricVouchersIssued: 'पौधे वाउचर जारी',
+  quickBrowse: 'त्वरित खोजें:',
+  catFloods: 'बाढ़ एवं जल संकट',
+  catInfrastructure: 'सड़क व बुनियादी ढांचा',
+  catSchools: 'स्कूल सुरक्षा खतरे',
+  catWildlife: 'वन्यजीव एवं जंगल खतरा',
   districtsCovered: '24 / 24 जिले शामिल',
   districtsSub: 'राज्यव्यापी नागरिक नेटवर्क',
   heiLabs: '48+ विश्वविद्यालय',

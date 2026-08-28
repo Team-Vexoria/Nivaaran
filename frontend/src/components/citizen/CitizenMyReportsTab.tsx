@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle } from 'lucide-react';
 import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
+import { SupportedLanguage } from '../../i18n/translations';
+import { tr } from '../../i18n/translationEngine';
 
 interface CitizenMyReportsTabProps {
   onOpenReportModal: () => void;
+  currentLang?: SupportedLanguage;
 }
 
-export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({ onOpenReportModal }) => {
+export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({ 
+  onOpenReportModal,
+  currentLang = 'en'
+}) => {
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [selectedReport, setSelectedReport] = useState<ChallengeDoc | null>(null);
   const [reports, setReports] = useState<ChallengeDoc[]>([]);
@@ -89,19 +95,19 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({ onOpen
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h2 className="text-2xl font-extrabold font-heading text-slate-900">
-            My Reported Community Issues
+            {tr('My Reported Community Issues', currentLang)}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Real-time status, university lab allocation, and government verification for issues you filed.
+            {tr('Real-time status, university lab allocation, and government verification for issues you filed.', currentLang)}
           </p>
         </div>
 
         <button
           onClick={onOpenReportModal}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-2 shrink-0 active:scale-95"
+          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-2 shrink-0 active:scale-95 cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>Report New Problem</span>
+          <span>{tr('Report New Problem', currentLang)}</span>
         </button>
       </div>
 
@@ -111,13 +117,13 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({ onOpen
           <button
             key={status}
             onClick={() => setFilterStatus(status)}
-            className={`px-3.5 py-1.5 rounded-lg font-bold transition-all ${
+            className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
               filterStatus === status
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {status}
+            {tr(status, currentLang)}
           </button>
         ))}
       </div>
@@ -143,37 +149,37 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({ onOpen
                 }`}>
                   {report.status === 'Resolved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
                   {report.status === 'In Progress' && <Clock className="w-3 h-3 mr-1 animate-pulse" />}
-                  {report.status}
+                  {tr(report.status, currentLang)}
                 </span>
               </div>
 
               <h3 className="font-bold text-base text-slate-900 leading-snug">
-                {report.title}
+                {tr(report.title, currentLang)}
               </h3>
 
               <p className="text-xs text-slate-600 leading-relaxed">
-                {report.summary}
+                {tr(report.summary || '', currentLang)}
               </p>
             </div>
 
             <div className="space-y-2.5 pt-3 border-t border-slate-100 text-xs">
               <div className="flex items-center justify-between text-slate-500">
-                <span>Location:</span>
+                <span>{tr('Location:', currentLang)}</span>
                 <span className="font-semibold text-slate-800 flex items-center">
-                  <MapPin className="w-3 h-3 mr-1 text-amber-500 shrink-0" /> {report.district} ({report.block})
+                  <MapPin className="w-3 h-3 mr-1 text-amber-500 shrink-0" /> {tr(report.district, currentLang)} ({tr(report.block, currentLang)})
                 </span>
               </div>
 
               <div className="flex items-center justify-between text-slate-500">
-                <span>Assigned HEI:</span>
-                <span className="font-bold text-slate-900 text-right">{report.assignedHEI || 'Matching Lab...'}</span>
+                <span>{tr('Assigned HEI:', currentLang)}</span>
+                <span className="font-bold text-slate-900 text-right">{tr(report.assignedHEI || 'Matching Lab...', currentLang)}</span>
               </div>
 
               <button
                 onClick={() => setSelectedReport(report)}
-                className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-900 border border-slate-200 rounded-lg font-bold text-xs transition-colors flex items-center justify-center space-x-1 mt-1"
+                className="w-full py-2 bg-slate-50 hover:bg-slate-100 text-slate-900 border border-slate-200 rounded-lg font-bold text-xs transition-colors flex items-center justify-center space-x-1 mt-1 cursor-pointer"
               >
-                <span>Track Full 16-Stage Progress</span>
+                <span>{tr('Track Full 16-Stage Progress', currentLang)}</span>
                 <ChevronRight className="w-4 h-4 text-slate-400" />
               </button>
             </div>
