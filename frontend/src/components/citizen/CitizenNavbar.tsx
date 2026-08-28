@@ -40,7 +40,7 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
   ];
 
   return (
-    <header className="sticky top-0 z-[100] bg-slate-900 text-white border-b border-slate-800 shadow-md px-4 sm:px-6 py-2.5">
+    <header className="sticky top-0 z-[100] bg-[#FAF8F4] text-[#201C18] border-b border-[#E4DDD1] shadow-2xs px-4 sm:px-6 py-2.5">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         
         {/* Tightly Lock Up Logo & NIVAARAN Title */}
@@ -49,13 +49,13 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
           className="flex items-center space-x-1 shrink-0 cursor-pointer select-none"
         >
           <img src="/logo.png" alt="NIVAARAN Logo" className="h-8 sm:h-9 w-auto object-contain shrink-0 -mr-0.5" />
-          <span className="text-lg sm:text-xl font-black font-heading text-white tracking-tight whitespace-nowrap leading-none">
+          <span className="text-lg sm:text-xl font-black font-heading text-[#201C18] tracking-tight whitespace-nowrap leading-none">
             NIVAARAN
           </span>
         </div>
 
         {/* High-Contrast Citizen Navigation Tabs */}
-        <nav className="hidden md:flex items-center space-x-1 bg-slate-800/90 p-1 rounded-xl border border-slate-700/80">
+        <nav className="hidden md:flex items-center space-x-1 bg-[#EAE4D8] p-1 rounded-xl border border-[#E4DDD1]">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
@@ -64,8 +64,8 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
                 onClick={() => onTabChange(item.id)}
                 className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
                   isActive
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-200 hover:text-white hover:bg-slate-700/80'
+                    ? 'bg-[#2C6E49] text-white shadow-2xs'
+                    : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#DFD8CA]'
                 }`}
               >
                 {item.icon}
@@ -85,27 +85,27 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
                 onClick={() => onTabChange('profile')}
                 className={`px-3.5 py-1.5 text-xs font-extrabold rounded-lg border transition-all flex items-center space-x-1.5 whitespace-nowrap shadow-2xs ${
                   activeTab === 'profile'
-                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700'
+                    ? 'bg-[#2C6E49] text-white border-[#2C6E49]'
+                    : 'bg-[#EAE4D8] hover:bg-[#DFD8CA] text-[#201C18] border-[#E4DDD1]'
                 }`}
               >
-                <User className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                <User className="w-3.5 h-3.5 shrink-0 text-[#C98A2C]" />
                 <span className="whitespace-nowrap">{userDisplayName}</span>
               </button>
 
               <button
                 onClick={() => onTabChange('profile')}
-                className="px-2.5 py-1.5 bg-red-900/80 hover:bg-red-800 text-red-200 border border-red-700 rounded-lg text-xs font-extrabold flex items-center space-x-1 transition-colors whitespace-nowrap cursor-pointer"
+                className="px-2.5 py-1.5 bg-[#B5502D] hover:bg-[#9c4323] text-white rounded-lg text-xs font-extrabold flex items-center space-x-1 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
                 title="Manage Account & Sign Out"
               >
-                <LogOut className="w-3.5 h-3.5 text-red-300 shrink-0" />
+                <LogOut className="w-3.5 h-3.5 text-white shrink-0" />
                 <span className="hidden sm:inline">{t.navLogout}</span>
               </button>
             </div>
           ) : (
             <button
               onClick={_onOpenAuth}
-              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-lg shadow-sm transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap border border-emerald-500 cursor-pointer"
+              className="px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-black rounded-lg shadow-2xs transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap cursor-pointer"
             >
               <User className="w-3.5 h-3.5 shrink-0" />
               <span className="whitespace-nowrap">{t.signIn}</span>
@@ -117,7 +117,7 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
       </div>
 
       {/* Mobile Nav Tabs */}
-      <div className="md:hidden flex items-center justify-between border-t border-slate-800 pt-2 mt-2 overflow-x-auto gap-1">
+      <div className="md:hidden flex items-center justify-between border-t border-[#E4DDD1] pt-2 mt-2 overflow-x-auto gap-1">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
@@ -126,8 +126,8 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
               onClick={() => onTabChange(item.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center space-x-1 whitespace-nowrap ${
                 isActive
-                  ? 'bg-emerald-600 text-white'
-                  : 'text-slate-200 bg-slate-800 hover:bg-slate-700'
+                  ? 'bg-[#2C6E49] text-white'
+                  : 'text-[#4A433B] bg-[#EAE4D8] hover:bg-[#DFD8CA]'
               }`}
             >
               {item.icon}

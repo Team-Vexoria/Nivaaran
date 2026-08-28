@@ -51,7 +51,7 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col antialiased selection:bg-slate-900 selection:text-white">
+    <div className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col antialiased selection:bg-[#2C6E49] selection:text-white">
       
       {/* Top Navbar */}
       <UniversityNavbar

@@ -311,12 +311,12 @@ export const updateChallengeUniversityAcceptance = (
   deptName: string
 ) => {
   try {
-    // Update local storage challenges
     const localChallenges: ChallengeDoc[] = JSON.parse(localStorage.getItem('nivaaran_challenges') || '[]');
     const idx = localChallenges.findIndex(c => (c.id === challengeId || c.reportId === challengeId));
     if (idx >= 0) {
       localChallenges[idx].assignedHEI = heiName;
       localChallenges[idx].assignedDept = deptName;
+      localChallenges[idx].status = 'In Progress';
       localChallenges[idx].stageNumber = 7;
       localChallenges[idx].stageName = 'Stage 7: University Accepted & Project Allocation';
       localChallenges[idx].govtOfficerNote = `Accepted by ${heiName} (${deptName}). Multidisciplinary R&D team assigned.`;
@@ -326,5 +326,80 @@ export const updateChallengeUniversityAcceptance = (
   } catch (err) {
     console.error('Error updating challenge acceptance:', err);
     return false;
+  }
+};
+
+// ── Government Validation Action ──────────────────────────────────────────────
+// Sets status to 'Government Validated', stage 3. Visible immediately to citizen.
+export const govValidateChallenge = async (
+  challengeId: string,
+  officerNote: string,
+  officerName: string
+): Promise<boolean> => {
+  const updates: Partial<ChallengeDoc> = {
+    status: 'Government Validated',
+    stageNumber: 3,
+    stageName: 'Stage 3: Government Validated & Prioritized',
+    govtOfficerNote: officerNote || `Validated by Government Officer (${officerName}). Queued for HEI matching.`,
+    needsHumanVerification: false,
+  };
+
+  // 1. Update localStorage (immediate, works offline)
+  try {
+    const localChallenges: ChallengeDoc[] = JSON.parse(localStorage.getItem('nivaaran_challenges') || '[]');
+    const idx = localChallenges.findIndex(c => c.id === challengeId || c.reportId === challengeId);
+    if (idx >= 0) {
+      localChallenges[idx] = { ...localChallenges[idx], ...updates };
+      localStorage.setItem('nivaaran_challenges', JSON.stringify(localChallenges));
+    }
+  } catch (err) {
+    console.warn('[localStorage] Failed to update challenge:', err);
+  }
+
+  // 2. Update Firestore (if available)
+  try {
+    if (challengeId && !challengeId.startsWith('LOCAL-')) {
+      await updateDoc(doc(db, 'challenges', challengeId), updates);
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Firestore] Govt validate failed, localStorage updated:', err);
+    return true; // localStorage update still succeeded
+  }
+};
+
+// ── Request Additional Evidence Action ────────────────────────────────────────
+// Marks the challenge as needing more evidence from the citizen. Visible to citizen.
+export const govRequestEvidence = async (
+  challengeId: string,
+  officerNote: string,
+  officerName: string
+): Promise<boolean> => {
+  const updates: Partial<ChallengeDoc> = {
+    needsHumanVerification: true,
+    govtOfficerNote: officerNote || `Evidence requested by Government Officer (${officerName}). Please upload additional photos/GPS data.`,
+    stageName: 'Stage 2: Evidence Requested by Government Officer',
+    stageNumber: 2,
+  };
+
+  try {
+    const localChallenges: ChallengeDoc[] = JSON.parse(localStorage.getItem('nivaaran_challenges') || '[]');
+    const idx = localChallenges.findIndex(c => c.id === challengeId || c.reportId === challengeId);
+    if (idx >= 0) {
+      localChallenges[idx] = { ...localChallenges[idx], ...updates };
+      localStorage.setItem('nivaaran_challenges', JSON.stringify(localChallenges));
+    }
+  } catch (err) {
+    console.warn('[localStorage] Failed to update challenge:', err);
+  }
+
+  try {
+    if (challengeId && !challengeId.startsWith('LOCAL-')) {
+      await updateDoc(doc(db, 'challenges', challengeId), updates);
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Firestore] Request evidence failed, localStorage updated:', err);
+    return true;
   }
 };

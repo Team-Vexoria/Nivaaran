@@ -7,14 +7,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        'nivaaran-primary': {
-          DEFAULT: '#1E3A5F',
-          hover: '#16293F',
+        page: '#FAF8F4',
+        charcoal: '#201C18',
+        espresso: '#211D19',
+        forest: {
+          DEFAULT: '#2C6E49',
+          hover: '#23583a',
         },
-        'nivaaran-secondary': '#0F766E',
-        'nivaaran-accent': '#C2760C',
-        'nivaaran-danger': '#B3261E',
-        'nivaaran-warning': '#B45309',
+        ochre: {
+          DEFAULT: '#C98A2C',
+          hover: '#b07722',
+        },
+        terracotta: {
+          DEFAULT: '#B5502D',
+          hover: '#9c4323',
+        },
+        sand: '#E4DDD1',
+        'nivaaran-primary': {
+          DEFAULT: '#2C6E49',
+          hover: '#23583a',
+        },
+        'nivaaran-secondary': '#C98A2C',
+        'nivaaran-accent': '#B5502D',
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
