@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle } from 'lucide-react';
+import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch } from 'lucide-react';
 import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
  soul
 import { useLanguage } from '../../context/LanguageContext';
@@ -25,71 +25,13 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [selectedReport, setSelectedReport] = useState<ChallengeDoc | null>(null);
   const [reports, setReports] = useState<ChallengeDoc[]>([]);
-
-  // Default seed items if Firestore has no reports yet
-  const defaultReports: ChallengeDoc[] = [
-    {
-      id: 'JH-2026-FL-0842',
-      reportId: 'JH-2026-FL-0842',
-      title: 'Monsoon Flash Flood Risk Near Government School',
-      district: 'Ranchi',
-      block: 'Kanke',
-      village: 'Hutup Panchayat',
-      category: 'Flooding & Drainage',
-      status: 'In Progress',
-      summary: 'River overflow floods primary school road during heavy rains. 400+ students unable to commute safely.',
-      assignedHEI: 'BIT Mesra, Ranchi',
-      assignedDept: 'Dept of Civil & Electronics Engineering',
-      csrSponsor: 'Tata Steel CSR Foundation',
-      stageNumber: 8,
-      stageName: 'Stage 8: Multidisciplinary Team Formed & Hardware Testing',
-      govtOfficerNote: 'Location inspected by Block Development Officer. BIT Mesra student team deploying 3 telemetry sensors.',
-    },
-    {
-      id: 'JH-2026-DR-0319',
-      reportId: 'JH-2026-DR-0319',
-      title: 'Drinking Water & Deep Borewell Depletion',
-      district: 'Palamu',
-      block: 'Daltonganj',
-      village: 'Satanpur Village',
-      category: 'Drought & Water',
-      status: 'Government Validated',
-      summary: 'Summer water table drop causing severe drinking water crisis for 3,800+ villagers.',
-      assignedHEI: 'Birsa Agricultural University & NIT Jamshedpur',
-      assignedDept: 'Dept of Agricultural Engineering & Water Resources',
-      csrSponsor: 'State Rural Water Supply Grant',
-      stageNumber: 4,
-      stageName: 'Stage 4: Geotag Validated & Deduplicated',
-      govtOfficerNote: 'District Magistrate Office approved priority status. Matching university water labs.',
-    },
-    {
-      id: 'JH-2026-LS-0112',
-      reportId: 'JH-2026-LS-0112',
-      title: 'Road Surface Cracks & Ground Displacement near Coal Belt',
-      district: 'Dhanbad',
-      block: 'Jharia',
-      village: 'Bhowra Sector 3',
-      category: 'Mine Hazards',
-      status: 'Resolved',
-      summary: 'Underground movement caused road cracks. Installed geotechnical movement warning sensors.',
-      assignedHEI: 'IIT (ISM) Dhanbad',
-      assignedDept: 'Dept of Mining Engineering & Geophysics',
-      csrSponsor: 'BCCL Safety Division Grant',
-      stageNumber: 15,
-      stageName: 'Stage 15: Impact Verified & Deployed',
-      govtOfficerNote: 'Warning sirens and IoT tiltmeters successfully operational. Road repaved by PWD.',
-    },
-  ];
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = subscribeToChallenges((incomingDocs) => {
-      if (incomingDocs && incomingDocs.length > 0) {
-        setReports(incomingDocs);
-      } else {
-        setReports(defaultReports);
-      }
+      setReports(incomingDocs);
+      setLoading(false);
     });
-
     return () => unsubscribe();
   }, []);
 
