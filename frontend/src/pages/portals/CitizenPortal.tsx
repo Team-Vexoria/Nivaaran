@@ -81,11 +81,14 @@ export const CitizenPortal: React.FC = () => {
         {activeTab === 'my-reports' && (
           <CitizenMyReportsTab
             onOpenReportModal={() => setIsReportModalOpen(true)}
+            currentLang={currentLang}
           />
         )}
 
         {activeTab === 'community-feed' && (
-          <CitizenCommunityFeedTab />
+          <CitizenCommunityFeedTab
+            currentLang={currentLang}
+          />
         )}
 
         {activeTab === 'region-chat' && (
@@ -93,7 +96,9 @@ export const CitizenPortal: React.FC = () => {
         )}
 
         {activeTab === 'leaderboard' && (
-          <CitizenLeaderboardTab />
+          <CitizenLeaderboardTab
+            currentLang={currentLang}
+          />
         )}
 
         {activeTab === 'profile' && (

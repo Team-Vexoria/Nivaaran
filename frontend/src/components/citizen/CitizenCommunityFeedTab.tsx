@@ -5,6 +5,9 @@ import {
 } from '../../services/firebaseService';
 import { useLanguage } from '../../context/LanguageContext';
 
+import { SupportedLanguage } from '../../i18n/translations';
+import { tr } from '../../i18n/translationEngine';
+
 interface FeedComment {
   id: string;
   author: string;
@@ -168,27 +171,38 @@ export const CitizenCommunityFeedTab: React.FC = () => {
       {/* Feed Header */}
       <div className="border-b border-slate-200 pb-4">
         <h2 className="text-2xl font-extrabold font-heading text-slate-900">
+ soul
           {t.communityFeed.title}
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
           {t.communityFeed.subtitle}
+
+          {tr('Jharkhand Community Challenge Feed', currentLang)}
+        </h2>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          {tr('Live Citizen Geotag Stream across 24 Districts', currentLang)}
+ main
         </p>
       </div>
 
       {/* Create Post Form */}
       <form onSubmit={handleCreatePost} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+ soul
         <span className="text-xs font-bold text-slate-900 block">{t.communityFeed.newPostTitle}</span>
+
+        <span className="text-xs font-bold text-slate-900 block">{tr('Post a Local Community Concern', currentLang)}</span>
+ main
         
         <input
           type="text"
-          placeholder="Issue Title (e.g. Broken culvert near market, waterlogging)"
+          placeholder={tr('Issue Title (e.g. Broken culvert near market, waterlogging)', currentLang)}
           value={newPostTitle}
           onChange={e => setNewPostTitle(e.target.value)}
           className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
         />
 
         <textarea
-          placeholder="Describe the issue, location details, and how it impacts people..."
+          placeholder={tr('Describe the issue, location details, and how it impacts people...', currentLang)}
           rows={2}
           value={newPostContent}
           onChange={e => setNewPostContent(e.target.value)}
@@ -197,26 +211,26 @@ export const CitizenCommunityFeedTab: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
           <div className="flex items-center space-x-2">
-            <span className="text-xs text-slate-500 font-medium">District:</span>
+            <span className="text-xs text-slate-500 font-medium">{tr('District:', currentLang)}</span>
             <select
               value={newPostDistrict}
               onChange={e => setNewPostDistrict(e.target.value)}
               className="text-xs border border-slate-200 rounded-md px-2 py-1 bg-white font-semibold text-slate-800"
             >
-              <option value="Ranchi">Ranchi</option>
-              <option value="Dhanbad">Dhanbad</option>
-              <option value="Palamu">Palamu</option>
-              <option value="East Singhbhum">East Singhbhum (Jamshedpur)</option>
-              <option value="Hazaribagh">Hazaribagh</option>
+              <option value="Ranchi">{tr('Ranchi', currentLang)}</option>
+              <option value="Dhanbad">{tr('Dhanbad', currentLang)}</option>
+              <option value="Palamu">{tr('Palamu', currentLang)}</option>
+              <option value="East Singhbhum">{tr('East Singhbhum', currentLang)}</option>
+              <option value="Hazaribagh">{tr('Hazaribagh', currentLang)}</option>
             </select>
           </div>
 
           <button
             type="submit"
-            className="w-full sm:w-auto px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center space-x-1.5"
+            className="w-full sm:w-auto px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
           >
             <Send className="w-3.5 h-3.5" />
-            <span>Post to Feed</span>
+            <span>{tr('Post to Feed', currentLang)}</span>
           </button>
         </div>
       </form>
@@ -230,46 +244,46 @@ export const CitizenCommunityFeedTab: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center space-x-2">
-                  <span className="font-bold text-slate-900 text-xs sm:text-sm">{post.author}</span>
-                  <span className="text-[10px] text-slate-400">• {post.timestamp || 'Live'}</span>
+                  <span className="font-bold text-slate-900 text-xs sm:text-sm">{tr(post.author, currentLang)}</span>
+                  <span className="text-[10px] text-slate-400">• {tr(post.timestamp || 'Live', currentLang)}</span>
                 </div>
                 <div className="text-[11px] text-slate-500 flex items-center mt-0.5">
                   <MapPin className="w-3 h-3 text-amber-500 mr-1" />
-                  <span>District {post.district} ({post.block})</span>
+                  <span>{tr('District:', currentLang)} {tr(post.district, currentLang)} ({tr(post.block, currentLang)})</span>
                 </div>
               </div>
 
               <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
-                {post.status}
+                {tr(post.status, currentLang)}
               </span>
             </div>
 
             {/* Title & Body */}
             <div className="space-y-1.5">
-              <h3 className="font-bold text-base text-slate-900 leading-snug">{post.title}</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">{post.content}</p>
+              <h3 className="font-bold text-base text-slate-900 leading-snug">{tr(post.title, currentLang)}</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">{tr(post.content, currentLang)}</p>
             </div>
 
             {/* Voting & Action Bar */}
             <div className="flex items-center space-x-4 pt-2 border-t border-slate-100 text-xs text-slate-600">
               <button
                 onClick={() => post.id && handleUpvote(post.id)}
-                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border transition-all ${
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
                   post.hasUpvoted
                     ? 'bg-emerald-50 border-emerald-300 text-emerald-700 font-bold'
                     : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 <ThumbsUp className="w-3.5 h-3.5" />
-                <span>Upvote ({post.upvotes})</span>
+                <span>{tr('Upvote', currentLang)} ({post.upvotes})</span>
               </button>
 
               <button
                 onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : (post.id || null))}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 font-semibold"
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 font-semibold cursor-pointer"
               >
                 <MessageSquare className="w-3.5 h-3.5" />
-                <span>Comments ({(post.comments || []).length})</span>
+                <span>{tr('Comments', currentLang)} ({(post.comments || []).length})</span>
               </button>
             </div>
 
@@ -280,31 +294,31 @@ export const CitizenCommunityFeedTab: React.FC = () => {
                   <div key={c.id} className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2 text-xs">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-1.5">
-                        <span className="font-bold text-slate-900">{c.author}</span>
+                        <span className="font-bold text-slate-900">{tr(c.author, currentLang)}</span>
                         {c.isVerifiedGovt && (
                           <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-600 text-white shadow-2xs">
-                            <CheckCircle2 className="w-3 h-3 mr-1" /> VERIFIED GOVT ADMIN
+                            <CheckCircle2 className="w-3 h-3 mr-1" /> {tr('VERIFIED GOVT ADMIN', currentLang)}
                           </span>
                         )}
                       </div>
-                      <span className="text-[10px] text-slate-400">{c.timestamp}</span>
+                      <span className="text-[10px] text-slate-400">{tr(c.timestamp, currentLang)}</span>
                     </div>
 
-                    <p className="text-slate-700 leading-relaxed">{c.text}</p>
+                    <p className="text-slate-700 leading-relaxed">{tr(c.text, currentLang)}</p>
 
                     {/* Government Admin Before & After Proof Photo Comparison */}
                     {c.isVerifiedGovt && c.beforeImg && c.afterImg && (
                       <div className="pt-2 space-y-1.5">
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block flex items-center">
-                          <ImageIcon className="w-3 h-3 mr-1 text-slate-700" /> Government Ground Audit Evidence (Before vs After)
+                          <ImageIcon className="w-3 h-3 mr-1 text-slate-700" /> {tr('Government Ground Audit Evidence (Before vs After)', currentLang)}
                         </span>
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1">
-                            <span className="text-[10px] font-semibold text-rose-700 block">BEFORE (Reported Condition)</span>
+                            <span className="text-[10px] font-semibold text-rose-700 block">{tr('BEFORE (Reported Condition)', currentLang)}</span>
                             <img src={c.beforeImg} alt="Before work" className="w-full h-24 object-cover rounded-lg border border-slate-200" />
                           </div>
                           <div className="space-y-1">
-                            <span className="text-[10px] font-semibold text-emerald-700 block">AFTER (University & Govt Solution)</span>
+                            <span className="text-[10px] font-semibold text-emerald-700 block">{tr('AFTER (University & Govt Solution)', currentLang)}</span>
                             <img src={c.afterImg} alt="After work" className="w-full h-24 object-cover rounded-lg border border-slate-200" />
                           </div>
                         </div>
@@ -313,14 +327,14 @@ export const CitizenCommunityFeedTab: React.FC = () => {
                   </div>
                 ))
               ) : (
-                <p className="text-xs text-slate-400 italic">No comments yet. Be the first to reply!</p>
+                <p className="text-xs text-slate-400 italic">{tr('No comments yet. Be the first to reply!', currentLang)}</p>
               )}
 
               {/* Add Comment Input */}
               <div className="flex items-center space-x-2 pt-1">
                 <input
                   type="text"
-                  placeholder="Write a comment or query..."
+                  placeholder={tr('Write a comment or query...', currentLang)}
                   value={activeCommentPostId === post.id ? commentInput : ''}
                   onFocus={() => post.id && setActiveCommentPostId(post.id)}
                   onChange={e => {
@@ -331,9 +345,9 @@ export const CitizenCommunityFeedTab: React.FC = () => {
                 />
                 <button
                   onClick={() => post.id && handleAddComment(post.id)}
-                  className="px-3 py-1.5 bg-slate-900 text-white font-bold text-xs rounded-lg hover:bg-slate-800 transition-colors"
+                  className="px-3 py-1.5 bg-slate-900 text-white font-bold text-xs rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                 >
-                  Reply
+                  {tr('Reply', currentLang)}
                 </button>
               </div>
 
