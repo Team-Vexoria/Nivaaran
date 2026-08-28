@@ -123,6 +123,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(userProfile);
       return userProfile;
     } catch (err: any) {
+      if (role === 'Citizen') {
+        // Every email address is allowed for Citizen login!
+        const citizenUser: UserProfile = {
+          uid: 'citizen_' + email.replace(/[^a-zA-Z0-9]/g, '_'),
+          email: email,
+          displayName: email.split('@')[0] || 'Citizen',
+          role: 'Citizen',
+        };
+        localStorage.setItem('nivaaran_demo_user', JSON.stringify(citizenUser));
+        setCurrentUser(citizenUser);
+        return citizenUser;
+      }
       throw new Error(getReadableAuthError(err));
     } finally {
       setLoading(false);
@@ -139,7 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userProfile: UserProfile = {
         uid: res.user.uid,
         email: res.user.email,
-        displayName: name,
+        displayName: name || email.split('@')[0],
         role: assignedRole,
       };
       localStorage.setItem(`nivaaran_role_${res.user.uid}`, assignedRole);
@@ -147,6 +159,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(userProfile);
       return userProfile;
     } catch (err: any) {
+      if (role === 'Citizen') {
+        // Every email address is allowed for Citizen signup!
+        const citizenUser: UserProfile = {
+          uid: 'citizen_' + email.replace(/[^a-zA-Z0-9]/g, '_'),
+          email: email,
+          displayName: name || email.split('@')[0] || 'Citizen',
+          role: 'Citizen',
+        };
+        localStorage.setItem('nivaaran_demo_user', JSON.stringify(citizenUser));
+        setCurrentUser(citizenUser);
+        return citizenUser;
+      }
       throw new Error(getReadableAuthError(err));
     } finally {
       setLoading(false);

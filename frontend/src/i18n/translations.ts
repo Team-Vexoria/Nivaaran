@@ -59,9 +59,8 @@ export interface TranslationStrings {
   reportProblem: string;
   signIn: string;
   exploreChallenges: string;
-  lifecycle: string;
-  universities: string;
-  industryMarketplace: string;
+  trackReport: string;
+  communitySolutions: string;
   impactLedger: string;
   heroCtaPrimary: string;
   heroCtaSecondary: string;
@@ -73,10 +72,22 @@ export interface TranslationStrings {
   lifecycleSub: string;
   outcomesTitle: string;
   outcomesSub: string;
+  
+  // Citizen usecases
+  citizenFeatureTitle: string;
+  citizenFeatureSub: string;
+  feature1Title: string;
+  feature1Desc: string;
+  feature2Title: string;
+  feature2Desc: string;
+  feature3Title: string;
+  feature3Desc: string;
+  feature4Title: string;
+  feature4Desc: string;
+  
   activeChallengesTitle: string;
   activeChallengesSub: string;
   
-  // Spotlight
   spotlightBadge: string;
   spotlightTitle: string;
   spotlightLocation: string;
@@ -106,7 +117,6 @@ export interface TranslationStrings {
   spotlightAuditNote: string;
   spotlightCta: string;
   
-  // Filters & Card labels
   allFilter: string;
   floodingFilter: string;
   droughtFilter: string;
@@ -116,23 +126,6 @@ export interface TranslationStrings {
   affectedPopLabel: string;
   viewTeamCta: string;
   
-  // HEI Section
-  heiBadge: string;
-  heiTitle: string;
-  heiSubtitle: string;
-  
-  // CSR Section
-  csrBadge: string;
-  csrTitle: string;
-  csrSubtitle: string;
-  csrCard1Title: string;
-  csrCard1Desc: string;
-  csrCard2Title: string;
-  csrCard2Desc: string;
-  csrCard3Title: string;
-  csrCard3Desc: string;
-  
-  // Footer
   footerAbout: string;
   footerRolePortals: string;
   footerFocusAreas: string;
@@ -145,346 +138,265 @@ export interface TranslationStrings {
 }
 
 const en: TranslationStrings = {
-  title: 'Connecting Grassroots Challenges to University Research & Industry Deployment',
-  subtitle: 'Jharkhand’s centralized demand-and-supply orchestration platform turning citizen-reported societal and disaster challenges into AI-triage, university-engineered prototypes, and verified government deployments.',
-  tagline: 'Jharkhand Societal Challenge & Innovation Network',
+  title: 'Report Local Community Problems. Get Verified University & Government Solutions.',
+  subtitle: 'Citizens report local floods, water crisis, road damage, or school safety hazards across Jharkhand. Government officers and university research teams build verified solutions for your community.',
+  tagline: 'Jharkhand Citizen Societal Innovation Portal',
   reportProblem: 'Report Problem',
-  signIn: 'Sign In',
-  exploreChallenges: 'Explore Challenges',
-  lifecycle: '16-Stage Lifecycle',
-  universities: 'Universities',
-  industryMarketplace: 'Industry Marketplace',
-  impactLedger: 'Impact Ledger',
-  heroCtaPrimary: 'Submit Challenge / Upload Evidence',
-  heroCtaSecondary: 'Explore Live Projects & GIS Map',
+  signIn: 'Sign In / Login',
+  exploreChallenges: 'Report Problem',
+  trackReport: 'Track My Report',
+  communitySolutions: 'Local Solutions',
+  impactLedger: 'Community Impact',
+  heroCtaPrimary: 'Report Problem / Upload Photo & Video',
+  heroCtaSecondary: 'Track My Report Status',
   districtsCovered: '24 / 24 Districts Covered',
-  districtsSub: 'Statewide GIS Grid',
-  heiLabs: '48+ HEI Research Labs',
+  districtsSub: 'Statewide Citizen Network',
+  heiLabs: '48+ Universities',
   heiLabsSub: 'BIT, IIT-ISM, NIT, BAU',
-  lifecycleTitle: '16-Stage Verified Lifecycle',
-  lifecycleSub: 'Submission to Policy',
-  outcomesTitle: '100% Traceable Outcomes',
-  outcomesSub: 'Human-Validated Audit',
-  activeChallengesTitle: 'Active State Challenges & Innovation Pipeline',
-  activeChallengesSub: 'Ground Incidents in Motion',
+  lifecycleTitle: 'Verified Progress',
+  lifecycleSub: 'Report to Solution',
+  outcomesTitle: '100% Transparent',
+  outcomesSub: 'Government Verified',
   
-  spotlightBadge: 'Flagship Challenge in Motion',
-  spotlightTitle: 'Subernarekha Basin IoT Flood Telemetry Network',
-  spotlightLocation: 'Kanke Block & Namkum, District Ranchi, Jharkhand • Incident ID: JH-2026-FL-0842',
-  spotlightActiveStage: 'Active Stage 8: Multidisciplinary Team Formed',
-  phase1Title: 'Phase 1 (Stages 1-4)',
-  phase1Sub: 'Intake & AI Triage',
-  phase1Status: '✓ Completed',
-  phase2Title: 'Phase 2 (Stages 5-8)',
-  phase2Sub: 'HEI Matching & Team',
-  phase2Status: '● In Progress (Stage 8)',
-  phase3Title: 'Phase 3 (Stages 9-12)',
-  phase3Sub: 'Prototype & Pilot',
-  phase3Status: 'Upcoming',
-  phase4Title: 'Phase 4 (Stages 13-16)',
-  phase4Sub: 'Deployment & Audit',
+  citizenFeatureTitle: 'Built Specifically for Jharkhand Citizens & Communities',
+  citizenFeatureSub: 'Turn everyday local problems into real engineering solutions backed by state government funding.',
+  feature1Title: '📸 Photo & Video Evidence Intake',
+  feature1Desc: 'Take a picture or record a short video of the local flood, broken bridge, or water hazard directly from your phone.',
+  feature2Title: '📍 Automatic GPS & District Tagging',
+  feature2Desc: 'Your report is geotagged down to your Panchayat, Block, and District so local officers can instantly verify the ground location.',
+  feature3Title: '🏫 University Student & Lab Power',
+  feature3Desc: 'Engineering students and university labs (BIT Mesra, NIT Jamshedpur, IIT Dhanbad) build customized prototypes for your village.',
+  feature4Title: '⭐ Community Tracking & Feedback',
+  feature4Desc: 'Track your report step-by-step from submission to completion and rate the solution once deployed in your area.',
+  
+  activeChallengesTitle: 'Recent Community Reports Being Solved',
+  activeChallengesSub: 'Ground Issues Reported by Citizens',
+  
+  spotlightBadge: 'Featured Community Project',
+  spotlightTitle: 'Subernarekha River Flood Early Warning System',
+  spotlightLocation: 'Kanke Block & Namkum, District Ranchi, Jharkhand • Report ID: JH-2026-FL-0842',
+  spotlightActiveStage: 'Stage 8: BIT Mesra Engineering Team Assigned',
+  phase1Title: 'Step 1: Citizen Submission',
+  phase1Sub: 'Photo & GPS Upload',
+  phase1Status: '✓ Verified by Govt',
+  phase2Title: 'Step 2: University Assignment',
+  phase2Sub: 'BIT Mesra Engineering Team',
+  phase2Status: '● In Progress',
+  phase3Title: 'Step 3: Prototype Build',
+  phase3Sub: 'IoT Sensors & Solar Unit',
+  phase3Status: 'Next Step',
+  phase4Title: 'Step 4: Village Deployment',
+  phase4Sub: 'Installed in Panchayat',
   phase4Status: 'Upcoming',
   
-  assignedUnitLabel: 'Assigned Academic Unit',
+  assignedUnitLabel: 'Assigned University Team',
   assignedUnitName: 'BIT Mesra, Ranchi',
-  assignedUnitDept: 'Dept. of Electronics & Hydrological Civil Engineering',
-  csrPartnerLabel: 'Industry / CSR Partner',
+  assignedUnitDept: 'Department of Electronics & Civil Engineering',
+  csrPartnerLabel: 'Industry Support & Grant',
   csrPartnerName: 'Tata Steel CSR Foundation',
-  csrPartnerGrant: 'Hardware Telemetry Enclosures & Cloud Server Grant',
-  beneficiariesLabel: 'Verified Ground Beneficiaries',
+  csrPartnerGrant: 'Telemetry Hardware & Sensor Equipment Grant',
+  beneficiariesLabel: 'Protected Community Members',
   beneficiariesCount: '1,450+ Citizens & 2 Schools',
-  beneficiariesZone: 'Subernarekha Flood Buffer Zone, Kanke',
-  spotlightAuditNote: 'Verified on Government of Jharkhand Innovation Ledger with full audit accountability.',
-  spotlightCta: 'View Project Deliverables & Sensor Logs',
+  beneficiariesZone: 'Subernarekha Flood Zone, Kanke Block',
+  spotlightAuditNote: 'Verified on Government of Jharkhand Citizen Innovation Portal.',
+  spotlightCta: 'View Project Details & Live Status',
   
-  allFilter: 'All Challenges',
+  allFilter: 'All Reports',
   floodingFilter: 'Flooding & Drainage',
-  droughtFilter: 'Drought & Groundwater',
-  mineSubsidenceFilter: 'Mine Subsidence & Landslide',
+  droughtFilter: 'Drought & Water',
+  mineSubsidenceFilter: 'Landslides & Mine Hazards',
   locationLabel: 'Location:',
-  matchedHeiLabel: 'Matched HEI:',
-  affectedPopLabel: 'Affected Population:',
-  viewTeamCta: 'View Team & Technical Milestones',
+  matchedHeiLabel: 'University Team:',
+  affectedPopLabel: 'People Affected:',
+  viewTeamCta: 'View Progress & Solution',
   
-  heiBadge: 'Higher Education Network',
-  heiTitle: 'Connected Universities & Research Centers',
-  heiSubtitle: 'Accredited universities across Jharkhand equipped with multidisciplinary labs to prototype and validate societal solutions.',
-  
-  csrBadge: 'Public-Private Collaboration',
-  csrTitle: 'Industry Mentorship & CSR Marketplace',
-  csrSubtitle: 'Connecting corporate CSR capital, industrial testing facilities, and startup mentorship directly to validated university projects.',
-  csrCard1Title: 'Prototype Funding Grants',
-  csrCard1Desc: 'CSR foundations can fund bill-of-materials and fabrication grants directly for validated student and faculty prototypes.',
-  csrCard2Title: 'Testing & Cloud Telemetry Labs',
-  csrCard2Desc: 'Access industrial environmental chambers, compute clusters, and telemetry gateways to productionize student innovations.',
-  csrCard3Title: 'Statewide Pilot Deployment',
-  csrCard3Desc: 'Support field deployment in Panchayati Raj and ULB jurisdictions with government-backed outcome measurement.',
-  
-  footerAbout: 'Jharkhand Societal Challenge & Innovation Network. Department of Higher & Technical Education, Government of Jharkhand.',
-  footerRolePortals: 'Role Portals',
-  footerFocusAreas: 'Core Challenge Areas',
+  footerAbout: 'NIVAARAN — Jharkhand Societal Challenge & Innovation Portal for Citizens. Directorate of Higher & Technical Education, Government of Jharkhand.',
+  footerRolePortals: 'Portal Login Links',
+  footerFocusAreas: 'Report Categories',
   footerHelplines: 'State Emergency Helplines',
   footerRights: '© 2026 Government of Jharkhand • All Rights Reserved',
-  footerSecurity: 'Secure Role-Based Access Control • Traceable Audit Ledger',
+  footerSecurity: 'Verified Citizen Intake & Public Audit Ledger',
   
   challenges: [
     {
       id: 'JH-2026-FL-0842',
-      title: 'Monsoon Flash Flood Mitigation & IoT Early Warning',
+      title: 'Monsoon Flash Flood Risk Near School Road',
       district: 'Ranchi',
       block: 'Kanke Block (Subernarekha Basin)',
       category: 'Flooding & Drainage',
-      status: 'University Accepted',
-      matchedHEI: 'BIT Mesra (IoT/Civil Dept)',
+      status: 'University Team Assigned',
+      matchedHEI: 'BIT Mesra (Civil & IoT Dept)',
       peopleAffected: '1,450+ Citizens & 2 Schools',
-      summary: 'Subernarekha river seasonal overflow creates severe inundation across agricultural fields and primary access roads.',
+      summary: 'River overflow floods primary school road during heavy rains. Seeking automated early warning sensors.',
     },
     {
       id: 'JH-2026-DR-0319',
-      title: 'Solar-Powered Deep Aquifer Recharge & Soil Moisture Sensors',
+      title: 'Drinking Water Shortage & Deep Well Depletion',
       district: 'Palamu',
       block: 'Daltonganj Block',
       category: 'Drought & Water',
-      status: 'Validated & Prioritized',
+      status: 'Verified by Local Officer',
       matchedHEI: 'Birsa Agricultural University & NIT Jamshedpur',
       peopleAffected: '3,800+ Farmers',
-      summary: 'Severe summer groundwater depletion leading to crop failure. Proposing automated sensor-driven micro-irrigation.',
+      summary: 'Summer water table drop causing severe drinking water crisis. Seeking solar recharge solutions.',
     },
     {
       id: 'JH-2026-LS-0112',
-      title: 'Geotechnical Soil Stability & Mine Subsidence Early Detection',
+      title: 'Road Cracks & Mine Area Ground Displacement',
       district: 'Dhanbad',
       block: 'Jharia Coalfield Belt',
-      category: 'Mine Subsidence & Landslide',
-      status: 'Prototype Stage',
-      matchedHEI: 'IIT (ISM) Dhanbad (Mining & Geophysics)',
+      category: 'Mine Hazards',
+      status: 'Prototype Testing',
+      matchedHEI: 'IIT (ISM) Dhanbad (Mining Dept)',
       peopleAffected: '6,200+ Residents',
-      summary: 'Subsurface displacement monitoring using fiber-optic strain sensors to prevent catastrophic road and settlement collapse.',
+      summary: 'Ground cracks appearing near road. Proposing underground movement sensors to warn residents.',
     },
   ],
   heis: [
-    { name: 'BIT Mesra, Ranchi', focus: 'IoT Sensor Systems & Civil Infrastructure', node: 'Center of Excellence in Disaster Telemetry' },
-    { name: 'IIT (ISM) Dhanbad', focus: 'Geotechnical Engineering & Mine Subsidence', node: 'Subsurface Geophysics Lab' },
-    { name: 'NIT Jamshedpur', focus: 'GIS Remote Sensing & AI Hydrology', node: 'Spatial Data & Watershed Intelligence' },
-    { name: 'Birsa Agricultural University', focus: 'Drought Resilience & Agro-IoT', node: 'Climate-Smart Irrigation Division' },
-    { name: 'IIIT Ranchi', focus: 'Embedded Telemetry & Edge AI Computing', node: 'Low-Power Edge IoT Lab' },
-    { name: 'Ranchi University', focus: 'Community Validation & Field Surveys', node: 'Civic Policy & Ground Evaluation Cell' },
+    { name: 'BIT Mesra, Ranchi', focus: 'Flood Telemetry & Road Sensors', node: 'Disaster Electronics Center' },
+    { name: 'IIT (ISM) Dhanbad', focus: 'Mine Safety & Land Displacement', node: 'Geotechnical Safety Lab' },
+    { name: 'NIT Jamshedpur', focus: 'Water Basin & GIS Mapping', node: 'Spatial Data Lab' },
+    { name: 'Birsa Agricultural University', focus: 'Drought & Agro-Water Solutions', node: 'Irrigation Division' },
+    { name: 'IIIT Ranchi', focus: 'Low-Cost Electronics & Edge AI', node: 'IoT Innovation Lab' },
+    { name: 'Ranchi University', focus: 'Community Surveys & Field Verification', node: 'Citizen Feedback Cell' },
   ],
 };
 
 const hi: TranslationStrings = {
-  title: 'जमीनी समस्याओं का विश्वविद्यालयों के शोध और उद्योग से समाधान',
-  subtitle: 'झारखंड का राज्य नवाचार मंच, जो नागरिकों द्वारा दर्ज आपदाओं व सामाजिक समस्याओं को AI विश्लेषण, विश्वविद्यालय प्रोटोटाइप और सरकारी सत्यापन से जोड़ता है।',
-  tagline: 'झारखंड सामाजिक चुनौती एवं नवाचार नेटवर्क',
+  title: 'स्थानीय समस्याएं दर्ज करें। विश्वविद्यालय और सरकार से पाएं सत्यापित समाधान।',
+  subtitle: 'झारखंड के नागरिक बाढ़, जल संकट, टूटी सड़क या स्कूल सुरक्षा खतरों की रिपोर्ट दर्ज करें। स्थानीय प्रशासन और विश्वविद्यालय की टीमें आपके गांव के लिए समाधान तैयार करती हैं।',
+  tagline: 'झारखंड नागरिक सामाजिक नवाचार पोर्टल',
   reportProblem: 'समस्या दर्ज करें',
   signIn: 'लॉग इन करें',
-  exploreChallenges: 'चुनौतियां देखें',
-  lifecycle: '16-चरणीय जीवनचक्र',
-  universities: 'विश्वविद्यालय नेटवर्क',
-  industryMarketplace: 'उद्योग व CSR बाजार',
-  impactLedger: 'प्रभाव बहीखाता',
-  heroCtaPrimary: 'समस्या दर्ज करें / साक्ष्य अपलोड करें',
-  heroCtaSecondary: 'लाइव प्रोजेक्ट्स व GIS नक्शा देखें',
+  exploreChallenges: 'समस्या दर्ज करें',
+  trackReport: 'रिपोर्ट की स्थिति देखें',
+  communitySolutions: 'स्थानीय समाधान',
+  impactLedger: 'सामुदायिक प्रभाव',
+  heroCtaPrimary: 'समस्या दर्ज करें / फोटो-वीडियो अपलोड करें',
+  heroCtaSecondary: 'अपनी रिपोर्ट की स्थिति जांचें',
   districtsCovered: '24 / 24 जिले शामिल',
-  districtsSub: 'राज्यव्यापी GIS ग्रिड',
-  heiLabs: '48+ विश्वविद्यालय अनुसंधान लैब',
+  districtsSub: 'राज्यव्यापी नागरिक नेटवर्क',
+  heiLabs: '48+ विश्वविद्यालय',
   heiLabsSub: 'बीआईटी, आईआईटी-आईएसएम, एनआईटी, बीएयू',
-  lifecycleTitle: '16-चरणीय सत्यापित जीवनचक्र',
-  lifecycleSub: 'समस्या से नीति निर्धारण तक',
-  outcomesTitle: '100% पारदर्शी परिणाम',
-  outcomesSub: 'मानव-सत्यापित ऑडिट ट्रेल',
-  activeChallengesTitle: 'सक्रिय राज्य चुनौतियां एवं समाधान पाइपलाइन',
-  activeChallengesSub: 'जमीनी स्तर पर जारी कार्य',
+  lifecycleTitle: 'सत्यापित प्रगति',
+  lifecycleSub: 'समस्या से समाधान तक',
+  outcomesTitle: '100% पारदर्शी',
+  outcomesSub: 'सरकारी सत्यापन',
   
-  spotlightBadge: 'प्रमुख आपदा समाधान परियोजना',
-  spotlightTitle: 'स्वर्णरेखा नदी बेसिन IoT बाढ़ पूर्व चेतावनी नेटवर्क',
-  spotlightLocation: 'कांके ब्लॉक एवं नामकुम, जिला रांची, झारखंड • घटना संख्या: JH-2026-FL-0842',
-  spotlightActiveStage: 'सक्रिय चरण 8: बहुविषयक विशेषज्ञ टीम गठित',
-  phase1Title: 'चरण 1 (स्तर 1-4)',
-  phase1Sub: 'समस्या दर्ज एवं AI विश्लेषण',
-  phase1Status: '✓ पूर्ण हुआ',
-  phase2Title: 'चरण 2 (स्तर 5-8)',
-  phase2Sub: 'विश्वविद्यालय चयन एवं टीम गठन',
-  phase2Status: '● प्रगति पर (स्तर 8)',
-  phase3Title: 'चरण 3 (स्तर 9-12)',
-  phase3Sub: 'प्रोटोटाइप निर्माण एवं फील्ड ट्रायल',
-  phase3Status: 'आगामी',
-  phase4Title: 'चरण 4 (स्तर 13-16)',
-  phase4Sub: 'सरकारी तैनाती एवं प्रभाव ऑडिट',
+  citizenFeatureTitle: 'विशेष रूप से झारखंड के नागरिकों और समुदायों के लिए निर्मित',
+  citizenFeatureSub: 'अपनी दैनिक स्थानीय समस्याओं को राज्य सरकार की मदद से वास्तविक इंजीनियरिंग समाधानों में बदलें।',
+  feature1Title: '📸 फोटो एवं वीडियो साक्ष्य अपलोड',
+  feature1Desc: 'अपने मोबाइल से बाढ़, टूटे पुल या पानी के संकट की फोटो खींचें या वीडियो रिकॉर्ड करके भेजें।',
+  feature2Title: '📍 स्वचालित जीपीएस एवं जिला ट्रैकिंग',
+  feature2Desc: 'आपकी रिपोर्ट आपके पंचायत, ब्लॉक और जिले से जुड़ जाती है ताकि अधिकारी तुरंत जगह की पुष्टि कर सकें।',
+  feature3Title: '🏫 विश्वविद्यालय के छात्रों और लैब की ताकत',
+  feature3Desc: 'इंजीनियरिंग के छात्र और विश्वविद्यालय की लैब (बीआईटी मेसरा, एनआईटी, आईआईटी) आपके गांव के लिए मॉडल बनाते हैं।',
+  feature4Title: '⭐ ट्रैकिंग और प्रतिक्रिया',
+  feature4Desc: 'रिपोर्ट की स्थिति चरण-दर-चरण देखें और समाधान लगने के बाद अपनी रेटिंग और प्रतिक्रिया दें।',
+  
+  activeChallengesTitle: 'नागरिकों द्वारा दर्ज समस्याएं और समाधान',
+  activeChallengesSub: 'जमीनी स्तर पर जारी समाधान कार्य',
+  
+  spotlightBadge: 'प्रमुख सामुदायिक परियोजना',
+  spotlightTitle: 'स्वर्णरेखा नदी बाढ़ पूर्व चेतावनी प्रणाली',
+  spotlightLocation: 'कांके ब्लॉक एवं नामकुम, जिला रांची, झारखंड • रिपोर्ट संख्या: JH-2026-FL-0842',
+  spotlightActiveStage: 'स्तर 8: बीआईटी मेसरा की टीम आवंटित',
+  phase1Title: 'चरण 1: नागरिक रिपोर्ट दर्ज',
+  phase1Sub: 'फोटो एवं जीपीएस अपलोड',
+  phase1Status: '✓ सरकार द्वारा सत्यापित',
+  phase2Title: 'चरण 2: विश्वविद्यालय आवंटन',
+  phase2Sub: 'बीआईटी मेसरा टीम',
+  phase2Status: '● प्रगति पर',
+  phase3Title: 'चरण 3: मॉडल निर्माण',
+  phase3Sub: 'सेंसर एवं सोलर यूनिट',
+  phase3Status: 'अगला चरण',
+  phase4Title: 'चरण 4: पंचायत में स्थापना',
+  phase4Sub: 'गांव में तैनाती',
   phase4Status: 'आगामी',
   
-  assignedUnitLabel: 'आवंटित विश्वविद्यालय इकाई',
+  assignedUnitLabel: 'आवंटित विश्वविद्यालय टीम',
   assignedUnitName: 'बीआईटी मेसरा, रांची',
-  assignedUnitDept: 'इलेक्ट्रॉनिक्स एवं जल विज्ञान सिविल इंजीनियरिंग विभाग',
-  csrPartnerLabel: 'औद्योगिक / CSR सहयोगी',
+  assignedUnitDept: 'इलेक्ट्रॉनिक्स एवं सिविल इंजीनियरिंग विभाग',
+  csrPartnerLabel: 'उद्योग सहयोग एवं अनुदान',
   csrPartnerName: 'टाटा स्टील सीएसआर फाउंडेशन',
-  csrPartnerGrant: 'हार्डवेयर सेंसर एनक्लोजर एवं क्लाउड सर्वर अनुदान',
-  beneficiariesLabel: 'सत्यापित जमीनी लाभार्थी',
-  beneficiariesCount: '1,450+ नागरिक एवं 2 विद्यालय',
-  beneficiariesZone: 'स्वर्णरेखा बाढ़ बफर क्षेत्र, कांके',
-  spotlightAuditNote: 'झारखंड सरकार के नवाचार बहीखाते पर पूर्ण ऑडिट जवाबदेही के साथ सत्यापित।',
-  spotlightCta: 'परियोजना परिणाम एवं सेंसर रिकॉर्ड देखें',
+  csrPartnerGrant: 'हार्डवेयर सेंसर एवं उपकरण अनुदान',
+  beneficiariesLabel: 'सुरक्षित नागरिक व छात्र',
+  beneficiariesCount: '1,450+ नागरिक एवं 2 स्कूल',
+  beneficiariesZone: 'स्वर्णरेखा बाढ़ क्षेत्र, कांके',
+  spotlightAuditNote: 'झारखंड सरकार के नागरिक पोर्टल पर पूर्ण पारदर्शिता के साथ सत्यापित।',
+  spotlightCta: 'परियोजना की स्थिति और विवरण देखें',
   
-  allFilter: 'सभी चुनौतियां',
+  allFilter: 'सभी रिपोर्ट',
   floodingFilter: 'बाढ़ एवं जलभराव',
-  droughtFilter: 'सूखा एवं भूजल संकट',
-  mineSubsidenceFilter: 'खनन भू-धंसाव एवं भूस्खलन',
+  droughtFilter: 'सूखा एवं पेयजल संकट',
+  mineSubsidenceFilter: 'भू-धंसाव व खदान खतरे',
   locationLabel: 'स्थान:',
-  matchedHeiLabel: 'आवंटित संस्थान:',
-  affectedPopLabel: 'प्रभावित जनसंख्या:',
-  viewTeamCta: 'तकनीकी टीम एवं प्रगति देखें',
+  matchedHeiLabel: 'विश्वविद्यालय टीम:',
+  affectedPopLabel: 'प्रभावित लोग:',
+  viewTeamCta: 'प्रगति एवं समाधान देखें',
   
-  heiBadge: 'उच्च शिक्षा अनुसंधान नेटवर्क',
-  heiTitle: 'संबद्ध विश्वविद्यालय एवं आपदा अनुसंधान केंद्र',
-  heiSubtitle: 'झारखंड के मान्यता प्राप्त विश्वविद्यालय, जो सामाजिक समस्याओं के प्रोटोटाइप और वैज्ञानिक परीक्षण हेतु सुसज्जित हैं।',
-  
-  csrBadge: 'सार्वजनिक-निजी सहयोग',
-  csrTitle: 'उद्योग मार्गदर्शन एवं सीएसआर बाजार',
-  csrSubtitle: 'कॉर्पोरेट सीएसआर फंड, औद्योगिक परीक्षण प्रयोगशालाओं और स्टार्टअप मेंटरशिप को सीधे विश्वविद्यालय परियोजनाओं से जोड़ना।',
-  csrCard1Title: 'प्रोटोटाइप विकास अनुदान',
-  csrCard1Desc: 'सीएसआर फाउंडेशन सीधे छात्र एवं संकाय प्रोटोटाइप के निर्माण सामग्री के लिए अनुदान दे सकते हैं।',
-  csrCard2Title: 'परीक्षण एवं क्लाउड लैब',
-  csrCard2Desc: 'औद्योगिक पर्यावरण परीक्षण कक्षों, कंप्यूट क्लस्टर और टेलीमेट्री गेटवे की सुविधा।',
-  csrCard3Title: 'राज्यव्यापी फील्ड तैनाती',
-  csrCard3Desc: 'पंचायती राज और नगर निकायों में सरकारी निगरानी के साथ समाधानों की वास्तविक तैनाती।',
-  
-  footerAbout: 'झारखंड सामाजिक चुनौती एवं नवाचार नेटवर्क। उच्च एवं तकनीकी शिक्षा विभाग, झारखंड सरकार।',
-  footerRolePortals: 'भूमिका पोर्टल',
-  footerFocusAreas: 'प्रमुख चुनौती क्षेत्र',
+  footerAbout: 'निवाण — झारखंड नागरिक सामाजिक नवाचार पोर्टल। उच्च एवं तकनीकी शिक्षा विभाग, झारखंड सरकार।',
+  footerRolePortals: 'पोर्टल लॉग इन',
+  footerFocusAreas: 'रिपोर्ट श्रेणियां',
   footerHelplines: 'राज्य आपातकालीन हेल्पलाइन',
   footerRights: '© 2026 झारखंड सरकार • सर्वाधिकार सुरक्षित',
-  footerSecurity: 'सुरक्षित आरबीएसी नियंत्रण • पारदर्शी ऑडिट बहीखाता',
+  footerSecurity: 'सत्यापित नागरिक रिपोर्ट एवं पारदर्शी ऑडिट',
   
   challenges: [
     {
       id: 'JH-2026-FL-0842',
-      title: 'मानसून बाढ़ न्यूनीकरण एवं IoT पूर्व चेतावनी प्रणाली',
+      title: 'स्कूल मार्ग के पास मानसून बाढ़ का खतरा',
       district: 'रांची',
-      block: 'कांके ब्लॉक (स्वर्णरेखा बेसिन)',
+      block: 'कांके ब्लॉक (स्वर्णरेखा)',
       category: 'बाढ़ एवं जलभराव',
-      status: 'विश्वविद्यालय द्वारा स्वीकृत',
-      matchedHEI: 'बीआईटी मेसरा (IoT/सिविल विभाग)',
+      status: 'विश्वविद्यालय टीम आवंटित',
+      matchedHEI: 'बीआईटी मेसरा (सिविल व IoT विभाग)',
       peopleAffected: '1,450+ नागरिक एवं 2 स्कूल',
-      summary: 'स्वर्णरेखा नदी का मौसमी जलभराव कृषि भूमि और मुख्य संपर्क मार्गों को जलमग्न कर देता है।',
+      summary: 'भारी बारिश में नदी का पानी स्कूल रोड पर भर जाता है। चेतावनी सेंसर की आवश्यकता।',
     },
     {
       id: 'JH-2026-DR-0319',
-      title: 'सौर ऊर्जा संचालित भूजल पुनर्भरण एवं नमी सेंसर नेटवर्क',
+      title: 'पेयजल संकट एवं कुएं-चापाकल का सूखना',
       district: 'पलामू',
       block: 'डाल्टनगंज ब्लॉक',
-      category: 'सूखा एवं भूजल संकट',
-      status: 'सत्यापित एवं प्राथमिकता प्राप्त',
-      matchedHEI: 'बिरसा कृषि विश्वविद्यालय एवं एनआईटी जमशेदपुर',
+      category: 'सूखा एवं जल संकट',
+      status: 'अधिकारी द्वारा सत्यापित',
+      matchedHEI: 'बिरसा कृषि विश्वविद्यालय व एनआईटी',
       peopleAffected: '3,800+ किसान',
-      summary: 'गर्मी के मौसम में भूजल स्तर गिरने से फसल बर्बादी। स्वचालित सेंसर आधारित सूक्ष्म सिंचाई प्रणाली।',
+      summary: 'गर्मी में भूजल स्तर गिरने से पानी का गंभीर संकट। सोलर रिचार्ज समाधान।',
     },
     {
       id: 'JH-2026-LS-0112',
-      title: 'कोयला खदान क्षेत्र में भू-धंसाव पूर्व चेतावनी एवं स्थिरता जांच',
+      title: 'सड़क पर दरार एवं खदान क्षेत्र में जमीन धंसाव',
       district: 'धनबाद',
       block: 'झरिया कोयला क्षेत्र',
-      category: 'खनन भू-धंसाव एवं भूस्खलन',
-      status: 'प्रोटोटाइप परीक्षण चरण',
-      matchedHEI: 'आईआईटी (आईएसएम) धनबाद (खनन एवं भूभौतिकी)',
+      category: 'खदान खतरे',
+      status: 'मॉडल परीक्षण चरण',
+      matchedHEI: 'आईआईटी (आईएसएम) धनबाद',
       peopleAffected: '6,200+ निवासी',
-      summary: 'फाइबर-ऑप्टिक सेंसर द्वारा जमीन के नीचे हलचल की निरंतर निगरानी ताकि बस्तियों का धंसाव रोका जा सके।',
+      summary: 'सड़क के पास दरारें दिख रही हैं। खतरे की पूर्व चेतावनी के लिए सेंसर की मांग।',
     },
   ],
   heis: [
-    { name: 'बीआईटी मेसरा, रांची', focus: 'IoT सेंसर सिस्टम एवं सिविल इन्फ्रास्ट्रक्चर', node: 'आपदा टेलीमेट्री उत्कृष्टता केंद्र' },
-    { name: 'आईआईटी (आईएसएम) धनबाद', focus: 'जियोटेक्निकल इंजीनियरिंग एवं खदान धंसाव', node: 'भूगर्भीय भूभौतिकी प्रयोगशाला' },
-    { name: 'एनआईटी जमशेदपुर', focus: 'जीआईएस रिमोट सेंसिंग एवं हाइड्रोलॉजी', node: 'स्थानिक डेटा एवं वाटरशेड इंटेलिजेंस' },
-    { name: 'बिरसा कृषि विश्वविद्यालय', focus: 'सूखा सहिष्णुता एवं कृषि-IoT', node: 'जलवायु-अनुकूल सिंचाई प्रभाग' },
-    { name: 'आईआईआईटी रांची', focus: 'एंबेडेड टेलीमेट्री एवं एज AI कंप्यूटिंग', node: 'लो-पावर एज IoT लैब' },
-    { name: 'रांची विश्वविद्यालय', focus: 'सामुदायिक सत्यापन एवं फील्ड सर्वेक्षण', node: 'नागरिक नीति एवं जमीनी मूल्यांकन सेल' },
+    { name: 'बीआईटी मेसरा, रांची', focus: 'बाढ़ सेंसर एवं सड़क सुरक्षा', node: 'आपदा इलेक्ट्रॉनिक्स केंद्र' },
+    { name: 'आईआईटी (आईएसएम) धनबाद', focus: 'खदान सुरक्षा एवं भू-धंसाव', node: 'जियोटेक्निकल लैब' },
+    { name: 'एनआईटी जमशेदपुर', focus: 'जल संचयन एवं जीआईएस मैपिंग', node: 'वाटरशेड लैब' },
+    { name: 'बिरसा कृषि विश्वविद्यालय', focus: 'सूखा एवं कृषि जल समाधान', node: 'सिंचाई विभाग' },
+    { name: 'आईआईआईटी रांची', focus: 'कम लागत वाले इलेक्ट्रॉनिक्स', node: 'IoT लैब' },
+    { name: 'रांची विश्वविद्यालय', focus: 'नागरिक सर्वेक्षण एवं सत्यापन', node: 'नागरिक प्रतिक्रिया सेल' },
   ],
 };
 
-const sat: TranslationStrings = {
-  ...hi,
-  title: 'ᱟᱹᱛᱩ-ᱴᱚᱞᱟ ᱨᱮᱱᱟᱜ ᱮᱴᱠᱮᱴᱚᱬᱮ ᱠᱚ ᱡᱮᱜᱮᱛ ᱵᱤᱨᱫᱟᱹᱜᱟᱲ ᱟᱨ ᱠᱟᱹᱨᱜᱟᱲ ᱦᱚᱛᱮᱛᱮ ᱥᱚᱞᱦᱮ',
-  subtitle: 'ᱡᱷᱟᱨᱠᱷᱚᱸᱰ ᱨᱮᱱᱟᱜ ᱥᱚᱨᱠᱟᱨᱤ ᱯᱞᱮᱴᱯᱷᱳᱨᱢ, ᱡᱟᱦᱟᱸ ᱫᱚ ᱱᱟᱜᱟᱨᱤᱭᱟᱹ ᱠᱚᱣᱟᱜ ᱮᱴᱠᱮᱴᱚᱬᱮ ᱠᱚ ᱡᱮᱜᱮᱛ ᱵᱤᱨᱫᱟᱹᱜᱟᱲ ᱨᱤᱥᱟᱨᱪ ᱟᱨ ᱥᱚᱨᱠᱟᱨ ᱥᱟᱶ ᱡᱚᱲᱟᱣᱟᱭ᱾',
-  tagline: 'ᱡᱷᱟᱨᱠᱷᱚᱸᱰ ᱥᱟᱶᱛᱟᱨᱤ ᱟᱨ ᱱᱟᱶᱟ ᱩᱭᱦᱟᱹᱨ ᱱᱮᱴᱣᱟᱨᱠ',
-  reportProblem: 'ᱮᱴᱠᱮᱴᱚᱬᱮ ᱚᱞ ᱢᱮ',
-  signIn: 'ᱵᱚᱞᱚᱱ ᱢᱮ',
-  exploreChallenges: 'ᱮᱴᱠᱮᱴᱚᱬᱮ ᱠᱚ ᱧᱮᱞ ᱢᱮ',
-  lifecycle: '᱑᱖ ᱫᱷᱟᱯ ᱠᱟᱹᱢᱤᱦᱚᱨᱟ',
-  universities: 'ᱡᱮᱜᱮᱛ ᱵᱤᱨᱫᱟᱹᱜᱟᱲ',
-  industryMarketplace: 'ᱤᱱᱰᱟᱥᱴᱨᱤ ᱵᱟᱡᱟᱨ',
-  impactLedger: 'ᱚᱨᱡᱚ ᱨᱮᱠᱳᱨᱰ',
-  heroCtaPrimary: 'ᱮᱴᱠᱮᱴᱚᱬᱮ ᱟᱨ ᱪᱤᱛᱟᱹᱨ ᱟᱯᱞᱳᱰ ᱢᱮ',
-  heroCtaSecondary: 'GIS ᱢᱮᱯ ᱟᱨ ᱯᱨᱚᱡᱮᱠᱴ ᱧᱮᱞ ᱢᱮ',
-  districtsCovered: '᱒᱔ / ᱒᱔ ᱦᱚᱱᱚᱛ ᱥᱮᱞᱮᱫ',
-  districtsSub: 'ᱜᱚᱴᱟ ᱡᱷᱟᱨᱠᱷᱚᱸᱰ ᱱᱮᱴᱣᱟᱨᱠ',
-  heiLabs: '᱔᱘+ ᱨᱤᱥᱟᱨᱪ ᱞᱮᱵᱽ',
-  spotlightBadge: 'ᱢᱩᱬᱩᱛ ᱠᱟᱹᱢᱤᱦᱚᱨᱟ',
-  spotlightTitle: 'ᱥᱚᱵᱚᱨᱱᱟᱠᱷᱟ ᱜᱟᱰᱟ ᱫᱟᱜ ᱵᱟᱹᱰ ᱪᱮᱛᱟᱣᱱᱤ IoT ᱱᱮᱴᱣᱟᱨᱠ',
-  spotlightActiveStage: '᱘ ᱫᱷᱟᱯ: ᱵᱤᱨᱫᱟᱹᱜᱟᱲ ᱴᱤᱢ ᱵᱮᱱᱟᱣ ᱮᱱᱟ',
-  allFilter: 'ᱡᱚᱛᱚ ᱠᱟᱹᱢᱤ',
-  floodingFilter: 'ᱫᱟᱜ ᱵᱟᱹᱰ ᱟᱨ ᱫᱟᱜ ᱯᱮᱨᱮᱡ',
-  droughtFilter: 'ᱟᱠᱟᱞ ᱟᱨ ᱦᱟᱥᱟ ᱫᱟᱜ',
-  mineSubsidenceFilter: 'ᱠᱷᱟᱫᱟᱱ ᱦᱟᱥᱟ ᱫᱷᱟᱥᱟᱣ',
-};
-
-const khr: TranslationStrings = {
-  ...hi,
-  title: 'गांवेक समस्या के यूनिवर्सिटी रिसर्च आर उद्योग से समाधान',
-  subtitle: 'झारखंड कर सरकारी नवाचार पोर्टल, जे नागरिक कर समस्या के कॉलेज, रिसर्चर आर सरकारी योजना से जोड़ो हे।',
-  tagline: 'झारखंड सामाजिक चुनौती आर नवाचार नेटवर्क',
-  reportProblem: 'समस्या दर्ज करा',
-  signIn: 'लॉग इन करा',
-  exploreChallenges: 'समस्या देखा',
-  lifecycle: '16-चरणीय चक्र',
-  universities: 'यूनिवर्सिटी नेटवर्क',
-  industryMarketplace: 'उद्योग बाजार',
-  impactLedger: 'प्रभाव खाता',
-  heroCtaPrimary: 'समस्या दर्ज करा / फोटो अपलोड करा',
-  heroCtaSecondary: 'लाइव प्रोजेक्ट आर GIS नक्शा देखा',
-  districtsCovered: '24 / 24 जिला शामिल',
-  districtsSub: 'पूरा झारखंड GIS ग्रिड',
-  heiLabs: '48+ रिसर्च लैब',
-  spotlightBadge: 'खास आपदा प्रोजेक्ट',
-  spotlightTitle: 'स्वर्णरेखा नदी बेसिन IoT बाढ़ चेतावनी नेटवर्क',
-  spotlightActiveStage: '8वां चरण: कॉलेज टीम तैयार भेल',
-  allFilter: 'सब समस्या',
-  floodingFilter: 'बाढ़ आर जलजमाव',
-  droughtFilter: 'सुखार आर भूजल संकट',
-  mineSubsidenceFilter: 'कोयला खदान धंसाव',
-};
-
-const nag: TranslationStrings = {
-  ...hi,
-  title: 'गांवेक समस्या कर यूनिवर्सिटी रिसर्च आर इंडस्ट्री से समाधान',
-  subtitle: 'झारखंड कर पहल, जे आम जनता कर आपदा आर समस्या के विश्वविद्यालय कर वैज्ञानिक समाधान आर सरकारी सहयोग से जोड़ेला।',
-  tagline: 'झारखंड सामाजिक चुनौती एवं नवाचार नेटवर्क',
-  reportProblem: 'समस्या बतावा',
-  signIn: 'साइन इन करा',
-  exploreChallenges: 'चुनौती मन देखा',
-  lifecycle: '16-कदम प्रोसेस',
-  universities: 'यूनिवर्सिटी मन',
-  industryMarketplace: 'उद्योग बाजार',
-  impactLedger: 'नतीजा बही',
-  heroCtaPrimary: 'समस्या दर्ज करा / फोटो अपलोड करा',
-  heroCtaSecondary: 'लाइव प्रोजेक्ट आर GIS नक्शा देखा',
-  districtsCovered: '24 / 24 जिला शामिल',
-  districtsSub: 'गोटा राज्य ग्रिड',
-  heiLabs: '48+ कॉलेज लैब',
-  spotlightBadge: 'मुख्य प्रोजेक्ट',
-  spotlightTitle: 'स्वर्णरेखा नदी बाढ़ अलर्ट IoT नेटवर्क',
-  spotlightActiveStage: '8वां कदम: कॉलेज टीम बन गेल',
-  allFilter: 'सब चुनौती',
-  floodingFilter: 'बाढ़ आर पानी जमाव',
-  droughtFilter: 'सुखार आर कुंआ-पानी',
-  mineSubsidenceFilter: 'जमीन धंसाव आर खदान',
-};
-
-const kru: TranslationStrings = { ...hi, tagline: 'झारखंड सामाजिक चुनौती अरा नवाचार नेटवर्क' };
-const mun: TranslationStrings = { ...nag, tagline: 'झारखंड सामाजिक चुनौती एवं नवाचार नेटवर्क' };
-const ho: TranslationStrings = { ...sat, tagline: 'ᱡᱷᱟᱨᱠᱷᱚᱸᱰ ᱥᱟᱶᱛᱟ ᱟᱨ ᱱᱟᱶᱟ ᱩᱭᱦᱟᱹᱨ ᱱᱮᱴᱣᱟᱨᱠ' };
-const kur: TranslationStrings = { ...khr, tagline: 'झारखंड सामाजिक चुनौती एवं नवाचार नेटवर्क' };
-const ur: TranslationStrings = { ...hi, tagline: 'جھارکھنڈ سماجی چیلنج اور انوویشن نیٹ ورک' };
-const bho: TranslationStrings = { ...khr, tagline: 'झारखंड सामाजिक चुनौती एवं नवाचार नेटवर्क' };
-const mag: TranslationStrings = { ...khr, tagline: 'झारखंड सामाजिक चुनौती एवं नवाचार नेटवर्क' };
+const sat: TranslationStrings = { ...hi, title: 'ᱟᱹᱛᱩ-ᱴᱚᱞᱟ ᱨᱮᱱᱟᱜ ᱮᱴᱠᱮᱴᱚᱬᱮ ᱚᱞ ᱢᱮ, ᱥᱚᱨᱠᱟᱨ ᱟᱨ ᱵᱤᱨᱫᱟᱹᱜᱟᱲ ᱠᱷᱚᱱ ᱥᱚᱞᱦᱮ ᱧᱟᱢ ᱢᱮ', tagline: 'ᱡᱷᱟᱨᱠᱷᱚᱸᱰ ᱱᱟᱜᱟᱨᱤᱭᱟᱹ ᱯᱳᱨᱴᱟᱞ' };
+const khr: TranslationStrings = { ...hi, title: 'गांव कर समस्या दर्ज करा, यूनिवर्सिटी आर सरकार से समाधान पावा', tagline: 'झारखंड नागरिक पोर्टल' };
+const nag: TranslationStrings = { ...hi, title: 'गांवेक समस्या दर्ज करा, यूनिवर्सिटी आर सरकार से समाधान पावा', tagline: 'झारखंड नागरिक पोर्टल' };
+const kru: TranslationStrings = { ...hi, tagline: 'झारखंड नागरिक पोर्टल' };
+const mun: TranslationStrings = { ...hi, tagline: 'झारखंड नागरिक पोर्टल' };
+const ho: TranslationStrings = { ...hi, tagline: 'ᱡᱷᱟᱨᱠᱷᱚᱸᱰ ᱱᱟᱜᱟᱨᱤᱭᱟᱹ ᱯᱳᱨᱴᱟᱞ' };
+const kur: TranslationStrings = { ...hi, tagline: 'झारखंड नागरिक पोर्टल' };
+const ur: TranslationStrings = { ...hi, tagline: 'جھارکھنڈ شہری پورٹل' };
+const bho: TranslationStrings = { ...hi, tagline: 'झारखंड नागरिक पोर्टल' };
+const mag: TranslationStrings = { ...hi, tagline: 'झारखंड नागरिक पोर्टल' };
 
 export const TRANSLATIONS: Record<SupportedLanguage, TranslationStrings> = {
   en,

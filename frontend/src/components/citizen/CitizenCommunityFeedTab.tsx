@@ -1,0 +1,346 @@
+import React, { useState, useEffect } from 'react';
+import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon } from 'lucide-react';
+import { 
+  subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc 
+} from '../../services/firebaseService';
+
+interface FeedComment {
+  id: string;
+  author: string;
+  role: 'Citizen' | 'Government Admin' | 'University Student';
+  text: string;
+  timestamp: string;
+  isVerifiedGovt?: boolean;
+  beforeImg?: string;
+  afterImg?: string;
+}
+
+interface FeedPostUI extends FeedPostDoc {
+  hasUpvoted?: boolean;
+  timestamp?: string;
+  comments?: FeedComment[];
+}
+
+export const CitizenCommunityFeedTab: React.FC = () => {
+  const [posts, setPosts] = useState<FeedPostUI[]>([]);
+  const [newPostTitle, setNewPostTitle] = useState('');
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostDistrict, setNewPostDistrict] = useState('Ranchi');
+  const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
+  const [commentInput, setCommentInput] = useState('');
+
+  const seedPosts: FeedPostUI[] = [
+    {
+      id: 'POST-101',
+      author: 'Ramesh Kumar (Ranchi Resident)',
+      district: 'Ranchi',
+      block: 'Kanke',
+      title: 'Monsoon water accumulation near Government School road',
+      content: 'Heavy rainfall yesterday caused 3 feet of water on the main school access road in Hutup Panchayat. School children cannot cross safely.',
+      upvotes: 42,
+      hasUpvoted: false,
+      timestamp: '2 hours ago',
+      category: 'Flooding & Drainage',
+      status: 'University Team Assigned',
+      comments: [
+        {
+          id: 'C-01',
+          author: 'Priya Sharma (Parent)',
+          role: 'Citizen',
+          text: 'This happens every monsoon. We need permanent telemetry warning and drainage pumps here.',
+          timestamp: '1 hour ago',
+        },
+        {
+          id: 'C-02',
+          author: 'Officer A. K. Verma (District Disaster Management Cell)',
+          role: 'Government Admin',
+          isVerifiedGovt: true,
+          text: 'OFFICIAL UPDATE: Ground inspection completed by Ranchi BDO office. BIT Mesra Civil & IoT Engineering team assigned to install automatic water level warning sensors.',
+          timestamp: '30 mins ago',
+          beforeImg: 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=600&q=80',
+          afterImg: 'https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=600&q=80',
+        },
+      ],
+    },
+    {
+      id: 'POST-102',
+      author: 'Sunita Devi (Farmer, Palamu)',
+      district: 'Palamu',
+      block: 'Daltonganj',
+      title: 'Groundwater well water level dropped significantly',
+      content: 'Our village deep borewells are running dry earlier than last year. We need solar-powered groundwater monitoring sensors.',
+      upvotes: 28,
+      hasUpvoted: false,
+      timestamp: '5 hours ago',
+      category: 'Drought & Water',
+      status: 'Government Validated',
+      comments: [],
+    },
+  ];
+
+  useEffect(() => {
+    const unsubscribe = subscribeToFeedPosts((incomingPosts) => {
+      if (incomingPosts && incomingPosts.length > 0) {
+        const formatted: FeedPostUI[] = incomingPosts.map(p => ({
+          ...p,
+          hasUpvoted: false,
+          timestamp: 'Live',
+          comments: p.id === 'POST-101' ? seedPosts[0].comments : [],
+        }));
+        setPosts(formatted);
+      } else {
+        setPosts(seedPosts);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleUpvote = async (postId: string) => {
+    const target = posts.find(p => p.id === postId);
+    if (!target) return;
+
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        const nextHasUpvoted = !p.hasUpvoted;
+        return {
+          ...p,
+          hasUpvoted: nextHasUpvoted,
+          upvotes: nextHasUpvoted ? p.upvotes + 1 : p.upvotes - 1,
+        };
+      }
+      return p;
+    }));
+
+    await upvotePostInFirestore(postId, target.upvotes);
+  };
+
+  const handleCreatePost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPostTitle.trim() || !newPostContent.trim()) return;
+
+    await submitFeedPostToFirestore({
+      author: 'You (Citizen Resident)',
+      district: newPostDistrict,
+      block: 'Local Panchayat',
+      title: newPostTitle,
+      content: newPostContent,
+      upvotes: 1,
+      category: 'Community Report',
+      status: 'Under Review',
+    });
+
+    setNewPostTitle('');
+    setNewPostContent('');
+  };
+
+  const handleAddComment = (postId: string) => {
+    if (!commentInput.trim()) return;
+
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        const existingComments = p.comments || [];
+        return {
+          ...p,
+          comments: [
+            ...existingComments,
+            {
+              id: `C-${Date.now()}`,
+              author: 'You (Citizen)',
+              role: 'Citizen',
+              text: commentInput,
+              timestamp: 'Just now',
+            },
+          ],
+        };
+      }
+      return p;
+    }));
+
+    setCommentInput('');
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      
+      {/* Feed Header */}
+      <div className="border-b border-slate-200 pb-4">
+        <h2 className="text-2xl font-extrabold font-heading text-slate-900">
+          Jharkhand Community Feed
+        </h2>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          Real-time Firestore sync: Upvote local incidents, share observations, and view verified Government Admin Before/After proof.
+        </p>
+      </div>
+
+      {/* Create Post Form */}
+      <form onSubmit={handleCreatePost} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+        <span className="text-xs font-bold text-slate-900 block">Post a Local Community Concern</span>
+        
+        <input
+          type="text"
+          placeholder="Issue Title (e.g. Broken culvert near market, waterlogging)"
+          value={newPostTitle}
+          onChange={e => setNewPostTitle(e.target.value)}
+          className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+        />
+
+        <textarea
+          placeholder="Describe the issue, location details, and how it impacts people..."
+          rows={2}
+          value={newPostContent}
+          onChange={e => setNewPostContent(e.target.value)}
+          className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+        />
+
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+          <div className="flex items-center space-x-2">
+            <span className="text-xs text-slate-500 font-medium">District:</span>
+            <select
+              value={newPostDistrict}
+              onChange={e => setNewPostDistrict(e.target.value)}
+              className="text-xs border border-slate-200 rounded-md px-2 py-1 bg-white font-semibold text-slate-800"
+            >
+              <option value="Ranchi">Ranchi</option>
+              <option value="Dhanbad">Dhanbad</option>
+              <option value="Palamu">Palamu</option>
+              <option value="East Singhbhum">East Singhbhum (Jamshedpur)</option>
+              <option value="Hazaribagh">Hazaribagh</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full sm:w-auto px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center space-x-1.5"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Post to Feed</span>
+          </button>
+        </div>
+      </form>
+
+      {/* Posts Feed List */}
+      <div className="space-y-4">
+        {posts.map((post, idx) => (
+          <div key={post.id || idx} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
+            
+            {/* Post Author & Location Header */}
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="font-bold text-slate-900 text-xs sm:text-sm">{post.author}</span>
+                  <span className="text-[10px] text-slate-400">• {post.timestamp || 'Live'}</span>
+                </div>
+                <div className="text-[11px] text-slate-500 flex items-center mt-0.5">
+                  <MapPin className="w-3 h-3 text-amber-500 mr-1" />
+                  <span>District {post.district} ({post.block})</span>
+                </div>
+              </div>
+
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
+                {post.status}
+              </span>
+            </div>
+
+            {/* Title & Body */}
+            <div className="space-y-1.5">
+              <h3 className="font-bold text-base text-slate-900 leading-snug">{post.title}</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">{post.content}</p>
+            </div>
+
+            {/* Voting & Action Bar */}
+            <div className="flex items-center space-x-4 pt-2 border-t border-slate-100 text-xs text-slate-600">
+              <button
+                onClick={() => post.id && handleUpvote(post.id)}
+                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border transition-all ${
+                  post.hasUpvoted
+                    ? 'bg-emerald-50 border-emerald-300 text-emerald-700 font-bold'
+                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                }`}
+              >
+                <ThumbsUp className="w-3.5 h-3.5" />
+                <span>Upvote ({post.upvotes})</span>
+              </button>
+
+              <button
+                onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : (post.id || null))}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 font-semibold"
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Comments ({(post.comments || []).length})</span>
+              </button>
+            </div>
+
+            {/* Comments Stream */}
+            <div className="bg-slate-50/70 p-4 rounded-xl space-y-3">
+              {(post.comments || []).length > 0 ? (
+                (post.comments || []).map(c => (
+                  <div key={c.id} className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1.5">
+                        <span className="font-bold text-slate-900">{c.author}</span>
+                        {c.isVerifiedGovt && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-black bg-emerald-600 text-white shadow-2xs">
+                            <CheckCircle2 className="w-3 h-3 mr-1" /> VERIFIED GOVT ADMIN
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-slate-400">{c.timestamp}</span>
+                    </div>
+
+                    <p className="text-slate-700 leading-relaxed">{c.text}</p>
+
+                    {/* Government Admin Before & After Proof Photo Comparison */}
+                    {c.isVerifiedGovt && c.beforeImg && c.afterImg && (
+                      <div className="pt-2 space-y-1.5">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block flex items-center">
+                          <ImageIcon className="w-3 h-3 mr-1 text-slate-700" /> Government Ground Audit Evidence (Before vs After)
+                        </span>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-semibold text-rose-700 block">BEFORE (Reported Condition)</span>
+                            <img src={c.beforeImg} alt="Before work" className="w-full h-24 object-cover rounded-lg border border-slate-200" />
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-semibold text-emerald-700 block">AFTER (University & Govt Solution)</span>
+                            <img src={c.afterImg} alt="After work" className="w-full h-24 object-cover rounded-lg border border-slate-200" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-slate-400 italic">No comments yet. Be the first to reply!</p>
+              )}
+
+              {/* Add Comment Input */}
+              <div className="flex items-center space-x-2 pt-1">
+                <input
+                  type="text"
+                  placeholder="Write a comment or query..."
+                  value={activeCommentPostId === post.id ? commentInput : ''}
+                  onFocus={() => post.id && setActiveCommentPostId(post.id)}
+                  onChange={e => {
+                    if (post.id) setActiveCommentPostId(post.id);
+                    setCommentInput(e.target.value);
+                  }}
+                  className="flex-1 px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"
+                />
+                <button
+                  onClick={() => post.id && handleAddComment(post.id)}
+                  className="px-3 py-1.5 bg-slate-900 text-white font-bold text-xs rounded-lg hover:bg-slate-800 transition-colors"
+                >
+                  Reply
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        ))}
+      </div>
+
+    </div>
+  );
+};
