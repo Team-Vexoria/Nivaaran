@@ -143,65 +143,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
   return (
     <div id="main-content" className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col antialiased selection:bg-[#2C6E49] selection:text-white">
-      
-<<<<<<< HEAD
- soul
-      {/* 5-Route Citizen Navbar */}
-      <CitizenNavbar
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        onOpenReportModal={() => setIsReportModalOpen(true)}
-        onOpenAuth={onOpenAuth}
-        onOpenUniversityPortal={() => {
-          setCurrentPortal('university');
-          const url = new URL(window.location.href);
-          url.searchParams.set('portal', 'university');
-          window.history.pushState({ portal: 'university' }, '', url.toString());
-        }}
-        currentLang={currentLang}
-        onLangChange={setLanguage}
-        userDisplayName={currentUser?.displayName || ''}
-        userEmail={currentUser?.email || ''}
-      />
-
-      {/* Main Tab View Stream */}
-      <main className="flex-1">
-        {activeTab === 'home' && (
-          <CitizenHomeTab
-            onOpenReportModal={() => setIsReportModalOpen(true)}
-            onNavigateTab={handleTabChange}
-          />
-        )}
-
-        {activeTab === 'my-reports' && (
-          <CitizenMyReportsTab
-            onOpenReportModal={() => setIsReportModalOpen(true)}
-          />
-        )}
-
-        {activeTab === 'community-feed' && (
-          <CitizenCommunityFeedTab />
-        )}
-
-        {activeTab === 'region-chat' && (
-          <CitizenRegionChatTab />
-        )}
-
-        {activeTab === 'leaderboard' && (
-          <CitizenLeaderboardTab />
-        )}
-
-        {activeTab === 'profile' && (
-          <CitizenProfileTab
-            onOpenReportModal={() => setIsReportModalOpen(true)}
-            onTabChange={handleTabChange}
-          />
-        )}
-
-      {/* 1. Public Header Navbar (Preserved Crisp Civic Blue Header) */}
-=======
       {/* 1. Public Header Navbar (With GIGW Utility Strip & Bilingual Toggle) */}
->>>>>>> backup-local-work
       <PublicNavbar onOpenAuth={onOpenAuth} />
 
       <main className="flex-1 space-y-16 pb-20">

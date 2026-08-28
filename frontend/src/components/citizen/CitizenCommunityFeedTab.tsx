@@ -171,27 +171,16 @@ export const CitizenCommunityFeedTab: React.FC = () => {
       {/* Feed Header */}
       <div className="border-b border-slate-200 pb-4">
         <h2 className="text-2xl font-extrabold font-heading text-slate-900">
- soul
-          {t.communityFeed.title}
+          {t.communityFeed?.title || 'Jharkhand Community Challenge Feed'}
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          {t.communityFeed.subtitle}
-
-          {tr('Jharkhand Community Challenge Feed', currentLang)}
-        </h2>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          {tr('Live Citizen Geotag Stream across 24 Districts', currentLang)}
- main
+          {t.communityFeed?.subtitle || 'Live Citizen Geotag Stream across 24 Districts'}
         </p>
       </div>
 
       {/* Create Post Form */}
       <form onSubmit={handleCreatePost} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
- soul
-        <span className="text-xs font-bold text-slate-900 block">{t.communityFeed.newPostTitle}</span>
-
-        <span className="text-xs font-bold text-slate-900 block">{tr('Post a Local Community Concern', currentLang)}</span>
- main
+        <span className="text-xs font-bold text-slate-900 block">{t.communityFeed?.newPostTitle || 'Post a Local Community Concern'}</span>
         
         <input
           type="text"

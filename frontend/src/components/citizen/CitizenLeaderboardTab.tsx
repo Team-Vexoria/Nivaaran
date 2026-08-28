@@ -1,11 +1,8 @@
-import React from 'react';
+﻿import React from 'react';
 import { Trophy, Award, Sprout, Medal, Gift } from 'lucide-react';
- soul
 import { useLanguage } from '../../context/LanguageContext';
-
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
- main
 
 interface CitizenGuardian {
   rank: number;
@@ -18,17 +15,13 @@ interface CitizenGuardian {
   plantsEarned: number;
 }
 
- soul
-export const CitizenLeaderboardTab: React.FC = () => {
-  const { t } = useLanguage();
-
-
 interface CitizenLeaderboardTabProps {
   currentLang?: SupportedLanguage;
 }
 
 export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ currentLang = 'en' }) => {
- main
+  const { t } = useLanguage();
+
   const topGuardians: CitizenGuardian[] = [
     {
       rank: 1,
@@ -93,114 +86,102 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
         </div>
 
         <h2 className="text-2xl sm:text-4xl font-extrabold font-heading tracking-tight">
- soul
-          {t.leaderboard.title}
+          {t.leaderboard?.title || 'Jharkhand Citizen Guardians Leaderboard'}
         </h2>
 
         <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-          {t.leaderboard.subtitle}
-
-          {tr('Jharkhand Citizen Guardians Leaderboard', currentLang)}
-        </h2>
-
-        <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-          {tr('Report verified community problems, earn impact points, and get rewarded with free native tree saplings (Sal, Mango, Neem) distributed via the Department of Forest & Environment, Government of Jharkhand.', currentLang)}
- main
+          {t.leaderboard?.subtitle || 'Report verified community problems, earn impact points, and get rewarded with free native tree saplings (Sal, Mango, Neem) distributed via the Department of Forest & Environment, Government of Jharkhand.'}
         </p>
-
-        {/* Tree Sapling Voucher Callout */}
-        <div className="pt-2 flex flex-wrap items-center gap-3">
-          <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 flex items-center space-x-2 text-xs">
-            <Sprout className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{tr('Reward Rule: Every 3 Verified Reports = 1 Tree Sapling Voucher', currentLang)}</span>
-          </div>
-
-          <div className="bg-white/10 backdrop-blur-md px-3.5 py-2 rounded-xl border border-white/15 flex items-center space-x-2 text-xs">
-            <Gift className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>{tr('Redeemable at any District Forestry Nursery', currentLang)}</span>
-          </div>
-        </div>
       </div>
 
-      {/* Leaderboard Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <h3 className="font-bold text-sm text-slate-900 flex items-center">
-            <Medal className="w-4 h-4 text-amber-500 mr-2" /> {tr('Top Community Guardians This Month', currentLang)}
-          </h3>
-          <span className="text-xs font-semibold text-slate-500">{tr('Updated Daily', currentLang)}</span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-100/70 text-slate-500 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
-              <tr>
-                <th className="px-5 py-3">{tr('RANK', currentLang)}</th>
-                <th className="px-5 py-3">{tr('CITIZEN NAME', currentLang)}</th>
-                <th className="px-5 py-3">{tr('DISTRICT & BLOCK', currentLang)}</th>
-                <th className="px-5 py-3 text-center">{tr('VERIFIED REPORTS', currentLang)}</th>
-                <th className="px-5 py-3 text-center">{tr('IMPACT POINTS', currentLang)}</th>
-                <th className="px-5 py-3 text-center">{tr('PLANT VOUCHERS', currentLang)}</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-slate-100 font-medium">
-              {topGuardians.map((item) => (
-                <tr key={item.rank} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-5 py-4 font-black text-slate-900 text-sm">
-                    {item.rank === 1 && <span className="inline-block w-6 h-6 rounded-full bg-amber-100 text-amber-800 text-center leading-6 font-bold mr-1">🥇</span>}
-                    {item.rank === 2 && <span className="inline-block w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-center leading-6 font-bold mr-1">🥈</span>}
-                    {item.rank === 3 && <span className="inline-block w-6 h-6 rounded-full bg-amber-700/10 text-amber-800 text-center leading-6 font-bold mr-1">🥉</span>}
-                    {item.rank > 3 && <span className="pl-2">#{item.rank}</span>}
-                  </td>
-
-                  <td className="px-5 py-4">
-                    <span className="font-bold text-slate-900 block text-sm">{tr(item.name, currentLang)}</span>
-                    <span className="text-[10px] text-emerald-700 font-semibold">{item.badge}</span>
-                  </td>
-
-                  <td className="px-5 py-4 text-slate-600">
-                    {tr(item.district, currentLang)}
-                  </td>
-
-                  <td className="px-5 py-4 text-center font-bold text-slate-900">
-                    {item.verifiedCount} / {item.reportsSubmitted}
-                  </td>
-
-                  <td className="px-5 py-4 text-center font-mono font-bold text-emerald-700 text-sm">
-                    {item.points} pts
-                  </td>
-
-                  <td className="px-5 py-4 text-center">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      <Sprout className="w-3.5 h-3.5 mr-1" /> {item.plantsEarned} {tr('Saplings', currentLang)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Rewards Redeem Section */}
-      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex items-center space-x-2">
-            <Award className="w-5 h-5 text-emerald-700" />
-            <h4 className="font-bold text-slate-900 text-base">{tr('Your Active Reward Status', currentLang)}</h4>
+      {/* Rewards Showcase */}
+      <div className="grid sm:grid-cols-3 gap-4">
+        <div className="bg-emerald-50 border border-emerald-200 p-5 rounded-2xl space-y-2">
+          <div className="w-10 h-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center shadow-sm">
+            <Sprout className="w-5 h-5" />
           </div>
+          <h3 className="font-extrabold text-slate-900 text-sm">{tr('Plant Sapling Reward', currentLang)}</h3>
           <p className="text-xs text-slate-600">
-            {tr('You currently have 1 verified report. Submit 2 more verified reports to unlock your next Tree Sapling Reward Voucher!', currentLang)}
+            {tr('For every verified hazard solved by university engineering teams, claim 1 indigenous tree sapling at your nearest Block Nursery.', currentLang)}
           </p>
         </div>
 
-        <button 
-          className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors shrink-0 whitespace-nowrap cursor-pointer"
-          onClick={() => alert('Plant Sapling Voucher Code: JH-TREE-2026-NIVAARAN. Show this voucher at your District Forestry Office.')}
-        >
-          {tr('View My Plant Voucher Code', currentLang)}
-        </button>
+        <div className="bg-amber-50 border border-amber-200 p-5 rounded-2xl space-y-2">
+          <div className="w-10 h-10 bg-amber-600 text-white rounded-xl flex items-center justify-center shadow-sm">
+            <Medal className="w-5 h-5" />
+          </div>
+          <h3 className="font-extrabold text-slate-900 text-sm">{tr('District Civic Badge', currentLang)}</h3>
+          <p className="text-xs text-slate-600">
+            {tr('Unlock official State Government Civic Badges and earn certificates signed by the District Magistrate.', currentLang)}
+          </p>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 p-5 rounded-2xl space-y-2">
+          <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-sm">
+            <Gift className="w-5 h-5" />
+          </div>
+          <h3 className="font-extrabold text-slate-900 text-sm">{tr('Panchayat Priority Token', currentLang)}</h3>
+          <p className="text-xs text-slate-600">
+            {tr('Top 3 rankers in each district get direct priority review tickets during annual Panchayat Gram Sabha meetings.', currentLang)}
+          </p>
+        </div>
+      </div>
+
+      {/* Top Ranks Table */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="font-extrabold text-slate-900 text-base flex items-center space-x-2">
+            <Award className="w-5 h-5 text-amber-500" />
+            <span>{tr('Top 5 Community Guardians This Month', currentLang)}</span>
+          </h3>
+          <span className="text-xs text-slate-500 font-medium">{tr('Updated Hourly', currentLang)}</span>
+        </div>
+
+        <div className="divide-y divide-slate-100">
+          {topGuardians.map((guardian) => (
+            <div 
+              key={guardian.rank} 
+              className={`p-4 sm:p-5 flex items-center justify-between gap-4 transition-colors hover:bg-slate-50 ${
+                guardian.rank === 1 ? 'bg-amber-50/40' : ''
+              }`}
+            >
+              <div className="flex items-center space-x-4">
+                <span className={`w-8 h-8 rounded-full font-black text-sm flex items-center justify-center ${
+                  guardian.rank === 1 
+                    ? 'bg-amber-500 text-white shadow-xs' 
+                    : guardian.rank === 2 
+                    ? 'bg-slate-300 text-slate-800' 
+                    : guardian.rank === 3 
+                    ? 'bg-amber-700 text-white' 
+                    : 'bg-slate-100 text-slate-600'
+                }`}>
+                  {guardian.rank}
+                </span>
+
+                <div>
+                  <h4 className="font-bold text-sm text-slate-900">{guardian.name}</h4>
+                  <p className="text-xs text-slate-500">{guardian.district}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4 text-right">
+                <div className="hidden sm:block">
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    {guardian.badge}
+                  </span>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    {guardian.verifiedCount} {tr('Solved Issues', currentLang)}
+                  </p>
+                </div>
+
+                <div className="bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-center shrink-0">
+                  <span className="text-xs font-black block">{guardian.points}</span>
+                  <span className="text-[9px] text-slate-300 uppercase tracking-wider font-semibold">{tr('pts', currentLang)}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
     </div>

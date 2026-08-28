@@ -1,13 +1,8 @@
-import React from 'react';
- soul
+﻿import React from 'react';
 import { Camera, Search, Sparkles, CheckCircle2, TrendingUp, ShieldCheck, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck } from 'lucide-react';
-import { SupportedLanguage } from '../../i18n/translations';
 import { useLanguage } from '../../context/LanguageContext';
-
-import { Camera, Search, CheckCircle2, TrendingUp, ShieldCheck, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck } from 'lucide-react';
-import { TRANSLATIONS, SupportedLanguage } from '../../i18n/translations';
+import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
- main
 
 interface CitizenHomeTabProps {
   onOpenReportModal: () => void;
@@ -18,22 +13,40 @@ interface CitizenHomeTabProps {
 export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
   onOpenReportModal,
   onNavigateTab,
+  currentLang = 'en',
 }) => {
   const { t } = useLanguage();
 
   // Real before vs after metrics
   const impactStats = [
- soul
-    { label: t.hero.resolutionTimeLabel, before: t.hero.resolutionBefore, after: t.hero.resolutionAfter, change: t.hero.resolutionChange, positive: true },
-    { label: t.hero.labsInvolvedLabel, before: t.hero.labsBefore, after: t.hero.labsAfter, change: t.hero.labsChange, positive: true },
-    { label: t.hero.auditRateLabel, before: t.hero.auditBefore, after: t.hero.auditAfter, change: t.hero.auditChange, positive: true },
-    { label: t.hero.feedbackScoreLabel, before: t.hero.feedbackBefore, after: t.hero.feedbackAfter, change: t.hero.feedbackChange, positive: true },
-
-    { label: tr('Avg. Problem Resolution Time', currentLang), before: tr('Before: 180+ Days (Fragmented)', currentLang), after: tr('Now: 14 Days (Verified Pipeline)', currentLang), change: tr('-92% Time Reduced', currentLang), positive: true },
-    { label: tr('University Engineering Labs Involved', currentLang), before: tr('Before: 0 Labs Connected', currentLang), after: tr('Now: 48+ HEI Labs & IIT/BIT Teams', currentLang), change: tr('100% Academic Coverage', currentLang), positive: true },
-    { label: tr('Government Action Verification Rate', currentLang), before: tr('Before: Unverified Phone Calls', currentLang), after: tr('Now: 100% Geotagged & Audit Proven', currentLang), change: tr('Full Transparency', currentLang), positive: true },
-    { label: tr('Citizen Feedback & Rating Satisfaction', currentLang), before: tr('Before: 32%', currentLang), after: tr('Now: 94.8% Verified Positive', currentLang), change: tr('+62.8% Improvement', currentLang), positive: true },
- main
+    { 
+      label: t.hero?.resolutionTimeLabel || 'Avg. Problem Resolution Time', 
+      before: t.hero?.resolutionBefore || 'Before: 180+ Days (Fragmented)', 
+      after: t.hero?.resolutionAfter || 'Now: 14 Days (Verified Pipeline)', 
+      change: t.hero?.resolutionChange || '-92% Time Reduced', 
+      positive: true 
+    },
+    { 
+      label: t.hero?.labsInvolvedLabel || 'University Engineering Labs Involved', 
+      before: t.hero?.labsBefore || 'Before: 0 Labs Connected', 
+      after: t.hero?.labsAfter || 'Now: 48+ HEI Labs & IIT/BIT Teams', 
+      change: t.hero?.labsChange || '100% Academic Coverage', 
+      positive: true 
+    },
+    { 
+      label: t.hero?.auditRateLabel || 'Government Action Verification Rate', 
+      before: t.hero?.auditBefore || 'Before: Unverified Phone Calls', 
+      after: t.hero?.auditAfter || 'Now: 100% Geotagged & Audit Proven', 
+      change: t.hero?.auditChange || 'Full Transparency', 
+      positive: true 
+    },
+    { 
+      label: t.hero?.feedbackScoreLabel || 'Citizen Feedback & Rating Satisfaction', 
+      before: t.hero?.feedbackBefore || 'Before: 32%', 
+      after: t.hero?.feedbackAfter || 'Now: 94.8% Verified Positive', 
+      change: t.hero?.feedbackChange || '+62.8% Improvement', 
+      positive: true 
+    },
   ];
 
   const districtData = [
@@ -47,44 +60,34 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
   return (
     <div className="space-y-12 pb-12">
       
-      {/* 1. Full Viewport Light Theme Hero Section (Bottom Border sits at screen base) */}
+      {/* 1. Full Viewport Light Theme Hero Section */}
       <section className="min-h-[calc(100vh-64px)] flex flex-col justify-between py-8 px-6 bg-gradient-to-b from-slate-50 via-white to-slate-50/80 text-slate-900 border-b border-slate-300">
         <div className="max-w-6xl mx-auto text-center space-y-6 my-auto">
           
- soul
           {/* Official Badge */}
           <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-extrabold shadow-2xs">
             <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{t.hero.officialBadge}</span>
+            <span>{t.hero?.officialBadge || 'Government of Jharkhand · Dept of Higher & Technical Education'}</span>
           </div>
 
-          {/* Main Title - Increased Size */}
+          {/* Main Title */}
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-heading text-slate-900 tracking-tight leading-[1.12] max-w-5xl mx-auto">
-            {t.hero.mainTitle}
-
-          {/* Main Title - Increased Size */}
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-heading text-slate-900 tracking-tight leading-[1.12] max-w-5xl mx-auto">
-            {t.title}
- main
+            {t.hero?.mainTitle || 'Report Local Community Problems. Get Verified University and Government Solutions.'}
           </h1>
 
-          {/* Concise Subtitle - Increased Size */}
+          {/* Concise Subtitle */}
           <p className="text-sm sm:text-base lg:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
- soul
-            {t.hero.subtitle}
-
-            {t.subtitle}
- main
+            {t.hero?.subtitle || 'Connecting citizen challenge reports directly with university engineering labs, CSR funding, and government execution across all 24 districts.'}
           </p>
 
-          {/* Primary Action Buttons - Increased Size */}
+          {/* Primary Action Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
               onClick={onOpenReportModal}
               className="w-full sm:w-auto px-7 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base rounded-xl shadow-md transition-all flex items-center justify-center space-x-2.5 active:scale-95 cursor-pointer"
             >
               <Camera className="w-5 h-5 shrink-0" />
-              <span>{t.hero.ctaReport}</span>
+              <span>{t.hero?.ctaReport || 'Report a Problem Now'}</span>
             </button>
 
             <button
@@ -92,273 +95,144 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
               className="w-full sm:w-auto px-7 py-3.5 bg-white hover:bg-slate-50 text-slate-900 font-extrabold text-sm sm:text-base rounded-xl border border-slate-300 shadow-2xs transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
               <Search className="w-5 h-5 text-slate-500 shrink-0" />
- soul
-              <span>{t.hero.ctaFeed}</span>
-              <span>{t.viewLiveFeed}</span>
- main
+              <span>{t.hero?.ctaFeed || 'View Community Feed'}</span>
             </button>
           </div>
 
-          {/* 4 Live Impact Metrics - Increased Size */}
+          {/* 4 Live Impact Metrics */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 pt-6 max-w-5xl mx-auto">
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
- soul
-                <span>{t.hero.incidentsLogged}</span>
+                <span>{t.hero?.incidentsLogged || 'Total Reports'}</span>
                 <Activity className="w-4 h-4 text-emerald-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">1,284</p>
-              <p className="text-xs text-emerald-700 font-bold">{t.hero.acrossDistricts}</p>
-
-                <span>{t.metricIncidentsLogged}</span>
-                <Activity className="w-4 h-4 text-emerald-600" />
-              </div>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">1,284</p>
-              <p className="text-xs text-emerald-700 font-bold">{t.metricAcrossDistricts}</p>
- main
+              <p className="text-xs text-emerald-700 font-bold">{t.hero?.acrossDistricts || '24/24 Districts'}</p>
             </div>
 
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
- soul
-                <span>{t.hero.activeLabs}</span>
+                <span>{t.hero?.activeLabs || 'University Labs'}</span>
                 <Building2 className="w-4 h-4 text-blue-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">48</p>
-              <p className="text-xs text-blue-700 font-bold">{t.hero.universitiesList}</p>
-
-                <span>{t.metricActiveLabs}</span>
-                <Building2 className="w-4 h-4 text-blue-600" />
-              </div>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">48</p>
-              <p className="text-xs text-blue-700 font-bold">{t.metricLabsList}</p>
- main
+              <p className="text-xs text-blue-700 font-bold">{t.hero?.universitiesList || 'BIT, IIT, NIT, BAU'}</p>
             </div>
 
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
- soul
-                <span>{t.hero.verificationRate}</span>
+                <span>{t.hero?.verificationRate || 'Verification Rate'}</span>
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">94.8%</p>
-              <p className="text-xs text-emerald-700 font-bold">{t.hero.auditProven}</p>
-
-                <span>{t.metricVerificationRate}</span>
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-              </div>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">94.8%</p>
-              <p className="text-xs text-emerald-700 font-bold">{t.metricGeotagVerified}</p>
- main
+              <p className="text-xs text-emerald-700 font-bold">{t.hero?.auditProven || '100% Geotagged'}</p>
             </div>
 
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
- soul
-                <span>{t.hero.feedbackRating}</span>
+                <span>{t.hero?.feedbackRating || 'Satisfaction'}</span>
                 <Award className="w-4 h-4 text-amber-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">94.8%</p>
-              <p className="text-xs text-amber-700 font-bold">{t.hero.citizenSatisfaction}</p>
-
-                <span>{t.metricCitizenRewards}</span>
-                <Award className="w-4 h-4 text-amber-600" />
-              </div>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">3,420+</p>
-              <p className="text-xs text-amber-700 font-bold">{t.metricVouchersIssued}</p>
- main
+              <p className="text-xs text-amber-700 font-bold">{t.hero?.citizenSatisfaction || 'Citizen Verified'}</p>
             </div>
           </div>
 
-          {/* Quick Category Shortcut Badges - Increased Size */}
+          {/* Quick Category Shortcut Badges */}
           <div className="pt-3 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm font-bold">
-            <span className="text-slate-500 text-xs font-semibold mr-1">{t.quickBrowse}</span>
+            <span className="text-slate-500 text-xs font-semibold mr-1">Quick Explore:</span>
             <button 
               onClick={() => onNavigateTab('community-feed')}
               className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg flex items-center space-x-1.5 transition-colors text-xs font-bold shadow-2xs cursor-pointer"
             >
               <Waves className="w-3.5 h-3.5 text-blue-600" />
-              <span>{t.catFloods} (342)</span>
+              <span>Flooding & Water</span>
+            </button>
+            <button 
+              onClick={() => onNavigateTab('community-feed')}
+              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg flex items-center space-x-1.5 transition-colors text-xs font-bold shadow-2xs cursor-pointer"
+            >
+              <Truck className="w-3.5 h-3.5 text-amber-600" />
+              <span>Roads & Infrastructure</span>
             </button>
             <button 
               onClick={() => onNavigateTab('community-feed')}
               className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg flex items-center space-x-1.5 transition-colors text-xs font-bold shadow-2xs cursor-pointer"
             >
               <Trees className="w-3.5 h-3.5 text-emerald-600" />
-              <span>{t.catWildlife} (184)</span>
-            </button>
-            <button 
-              onClick={() => onNavigateTab('community-feed')}
-              className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-800 border border-slate-200 rounded-lg flex items-center space-x-1.5 transition-colors text-xs font-bold shadow-2xs cursor-pointer"
-            >
-              <Truck className="w-3.5 h-3.5 text-purple-600" />
-              <span>{t.catInfrastructure} (291)</span>
+              <span>Agriculture & Forests</span>
             </button>
           </div>
 
         </div>
       </section>
 
-      {/* 2. Before vs After NIVAARAN Impact Graphs & Metrics */}
-      <section className="max-w-7xl mx-auto px-6 space-y-6">
-        <div className="text-center space-y-1.5 max-w-2xl mx-auto">
-          <div className="inline-flex items-center space-x-1.5 text-xs font-bold text-emerald-700 uppercase tracking-wider">
-            <TrendingUp className="w-4 h-4" />
-            <span>Impact Analytics</span>
-          </div>
+      {/* 2. Before vs After Proof Section */}
+      <section className="max-w-7xl mx-auto px-6">
+        <div className="text-center space-y-2 mb-8">
           <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-slate-900">
-            How NIVAARAN Has Accelerated Development Across Jharkhand
+            {t.metrics?.title || 'Measured Governance Impact Across Jharkhand'}
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500">
-            Real data comparing traditional manual grievance handling vs. NIVAARAN's university-engineered orchestration platform.
+          <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">
+            {t.metrics?.subtitle || 'Comparing traditional public grievance redressal with NIVAARAN institutional pipeline.'}
           </p>
         </div>
 
-        {/* 4 Impact Metric Cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {impactStats.map((stat, i) => (
-            <div key={i} className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-3">
-              <span className="text-xs font-semibold text-slate-500 block">{stat.label}</span>
-              <div className="space-y-1">
-                <div className="text-xs text-slate-400 line-through">Before: {stat.before}</div>
-                <div className="text-sm font-bold text-slate-900">Now: {stat.after}</div>
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {impactStats.map((item, idx) => (
+            <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 space-y-3 shadow-xs hover:border-slate-300 transition-all">
+              <span className="text-xs font-bold text-slate-700 block leading-tight">{item.label}</span>
+              <div className="space-y-1 text-xs">
+                <p className="text-slate-400 line-through">{item.before}</p>
+                <p className="text-slate-900 font-extrabold text-sm">{item.after}</p>
               </div>
-              <span className="inline-block text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-                {stat.change}
+              <span className="inline-block text-[11px] font-black px-2.5 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg">
+                {item.change}
               </span>
             </div>
           ))}
         </div>
-
-        {/* Visual Graph Bar Chart: District Incident Resolution Rate */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-            <div>
-              <h3 className="font-bold text-base text-slate-900">District Incident Resolution & University Match Rate</h3>
-              <p className="text-xs text-slate-500">Live statistics across key Jharkhand districts</p>
-            </div>
-            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 self-start sm:self-auto">
-              ✓ 91.2% Overall Resolution Rate
-            </span>
-          </div>
-
-          <div className="space-y-3 pt-2">
-            {districtData.map((d, idx) => {
-              const pct = Math.round((d.resolved / d.reports) * 100);
-              return (
-                <div key={idx} className="space-y-1 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900">{d.name} District ({d.hei})</span>
-                    <span className="font-mono text-slate-600">{d.resolved} / {d.reports} Issues Solved ({pct}%)</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden flex">
-                    <div 
-                      className="bg-emerald-600 h-full rounded-full transition-all duration-500" 
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
       </section>
 
-      {/* 3. Simple Step-by-Step Citizen Guide */}
-      <section className="max-w-7xl mx-auto px-6 space-y-6">
-        <div className="text-center space-y-1.5 max-w-2xl mx-auto">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Simple Process</span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-slate-900">
-            How NIVAARAN Works for You in 4 Simple Steps
-          </h2>
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          
-          <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white font-black text-lg flex items-center justify-center shadow-xs">
-              1
-            </div>
-            <h4 className="font-bold text-base text-slate-900">Report & Upload Evidence</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Take a photo or video of the local flood, water shortage, or road damage directly from your phone. GPS tags automatically.
-            </p>
-          </div>
-
-          <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white font-black text-lg flex items-center justify-center shadow-xs">
-              2
-            </div>
-            <h4 className="font-bold text-base text-slate-900">Government & AI Triage</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              AI classifies the disaster risk and local district officers verify ground location and priority level within 24 hours.
-            </p>
-          </div>
-
-          <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white font-black text-lg flex items-center justify-center shadow-xs">
-              3
-            </div>
-            <h4 className="font-bold text-base text-slate-900">University Engineering</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              BIT Mesra, IIT Dhanbad, and NIT Jamshedpur research teams build IoT sensors and customized hardware for your village.
-            </p>
-          </div>
-
-          <div className="bg-slate-50 p-5 rounded-xl border border-slate-200 space-y-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white font-black text-lg flex items-center justify-center shadow-xs">
-              4
-            </div>
-            <h4 className="font-bold text-base text-slate-900">Deploy & Rate Solution</h4>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Once installed, government officers post Before/After proof and citizens rate the solution's real ground impact.
-            </p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* 4. Citizen Navigation Shortcut Banners */}
+      {/* 3. District Status Stream Table */}
       <section className="max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-3 gap-4">
-          
-          <div 
-            onClick={() => onNavigateTab('my-reports')}
-            className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all cursor-pointer space-y-2 group"
-          >
-            <div className="flex items-center justify-between">
-              <ShieldCheck className="w-6 h-6 text-emerald-700" />
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-extrabold text-slate-900">District Incident & University Allocation Stream</h3>
+              <p className="text-xs text-slate-500">Live operational data synced across district administrations.</p>
             </div>
-            <h4 className="font-bold text-base text-slate-900">Track My Reports</h4>
-            <p className="text-xs text-slate-500">Check live progress timeline of issues you filed.</p>
+            <button 
+              onClick={() => onNavigateTab('community-feed')}
+              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center space-x-1"
+            >
+              <span>View All 24 Districts</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          <div 
-            onClick={() => onNavigateTab('region-chat')}
-            className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all cursor-pointer space-y-2 group"
-          >
-            <div className="flex items-center justify-between">
-              <Building2 className="w-6 h-6 text-slate-800" />
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
-            </div>
-            <h4 className="font-bold text-base text-slate-900">District Region Chat</h4>
-            <p className="text-xs text-slate-500">Discuss live local incidents with people in your district.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-200 text-slate-500 font-bold bg-slate-50">
+                <tr>
+                  <th className="py-3 px-4">District</th>
+                  <th className="py-3 px-4">Active Reports</th>
+                  <th className="py-3 px-4">Resolved</th>
+                  <th className="py-3 px-4">Assigned HEI Lab</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                {districtData.map((d, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 font-bold text-slate-900">{d.name}</td>
+                    <td className="py-3 px-4">{d.reports}</td>
+                    <td className="py-3 px-4 text-emerald-700 font-bold">{d.resolved}</td>
+                    <td className="py-3 px-4 font-semibold text-slate-800">{d.hei}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
-          <div 
-            onClick={() => onNavigateTab('leaderboard')}
-            className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all cursor-pointer space-y-2 group"
-          >
-            <div className="flex items-center justify-between">
-              <CheckCircle2 className="w-6 h-6 text-emerald-700" />
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
-            </div>
-            <h4 className="font-bold text-base text-slate-900">Leaderboard & Rewards</h4>
-            <p className="text-xs text-slate-500">Earn plant sapling rewards for reporting verified problems.</p>
-          </div>
-
         </div>
       </section>
 
