@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { Camera, Search, Sparkles, CheckCircle2, TrendingUp, ShieldCheck, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck } from 'lucide-react';
+import React from 'react';
+import { Camera, Search, Sparkles, CheckCircle2, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
@@ -171,10 +171,10 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
       <section className="max-w-7xl mx-auto px-6">
         <div className="text-center space-y-2 mb-8">
           <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-slate-900">
-            {t.metrics?.title || 'Measured Governance Impact Across Jharkhand'}
+            {(t as any).metrics?.title || 'Measured Governance Impact Across Jharkhand'}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 max-w-xl mx-auto">
-            {t.metrics?.subtitle || 'Comparing traditional public grievance redressal with NIVAARAN institutional pipeline.'}
+            {(t as any).metrics?.subtitle || 'Comparing traditional public grievance redressal with NIVAARAN institutional pipeline.'}
           </p>
         </div>
 

@@ -86,9 +86,7 @@ export const CitizenPortal: React.FC = () => {
         )}
 
         {activeTab === 'community-feed' && (
-          <CitizenCommunityFeedTab
-            currentLang={currentLang}
-          />
+          <CitizenCommunityFeedTab />
         )}
 
         {activeTab === 'region-chat' && (

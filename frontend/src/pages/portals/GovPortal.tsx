@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   ShieldCheck, 
   CheckCircle2, 
@@ -12,9 +12,7 @@ import {
   X, 
   MessageSquare, 
   AlertTriangle,
-  Award,
-  Download,
-  Sparkles
+  Award
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
@@ -170,18 +168,11 @@ export const GovPortal: React.FC = () => {
         <CertificateModal
           isOpen={certificateModal.isOpen}
           onClose={() => setCertificateModal({ isOpen: false, challenge: null })}
-          challenge={{
-            reportId: certificateModal.challenge.reportId,
-            title: certificateModal.challenge.title,
-            district: certificateModal.challenge.district,
-            block: certificateModal.challenge.block,
-            village: certificateModal.challenge.village,
-            category: certificateModal.challenge.category,
-            assignedHEI: certificateModal.challenge.assignedHEI,
-            assignedDept: certificateModal.challenge.assignedDept,
-            csrSponsor: certificateModal.challenge.csrSponsor,
-          }}
-          officerName={officerName}
+          recipientName={certificateModal.challenge.assignedHEI || `${certificateModal.challenge.district} Innovation Team`}
+          institutionName={certificateModal.challenge.assignedHEI || `Government of Jharkhand · ${certificateModal.challenge.district}`}
+          projectTitle={certificateModal.challenge.title}
+          voucherCode={`JH-GOV-${certificateModal.challenge.reportId || 'CERT-2026'}`}
+          role="Societal Challenge Innovator & Lead Researcher"
         />
       )}
 

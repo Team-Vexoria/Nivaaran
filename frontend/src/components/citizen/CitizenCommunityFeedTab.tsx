@@ -4,8 +4,6 @@ import {
   subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc 
 } from '../../services/firebaseService';
 import { useLanguage } from '../../context/LanguageContext';
-
-import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
 
 interface FeedComment {
@@ -26,7 +24,7 @@ interface FeedPostUI extends FeedPostDoc {
 }
 
 export const CitizenCommunityFeedTab: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, currentLang } = useLanguage();
   const [posts, setPosts] = useState<FeedPostUI[]>([]);
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
