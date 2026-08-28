@@ -44,7 +44,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const OFFICIAL_ROLE_MAP: Record<string, UserRole> = {
   'nivaaran@gov.in': 'Government Department',
   'admin@bitmesra.in': 'University Admin',
+  'faculty@bitmesra.in': 'Faculty / Mentor',
+  'student@bitmesra.in': 'Student',
+  'partner@tatasteel.com': 'Industry / MSME',
+  'foundation@csr.org': 'CSR Organization',
+  'citizen@nivaaran.in': 'Citizen',
   'admin@nivaaran.in': 'Platform Super Admin',
+};
+
+const OFFICIAL_NAME_MAP: Record<string, string> = {
+  'nivaaran@gov.in': 'Jharkhand State Nodal Officer',
+  'admin@bitmesra.in': 'BIT Mesra Academic Admin',
+  'faculty@bitmesra.in': 'Prof. Alok Sharma',
+  'student@bitmesra.in': 'Pooja Kumari',
+  'partner@tatasteel.com': 'Tata Steel Innovation Lead',
+  'foundation@csr.org': 'CSR Foundation Lead',
+  'citizen@nivaaran.in': 'Ramesh Soren',
+  'admin@nivaaran.in': 'NIVAARAN State Super Admin',
+};
+
+const isMockFirebase = (): boolean => {
+  const key = import.meta.env.VITE_FIREBASE_API_KEY;
+  return !key || key === 'mock_key' || key === 'demo-api-key' || key.startsWith('mock_');
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -52,44 +73,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (fbUser: FirebaseUser | null) => {
-      if (fbUser) {
-        const userEmail = fbUser.email?.toLowerCase() || '';
-        const mappedOfficialRole = OFFICIAL_ROLE_MAP[userEmail];
-        const savedRole = mappedOfficialRole || (localStorage.getItem(`nivaaran_role_${fbUser.uid}`) as UserRole) || 'Citizen';
-        
-        setCurrentUser({
-          uid: fbUser.uid,
-          email: fbUser.email,
-          displayName: fbUser.displayName || fbUser.email?.split('@')[0] || 'NIVAARAN User',
-          role: savedRole,
-        });
-      } else {
-        const demoData = localStorage.getItem('nivaaran_demo_user');
-        if (demoData) {
-          try {
-            setCurrentUser(JSON.parse(demoData));
-          } catch {
+    // Check local session first
+    const demoData = localStorage.getItem('nivaaran_demo_user');
+    if (demoData) {
+      try {
+        setCurrentUser(JSON.parse(demoData));
+      } catch {
+        // ignore parse error
+      }
+    }
+
+    if (!isMockFirebase()) {
+      try {
+        const unsubscribe = onAuthStateChanged(auth, (fbUser: FirebaseUser | null) => {
+          if (fbUser) {
+            const userEmail = fbUser.email?.toLowerCase() || '';
+            const mappedOfficialRole = OFFICIAL_ROLE_MAP[userEmail];
+            const savedRole = mappedOfficialRole || (localStorage.getItem(`nivaaran_role_${fbUser.uid}`) as UserRole) || 'Citizen';
+            
+            setCurrentUser({
+              uid: fbUser.uid,
+              email: fbUser.email,
+              displayName: fbUser.displayName || OFFICIAL_NAME_MAP[userEmail] || fbUser.email?.split('@')[0] || 'NIVAARAN User',
+              role: savedRole,
+            });
+          } else if (!demoData) {
             setCurrentUser(null);
           }
-        } else {
-          setCurrentUser(null);
-        }
-      }
-      setLoading(false);
-    });
+          setLoading(false);
+        });
 
-    return () => unsubscribe();
+        return () => unsubscribe();
+      } catch (err) {
+        console.warn('[Auth] Firebase listener initialization notice:', err);
+        setLoading(false);
+      }
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const getReadableAuthError = (error: any): string => {
     const code = error?.code || '';
+    const message = error?.message || '';
+    if (code === 'auth/api-key-not-valid' || code === 'auth/invalid-api-key' || message.includes('api-key-not-valid')) {
+      return 'Firebase API key is not configured or invalid. Using local simulated mode.';
+    }
     switch (code) {
       case 'auth/user-not-found':
       case 'auth/invalid-credential':
-        return 'Invalid email or password. Please verify your official credentials or Sign Up for a citizen account.';
+        return 'Invalid email or password. Please verify your credentials or select an account from the auto-fill panel.';
       case 'auth/configuration-not-found':
-        return 'Email/Password sign-in is disabled in your Firebase Console. Please go to Firebase Console > Authentication > Sign-in method tab and enable Email/Password.';
+        return 'Email/Password sign-in is disabled in your Firebase Console. Please enable Email/Password provider.';
       case 'auth/wrong-password':
         return 'Incorrect password. Please try again.';
       case 'auth/email-already-in-use':
@@ -105,8 +140,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const createLocalUser = (email: string, role: UserRole, customName?: string): UserProfile => {
+    const cleanEmail = email.toLowerCase().trim();
+    const assignedRole = OFFICIAL_ROLE_MAP[cleanEmail] || role;
+    const name = customName || OFFICIAL_NAME_MAP[cleanEmail] || cleanEmail.split('@')[0];
+    const userProfile: UserProfile = {
+      uid: 'user_' + cleanEmail.replace(/[^a-zA-Z0-9]/g, '_'),
+      email: cleanEmail,
+      displayName: name.charAt(0).toUpperCase() + name.slice(1),
+      role: assignedRole,
+    };
+    localStorage.setItem(`nivaaran_role_${userProfile.uid}`, assignedRole);
+    localStorage.setItem('nivaaran_demo_user', JSON.stringify(userProfile));
+    setCurrentUser(userProfile);
+    return userProfile;
+  };
+
   const loginWithEmail = async (email: string, pass: string, role: UserRole = 'Citizen') => {
     setLoading(true);
+    const cleanEmail = email.toLowerCase().trim();
+
+    // If mock Firebase is configured, or it's a recognized official quick-fill credential, log in directly
+    if (isMockFirebase() || OFFICIAL_ROLE_MAP[cleanEmail]) {
+      const profile = createLocalUser(cleanEmail, role);
+      setLoading(false);
+      return profile;
+    }
+
     try {
       const res = await signInWithEmailAndPassword(auth, email, pass);
       const userEmail = (res.user.email || email).toLowerCase();
@@ -115,7 +175,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userProfile: UserProfile = {
         uid: res.user.uid,
         email: res.user.email,
-        displayName: res.user.displayName || email.split('@')[0],
+        displayName: res.user.displayName || OFFICIAL_NAME_MAP[userEmail] || email.split('@')[0],
         role: assignedRole,
       };
       localStorage.setItem(`nivaaran_role_${res.user.uid}`, assignedRole);
@@ -123,17 +183,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(userProfile);
       return userProfile;
     } catch (err: any) {
-      if (role === 'Citizen') {
-        // Every email address is allowed for Citizen login!
-        const citizenUser: UserProfile = {
-          uid: 'citizen_' + email.replace(/[^a-zA-Z0-9]/g, '_'),
-          email: email,
-          displayName: email.split('@')[0] || 'Citizen',
-          role: 'Citizen',
-        };
-        localStorage.setItem('nivaaran_demo_user', JSON.stringify(citizenUser));
-        setCurrentUser(citizenUser);
-        return citizenUser;
+      const code = err?.code || '';
+      const msg = err?.message || '';
+      // Graceful fallback if Firebase API key is invalid or offline
+      if (
+        code === 'auth/api-key-not-valid' ||
+        code === 'auth/invalid-api-key' ||
+        code === 'auth/app-not-authorized' ||
+        msg.includes('api-key-not-valid') ||
+        role === 'Citizen'
+      ) {
+        return createLocalUser(cleanEmail, role);
       }
       throw new Error(getReadableAuthError(err));
     } finally {
@@ -143,6 +203,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signupWithEmail = async (email: string, pass: string, name: string, role: UserRole) => {
     setLoading(true);
+    const cleanEmail = email.toLowerCase().trim();
+
+    if (isMockFirebase()) {
+      const profile = createLocalUser(cleanEmail, role, name);
+      setLoading(false);
+      return profile;
+    }
+
     try {
       const res = await createUserWithEmailAndPassword(auth, email, pass);
       const userEmail = (res.user.email || email).toLowerCase();
@@ -159,17 +227,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(userProfile);
       return userProfile;
     } catch (err: any) {
-      if (role === 'Citizen') {
-        // Every email address is allowed for Citizen signup!
-        const citizenUser: UserProfile = {
-          uid: 'citizen_' + email.replace(/[^a-zA-Z0-9]/g, '_'),
-          email: email,
-          displayName: name || email.split('@')[0] || 'Citizen',
-          role: 'Citizen',
-        };
-        localStorage.setItem('nivaaran_demo_user', JSON.stringify(citizenUser));
-        setCurrentUser(citizenUser);
-        return citizenUser;
+      const code = err?.code || '';
+      const msg = err?.message || '';
+      if (
+        code === 'auth/api-key-not-valid' ||
+        code === 'auth/invalid-api-key' ||
+        code === 'auth/app-not-authorized' ||
+        msg.includes('api-key-not-valid') ||
+        role === 'Citizen'
+      ) {
+        return createLocalUser(cleanEmail, role, name);
       }
       throw new Error(getReadableAuthError(err));
     } finally {
@@ -179,6 +246,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithGoogle = async (role: UserRole = 'Citizen') => {
     setLoading(true);
+    if (isMockFirebase()) {
+      const googleDemoUser: UserProfile = {
+        uid: 'google_demo_user',
+        email: 'google.demo@nivaaran.gov.in',
+        displayName: 'Google Demo User',
+        role: role,
+      };
+      localStorage.setItem(`nivaaran_role_${googleDemoUser.uid}`, role);
+      localStorage.setItem('nivaaran_demo_user', JSON.stringify(googleDemoUser));
+      setCurrentUser(googleDemoUser);
+      setLoading(false);
+      return googleDemoUser;
+    }
+
     try {
       const res = await signInWithPopup(auth, googleProvider);
       const userEmail = (res.user.email || '').toLowerCase();
@@ -188,7 +269,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const userProfile: UserProfile = {
         uid: res.user.uid,
         email: res.user.email,
-        displayName: res.user.displayName || res.user.email?.split('@')[0] || 'User',
+        displayName: res.user.displayName || OFFICIAL_NAME_MAP[userEmail] || res.user.email?.split('@')[0] || 'User',
         role: savedRole,
       };
       localStorage.setItem(`nivaaran_role_${res.user.uid}`, savedRole);
@@ -196,6 +277,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCurrentUser(userProfile);
       return userProfile;
     } catch (err: any) {
+      const code = err?.code || '';
+      const msg = err?.message || '';
+      if (
+        code === 'auth/api-key-not-valid' ||
+        code === 'auth/invalid-api-key' ||
+        code === 'auth/app-not-authorized' ||
+        msg.includes('api-key-not-valid')
+      ) {
+        const googleDemoUser: UserProfile = {
+          uid: 'google_demo_user',
+          email: 'google.demo@nivaaran.gov.in',
+          displayName: 'Google Demo User',
+          role: role,
+        };
+        localStorage.setItem(`nivaaran_role_${googleDemoUser.uid}`, role);
+        localStorage.setItem('nivaaran_demo_user', JSON.stringify(googleDemoUser));
+        setCurrentUser(googleDemoUser);
+        return googleDemoUser;
+      }
       throw new Error(getReadableAuthError(err));
     } finally {
       setLoading(false);
@@ -216,7 +316,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await firebaseSignOut(auth);
+      if (!isMockFirebase()) {
+        await firebaseSignOut(auth);
+      }
     } catch {
       // Ignore firebase signout error
     }

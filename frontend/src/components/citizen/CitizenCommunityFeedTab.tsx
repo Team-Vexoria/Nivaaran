@@ -3,6 +3,7 @@ import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon
 import { 
   subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc 
 } from '../../services/firebaseService';
+import { useLanguage } from '../../context/LanguageContext';
 
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
@@ -24,11 +25,8 @@ interface FeedPostUI extends FeedPostDoc {
   comments?: FeedComment[];
 }
 
-interface CitizenCommunityFeedTabProps {
-  currentLang?: SupportedLanguage;
-}
-
-export const CitizenCommunityFeedTab: React.FC<CitizenCommunityFeedTabProps> = ({ currentLang = 'en' }) => {
+export const CitizenCommunityFeedTab: React.FC = () => {
+  const { t } = useLanguage();
   const [posts, setPosts] = useState<FeedPostUI[]>([]);
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
@@ -173,16 +171,27 @@ export const CitizenCommunityFeedTab: React.FC<CitizenCommunityFeedTabProps> = (
       {/* Feed Header */}
       <div className="border-b border-slate-200 pb-4">
         <h2 className="text-2xl font-extrabold font-heading text-slate-900">
+ soul
+          {t.communityFeed.title}
+        </h2>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1">
+          {t.communityFeed.subtitle}
+
           {tr('Jharkhand Community Challenge Feed', currentLang)}
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
           {tr('Live Citizen Geotag Stream across 24 Districts', currentLang)}
+ main
         </p>
       </div>
 
       {/* Create Post Form */}
       <form onSubmit={handleCreatePost} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+ soul
+        <span className="text-xs font-bold text-slate-900 block">{t.communityFeed.newPostTitle}</span>
+
         <span className="text-xs font-bold text-slate-900 block">{tr('Post a Local Community Concern', currentLang)}</span>
+ main
         
         <input
           type="text"

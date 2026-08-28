@@ -1,27 +1,39 @@
 import React from 'react';
+ soul
+import { Camera, Search, Sparkles, CheckCircle2, TrendingUp, ShieldCheck, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck } from 'lucide-react';
+import { SupportedLanguage } from '../../i18n/translations';
+import { useLanguage } from '../../context/LanguageContext';
+
 import { Camera, Search, CheckCircle2, TrendingUp, ShieldCheck, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck } from 'lucide-react';
 import { TRANSLATIONS, SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
+ main
 
 interface CitizenHomeTabProps {
   onOpenReportModal: () => void;
   onNavigateTab: (tab: 'my-reports' | 'community-feed' | 'region-chat' | 'leaderboard') => void;
-  currentLang: SupportedLanguage;
+  currentLang?: SupportedLanguage;
 }
 
 export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
   onOpenReportModal,
   onNavigateTab,
-  currentLang,
 }) => {
-  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+  const { t } = useLanguage();
 
   // Real before vs after metrics
   const impactStats = [
+ soul
+    { label: t.hero.resolutionTimeLabel, before: t.hero.resolutionBefore, after: t.hero.resolutionAfter, change: t.hero.resolutionChange, positive: true },
+    { label: t.hero.labsInvolvedLabel, before: t.hero.labsBefore, after: t.hero.labsAfter, change: t.hero.labsChange, positive: true },
+    { label: t.hero.auditRateLabel, before: t.hero.auditBefore, after: t.hero.auditAfter, change: t.hero.auditChange, positive: true },
+    { label: t.hero.feedbackScoreLabel, before: t.hero.feedbackBefore, after: t.hero.feedbackAfter, change: t.hero.feedbackChange, positive: true },
+
     { label: tr('Avg. Problem Resolution Time', currentLang), before: tr('Before: 180+ Days (Fragmented)', currentLang), after: tr('Now: 14 Days (Verified Pipeline)', currentLang), change: tr('-92% Time Reduced', currentLang), positive: true },
     { label: tr('University Engineering Labs Involved', currentLang), before: tr('Before: 0 Labs Connected', currentLang), after: tr('Now: 48+ HEI Labs & IIT/BIT Teams', currentLang), change: tr('100% Academic Coverage', currentLang), positive: true },
     { label: tr('Government Action Verification Rate', currentLang), before: tr('Before: Unverified Phone Calls', currentLang), after: tr('Now: 100% Geotagged & Audit Proven', currentLang), change: tr('Full Transparency', currentLang), positive: true },
     { label: tr('Citizen Feedback & Rating Satisfaction', currentLang), before: tr('Before: 32%', currentLang), after: tr('Now: 94.8% Verified Positive', currentLang), change: tr('+62.8% Improvement', currentLang), positive: true },
+ main
   ];
 
   const districtData = [
@@ -39,14 +51,30 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
       <section className="min-h-[calc(100vh-64px)] flex flex-col justify-between py-8 px-6 bg-gradient-to-b from-slate-50 via-white to-slate-50/80 text-slate-900 border-b border-slate-300">
         <div className="max-w-6xl mx-auto text-center space-y-6 my-auto">
           
+ soul
+          {/* Official Badge */}
+          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-extrabold shadow-2xs">
+            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{t.hero.officialBadge}</span>
+          </div>
+
+          {/* Main Title - Increased Size */}
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-heading text-slate-900 tracking-tight leading-[1.12] max-w-5xl mx-auto">
+            {t.hero.mainTitle}
+
           {/* Main Title - Increased Size */}
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-heading text-slate-900 tracking-tight leading-[1.12] max-w-5xl mx-auto">
             {t.title}
+ main
           </h1>
 
           {/* Concise Subtitle - Increased Size */}
           <p className="text-sm sm:text-base lg:text-lg text-slate-600 max-w-3xl mx-auto leading-relaxed font-medium">
+ soul
+            {t.hero.subtitle}
+
             {t.subtitle}
+ main
           </p>
 
           {/* Primary Action Buttons - Increased Size */}
@@ -56,7 +84,7 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
               className="w-full sm:w-auto px-7 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm sm:text-base rounded-xl shadow-md transition-all flex items-center justify-center space-x-2.5 active:scale-95 cursor-pointer"
             >
               <Camera className="w-5 h-5 shrink-0" />
-              <span>{t.heroCtaPrimary}</span>
+              <span>{t.hero.ctaReport}</span>
             </button>
 
             <button
@@ -64,7 +92,10 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
               className="w-full sm:w-auto px-7 py-3.5 bg-white hover:bg-slate-50 text-slate-900 font-extrabold text-sm sm:text-base rounded-xl border border-slate-300 shadow-2xs transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
               <Search className="w-5 h-5 text-slate-500 shrink-0" />
+ soul
+              <span>{t.hero.ctaFeed}</span>
               <span>{t.viewLiveFeed}</span>
+ main
             </button>
           </div>
 
@@ -72,38 +103,70 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 pt-6 max-w-5xl mx-auto">
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
+ soul
+                <span>{t.hero.incidentsLogged}</span>
+                <Activity className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">1,284</p>
+              <p className="text-xs text-emerald-700 font-bold">{t.hero.acrossDistricts}</p>
+
                 <span>{t.metricIncidentsLogged}</span>
                 <Activity className="w-4 h-4 text-emerald-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">1,284</p>
               <p className="text-xs text-emerald-700 font-bold">{t.metricAcrossDistricts}</p>
+ main
             </div>
 
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
+ soul
+                <span>{t.hero.activeLabs}</span>
+                <Building2 className="w-4 h-4 text-blue-600" />
+              </div>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">48</p>
+              <p className="text-xs text-blue-700 font-bold">{t.hero.universitiesList}</p>
+
                 <span>{t.metricActiveLabs}</span>
                 <Building2 className="w-4 h-4 text-blue-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">48</p>
               <p className="text-xs text-blue-700 font-bold">{t.metricLabsList}</p>
+ main
             </div>
 
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
+ soul
+                <span>{t.hero.verificationRate}</span>
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              </div>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">94.8%</p>
+              <p className="text-xs text-emerald-700 font-bold">{t.hero.auditProven}</p>
+
                 <span>{t.metricVerificationRate}</span>
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">94.8%</p>
               <p className="text-xs text-emerald-700 font-bold">{t.metricGeotagVerified}</p>
+ main
             </div>
 
             <div className="bg-white border border-slate-200/90 p-4 rounded-xl text-left space-y-1 shadow-2xs">
               <div className="flex items-center justify-between text-slate-500 text-xs sm:text-sm font-semibold">
+ soul
+                <span>{t.hero.feedbackRating}</span>
+                <Award className="w-4 h-4 text-amber-600" />
+              </div>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">94.8%</p>
+              <p className="text-xs text-amber-700 font-bold">{t.hero.citizenSatisfaction}</p>
+
                 <span>{t.metricCitizenRewards}</span>
                 <Award className="w-4 h-4 text-amber-600" />
               </div>
               <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">3,420+</p>
               <p className="text-xs text-amber-700 font-bold">{t.metricVouchersIssued}</p>
+ main
             </div>
           </div>
 

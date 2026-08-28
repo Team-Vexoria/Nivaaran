@@ -1,20 +1,65 @@
 import React, { useState, useEffect } from 'react';
+ soul
+import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { CitizenNavbar, CitizenTab } from '../components/citizen/CitizenNavbar';
+import { CitizenHomeTab } from '../components/citizen/CitizenHomeTab';
+import { CitizenMyReportsTab } from '../components/citizen/CitizenMyReportsTab';
+import { CitizenCommunityFeedTab } from '../components/citizen/CitizenCommunityFeedTab';
+import { CitizenRegionChatTab } from '../components/citizen/CitizenRegionChatTab';
+import { CitizenLeaderboardTab } from '../components/citizen/CitizenLeaderboardTab';
+import { CitizenProfileTab } from '../components/citizen/CitizenProfileTab';
+import { UniversityPortal } from './portals/UniversityPortal';
+import { QuickReportModal } from '../components/QuickReportModal';
+
 import { PublicNavbar } from '../components/PublicNavbar';
 import { UniversityPortal } from './portals/UniversityPortal';
 import { 
   Building2, ShieldCheck, UserCheck, ArrowRight, Cpu, ArrowUpRight
 } from 'lucide-react';
+ main
 
 interface LandingPageProps {
   onOpenAuth: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
+ soul
+  const { currentUser } = useAuth();
+  const { currentLang, setLanguage } = useLanguage();
+
+ main
   const [currentPortal, setCurrentPortal] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('portal') || '';
   });
 
+ soul
+  const getInitialTab = (): CitizenTab => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab') as CitizenTab;
+    if (tabParam && ['home', 'my-reports', 'community-feed', 'region-chat', 'leaderboard', 'profile'].includes(tabParam)) {
+      return tabParam;
+    }
+    return 'home';
+  };
+
+  const [activeTab, setActiveTabState] = useState<CitizenTab>(getInitialTab);
+  const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
+
+  // Push new tab to browser history so Back button navigates between sub-routes
+  const handleTabChange = (newTab: CitizenTab) => {
+    setActiveTabState(newTab);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', newTab);
+    url.searchParams.delete('portal');
+    setCurrentPortal('citizen');
+    window.history.pushState({ tab: newTab, portal: 'citizen' }, '', url.toString());
+  };
+
+  // Handle browser Back / Forward buttons seamlessly
+
+ main
   useEffect(() => {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
@@ -100,6 +145,59 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 flex flex-col antialiased selection:bg-[#059669] selection:text-white">
       
+ soul
+      {/* 5-Route Citizen Navbar */}
+      <CitizenNavbar
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onOpenReportModal={() => setIsReportModalOpen(true)}
+        onOpenAuth={onOpenAuth}
+        onOpenUniversityPortal={() => {
+          setCurrentPortal('university');
+          const url = new URL(window.location.href);
+          url.searchParams.set('portal', 'university');
+          window.history.pushState({ portal: 'university' }, '', url.toString());
+        }}
+        currentLang={currentLang}
+        onLangChange={setLanguage}
+        userDisplayName={currentUser?.displayName || ''}
+        userEmail={currentUser?.email || ''}
+      />
+
+      {/* Main Tab View Stream */}
+      <main className="flex-1">
+        {activeTab === 'home' && (
+          <CitizenHomeTab
+            onOpenReportModal={() => setIsReportModalOpen(true)}
+            onNavigateTab={handleTabChange}
+          />
+        )}
+
+        {activeTab === 'my-reports' && (
+          <CitizenMyReportsTab
+            onOpenReportModal={() => setIsReportModalOpen(true)}
+          />
+        )}
+
+        {activeTab === 'community-feed' && (
+          <CitizenCommunityFeedTab />
+        )}
+
+        {activeTab === 'region-chat' && (
+          <CitizenRegionChatTab />
+        )}
+
+        {activeTab === 'leaderboard' && (
+          <CitizenLeaderboardTab />
+        )}
+
+        {activeTab === 'profile' && (
+          <CitizenProfileTab
+            onOpenReportModal={() => setIsReportModalOpen(true)}
+            onTabChange={handleTabChange}
+          />
+        )}
+
       {/* 1. Public Header Navbar (Preserved Crisp Civic Blue Header) */}
       <PublicNavbar onOpenAuth={onOpenAuth} />
 
@@ -339,6 +437,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           </div>
         </section>
 
+ main
       </main>
 
       {/* 7. Official Government Footer */}

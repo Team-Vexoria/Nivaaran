@@ -8,10 +8,11 @@ import { CitizenLeaderboardTab } from '../../components/citizen/CitizenLeaderboa
 import { CitizenProfileTab } from '../../components/citizen/CitizenProfileTab';
 import { QuickReportModal } from '../../components/QuickReportModal';
 import { useAuth } from '../../context/AuthContext';
-import { SupportedLanguage } from '../../i18n/translations';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const CitizenPortal: React.FC = () => {
   const { currentUser } = useAuth();
+  const { currentLang, setLanguage } = useLanguage();
 
   const getInitialTab = (): CitizenTab => {
     const params = new URLSearchParams(window.location.search);
@@ -24,7 +25,6 @@ export const CitizenPortal: React.FC = () => {
 
   const [activeTab, setActiveTabState] = useState<CitizenTab>(getInitialTab);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [currentLang, setCurrentLang] = useState<SupportedLanguage>('en');
 
   // Push tab change to browser history so Back button navigates between views
   const handleTabChange = (newTab: CitizenTab) => {
@@ -64,7 +64,7 @@ export const CitizenPortal: React.FC = () => {
         onOpenReportModal={() => setIsReportModalOpen(true)}
         onOpenAuth={() => {}}
         currentLang={currentLang}
-        onLangChange={setCurrentLang}
+        onLangChange={setLanguage}
         userDisplayName={currentUser?.displayName || 'Citizen User'}
         userEmail={currentUser?.email || ''}
       />
@@ -75,7 +75,6 @@ export const CitizenPortal: React.FC = () => {
           <CitizenHomeTab
             onOpenReportModal={() => setIsReportModalOpen(true)}
             onNavigateTab={handleTabChange}
-            currentLang={currentLang}
           />
         )}
 
@@ -108,8 +107,6 @@ export const CitizenPortal: React.FC = () => {
             userEmail={currentUser?.email || 'harshit.mishra@jharkhand.gov.in'}
             onOpenReportModal={() => setIsReportModalOpen(true)}
             onTabChange={handleTabChange}
-            currentLang={currentLang}
-            onLangChange={setCurrentLang}
           />
         )}
       </main>

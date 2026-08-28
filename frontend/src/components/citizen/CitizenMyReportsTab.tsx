@@ -1,18 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle } from 'lucide-react';
 import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
+ soul
+import { useLanguage } from '../../context/LanguageContext';
+
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
+ main
 
 interface CitizenMyReportsTabProps {
   onOpenReportModal: () => void;
   currentLang?: SupportedLanguage;
 }
 
+ soul
+export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({ onOpenReportModal }) => {
+  const { t } = useLanguage();
+
 export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({ 
   onOpenReportModal,
   currentLang = 'en'
 }) => {
+ main
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [selectedReport, setSelectedReport] = useState<ChallengeDoc | null>(null);
   const [reports, setReports] = useState<ChallengeDoc[]>([]);
@@ -84,6 +93,14 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
     return () => unsubscribe();
   }, []);
 
+  const filterOptions = [
+    { key: 'All', label: t.myReports.filterAll },
+    { key: 'Under Review', label: t.myReports.filterUnderReview },
+    { key: 'Government Validated', label: t.myReports.filterValidated },
+    { key: 'In Progress', label: t.myReports.filterInProgress },
+    { key: 'Resolved', label: t.myReports.filterResolved },
+  ];
+
   const filteredReports = filterStatus === 'All'
     ? reports
     : reports.filter(r => r.status === filterStatus);
@@ -95,10 +112,17 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h2 className="text-2xl font-extrabold font-heading text-slate-900">
+ soul
+            {t.myReports.title}
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            {t.myReports.subtitle}
+
             {tr('My Reported Community Issues', currentLang)}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             {tr('Real-time status, university lab allocation, and government verification for issues you filed.', currentLang)}
+ main
           </p>
         </div>
 
@@ -107,23 +131,37 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
           className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-2 shrink-0 active:scale-95 cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
+ soul
+          <span>{t.myReports.reportProblemBtn}</span>
+
           <span>{tr('Report New Problem', currentLang)}</span>
         </button>
       </div>
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 text-xs">
-        {['All', 'Under Review', 'Government Validated', 'In Progress', 'Resolved'].map((status) => (
+        {filterOptions.map((opt) => (
           <button
+ soul
+            key={opt.key}
+            onClick={() => setFilterStatus(opt.key)}
+            className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+              filterStatus === opt.key
+
             key={status}
             onClick={() => setFilterStatus(status)}
             className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
               filterStatus === status
+ main
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
+ soul
+            {opt.label}
+
             {tr(status, currentLang)}
+ main
           </button>
         ))}
       </div>

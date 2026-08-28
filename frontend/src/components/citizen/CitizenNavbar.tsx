@@ -3,7 +3,12 @@ import {
   Home, FileText, MessageSquare, MessagesSquare, Trophy, 
   User, LogOut 
 } from 'lucide-react';
+ soul
+import { SupportedLanguage } from '../../i18n/translations';
+import { useLanguage } from '../../context/LanguageContext';
+
 import { TRANSLATIONS, SupportedLanguage } from '../../i18n/translations';
+ main
 
 export type CitizenTab = 'home' | 'my-reports' | 'community-feed' | 'region-chat' | 'leaderboard' | 'profile';
 
@@ -24,6 +29,19 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
   onTabChange,
   onOpenReportModal: _onOpenReportModal,
   onOpenAuth: _onOpenAuth,
+ soul
+  onOpenUniversityPortal,
+  userDisplayName = '',
+}) => {
+  const { t } = useLanguage();
+
+  const navItems: { id: CitizenTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'home', label: t.nav.home, icon: <Home className="w-4 h-4" /> },
+    { id: 'my-reports', label: t.nav.myReports, icon: <FileText className="w-4 h-4" /> },
+    { id: 'community-feed', label: t.nav.communityFeed, icon: <MessageSquare className="w-4 h-4" /> },
+    { id: 'region-chat', label: t.nav.regionChat, icon: <MessagesSquare className="w-4 h-4" /> },
+    { id: 'leaderboard', label: t.nav.leaderboard, icon: <Trophy className="w-4 h-4" /> },
+
   onOpenUniversityPortal: _onOpenUniversityPortal,
   currentLang = 'en',
   onLangChange: _onLangChange,
@@ -37,6 +55,7 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
     { id: 'community-feed', label: t.navCommunityFeed, icon: <MessageSquare className="w-4 h-4" /> },
     { id: 'region-chat', label: t.navRegionChat, icon: <MessagesSquare className="w-4 h-4" /> },
     { id: 'leaderboard', label: t.navLeaderboard, icon: <Trophy className="w-4 h-4" /> },
+ main
   ];
 
   return (
@@ -78,6 +97,36 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
         {/* Right Actions & Buttons */}
         <div className="flex items-center space-x-2 shrink-0">
           
+ soul
+          {/* HEI Portal Direct Button */}
+          <button
+            onClick={() => {
+              if (onOpenUniversityPortal) {
+                onOpenUniversityPortal();
+              } else {
+                const url = new URL(window.location.href);
+                url.searchParams.set('portal', 'university');
+                window.history.pushState({ portal: 'university' }, '', url.toString());
+                window.dispatchEvent(new Event('popstate'));
+              }
+            }}
+            className="hidden lg:flex px-3 py-1.5 bg-blue-900/80 hover:bg-blue-800 text-blue-200 border border-blue-700/80 rounded-lg text-xs font-bold items-center space-x-1.5 transition-colors whitespace-nowrap cursor-pointer"
+          >
+            <Building2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <span>{t.nav.heiPortal}</span>
+          </button>
+
+          {/* Primary Action Button: Report Problem */}
+          <button
+            onClick={onOpenReportModal}
+            className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-black rounded-lg shadow-sm transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap"
+          >
+            <Camera className="w-3.5 h-3.5 shrink-0" />
+            <span className="whitespace-nowrap">{t.nav.reportProblem}</span>
+          </button>
+
+
+ main
           {/* Login or User Profile Button */}
           {userDisplayName && userDisplayName !== 'Guest' && userDisplayName !== '' ? (
             <div className="flex items-center space-x-1.5">
@@ -99,7 +148,11 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
                 title="Manage Account & Sign Out"
               >
                 <LogOut className="w-3.5 h-3.5 text-red-300 shrink-0" />
+ soul
+                <span className="hidden sm:inline">{t.nav.signOut}</span>
+
                 <span className="hidden sm:inline">{t.navLogout}</span>
+ main
               </button>
             </div>
           ) : (
@@ -108,7 +161,11 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
               className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-lg shadow-sm transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap border border-emerald-500 cursor-pointer"
             >
               <User className="w-3.5 h-3.5 shrink-0" />
+ soul
+              <span className="whitespace-nowrap">{t.nav.signIn}</span>
+
               <span className="whitespace-nowrap">{t.signIn}</span>
+ main
             </button>
           )}
 
