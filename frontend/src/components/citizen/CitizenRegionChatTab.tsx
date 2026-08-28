@@ -3,8 +3,10 @@ import { Send, MapPin, Users, MessageSquare } from 'lucide-react';
 import { 
   subscribeToDistrictChat, sendChatMessageToFirestore, ChatMessageDoc 
 } from '../../services/firebaseService';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const CitizenRegionChatTab: React.FC = () => {
+  const { t } = useLanguage();
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Ranchi');
   const [chatMessages, setChatMessages] = useState<ChatMessageDoc[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -93,17 +95,17 @@ export const CitizenRegionChatTab: React.FC = () => {
         <div>
           <h2 className="text-2xl font-extrabold font-heading text-slate-900 flex items-center">
             <MessageSquare className="w-6 h-6 mr-2 text-emerald-700" />
-            District Region Live Chat
+            {t.regionChat.title}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            Real-time Firestore chat stream for emergency & community updates in your district.
+            {t.regionChat.subtitle}
           </p>
         </div>
 
         {/* District Selector Pill */}
         <div className="flex items-center space-x-2 shrink-0">
           <MapPin className="w-4 h-4 text-amber-500" />
-          <span className="text-xs font-bold text-slate-700">Select Region:</span>
+          <span className="text-xs font-bold text-slate-700">{t.regionChat.selectDistrict}:</span>
           <select
             value={selectedDistrict}
             onChange={e => setSelectedDistrict(e.target.value)}

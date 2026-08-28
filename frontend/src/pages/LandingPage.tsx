@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { CitizenNavbar, CitizenTab } from '../components/citizen/CitizenNavbar';
 import { CitizenHomeTab } from '../components/citizen/CitizenHomeTab';
 import { CitizenMyReportsTab } from '../components/citizen/CitizenMyReportsTab';
@@ -9,7 +10,6 @@ import { CitizenLeaderboardTab } from '../components/citizen/CitizenLeaderboardT
 import { CitizenProfileTab } from '../components/citizen/CitizenProfileTab';
 import { UniversityPortal } from './portals/UniversityPortal';
 import { QuickReportModal } from '../components/QuickReportModal';
-import { SupportedLanguage } from '../i18n/translations';
 
 interface LandingPageProps {
   onOpenAuth: () => void;
@@ -17,6 +17,7 @@ interface LandingPageProps {
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   const { currentUser } = useAuth();
+  const { currentLang, setLanguage } = useLanguage();
   const [currentPortal, setCurrentPortal] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('portal') || 'citizen';
@@ -33,7 +34,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
   const [activeTab, setActiveTabState] = useState<CitizenTab>(getInitialTab);
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
-  const [currentLang, setCurrentLang] = useState<SupportedLanguage>('en');
 
   // Push new tab to browser history so Back button navigates between sub-routes
   const handleTabChange = (newTab: CitizenTab) => {
@@ -92,7 +92,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           window.history.pushState({ portal: 'university' }, '', url.toString());
         }}
         currentLang={currentLang}
-        onLangChange={setCurrentLang}
+        onLangChange={setLanguage}
         userDisplayName={currentUser?.displayName || ''}
         userEmail={currentUser?.email || ''}
       />
@@ -103,7 +103,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           <CitizenHomeTab
             onOpenReportModal={() => setIsReportModalOpen(true)}
             onNavigateTab={handleTabChange}
-            currentLang={currentLang}
           />
         )}
 
@@ -129,8 +128,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           <CitizenProfileTab
             onOpenReportModal={() => setIsReportModalOpen(true)}
             onTabChange={handleTabChange}
-            currentLang={currentLang}
-            onLangChange={setCurrentLang}
           />
         )}
       </main>

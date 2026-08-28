@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trophy, Award, Sprout, Medal, Gift } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface CitizenGuardian {
   rank: number;
@@ -13,6 +14,8 @@ interface CitizenGuardian {
 }
 
 export const CitizenLeaderboardTab: React.FC = () => {
+  const { t } = useLanguage();
+
   const topGuardians: CitizenGuardian[] = [
     {
       rank: 1,
@@ -77,11 +80,11 @@ export const CitizenLeaderboardTab: React.FC = () => {
         </div>
 
         <h2 className="text-2xl sm:text-4xl font-extrabold font-heading tracking-tight">
-          Jharkhand Citizen Guardians Leaderboard
+          {t.leaderboard.title}
         </h2>
 
         <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-          Report verified community problems, earn impact points, and get rewarded with free native tree saplings (Sal, Mango, Neem) distributed via the Department of Forest & Environment, Government of Jharkhand.
+          {t.leaderboard.subtitle}
         </p>
 
         {/* Tree Sapling Voucher Callout */}

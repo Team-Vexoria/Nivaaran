@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { submitChallengeToFirestore, submitFeedPostToFirestore } from '../services/firebaseService';
 import { runAITriageEngineAsync } from '../services/aiTriageEngine';
+import { useLanguage } from '../context/LanguageContext';
 
 interface QuickReportModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ const JHARKHAND_DISTRICTS = [
 ];
 
 export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose }) => {
+  const { t } = useLanguage();
   const [step, setStep] = useState<'form' | 'submitting' | 'success'>('form');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -249,8 +251,8 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
               <Camera className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-white text-lg leading-tight">Submit Incident & Evidence</h3>
-              <p className="text-xs text-amber-200 font-semibold">Direct Citizen Intake · Geotagged Address & AI Classified</p>
+              <h3 className="font-extrabold text-white text-lg leading-tight">{t.reportModal.title}</h3>
+              <p className="text-xs text-amber-200 font-semibold">{t.reportModal.subtitle}</p>
             </div>
           </div>
           <button 
@@ -499,9 +501,9 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
               <button
                 type="submit"
                 disabled={!isFormValid}
-                className="w-full py-3.5 bg-[#0F766E] disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-[#0D625B] text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 active:scale-[0.99]"
+                className="w-full py-3.5 bg-[#0F766E] disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-[#0D625B] text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 active:scale-[0.99] cursor-pointer"
               >
-                <span>Submit Incident for AI Triage & Verification</span>
+                <span>{t.reportModal.submitButton}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

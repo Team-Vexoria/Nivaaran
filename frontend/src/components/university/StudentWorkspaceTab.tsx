@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { GraduationCap, Award, CheckCircle2, Upload, ExternalLink } from 'lucide-react';
 import { UniversityDoc, StudentRosterItem } from '../../services/universityData';
 import { getProjectsFromStore, ProjectDoc } from '../../services/firebaseService';
+import { CertificateModal } from '../CertificateModal';
 
 interface StudentWorkspaceTabProps {
   university: UniversityDoc;
@@ -25,6 +26,7 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
   const [githubUrl, setGithubUrl] = useState<string>('https://github.com/nivaaran-hei/iot-flood-telemetry-node');
   const [telemetryLogs, setTelemetryLogs] = useState<string>('Sensor Node #04: Water depth 1.4m. Flow velocity 2.1 m/s. Geotag verified.');
   const [isLoggedSuccess, setIsLoggedSuccess] = useState<boolean>(false);
+  const [isCertificateOpen, setIsCertificateOpen] = useState<boolean>(false);
 
   const handleLogProgress = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,12 +195,25 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
         </div>
 
         <button
-          onClick={() => alert(`Certificate JH-HEI-REWARD-9482 verified for ${currentStudent.name}`)}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-xs shrink-0"
+          onClick={() => setIsCertificateOpen(true)}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold rounded-xl shadow-xs shrink-0 flex items-center space-x-1.5"
         >
-          Download Verified Certificate (PDF)
+          <Award className="w-3.5 h-3.5" />
+          <span>Download Verified Certificate (PDF)</span>
         </button>
       </div>
+
+      {/* Official Government of Jharkhand Certificate Modal */}
+      <CertificateModal
+        isOpen={isCertificateOpen}
+        onClose={() => setIsCertificateOpen(false)}
+        recipientName={`${currentStudent.name} (${currentStudent.rollNumber})`}
+        institutionName={university.name}
+        projectTitle={assignedProject?.challengeTitle || 'Ranchi School Flood Risk Triage & IoT Early Warning System'}
+        voucherCode="JH-HEI-REWARD-9482"
+        issueDate="28th August 2026"
+        role={`Student Researcher · ${currentStudent.year}`}
+      />
 
     </div>
   );

@@ -4,6 +4,7 @@ import {
   Camera, User, Building2, LogOut 
 } from 'lucide-react';
 import { SupportedLanguage } from '../../i18n/translations';
+import { useLanguage } from '../../context/LanguageContext';
 
 export type CitizenTab = 'home' | 'my-reports' | 'community-feed' | 'region-chat' | 'leaderboard' | 'profile';
 
@@ -25,17 +26,16 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
   onOpenReportModal,
   onOpenAuth: _onOpenAuth,
   onOpenUniversityPortal,
-  currentLang: _currentLang,
-  onLangChange: _onLangChange,
   userDisplayName = '',
 }) => {
+  const { t } = useLanguage();
 
   const navItems: { id: CitizenTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'home', label: 'Home', icon: <Home className="w-4 h-4" /> },
-    { id: 'my-reports', label: 'My Reports', icon: <FileText className="w-4 h-4" /> },
-    { id: 'community-feed', label: 'Community Feed', icon: <MessageSquare className="w-4 h-4" /> },
-    { id: 'region-chat', label: 'Region Chat', icon: <MessagesSquare className="w-4 h-4" /> },
-    { id: 'leaderboard', label: 'Leaderboard', icon: <Trophy className="w-4 h-4" /> },
+    { id: 'home', label: t.nav.home, icon: <Home className="w-4 h-4" /> },
+    { id: 'my-reports', label: t.nav.myReports, icon: <FileText className="w-4 h-4" /> },
+    { id: 'community-feed', label: t.nav.communityFeed, icon: <MessageSquare className="w-4 h-4" /> },
+    { id: 'region-chat', label: t.nav.regionChat, icon: <MessagesSquare className="w-4 h-4" /> },
+    { id: 'leaderboard', label: t.nav.leaderboard, icon: <Trophy className="w-4 h-4" /> },
   ];
 
   return (
@@ -92,7 +92,7 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
             className="hidden lg:flex px-3 py-1.5 bg-blue-900/80 hover:bg-blue-800 text-blue-200 border border-blue-700/80 rounded-lg text-xs font-bold items-center space-x-1.5 transition-colors whitespace-nowrap cursor-pointer"
           >
             <Building2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-            <span>HEI R&D Portal</span>
+            <span>{t.nav.heiPortal}</span>
           </button>
 
           {/* Primary Action Button: Report Problem */}
@@ -101,7 +101,7 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
             className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-black rounded-lg shadow-sm transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap"
           >
             <Camera className="w-3.5 h-3.5 shrink-0" />
-            <span className="whitespace-nowrap">Report Problem</span>
+            <span className="whitespace-nowrap">{t.nav.reportProblem}</span>
           </button>
 
           {/* Login or User Profile Button */}
@@ -125,7 +125,7 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
                 title="Manage Account & Sign Out"
               >
                 <LogOut className="w-3.5 h-3.5 text-red-300 shrink-0" />
-                <span className="hidden sm:inline">Logout</span>
+                <span className="hidden sm:inline">{t.nav.signOut}</span>
               </button>
             </div>
           ) : (
@@ -134,7 +134,7 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
               className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black rounded-lg shadow-sm transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap border border-emerald-500 cursor-pointer"
             >
               <User className="w-3.5 h-3.5 shrink-0" />
-              <span className="whitespace-nowrap">Sign In / Portal Login</span>
+              <span className="whitespace-nowrap">{t.nav.signIn}</span>
             </button>
           )}
 

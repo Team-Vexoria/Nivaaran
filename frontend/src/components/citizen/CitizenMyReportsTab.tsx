@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle } from 'lucide-react';
 import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface CitizenMyReportsTabProps {
   onOpenReportModal: () => void;
 }
 
 export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({ onOpenReportModal }) => {
+  const { t } = useLanguage();
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [selectedReport, setSelectedReport] = useState<ChallengeDoc | null>(null);
   const [reports, setReports] = useState<ChallengeDoc[]>([]);
@@ -78,6 +80,14 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({ onOpen
     return () => unsubscribe();
   }, []);
 
+  const filterOptions = [
+    { key: 'All', label: t.myReports.filterAll },
+    { key: 'Under Review', label: t.myReports.filterUnderReview },
+    { key: 'Government Validated', label: t.myReports.filterValidated },
+    { key: 'In Progress', label: t.myReports.filterInProgress },
+    { key: 'Resolved', label: t.myReports.filterResolved },
+  ];
+
   const filteredReports = filterStatus === 'All'
     ? reports
     : reports.filter(r => r.status === filterStatus);
@@ -89,35 +99,35 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({ onOpen
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
         <div>
           <h2 className="text-2xl font-extrabold font-heading text-slate-900">
-            My Reported Community Issues
+            {t.myReports.title}
           </h2>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            Real-time status, university lab allocation, and government verification for issues you filed.
+            {t.myReports.subtitle}
           </p>
         </div>
 
         <button
           onClick={onOpenReportModal}
-          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-2 shrink-0 active:scale-95"
+          className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-2 shrink-0 active:scale-95 cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>Report New Problem</span>
+          <span>{t.myReports.reportProblemBtn}</span>
         </button>
       </div>
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 text-xs">
-        {['All', 'Under Review', 'Government Validated', 'In Progress', 'Resolved'].map((status) => (
+        {filterOptions.map((opt) => (
           <button
-            key={status}
-            onClick={() => setFilterStatus(status)}
-            className={`px-3.5 py-1.5 rounded-lg font-bold transition-all ${
-              filterStatus === status
+            key={opt.key}
+            onClick={() => setFilterStatus(opt.key)}
+            className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
+              filterStatus === opt.key
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            {status}
+            {opt.label}
           </button>
         ))}
       </div>

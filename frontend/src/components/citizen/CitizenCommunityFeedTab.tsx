@@ -3,6 +3,7 @@ import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon
 import { 
   subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc 
 } from '../../services/firebaseService';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface FeedComment {
   id: string;
@@ -22,6 +23,7 @@ interface FeedPostUI extends FeedPostDoc {
 }
 
 export const CitizenCommunityFeedTab: React.FC = () => {
+  const { t } = useLanguage();
   const [posts, setPosts] = useState<FeedPostUI[]>([]);
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
@@ -166,16 +168,16 @@ export const CitizenCommunityFeedTab: React.FC = () => {
       {/* Feed Header */}
       <div className="border-b border-slate-200 pb-4">
         <h2 className="text-2xl font-extrabold font-heading text-slate-900">
-          Jharkhand Community Feed
+          {t.communityFeed.title}
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 mt-1">
-          Real-time Firestore sync: Upvote local incidents, share observations, and view verified Government Admin Before/After proof.
+          {t.communityFeed.subtitle}
         </p>
       </div>
 
       {/* Create Post Form */}
       <form onSubmit={handleCreatePost} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-        <span className="text-xs font-bold text-slate-900 block">Post a Local Community Concern</span>
+        <span className="text-xs font-bold text-slate-900 block">{t.communityFeed.newPostTitle}</span>
         
         <input
           type="text"
