@@ -5,12 +5,14 @@ import { JharkhandMapExplorer } from '../components/map/JharkhandMapExplorer';
 import { 
   Building2, ShieldCheck, UserCheck, ArrowRight, Cpu
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface LandingPageProps {
   onOpenAuth: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
+  const { currentLang, setLanguage, t } = useLanguage();
   const [currentPortal, setCurrentPortal] = useState<string>(() => {
     const params = new URLSearchParams(window.location.search);
     return params.get('portal') || '';
@@ -51,47 +53,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
   const macroPhases = [
     {
-      phase: 'Phase 1: Discovery & AI Triage',
-      badge: 'Stages 1–5',
+      phase: t.landing.phase1,
+      badge: t.landing.phase1Badge,
       color: 'border-[#2C6E49] text-[#2C6E49] bg-[#2C6E49]/10',
       stages: [
-        { stage: 1, name: 'Submission', desc: 'Geotagged Photo/Video Evidence' },
-        { stage: 2, name: 'AI Understanding', desc: 'Classification & Priority Factors' },
-        { stage: 3, name: 'Validation', desc: 'Govt Officer Verification' },
-        { stage: 4, name: 'Deduplication', desc: 'Cluster Geo Links' },
-        { stage: 5, name: 'Prioritization', desc: 'Severity Scoring' },
+        { stage: 1, name: t.landing.s1Name, desc: t.landing.s1Desc },
+        { stage: 2, name: t.landing.s2Name, desc: t.landing.s2Desc },
+        { stage: 3, name: t.landing.s3Name, desc: t.landing.s3Desc },
+        { stage: 4, name: t.landing.s4Name, desc: t.landing.s4Desc },
+        { stage: 5, name: t.landing.s5Name, desc: t.landing.s5Desc },
       ]
     },
     {
-      phase: 'Phase 2: Academic Matching & Team',
-      badge: 'Stages 6–9',
+      phase: t.landing.phase2,
+      badge: t.landing.phase2Badge,
       color: 'border-[#C98A2C] text-[#C98A2C] bg-[#C98A2C]/10',
       stages: [
-        { stage: 6, name: 'HEI Matching', desc: 'University Match Scores' },
-        { stage: 7, name: 'Acceptance', desc: 'University R&D Agreement' },
-        { stage: 8, name: 'Team Formation', desc: 'Multidisciplinary Roster' },
-        { stage: 9, name: 'Proposal', desc: 'Milestone & Budget Plan' },
+        { stage: 6, name: t.landing.s6Name, desc: t.landing.s6Desc },
+        { stage: 7, name: t.landing.s7Name, desc: t.landing.s7Desc },
+        { stage: 8, name: t.landing.s8Name, desc: t.landing.s8Desc },
+        { stage: 9, name: t.landing.s9Name, desc: t.landing.s9Desc },
       ]
     },
     {
-      phase: 'Phase 3: Industry & Prototyping',
-      badge: 'Stages 10–13',
+      phase: t.landing.phase3,
+      badge: t.landing.phase3Badge,
       color: 'border-[#B5502D] text-[#B5502D] bg-[#B5502D]/10',
       stages: [
-        { stage: 10, name: 'Industry Collab', desc: 'Hardware & Grant Request' },
-        { stage: 11, name: 'Prototype', desc: 'IoT & Telemetry Hardware' },
-        { stage: 12, name: 'Pilot Testing', desc: 'Panchayat Ground Trial' },
-        { stage: 13, name: 'Outcome Audit', desc: 'Verification Report' },
+        { stage: 10, name: t.landing.s10Name, desc: t.landing.s10Desc },
+        { stage: 11, name: t.landing.s11Name, desc: t.landing.s11Desc },
+        { stage: 12, name: t.landing.s12Name, desc: t.landing.s12Desc },
+        { stage: 13, name: t.landing.s13Name, desc: t.landing.s13Desc },
       ]
     },
     {
-      phase: 'Phase 4: Deployment & Verified Impact',
-      badge: 'Stages 14–16',
+      phase: t.landing.phase4,
+      badge: t.landing.phase4Badge,
       color: 'border-[#2C6E49] text-[#2C6E49] bg-[#2C6E49]/10',
       stages: [
-        { stage: 14, name: 'Deployment', desc: 'Statewide Installation' },
-        { stage: 15, name: 'Impact Ledger', desc: 'Before/After Audit Proof' },
-        { stage: 16, name: 'Closure', desc: 'Knowledge Package' },
+        { stage: 14, name: t.landing.s14Name, desc: t.landing.s14Desc },
+        { stage: 15, name: t.landing.s15Name, desc: t.landing.s15Desc },
+        { stage: 16, name: t.landing.s16Name, desc: t.landing.s16Desc },
       ]
     }
   ];
@@ -108,7 +110,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   return (
     <div id="main-content" className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col antialiased selection:bg-[#2C6E49] selection:text-white">
       {/* 1. Public Header Navbar (With GIGW Utility Strip & Bilingual Toggle) */}
-      <PublicNavbar onOpenAuth={onOpenAuth} onNavigatePortal={handleNavigatePortal} />
+      <PublicNavbar onOpenAuth={onOpenAuth} onNavigatePortal={handleNavigatePortal} currentLang={currentLang} onLangChange={setLanguage} />
 
       <main className="flex-1 space-y-16 pb-20">
         
@@ -122,12 +124,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             
             {/* Main Headline */}
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading text-[#201C18] tracking-tight leading-tight max-w-4xl mx-auto">
-              Report Local Community Problems. Get Verified University and Government Solutions.
+              {t.landing.heroMainTitle}
             </h1>
 
             {/* Subtitle */}
             <p className="text-[#4A433B] text-sm sm:text-base leading-relaxed font-normal max-w-3xl mx-auto">
-              Citizens report local floods, water crisis, road damage, or school safety hazards across Jharkhand. Government officers and university research teams build verified solutions for your community.
+              {t.landing.heroSubtitle}
             </p>
 
             {/* Primary Action Buttons */}
@@ -136,7 +138,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 onClick={onOpenAuth}
                 className="w-full sm:w-auto bg-[#2C6E49] hover:bg-[#23583a] text-white font-semibold px-6 py-3.5 shadow-sm transition-all rounded-lg flex items-center justify-center space-x-2 cursor-pointer text-xs sm:text-sm"
               >
-                <span>Access Stakeholder Portals</span>
+                <span>{t.landing.heroCtaPortals}</span>
                 <ArrowRight className="w-4 h-4 shrink-0 text-white" />
               </button>
 
@@ -147,7 +149,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 }}
                 className="w-full sm:w-auto bg-white border border-[#E4DDD1] text-[#201C18] hover:bg-[#F3EDE2] hover:border-[#C4BDB0] font-semibold px-6 py-3.5 rounded-lg shadow-2xs transition-all flex items-center justify-center space-x-2 cursor-pointer text-xs sm:text-sm"
               >
-                <span>View 16-Stage Lifecycle Map</span>
+                <span>{t.landing.heroCtaLifecycle}</span>
               </button>
             </div>
 
@@ -156,26 +158,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               
               <div className="p-3 space-y-0.5">
                 <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">24 / 24</p>
-                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">Districts Connected</p>
-                <p className="text-[11px] text-[#2C6E49] font-medium">Statewide Active Coverage</p>
+                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerDistrictsLabel}</p>
+                <p className="text-[11px] text-[#2C6E49] font-medium">{t.landing.tickerDistrictsNote}</p>
               </div>
 
               <div className="p-3 space-y-0.5 md:pl-6">
                 <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">48</p>
-                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">HEI R&D Labs Onboarded</p>
-                <p className="text-[11px] text-slate-600 font-medium">BIT Mesra, IIT ISM, NIT & BAU</p>
+                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerLabsLabel}</p>
+                <p className="text-[11px] text-slate-600 font-medium">{t.landing.tickerLabsNote}</p>
               </div>
 
               <div className="p-3 space-y-0.5 md:pl-6">
                 <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">94.8%</p>
-                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">Field Audit Rate</p>
-                <p className="text-[11px] text-[#2C6E49] font-medium">GPS Geotag Verified</p>
+                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerAuditLabel}</p>
+                <p className="text-[11px] text-[#2C6E49] font-medium">{t.landing.tickerAuditNote}</p>
               </div>
 
               <div className="p-3 space-y-0.5 md:pl-6">
                 <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">14 Days</p>
-                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">Avg Resolution Time</p>
-                <p className="text-[11px] text-[#2C6E49] font-medium">4x Acceleration vs Legacy</p>
+                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerResolutionLabel}</p>
+                <p className="text-[11px] text-[#2C6E49] font-medium">{t.landing.tickerResolutionNote}</p>
               </div>
 
             </div>
@@ -187,10 +189,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
         <section id="role-gateways" className="max-w-7xl mx-auto px-6 space-y-6">
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <span className="text-xs font-extrabold text-[#2C6E49] uppercase tracking-wider block">
-              Multi-Stakeholder Access
+              {t.landing.portalSectionBadge}
             </span>
             <h2 className="text-2xl sm:text-4xl font-extrabold font-heading text-[#201C18]">
-              Select Your Role to Access Portal
+              {t.landing.portalSectionTitle}
             </h2>
           </div>
 
@@ -199,7 +201,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
             {/* Root Hub Node */}
             <div className="bg-white border-2 border-[#2C6E49] text-[#201C18] px-8 py-3 rounded-2xl shadow-sm flex items-center justify-center relative z-10">
-              <p className="font-black text-base font-heading tracking-tight text-[#201C18]">NIVAARAN Platform</p>
+              <p className="font-black text-base font-heading tracking-tight text-[#201C18]">{t.landing.portalRootLabel}</p>
             </div>
 
             {/* Vertical stem down from root */}
@@ -222,14 +224,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-100">
                         <Building2 className="w-6 h-6 text-[#1D4ED8]" />
                       </div>
-                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">State & District</span>
+                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">{t.landing.govTag}</span>
                     </div>
                     <div>
-                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-[#1D4ED8] transition-colors leading-tight">Government Portal</h3>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">Validate, prioritize & assign university R&D teams</p>
+                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-[#1D4ED8] transition-colors leading-tight">{t.landing.govTitle}</h3>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{t.landing.govDesc}</p>
                     </div>
                     <div className="flex items-center space-x-1 text-[11px] font-extrabold text-[#1D4ED8] group-hover:translate-x-1 transition-transform">
-                      <span>Enter Portal</span>
+                      <span>{t.landing.portalEnter}</span>
                       <ArrowRight className="w-3 h-3 shrink-0" />
                     </div>
                   </button>
@@ -246,14 +248,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-100">
                         <Cpu className="w-6 h-6 text-purple-600" />
                       </div>
-                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">BIT · IIT · NIT</span>
+                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">{t.landing.uniTag}</span>
                     </div>
                     <div>
-                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-purple-600 transition-colors leading-tight">University Portal</h3>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">Build teams, IoT prototypes & milestone proposals</p>
+                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-purple-600 transition-colors leading-tight">{t.landing.uniTitle}</h3>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{t.landing.uniDesc}</p>
                     </div>
                     <div className="flex items-center space-x-1 text-[11px] font-extrabold text-purple-600 group-hover:translate-x-1 transition-transform">
-                      <span>Enter Portal</span>
+                      <span>{t.landing.portalEnter}</span>
                       <ArrowRight className="w-3 h-3 shrink-0" />
                     </div>
                   </button>
@@ -270,14 +272,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-100">
                         <ShieldCheck className="w-6 h-6 text-[#C98A2C]" />
                       </div>
-                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">MSME · CSR</span>
+                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">{t.landing.industryTag}</span>
                     </div>
                     <div>
-                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-[#C98A2C] transition-colors leading-tight">Industry & CSR</h3>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">Fund projects, grant hardware & mentor teams</p>
+                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-[#C98A2C] transition-colors leading-tight">{t.landing.industryTitle}</h3>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{t.landing.industryDesc}</p>
                     </div>
                     <div className="flex items-center space-x-1 text-[11px] font-extrabold text-[#C98A2C] group-hover:translate-x-1 transition-transform">
-                      <span>Enter Portal</span>
+                      <span>{t.landing.portalEnter}</span>
                       <ArrowRight className="w-3 h-3 shrink-0" />
                     </div>
                   </button>
@@ -294,14 +296,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100">
                         <UserCheck className="w-6 h-6 text-[#2C6E49]" />
                       </div>
-                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">Citizens · Panchayat</span>
+                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">{t.landing.citizenTag}</span>
                     </div>
                     <div>
-                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-[#2C6E49] transition-colors leading-tight">Citizen Intake</h3>
-                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">Report hazards, track 16 stages & earn rewards</p>
+                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-[#2C6E49] transition-colors leading-tight">{t.landing.citizenTitle}</h3>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{t.landing.citizenDesc}</p>
                     </div>
                     <div className="flex items-center space-x-1 text-[11px] font-extrabold text-[#2C6E49] group-hover:translate-x-1 transition-transform">
-                      <span>Report Problem</span>
+                      <span>{t.landing.citizenReport}</span>
                       <ArrowRight className="w-3 h-3 shrink-0" />
                     </div>
                   </button>
@@ -316,11 +318,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
         <section id="framework-16" className="max-w-7xl mx-auto px-6 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-[#201C18]">16-Stage Challenge Lifecycle</h2>
+              <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-[#201C18]">{t.landing.lifecycleTitle}</h2>
             </div>
             <div className="px-3.5 py-1.5 bg-[#2C6E49]/10 text-[#2C6E49] border border-[#2C6E49]/30 rounded-xl text-xs font-mono font-bold shrink-0 flex items-center space-x-2">
               <span className="w-2 h-2 rounded-full bg-[#2C6E49]"></span>
-              <span>Citizen → Closure · Full Audit Trail</span>
+              <span>{t.landing.lifecycleAuditTrail}</span>
             </div>
           </div>
 
@@ -348,7 +350,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <span className={`${phaseColors.text} text-sm font-extrabold font-heading`}>{mp.phase}</span>
                     </div>
                     <span className="text-[11px] text-slate-400 font-mono font-medium hidden sm:inline">
-                      {mp.stages.length} Connected Stages
+                      {mp.stages.length} {t.landing.lifecycleConnectedStages}
                     </span>
                   </div>
 
@@ -384,13 +386,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
         <section id="university-network" className="max-w-7xl mx-auto px-6 space-y-6">
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <span className="text-xs font-extrabold text-[#C98A2C] uppercase tracking-wider block">
-              Higher Education & Research Ecosystem
+              {t.landing.uniSectionBadge}
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-[#201C18]">
-              Partner Universities & Specialization Nodes
+              {t.landing.uniSectionTitle}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              Connecting university engineering capabilities directly with real ground problems across Jharkhand districts.
+              {t.landing.uniSectionSubtitle}
             </p>
           </div>
 
@@ -405,7 +407,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                   </div>
                 </div>
                 <p className="text-xs text-slate-600">
-                  <strong>Focus Area:</strong> {u.domain}
+                  <strong>{t.landing.uniFocusArea}</strong> {u.domain}
                 </p>
               </div>
             ))}
@@ -419,33 +421,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               
               <div>
                 <span className="text-[#2C6E49] font-semibold tracking-wider text-xs bg-[#2C6E49]/10 px-3 py-1 rounded-full border border-[#2C6E49]/30 inline-block mb-3">
-                  PUBLIC ACCOUNTABILITY & AUDIT LEDGER
+                  {t.landing.impactBadge}
                 </span>
                 <h2 className="text-[#201C18] text-3xl font-bold tracking-tight font-heading">
-                  Statewide Verified Impact
+                  {t.landing.impactTitle}
                 </h2>
                 <p className="text-slate-600 text-base max-w-2xl mt-2">
-                  100% geotagged validation, transparent audit logs, and verified tree sapling rewards distributed across Jharkhand.
+                  {t.landing.impactSubtitle}
                 </p>
               </div>
 
               <div className="grid sm:grid-cols-3 gap-5 pt-2">
                 <div className="bg-[#FAF8F4] rounded-xl border border-[#E4DDD1] p-5 space-y-2">
-                  <span className="text-slate-500 text-sm font-medium block">Geotagged Audits</span>
-                  <p className="text-[#201C18] font-extrabold text-3xl font-heading">100% Proven</p>
-                  <span className="text-[#2C6E49] text-xs font-bold block">GPS Audit Geotags</span>
+                  <span className="text-slate-500 text-sm font-medium block">{t.landing.impactGeotaggedLabel}</span>
+                  <p className="text-[#201C18] font-extrabold text-3xl font-heading">{t.landing.impactGeotaggedValue}</p>
+                  <span className="text-[#2C6E49] text-xs font-bold block">{t.landing.impactGeotaggedNote}</span>
                 </div>
 
                 <div className="bg-[#FAF8F4] rounded-xl border border-[#E4DDD1] p-5 space-y-2">
-                  <span className="text-slate-500 text-sm font-medium block">Districts Connected</span>
-                  <p className="text-[#201C18] font-extrabold text-3xl font-heading">24 / 24</p>
-                  <span className="text-[#2C6E49] text-xs font-bold block">Statewide Coverage</span>
+                  <span className="text-slate-500 text-sm font-medium block">{t.landing.impactDistrictsLabel}</span>
+                  <p className="text-[#201C18] font-extrabold text-3xl font-heading">{t.landing.impactDistrictsValue}</p>
+                  <span className="text-[#2C6E49] text-xs font-bold block">{t.landing.impactDistrictsNote}</span>
                 </div>
 
                 <div className="bg-[#FAF8F4] rounded-xl border border-[#E4DDD1] p-5 space-y-2">
-                  <span className="text-slate-500 text-sm font-medium block">Citizen Rewards</span>
-                  <p className="text-[#201C18] font-extrabold text-3xl font-heading">3,420+ Saplings</p>
-                  <span className="text-[#2C6E49] text-xs font-bold block">Tree Vouchers Issued</span>
+                  <span className="text-slate-500 text-sm font-medium block">{t.landing.impactRewardsLabel}</span>
+                  <p className="text-[#201C18] font-extrabold text-3xl font-heading">{t.landing.impactRewardsValue}</p>
+                  <span className="text-[#2C6E49] text-xs font-bold block">{t.landing.impactRewardsNote}</span>
                 </div>
               </div>
 
@@ -466,53 +468,53 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 <span className="font-extrabold text-base text-white font-heading">NIVAARAN</span>
               </div>
               <p className="leading-relaxed text-slate-300 text-sm">
-                Jharkhand Societal Challenge & Innovation Network. Smart India Hackathon Problem Statement 26043.
+                {t.landing.footerTagline}
               </p>
               <p className="text-xs text-slate-400">
-                Department of Higher & Technical Education, Government of Jharkhand.
+                {t.landing.footerDept}
               </p>
             </div>
 
             <div className="space-y-2">
               <span className="text-[#C98A2C] font-extrabold text-xs tracking-wider uppercase block">
-                Portal Role Entrances
+                {t.landing.footerRoleEntrances}
               </span>
               <ul className="space-y-2 text-sm">
-                <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">Government Department Portal</button></li>
-                <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">University & Student Portal</button></li>
-                <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">Industry & CSR Network</button></li>
-                <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">Citizen & Community Intake</button></li>
+                <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">{t.landing.footerGovPortal}</button></li>
+                <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">{t.landing.footerUniPortal}</button></li>
+                <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">{t.landing.footerIndustryPortal}</button></li>
+                <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">{t.landing.footerCitizenPortal}</button></li>
               </ul>
             </div>
 
             <div className="space-y-2">
               <span className="text-[#C98A2C] font-extrabold text-xs tracking-wider uppercase block">
-                Disaster Focus Domains
+                {t.landing.footerDomains}
               </span>
               <ul className="space-y-2 text-sm text-slate-300">
-                <li>Flooding & Basin Telemetry</li>
-                <li>Drought & Groundwater Recharge</li>
-                <li>Mine Hazards & Soil Displacement</li>
-                <li>Roads & Infrastructure Damage</li>
-                <li>School & Health Public Safety</li>
+                <li>{t.landing.footerDomain1}</li>
+                <li>{t.landing.footerDomain2}</li>
+                <li>{t.landing.footerDomain3}</li>
+                <li>{t.landing.footerDomain4}</li>
+                <li>{t.landing.footerDomain5}</li>
               </ul>
             </div>
 
             <div className="space-y-2">
               <span className="text-[#C98A2C] font-extrabold text-xs tracking-wider uppercase block">
-                State Helplines
+                {t.landing.footerHelplines}
               </span>
               <ul className="space-y-2 text-sm text-slate-300">
-                <li>State Emergency Helpline: 1070</li>
-                <li>Disaster Management Cell: 0651-2400220</li>
-                <li>Higher Education Dept: Ranchi</li>
+                <li>{t.landing.footerEmergency}</li>
+                <li>{t.landing.footerDisasterCell}</li>
+                <li>{t.landing.footerHigherEdDept}</li>
               </ul>
             </div>
 
           </div>
 
           <div className="border-t border-[#3D4550] pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
-            <span>© 2026 Government of Jharkhand • All Rights Reserved</span>
+            <span>{t.landing.footerCopyright}</span>
             <span className="font-mono text-xs text-slate-300">NIVAARAN Platform v2.0 • SIH 26043</span>
           </div>
         </div>
