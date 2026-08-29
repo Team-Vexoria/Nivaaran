@@ -138,11 +138,21 @@ export const GovPortal: React.FC = () => {
     setActionModal(null);
 
     if (type === 'validate') {
-      await govValidateChallenge(id, note, officerName);
-      showToast(`✓ "${challenge.title}" validated. Status updated to Government Validated.`, 'success');
+      const succeeded = await govValidateChallenge(id, note, officerName);
+      showToast(
+        succeeded
+          ? `✓ "${challenge.title}" validated. Status updated to Government Validated.`
+          : `Unable to validate "${challenge.title}". The challenge may no longer exist or may be at an invalid stage.`,
+        succeeded ? 'success' : 'warning'
+      );
     } else {
-      await govRequestEvidence(id, note, officerName);
-      showToast(`⚠ Evidence requested for "${challenge.title}". Citizen notified.`, 'warning');
+      const succeeded = await govRequestEvidence(id, note, officerName);
+      showToast(
+        succeeded
+          ? `⚠ Evidence requested for "${challenge.title}". Citizen notified.`
+          : `Unable to request evidence for "${challenge.title}". The challenge may no longer exist or may be at an invalid stage.`,
+        'warning'
+      );
     }
   };
 

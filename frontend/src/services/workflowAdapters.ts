@@ -1,6 +1,7 @@
 import type { Challenge, Project, TeamMember, ChallengeStatus, PriorityFactors, MilestoneStatus } from './workflowTypes';
 import type { ChallengeDoc, ProjectDoc, ProjectTeamMember } from './firebaseService';
 import { workflowStore } from './workflowStore';
+import { formatStageName, getStageForStatus, normalizeLegacyStatus } from './workflowLifecycle';
 
 const DEFAULT_PRIORITY_FACTORS: PriorityFactors = {
   populationImpact: { score: 0, max: 25, reason: 'Not available' },
@@ -10,23 +11,8 @@ const DEFAULT_PRIORITY_FACTORS: PriorityFactors = {
   spatialRecurrence: { score: 0, max: 10, reason: 'Not available' },
 };
 
-const isChallengeStatus = (value: string): value is ChallengeStatus => (
-  value === 'Submitted'
-  || value === 'Under Review'
-  || value === 'Evidence Requested'
-  || value === 'Government Validated'
-  || value === 'HEI Matched'
-  || value === 'University Accepted'
-  || value === 'In Progress'
-  || value === 'Proposal Submitted'
-  || value === 'Prototype Active'
-  || value === 'Pilot Active'
-  || value === 'Resolved'
-  || value === 'Closed'
-);
-
 const toChallengeStatus = (value: string | undefined): ChallengeStatus => (
-  value && isChallengeStatus(value) ? value : 'Under Review'
+  value ? normalizeLegacyStatus(value) || 'Under Review' : 'Under Review'
 );
 
 const isMilestoneStatus = (value: string): value is MilestoneStatus => (
@@ -60,6 +46,8 @@ const isLegacyProject = (value: unknown): value is ProjectDoc => (
  * Converts a legacy ChallengeDoc (used by Firestore and legacy UI) to the new workflow Challenge type.
  */
 export function toWorkflowChallenge(doc: ChallengeDoc): Challenge {
+  const status = toChallengeStatus(doc.status);
+  const stage = getStageForStatus(status);
   return {
     id: doc.id || `CH-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
     reportId: doc.reportId,
@@ -70,9 +58,9 @@ export function toWorkflowChallenge(doc: ChallengeDoc): Challenge {
     village: doc.village,
     locationCoords: doc.locationCoords,
     formattedAddress: doc.formattedAddress,
-    status: toChallengeStatus(doc.status),
-    stageNumber: doc.stageNumber || 1,
-    stageName: doc.stageName || 'Legacy Status',
+    status,
+    stageNumber: stage?.stageNumber || doc.stageNumber || 1,
+    stageName: stage ? formatStageName(stage.stageNumber) : (doc.stageName || 'Legacy Status'),
     category: doc.category,
     aiAnalysis: doc.aiReasoning || doc.priorityFactors ? {
       category: doc.category,
@@ -167,6 +155,10 @@ export function toWorkflowProject(doc: ProjectDoc): Project {
       targetDays: m.targetDays,
     })),
     proposals: doc.proposals || [],
+    collaborationOffers: doc.collaborationOffers || [],
+    prototypeUpdate: doc.prototypeUpdate,
+    pilotReport: doc.pilotReport,
+    outcomeAudit: doc.outcomeAudit,
     budgetEstimated: doc.budgetEstimated,
     budgetApproved: doc.budgetApproved,
     createdAt: doc.createdAt?.toString() || new Date().toISOString(),
@@ -204,6 +196,10 @@ export function toLegacyProjectDoc(project: Project): ProjectDoc {
       targetDays: m.targetDays,
     })),
     proposals: project.proposals,
+    collaborationOffers: project.collaborationOffers || [],
+    prototypeUpdate: project.prototypeUpdate,
+    pilotReport: project.pilotReport,
+    outcomeAudit: project.outcomeAudit,
     budgetEstimated: project.budgetEstimated,
     budgetApproved: project.budgetApproved,
     createdAt: project.createdAt,

@@ -5,7 +5,18 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 import { workflowStore, STORE_EVENT } from './workflowStore';
 import { toWorkflowChallenge, toLegacyChallengeDoc, toWorkflowProject, toLegacyProjectDoc } from './workflowAdapters';
-import type { ChallengeStatus, MilestoneStatus, PriorityFactors, ProjectStatus, Proposal } from './workflowTypes';
+import type {
+  ChallengeStatus,
+  CollaborationOffer,
+  MilestoneStatus,
+  OutcomeAudit,
+  PilotReport,
+  PriorityFactors,
+  ProjectStatus,
+  Proposal,
+  PrototypeUpdate,
+} from './workflowTypes';
+import { getStageForStatus } from './workflowLifecycle';
 
 // Helper: Upload photo/video file to Firebase Storage
 export const uploadEvidenceImage = async (file: File): Promise<string> => {
@@ -297,6 +308,10 @@ export interface ProjectDoc {
   status: ProjectStatus;
   milestones: MilestoneItem[];
   proposals?: Proposal[];
+  collaborationOffers?: CollaborationOffer[];
+  prototypeUpdate?: PrototypeUpdate;
+  pilotReport?: PilotReport;
+  outcomeAudit?: OutcomeAudit;
   budgetEstimated?: number;
   budgetApproved?: number;
   createdAt?: any;
@@ -306,6 +321,37 @@ export interface ProjectDoc {
 export const saveProjectTeamToStore = (project: ProjectDoc) => {
   try {
     const workflowProj = toWorkflowProject(project);
+
+    // Keep project actions and the linked challenge lifecycle in sync. Do not
+    // allow a project to be created for a challenge that has not been accepted.
+    const linkedChallenge = workflowStore.getChallenge(workflowProj.challengeId);
+    if (!linkedChallenge) return false;
+    const targetStatus: Partial<Record<ProjectStatus, ChallengeStatus>> = {
+      'Accepted': 'University Accepted',
+      'Team Formed': 'In Progress',
+      'Proposal Submitted': 'Proposal Submitted',
+      'Industry Collaboration': 'Industry Collaboration',
+      'Prototype Active': 'Prototype Active',
+      'Pilot Active': 'Pilot Active',
+      'Outcome Audit': 'Outcome Audit',
+    };
+    const target = targetStatus[workflowProj.status];
+    if (target) {
+      const currentStage = getStageForStatus(linkedChallenge.status)?.stageNumber;
+      const targetStage = getStageForStatus(target)?.stageNumber;
+      if (currentStage === undefined || targetStage === undefined) return false;
+      if (currentStage < targetStage) {
+        const transition = workflowStore.transitionChallenge(
+          linkedChallenge.id,
+          target,
+          workflowProj.facultyMentorName || workflowProj.universityName,
+          'University / Project Team',
+          `Project advanced to ${workflowProj.status}.`
+        );
+        if (!transition.success) return false;
+      }
+    }
+
     const existing = workflowStore.getProject(workflowProj.id)
       || workflowStore.getProjectByChallengeId(workflowProj.challengeId);
     if (existing) {
@@ -320,6 +366,141 @@ export const saveProjectTeamToStore = (project: ProjectDoc) => {
   }
 };
 
+const getProjectForPhase3 = (projectId: string): { project: ReturnType<typeof workflowStore.getProject>; challenge: ReturnType<typeof workflowStore.getChallenge> } => ({
+  project: workflowStore.getProject(projectId),
+  challenge: workflowStore.getChallenge(workflowStore.getProject(projectId)?.challengeId || ''),
+});
+
+const advanceChallengeIfNeeded = (
+  challengeId: string,
+  targetStatus: ChallengeStatus,
+  actor: string,
+  actorRole: string,
+  note: string
+): boolean => {
+  const challenge = workflowStore.getChallenge(challengeId);
+  const currentStage = challenge ? getStageForStatus(challenge.status)?.stageNumber : undefined;
+  const targetStage = getStageForStatus(targetStatus)?.stageNumber;
+  if (!challenge || currentStage === undefined || targetStage === undefined) return false;
+  if (currentStage >= targetStage) return true;
+  return workflowStore.transitionChallenge(challenge.id, targetStatus, actor, actorRole, note).success;
+};
+
+const updateProjectForPhase3 = (
+  projectId: string,
+  updates: Partial<ReturnType<typeof toWorkflowProject>>,
+  actor: string,
+  actorRole: string,
+  description: string
+): boolean => {
+  const updated = workflowStore.updateProject(projectId, updates);
+  if (!updated) return false;
+  workflowStore.addTimelineEvent({
+    id: `TL-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    entityType: 'project',
+    entityId: projectId,
+    action: 'phase3_update',
+    actor,
+    actorRole,
+    description,
+    timestamp: new Date().toISOString(),
+  });
+  return true;
+};
+
+export const submitCollaborationOffer = (
+  projectId: string,
+  offer: Omit<CollaborationOffer, 'id' | 'projectId' | 'status' | 'submittedAt'>
+): boolean => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+  const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
+  if (currentStage < 9 || currentStage > 13) return false;
+
+  if (!advanceChallengeIfNeeded(
+    challenge.id,
+    'Industry Collaboration',
+    offer.partnerName,
+    'Industry / CSR Partner',
+    `${offer.partnerName} offered ${offer.supportType.toLowerCase()} support.`
+  )) return false;
+
+  const newOffer: CollaborationOffer = {
+    ...offer,
+    id: `COL-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    projectId,
+    status: 'Proposed',
+    submittedAt: new Date().toISOString(),
+  };
+  return updateProjectForPhase3(project.id, {
+    status: currentStage <= 10 ? 'Industry Collaboration' : project.status,
+    collaborationOffers: [...(project.collaborationOffers || []), newOffer],
+  }, offer.partnerName, 'Industry / CSR Partner', `${offer.supportType} collaboration offer submitted.`);
+};
+
+export const requestCollaborationDetails = (projectId: string, partnerName: string): boolean => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+  const newOffer: CollaborationOffer = {
+    id: `COL-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    projectId,
+    partnerName,
+    partnerType: 'Industry',
+    supportType: 'Mentorship',
+    message: 'Please share technical requirements, budget range, and pilot-readiness details.',
+    status: 'Details Requested',
+    submittedAt: new Date().toISOString(),
+  };
+  return updateProjectForPhase3(project.id, {
+    collaborationOffers: [...(project.collaborationOffers || []), newOffer],
+  }, partnerName, 'Industry / CSR Partner', 'Technical details requested from university project team.');
+};
+
+export const submitPrototypeUpdate = (
+  projectId: string,
+  update: Omit<PrototypeUpdate, 'submittedAt'>
+): boolean => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+  const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
+  if (currentStage < 9 || currentStage > 12) return false;
+  if (!advanceChallengeIfNeeded(challenge.id, 'Prototype Active', update.submittedBy, 'University / Project Team', 'Prototype progress submitted.')) return false;
+  return updateProjectForPhase3(project.id, {
+    status: currentStage <= 11 ? 'Prototype Active' : project.status,
+    prototypeUpdate: { ...update, submittedAt: new Date().toISOString() },
+  }, update.submittedBy, 'University / Project Team', 'Prototype documentation and telemetry submitted.');
+};
+
+export const submitPilotReport = (
+  projectId: string,
+  report: Omit<PilotReport, 'submittedAt'>
+): boolean => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+  const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
+  if (currentStage < 11 || currentStage > 12) return false;
+  if (!advanceChallengeIfNeeded(challenge.id, 'Pilot Active', report.submittedBy, 'University / Project Team', 'Pilot field report submitted.')) return false;
+  return updateProjectForPhase3(project.id, {
+    status: 'Pilot Active',
+    pilotReport: { ...report, submittedAt: new Date().toISOString() },
+  }, report.submittedBy, 'University / Project Team', 'Pilot report and field observations submitted.');
+};
+
+export const submitOutcomeAudit = (
+  projectId: string,
+  audit: OutcomeAudit
+): boolean => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+  const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
+  if (currentStage < 12 || currentStage > 13) return false;
+  if (!advanceChallengeIfNeeded(challenge.id, 'Outcome Audit', audit.verifiedBy, 'Government / Community Auditor', 'Technical and community outcome audit submitted.')) return false;
+  return updateProjectForPhase3(project.id, {
+    status: 'Outcome Audit',
+    outcomeAudit: audit,
+  }, audit.verifiedBy, 'Government / Community Auditor', 'Outcome audit submitted for validation.');
+};
+
 export const getProjectsFromStore = (): ProjectDoc[] => {
   try {
     return workflowStore.getProjects().map(toLegacyProjectDoc);
@@ -328,18 +509,55 @@ export const getProjectsFromStore = (): ProjectDoc[] => {
   }
 };
 
+export const subscribeToProjects = (callback: (projects: ProjectDoc[]) => void) => {
+  const notify = () => callback(getProjectsFromStore());
+  notify();
+  window.addEventListener(STORE_EVENT, notify);
+  return () => window.removeEventListener(STORE_EVENT, notify);
+};
+
 export const updateChallengeUniversityAcceptance = (
   challengeId: string, 
   heiName: string, 
   deptName: string
 ) => {
   try {
-    workflowStore.updateChallenge(challengeId, {
-      assignedHEI: heiName,
-      assignedDept: deptName
-    });
+    const challenge = workflowStore.getChallenge(challengeId);
+    if (!challenge) return false;
+
+    // The current university UI performs matching and acceptance together.
+    // Record the internal stages in order so the transition remains valid.
+    const bridgeStatuses: ChallengeStatus[] = ['Clustered', 'Prioritized', 'HEI Matched'];
+    for (const bridgeStatus of bridgeStatuses) {
+      const current = workflowStore.getChallenge(challengeId);
+      const currentStage = current ? getStageForStatus(current.status)?.stageNumber : undefined;
+      const bridgeStage = getStageForStatus(bridgeStatus)?.stageNumber;
+      if (currentStage !== undefined && bridgeStage !== undefined && currentStage < bridgeStage) {
+        const bridgeResult = workflowStore.transitionChallenge(
+          challengeId,
+          bridgeStatus,
+          'Nivaaran Matching Engine',
+          'System',
+          `Advanced to ${bridgeStatus} before university acceptance.`
+        );
+        if (!bridgeResult.success) return false;
+      }
+    }
+
     const note = `Accepted by ${heiName} (${deptName}). Multidisciplinary R&D team assigned.`;
-    return workflowStore.transitionChallenge(challengeId, 'University Accepted', heiName, 'Faculty / Mentor', note);
+    const transitioned = workflowStore.transitionChallenge(
+      challengeId,
+      'University Accepted',
+      heiName,
+      'Faculty / Mentor',
+      note
+    );
+    if (!transitioned.success) return false;
+
+    return Boolean(workflowStore.updateChallenge(challengeId, {
+      assignedHEI: heiName,
+      assignedDept: deptName,
+    }));
   } catch (err) {
     console.error('Error updating challenge acceptance:', err);
     return false;
@@ -355,8 +573,6 @@ export const govValidateChallenge = async (
 ): Promise<boolean> => {
   const updates: Partial<ChallengeDoc> = {
     status: 'Government Validated',
-    stageNumber: 3,
-    stageName: 'Stage 3: Government Validated & Prioritized',
     govtOfficerNote: officerNote || `Validated by Government Officer (${officerName}). Queued for HEI matching.`,
     needsHumanVerification: false,
   };
@@ -364,7 +580,7 @@ export const govValidateChallenge = async (
   // 1. Update workflowStore (primary)
   try {
     const transitioned = workflowStore.transitionChallenge(challengeId, 'Government Validated', officerName, 'Government Department', officerNote);
-    if (!transitioned) return false;
+    if (!transitioned.success) return false;
     workflowStore.updateChallenge(challengeId, {
       needsHumanVerification: false,
       govtValidatedBy: officerName,
@@ -398,14 +614,12 @@ export const govRequestEvidence = async (
     status: 'Evidence Requested',
     needsHumanVerification: true,
     govtOfficerNote: officerNote || `Evidence requested by Government Officer (${officerName}). Please upload additional photos/GPS data.`,
-    stageName: 'Stage 2: Evidence Requested by Government Officer',
-    stageNumber: 2,
   };
 
   // 1. Update workflowStore (primary)
   try {
     const transitioned = workflowStore.transitionChallenge(challengeId, 'Evidence Requested', officerName, 'Government Department', officerNote);
-    if (!transitioned) return false;
+    if (!transitioned.success) return false;
     workflowStore.updateChallenge(challengeId, {
       needsHumanVerification: true,
     });

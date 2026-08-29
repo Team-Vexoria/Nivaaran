@@ -42,13 +42,30 @@ export const ProposalManagerTab: React.FC<ProposalManagerTabProps> = ({
   const handleSubmitProposal = () => {
     if (!currentProject) return;
 
+    const proposalId = `PROP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const updated: ProjectDoc = {
       ...currentProject,
       status: 'Proposal Submitted',
       budgetEstimated: estimatedBudget,
+      proposals: [
+        ...(currentProject.proposals || []),
+        {
+          id: proposalId,
+          projectId: currentProject.id || proposalId,
+          title: `Solution proposal for ${currentProject.challengeTitle}`,
+          description: `Structured technical proposal for addressing ${currentProject.challengeTitle}.`,
+          approach: technicalApproach,
+          estimatedBudget,
+          estimatedTimeline: '21 days to pilot readiness',
+          status: 'Submitted',
+          submittedBy: university.name,
+          submittedAt: new Date().toISOString(),
+        },
+      ],
     };
 
-    saveProjectTeamToStore(updated);
+    const saved = saveProjectTeamToStore(updated);
+    if (!saved) return;
     setIsSubmittedSuccess(true);
     setTimeout(() => {
       onProposalSubmitted();

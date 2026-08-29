@@ -11,12 +11,16 @@ export type ChallengeStatus =
   | 'Under Review'            // Stage 2: AI triage complete, awaiting govt review
   | 'Evidence Requested'      // Stage 2b: Govt officer requests more evidence
   | 'Government Validated'    // Stage 3: Govt validates & prioritizes
+  | 'Clustered'               // Stage 4: Similar challenges grouped
+  | 'Prioritized'             // Stage 5: Transparent priority assigned
   | 'HEI Matched'             // Stage 5-6: AI matched to university
   | 'University Accepted'     // Stage 7: University accepts the challenge
   | 'In Progress'             // Stage 8-9: Team formed, work underway
   | 'Proposal Submitted'      // Stage 9: Solution proposal submitted
+  | 'Industry Collaboration'  // Stage 10: Industry / CSR support engaged
   | 'Prototype Active'        // Stage 11: Prototype development
   | 'Pilot Active'            // Stage 12: Field pilot
+  | 'Outcome Audit'           // Stage 13: Technical and community validation
   | 'Resolved'                // Stage 14: Deployed
   | 'Closed';                 // Stage 16: Impact measured, archived
 
@@ -135,13 +139,59 @@ export interface Proposal {
   reviewNote?: string;
 }
 
+// ── Phase 3 project execution records ───────────────────────────────────────
+export type CollaborationPartnerType = 'Industry' | 'CSR' | 'MSME' | 'Research Lab';
+export type CollaborationSupportType = 'Funding' | 'Hardware' | 'Mentorship' | 'Testing' | 'Deployment';
+export type CollaborationOfferStatus = 'Proposed' | 'Details Requested' | 'Accepted' | 'Declined';
+
+export interface CollaborationOffer {
+  id: string;
+  projectId: string;
+  partnerName: string;
+  partnerType: CollaborationPartnerType;
+  supportType: CollaborationSupportType;
+  message: string;
+  status: CollaborationOfferStatus;
+  submittedAt: string;
+  respondedAt?: string;
+}
+
+export interface PrototypeUpdate {
+  summary: string;
+  repositoryUrl?: string;
+  telemetryLog?: string;
+  evidenceUrls: string[];
+  submittedBy: string;
+  submittedAt: string;
+}
+
+export interface PilotReport {
+  location: string;
+  participants?: number;
+  observations: string;
+  metrics?: Record<string, string | number>;
+  evidenceUrls: string[];
+  submittedBy: string;
+  submittedAt: string;
+}
+
+export interface OutcomeAudit {
+  summary: string;
+  verifiedBy: string;
+  metrics: Record<string, string | number>;
+  evidenceUrls: string[];
+  verifiedAt: string;
+}
+
 // ── Project ───────────────────────────────────────────────────────────────────
 export type ProjectStatus =
   | 'Accepted'
   | 'Team Formed'
   | 'Proposal Submitted'
+  | 'Industry Collaboration'
   | 'Prototype Active'
   | 'Pilot Active'
+  | 'Outcome Audit'
   | 'Completed';
 
 export interface Project {
@@ -168,6 +218,10 @@ export interface Project {
 
   // Proposals
   proposals: Proposal[];
+  collaborationOffers?: CollaborationOffer[];
+  prototypeUpdate?: PrototypeUpdate;
+  pilotReport?: PilotReport;
+  outcomeAudit?: OutcomeAudit;
 
   // Budget
   budgetEstimated?: number;

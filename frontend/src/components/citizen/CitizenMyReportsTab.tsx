@@ -1,6 +1,7 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch } from 'lucide-react';
 import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
+import { CHALLENGE_STATUS_OPTIONS, LIFECYCLE_STAGES, getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
@@ -28,12 +29,20 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
     return () => unsubscribe();
   }, []);
 
+  const localizedStatusLabels: Partial<Record<string, string>> = {
+    'Under Review': t.myReports?.filterUnderReview,
+    'Government Validated': t.myReports?.filterValidated,
+    'In Progress': t.myReports?.filterInProgress,
+    'Resolved': t.myReports?.filterResolved,
+  };
   const filterOptions = [
     { key: 'All', label: t.myReports?.filterAll || 'All' },
-    { key: 'Under Review', label: t.myReports?.filterUnderReview || 'Under Review' },
-    { key: 'Government Validated', label: t.myReports?.filterValidated || 'Government Validated' },
-    { key: 'In Progress', label: t.myReports?.filterInProgress || 'In Progress' },
-    { key: 'Resolved', label: t.myReports?.filterResolved || 'Resolved' },
+    ...CHALLENGE_STATUS_OPTIONS
+      .filter(status => getStageForStatus(status)?.isPublic)
+      .map(status => ({
+        key: status,
+        label: localizedStatusLabels[status] || tr(status, currentLang),
+      })),
   ];
 
   const filteredReports = filterStatus === 'All'
@@ -245,37 +254,35 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
                   16-Stage Government Lifecycle Pipeline
                 </span>
                 <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                  {selectedReport.stageName || 'Stage 1: Intake & Geotag Verification'}
+                  {getPublicStatusLabel(selectedReport.status)}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-center space-y-1 shadow-2xs">
-                  <span className="w-6 h-6 bg-emerald-600 text-white rounded-full text-xs font-black inline-flex items-center justify-center">1</span>
-                  <span className="block text-xs font-extrabold text-slate-900">Submission & AI Triage</span>
-                  <span className="block text-[9px] font-bold text-emerald-700 uppercase tracking-wider">COMPLETED</span>
-                </div>
-                <div className={`${(selectedReport.stageNumber || 1) >= 3 ? 'bg-emerald-50 border-emerald-200' : 'bg-amber-50 border-amber-200'} border p-3 rounded-xl text-center space-y-1 shadow-2xs`}>
-                  <span className={`w-6 h-6 ${(selectedReport.stageNumber || 1) >= 3 ? 'bg-emerald-600' : 'bg-amber-600'} text-white rounded-full text-xs font-black inline-flex items-center justify-center`}>2</span>
-                  <span className="block text-xs font-extrabold text-slate-900">Govt Validation & HEI Match</span>
-                  <span className={`block text-[9px] font-bold ${(selectedReport.stageNumber || 1) >= 3 ? 'text-emerald-700' : 'text-amber-700'} uppercase tracking-wider`}>
-                    {(selectedReport.stageNumber || 1) >= 3 ? 'COMPLETED' : 'IN PROGRESS'}
-                  </span>
-                </div>
-                <div className={`${(selectedReport.stageNumber || 1) >= 7 ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200 opacity-70'} border p-3 rounded-xl text-center space-y-1`}>
-                  <span className={`w-6 h-6 ${(selectedReport.stageNumber || 1) >= 7 ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-700'} rounded-full text-xs font-black inline-flex items-center justify-center`}>3</span>
-                  <span className="block text-xs font-bold text-slate-700">University R&D & Prototype</span>
-                  <span className="block text-[9px] font-medium text-slate-500 uppercase tracking-wider">
-                    {(selectedReport.stageNumber || 1) >= 7 ? 'IN PROGRESS' : 'PENDING'}
-                  </span>
-                </div>
-                <div className={`${selectedReport.status === 'Resolved' ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200 opacity-70'} border p-3 rounded-xl text-center space-y-1`}>
-                  <span className={`w-6 h-6 ${selectedReport.status === 'Resolved' ? 'bg-emerald-600 text-white' : 'bg-slate-300 text-slate-700'} rounded-full text-xs font-black inline-flex items-center justify-center`}>4</span>
-                  <span className="block text-xs font-bold text-slate-700">Pilot & Field Deployment</span>
-                  <span className="block text-[9px] font-medium text-slate-500 uppercase tracking-wider">
-                    {selectedReport.status === 'Resolved' ? 'COMPLETED' : 'PENDING'}
-                  </span>
-                </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 pt-1">
+                {LIFECYCLE_STAGES.map((stage) => {
+                  const currentStage = selectedReport.stageNumber || getStageForStatus(selectedReport.status)?.stageNumber || 1;
+                  const isComplete = currentStage > stage.stageNumber;
+                  const isCurrent = currentStage === stage.stageNumber;
+                  const stateLabel = isComplete ? 'COMPLETED' : isCurrent ? 'CURRENT' : 'PENDING';
+
+                  return (
+                    <div
+                      key={stage.stageNumber}
+                      className={`${isComplete ? 'bg-emerald-50 border-emerald-200' : isCurrent ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200 opacity-75'} border p-2.5 rounded-xl text-center space-y-1 min-h-[94px]`}
+                      title={stage.description}
+                    >
+                      <span className={`w-6 h-6 ${isComplete ? 'bg-emerald-600' : isCurrent ? 'bg-amber-600' : 'bg-slate-300'} ${isComplete || isCurrent ? 'text-white' : 'text-slate-700'} rounded-full text-[10px] font-black inline-flex items-center justify-center`}>
+                        {stage.stageNumber}
+                      </span>
+                      <span className="block text-[10px] font-extrabold text-slate-900 leading-tight">
+                        {stage.displayName}
+                      </span>
+                      <span className={`block text-[8px] font-bold ${isComplete ? 'text-emerald-700' : isCurrent ? 'text-amber-700' : 'text-slate-500'} uppercase tracking-wider`}>
+                        {stateLabel}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

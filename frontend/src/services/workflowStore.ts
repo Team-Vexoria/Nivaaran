@@ -11,28 +11,11 @@ import type {
   Project,
   TimelineEvent,
   ChallengeStatus,
-  ChallengeStageMetadata,
 } from './workflowTypes';
+import { formatStageName, getStageForStatus, isValidStageTransition } from './workflowLifecycle';
 
 const STORE_KEY = 'nivaaran_workflow_state';
 export const STORE_EVENT = 'nivaaran-store-updated';
-
-// This is intentionally limited to the status vocabulary already used by the
-// current frontend. The broader canonical lifecycle is handled separately.
-export const CHALLENGE_STAGE_METADATA: Record<ChallengeStatus, ChallengeStageMetadata> = {
-  'Submitted': { stageNumber: 1, stageName: 'Stage 1: Citizen Submission' },
-  'Under Review': { stageNumber: 2, stageName: 'Stage 2: AI Triage Complete — Awaiting Government Review' },
-  'Evidence Requested': { stageNumber: 2, stageName: 'Stage 2: Evidence Requested by Government Officer' },
-  'Government Validated': { stageNumber: 3, stageName: 'Stage 3: Government Validated & Prioritized' },
-  'HEI Matched': { stageNumber: 6, stageName: 'Stage 6: Institution Matching' },
-  'University Accepted': { stageNumber: 7, stageName: 'Stage 7: University Accepted & Project Allocation' },
-  'In Progress': { stageNumber: 8, stageName: 'Stage 8: Team Formation & Project Initiation' },
-  'Proposal Submitted': { stageNumber: 9, stageName: 'Stage 9: Technical Proposal Submitted' },
-  'Prototype Active': { stageNumber: 11, stageName: 'Stage 11: Prototype Development & Testing' },
-  'Pilot Active': { stageNumber: 12, stageName: 'Stage 12: Field Pilot Deployment' },
-  'Resolved': { stageNumber: 14, stageName: 'Stage 14: Solution Deployed' },
-  'Closed': { stageNumber: 16, stageName: 'Stage 16: Impact Measured & Challenge Closed' },
-};
 
 class WorkflowStore {
   private state: WorkflowState;
@@ -166,20 +149,30 @@ class WorkflowStore {
     actor: string,
     actorRole: string,
     note?: string
-  ): boolean {
+  ): { success: boolean; reason?: string } {
     const challenge = this.findChallengeByIdOrReportId(id);
-    if (!challenge) return false;
+    if (!challenge) return { success: false, reason: 'Challenge not found' };
 
     const previousStatus = challenge.status;
-    const stage = CHALLENGE_STAGE_METADATA[newStatus];
+    const currentStage = getStageForStatus(previousStatus);
+    const nextStage = getStageForStatus(newStatus);
+
+    if (!currentStage || !nextStage) {
+      return { success: false, reason: 'Invalid or unknown status mapping' };
+    }
+
+    if (currentStage.stageNumber !== nextStage.stageNumber && !isValidStageTransition(currentStage.stageNumber, nextStage.stageNumber)) {
+      return { success: false, reason: `Invalid transition from stage ${currentStage.stageNumber} to ${nextStage.stageNumber}` };
+    }
+
     const updated = this.updateChallenge(challenge.id, {
       status: newStatus,
-      stageNumber: stage.stageNumber,
-      stageName: stage.stageName,
+      stageNumber: nextStage.stageNumber,
+      stageName: formatStageName(nextStage.stageNumber),
       ...(note && { govtOfficerNote: note }),
     });
 
-    if (!updated) return false;
+    if (!updated) return { success: false, reason: 'Update failed' };
 
     this.addTimelineEvent({
       id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -194,7 +187,7 @@ class WorkflowStore {
       timestamp: new Date().toISOString(),
     });
     
-    return true;
+    return { success: true };
   }
 
   // ── Projects ────────────────────────────────────────────────────────────────

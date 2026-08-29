@@ -1,6 +1,7 @@
 import React from 'react';
 import { MapPin, AlertTriangle, CheckCircle2, Clock, Building2, Cpu } from 'lucide-react';
 import { ChallengeDoc } from '../../services/firebaseService';
+import { getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { getSeverityColor, getStatusPillClass, getCategoryColor } from '../../services/mapDataService';
 
 interface ChallengePopupCardProps {
@@ -121,12 +122,10 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
       )}
 
       {/* Stage info */}
-      {challenge.stageName && (
-        <div className="flex items-center gap-1 mt-2 text-[10px] text-[#8A7F72]">
-          <Clock className="w-3 h-3 shrink-0" />
-          <span>{challenge.stageName}</span>
-        </div>
-      )}
+      <div className="flex items-center gap-1 mt-2 text-[10px] text-[#8A7F72]">
+        <Clock className="w-3 h-3 shrink-0" />
+        <span>{getPublicStatusLabel(challenge.status)}</span>
+      </div>
 
       {/* Evidence image */}
       {challenge.evidenceUrl && (

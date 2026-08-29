@@ -5,6 +5,7 @@ import {
 import { submitChallengeToFirestore, submitFeedPostToFirestore } from '../services/firebaseService';
 import { runAITriageEngineAsync } from '../services/aiTriageEngine';
 import { useLanguage } from '../context/LanguageContext';
+import { formatStageName, getStageForStatus } from '../services/workflowLifecycle';
 
 interface QuickReportModalProps {
   isOpen: boolean;
@@ -187,6 +188,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
     // Run Multimodal Computer Vision & NLP AI Engine on Evidence Photo
     const aiResult = await runAITriageEngineAsync(title, description, 1, filePreviews[0] || '');
+    const initialStage = getStageForStatus('Under Review');
 
     try {
       await submitChallengeToFirestore({
@@ -196,7 +198,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         block: blockVillage || 'Central Block',
         village: blockVillage || 'Panchayat Area',
         category: aiResult.category,
-        status: aiResult.needsHumanVerification ? 'Under Review' : 'Under Review',
+        status: 'Under Review',
         summary: description || 'Reported by citizen with geotagged photo evidence.',
         evidenceUrl: filePreviews[0] || '',
         locationCoords: coords,
@@ -207,8 +209,8 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         aiReasoning: aiResult.reasoning,
         priorityFactors: aiResult.factors,
         needsHumanVerification: aiResult.needsHumanVerification,
-        stageNumber: 1,
-        stageName: 'Stage 1: AI Triage & Geotag Verification',
+        stageNumber: initialStage?.stageNumber || 2,
+        stageName: formatStageName(initialStage?.stageNumber || 2),
         govtOfficerNote: aiResult.reasoning,
       });
 

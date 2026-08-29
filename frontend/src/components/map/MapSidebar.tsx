@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, AlertCircle, TrendingUp, Filter, X } from 'lucide-react';
 import { DistrictStat, getSeverityColor } from '../../services/mapDataService';
 import { ChallengeDoc } from '../../services/firebaseService';
+import { CHALLENGE_STATUS_OPTIONS } from '../../services/workflowLifecycle';
 
 export type FilterState = {
   categories: string[];
@@ -20,7 +21,7 @@ interface MapSidebarProps {
   criticalCount: number;
 }
 
-const STATUS_OPTIONS = ['Under Review', 'Government Validated', 'In Progress', 'Resolved'];
+const STATUS_OPTIONS = CHALLENGE_STATUS_OPTIONS;
 
 const RISK_OPTIONS = ['CRITICAL', 'HIGH', 'MEDIUM', 'STANDARD'];
 
