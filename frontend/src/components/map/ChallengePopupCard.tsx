@@ -3,6 +3,7 @@ import { MapPin, AlertTriangle, CheckCircle2, Clock, Building2, Cpu } from 'luci
 import { ChallengeDoc } from '../../services/firebaseService';
 import { getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { getSeverityColor, getStatusPillClass, getCategoryColor } from '../../services/mapDataService';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ChallengePopupCardProps {
   challenge: ChallengeDoc;
@@ -17,6 +18,7 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
   onValidate,
   onRequestEvidence,
 }) => {
+  const { t } = useLanguage();
   const severityColor = getSeverityColor(challenge.riskLevel);
   const categoryColor = getCategoryColor(challenge.category || '');
 
@@ -66,7 +68,7 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 text-[10px] font-bold text-[#6A6155] uppercase tracking-wider">
             <Cpu className="w-3 h-3" />
-            <span>AI Priority Score</span>
+            <span>{t.map.popupAiPriority}</span>
           </div>
           <span
             className="text-sm font-black"
@@ -83,7 +85,7 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
         )}
 
         <p className="text-[9px] text-[#8A7F72] italic">
-          Advisory only — subject to Government officer review
+          {t.map.popupAdvisory}
         </p>
       </div>
 
@@ -97,7 +99,7 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
               <p className="text-[9px] text-[#6A6155] truncate">{challenge.assignedDept}</p>
             )}
           </div>
-          <span className="ml-auto text-[9px] font-bold text-[#2C6E49] shrink-0">Assigned</span>
+          <span className="ml-auto text-[9px] font-bold text-[#2C6E49] shrink-0">{t.map.popupAssigned}</span>
         </div>
       )}
 
@@ -109,14 +111,14 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
             className="flex-1 flex items-center justify-center gap-1 bg-[#2C6E49] hover:bg-[#23583a] text-white text-[10px] font-extrabold py-1.5 px-2 rounded-lg transition-colors"
           >
             <CheckCircle2 className="w-3 h-3" />
-            Validate & Assign
+            {t.map.popupValidateAssign}
           </button>
           <button
             onClick={() => onRequestEvidence?.(challenge.id || challenge.reportId)}
             className="flex-1 flex items-center justify-center gap-1 bg-[#EAE4D8] hover:bg-[#DFD8CA] text-[#4A433B] text-[10px] font-extrabold py-1.5 px-2 rounded-lg border border-[#E4DDD1] transition-colors"
           >
             <AlertTriangle className="w-3 h-3 text-[#C98A2C]" />
-            Request Evidence
+            {t.map.popupRequestEvidence}
           </button>
         </div>
       )}
@@ -132,7 +134,7 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
         <div className="mt-2">
           <img
             src={challenge.evidenceUrl}
-            alt="Challenge Evidence"
+            alt={t.map.popupEvidenceAlt}
             className="w-full h-24 object-cover rounded-lg border border-[#E4DDD1]"
             onError={(e) => { e.currentTarget.style.display = 'none'; }}
           />

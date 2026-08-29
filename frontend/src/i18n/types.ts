@@ -348,6 +348,42 @@ export interface LandingTranslations {
   skipToContent: string;
 }
 
+export interface MapTranslations {
+  title: string;
+  subtitle: string;
+  back: string;
+  loading: string;
+  noDataTitle: string;
+  noDataDesc: string;
+  statsTotal: string;
+  statsCritical: string;
+  statsValidated: string;
+  statsResolved: string;
+  filtersTitle: string;
+  clearAll: string;
+  severityTitle: string;
+  riskCritical: string;
+  riskHigh: string;
+  riskMedium: string;
+  riskStandard: string;
+  statusTitle: string;
+  districtsTitle: string;
+  clearDistrict: string;
+  legendTitle: string;
+  legendCritical: string;
+  legendHigh: string;
+  legendMedium: string;
+  legendStandard: string;
+  districtTooltip: string;
+  noGpsCoords: string;
+  popupAiPriority: string;
+  popupAdvisory: string;
+  popupAssigned: string;
+  popupValidateAssign: string;
+  popupRequestEvidence: string;
+  popupEvidenceAlt: string;
+}
+
 export interface TranslationDictionary {
   nav: NavTranslations;
   hero: HeroTranslations;
@@ -360,6 +396,7 @@ export interface TranslationDictionary {
   leaderboard: LeaderboardTranslations;
   profile: ProfileTranslations;
   landing: LandingTranslations;
+  map: MapTranslations;
   common: {
     loading: string;
     error: string;
