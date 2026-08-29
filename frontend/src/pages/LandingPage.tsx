@@ -16,6 +16,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     return params.get('portal') || '';
   });
 
+  const handleNavigatePortal = (portal: string) => {
+    const url = new URL(window.location.href);
+    if (portal) {
+      url.searchParams.set('portal', portal);
+    } else {
+      url.searchParams.delete('portal');
+    }
+    window.history.pushState({ portal }, '', url.toString());
+    setCurrentPortal(portal);
+  };
+
   useEffect(() => {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
@@ -34,12 +45,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   if (currentPortal === 'map') {
     return (
       <JharkhandMapExplorer
-        onNavigateHome={() => {
-          const url = new URL(window.location.href);
-          url.searchParams.delete('portal');
-          window.history.pushState({}, '', url.toString());
-          setCurrentPortal('');
-        }}
+        onNavigateHome={() => handleNavigatePortal('')}
       />
     );
   }
@@ -144,7 +150,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   return (
     <div id="main-content" className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col antialiased selection:bg-[#2C6E49] selection:text-white">
       {/* 1. Public Header Navbar (With GIGW Utility Strip & Bilingual Toggle) */}
-      <PublicNavbar onOpenAuth={onOpenAuth} />
+      <PublicNavbar onOpenAuth={onOpenAuth} onNavigatePortal={handleNavigatePortal} />
 
       <main className="flex-1 space-y-16 pb-20">
         

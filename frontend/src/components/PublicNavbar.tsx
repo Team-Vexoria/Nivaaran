@@ -4,12 +4,14 @@ import { SupportedLanguage } from '../i18n/translations';
 
 interface PublicNavbarProps {
   onOpenAuth: () => void;
+  onNavigatePortal?: (portal: string) => void;
   currentLang?: SupportedLanguage;
   onLangChange?: (lang: SupportedLanguage) => void;
 }
 
 export const PublicNavbar: React.FC<PublicNavbarProps> = ({ 
   onOpenAuth,
+  onNavigatePortal,
   currentLang = 'en',
   onLangChange
 }) => {
@@ -84,10 +86,14 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             {/* Top-Level Link 2 — Live Map */}
             <button
               onClick={() => {
-                const url = new URL(window.location.href);
-                url.searchParams.set('portal', 'map');
-                window.history.pushState({ portal: 'map' }, '', url.toString());
-                window.dispatchEvent(new Event('popstate'));
+                if (onNavigatePortal) {
+                  onNavigatePortal('map');
+                } else {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('portal', 'map');
+                  window.history.pushState({ portal: 'map' }, '', url.toString());
+                  window.dispatchEvent(new Event('popstate'));
+                }
               }}
               className="hover:text-[#2C6E49] transition-colors cursor-pointer flex items-center space-x-1.5"
             >
@@ -109,10 +115,20 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               {isDropdownOpen && (
                 <div className="absolute left-0 mt-2 w-56 bg-white border border-[#E4DDD1] rounded-xl shadow-xl py-2 z-[110] text-xs">
                   <button
-                    onClick={() => scrollToSection('gis-section')}
-                    className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block"
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      if (onNavigatePortal) {
+                        onNavigatePortal('map');
+                      } else {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('portal', 'map');
+                        window.history.pushState({ portal: 'map' }, '', url.toString());
+                        window.dispatchEvent(new Event('popstate'));
+                      }
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block cursor-pointer"
                   >
-                    24 Districts GIS
+                    24 Districts GIS Map 🗺️
                   </button>
                   <button
                     onClick={() => scrollToSection('framework-16')}
