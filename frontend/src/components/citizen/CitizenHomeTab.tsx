@@ -1,5 +1,5 @@
-import React from 'react';
-import { Camera, Search, Sparkles, CheckCircle2, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck } from 'lucide-react';
+import React, { useState } from 'react';
+import { Camera, Search, CheckCircle2, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck, MapPin } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
@@ -16,6 +16,7 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
   currentLang = 'en',
 }) => {
   const { t } = useLanguage();
+  const [showAllDistricts, setShowAllDistricts] = useState(false);
 
   // Real before vs after metrics
   const impactStats = [
@@ -49,12 +50,31 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
     },
   ];
 
-  const districtData = [
+  const all24Districts = [
     { name: tr('Ranchi', currentLang), reports: 142, resolved: 128, hei: 'BIT Mesra' },
     { name: tr('Dhanbad', currentLang), reports: 98, resolved: 89, hei: 'IIT (ISM) Dhanbad' },
     { name: tr('East Singhbhum', currentLang), reports: 86, resolved: 81, hei: 'NIT Jamshedpur' },
     { name: tr('Palamu', currentLang), reports: 114, resolved: 95, hei: 'Birsa Agri Univ' },
     { name: tr('Hazaribagh', currentLang), reports: 65, resolved: 59, hei: 'VBU Hazaribagh' },
+    { name: tr('Bokaro', currentLang), reports: 72, resolved: 66, hei: 'IIT ISM / BIT Mesra' },
+    { name: tr('Giridih', currentLang), reports: 58, resolved: 51, hei: 'VBU Hazaribagh' },
+    { name: tr('Deoghar', currentLang), reports: 63, resolved: 57, hei: 'AIIMS / SKMU Dumka' },
+    { name: tr('Dumka', currentLang), reports: 79, resolved: 68, hei: 'SKMU Dumka' },
+    { name: tr('West Singhbhum', currentLang), reports: 88, resolved: 74, hei: 'Kolhan University' },
+    { name: tr('Saraikela Kharsawan', currentLang), reports: 52, resolved: 47, hei: 'NIT Jamshedpur' },
+    { name: tr('Ramgarh', currentLang), reports: 44, resolved: 41, hei: 'Ranchi University' },
+    { name: tr('Khunti', currentLang), reports: 39, resolved: 36, hei: 'Birsa Agri Univ' },
+    { name: tr('Gumla', currentLang), reports: 51, resolved: 44, hei: 'Ranchi University' },
+    { name: tr('Simdega', currentLang), reports: 36, resolved: 31, hei: 'Ranchi University' },
+    { name: tr('Latehar', currentLang), reports: 47, resolved: 39, hei: 'Nilamber-Pitamber Univ' },
+    { name: tr('Garhwa', currentLang), reports: 56, resolved: 48, hei: 'Nilamber-Pitamber Univ' },
+    { name: tr('Chatra', currentLang), reports: 42, resolved: 35, hei: 'VBU Hazaribagh' },
+    { name: tr('Koderma', currentLang), reports: 38, resolved: 34, hei: 'VBU Hazaribagh' },
+    { name: tr('Jamtara', currentLang), reports: 34, resolved: 30, hei: 'SKMU Dumka' },
+    { name: tr('Godda', currentLang), reports: 49, resolved: 42, hei: 'SKMU Dumka' },
+    { name: tr('Sahibganj', currentLang), reports: 67, resolved: 58, hei: 'SKMU Dumka' },
+    { name: tr('Pakur', currentLang), reports: 41, resolved: 36, hei: 'SKMU Dumka' },
+    { name: tr('Lohardaga', currentLang), reports: 31, resolved: 28, hei: 'Ranchi University' },
   ];
 
   return (
@@ -63,13 +83,6 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
       {/* 1. Full Viewport Light Theme Hero Section */}
       <section className="min-h-[calc(100vh-64px)] flex flex-col justify-between py-8 px-6 bg-gradient-to-b from-slate-50 via-white to-slate-50/80 text-slate-900 border-b border-slate-300">
         <div className="max-w-6xl mx-auto text-center space-y-6 my-auto">
-          
-          {/* Official Badge */}
-          <div className="inline-flex items-center space-x-2 px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-extrabold shadow-2xs">
-            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>{t.hero?.officialBadge || 'Government of Jharkhand · Dept of Higher & Technical Education'}</span>
-          </div>
-
           {/* Main Title */}
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black font-heading text-slate-900 tracking-tight leading-[1.12] max-w-5xl mx-auto">
             {t.hero?.mainTitle || 'Report Local Community Problems. Get Verified University and Government Solutions.'}
@@ -197,24 +210,47 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
       {/* 3. District Status Stream Table */}
       <section className="max-w-7xl mx-auto px-6">
         <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="text-lg font-extrabold text-slate-900">District Incident & University Allocation Stream</h3>
-              <p className="text-xs text-slate-500">Live operational data synced across district administrations.</p>
+              <div className="flex items-center space-x-2.5">
+                <h3 className="text-lg font-extrabold text-slate-900">District Incident & University Allocation Stream</h3>
+                <span className="px-2.5 py-0.5 bg-[#2C6E49]/10 text-[#2C6E49] text-xs font-mono font-bold rounded-full">
+                  {showAllDistricts ? '24/24 Districts Expanded' : 'Top 5 / 24 Districts'}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">Live operational data synced across district administrations.</p>
             </div>
-            <button 
-              onClick={() => onNavigateTab('community-feed')}
-              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center space-x-1"
-            >
-              <span>View All 24 Districts</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            
+            <div className="flex items-center space-x-2 shrink-0">
+              <button 
+                onClick={() => setShowAllDistricts(!showAllDistricts)}
+                className="px-3.5 py-1.5 bg-[#FAF8F4] hover:bg-[#F3EDE2] text-[#201C18] border border-[#E4DDD1] rounded-lg text-xs font-extrabold transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+              >
+                <span>{showAllDistricts ? 'Show Top 5 Districts' : 'View All 24 Districts'}</span>
+                <ArrowRight className={`w-3.5 h-3.5 text-[#2C6E49] transition-transform duration-200 ${showAllDistricts ? 'rotate-90' : ''}`} />
+              </button>
+
+              <button 
+                onClick={() => {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('portal', 'map');
+                  window.history.pushState({ portal: 'map' }, '', url.toString());
+                  window.dispatchEvent(new Event('popstate'));
+                }}
+                className="px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white rounded-lg text-xs font-extrabold transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+                title="View All 24 Districts on GIS Map"
+              >
+                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                <span>GIS Map</span>
+              </button>
+            </div>
           </div>
 
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[480px] overflow-y-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 text-slate-500 font-bold bg-slate-50">
+              <thead className="sticky top-0 border-b border-slate-200 text-slate-500 font-bold bg-slate-50 z-10">
                 <tr>
+                  <th className="py-3 px-4">#</th>
                   <th className="py-3 px-4">District</th>
                   <th className="py-3 px-4">Active Reports</th>
                   <th className="py-3 px-4">Resolved</th>
@@ -222,8 +258,9 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-                {districtData.map((d, idx) => (
+                {(showAllDistricts ? all24Districts : all24Districts.slice(0, 5)).map((d, idx) => (
                   <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 font-mono text-slate-400 font-bold">{idx + 1}</td>
                     <td className="py-3 px-4 font-bold text-slate-900">{d.name}</td>
                     <td className="py-3 px-4">{d.reports}</td>
                     <td className="py-3 px-4 text-emerald-700 font-bold">{d.resolved}</td>

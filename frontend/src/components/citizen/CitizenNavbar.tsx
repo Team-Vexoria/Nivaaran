@@ -1,7 +1,7 @@
-﻿import React from 'react';
+import React from 'react';
 import { 
   Home, FileText, MessageSquare, MessagesSquare, Trophy, 
-  User, LogOut, Camera, Building2 
+  User, LogOut 
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage } from '../../i18n/translations';
@@ -23,9 +23,7 @@ interface CitizenNavbarProps {
 export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
   activeTab,
   onTabChange,
-  onOpenReportModal,
   onOpenAuth,
-  onOpenUniversityPortal,
   userDisplayName = '',
 }) => {
   const { t } = useLanguage();
@@ -76,36 +74,6 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
 
         {/* Right Actions & Buttons */}
         <div className="flex items-center space-x-2 shrink-0">
-          
-          {/* HEI Portal Direct Button */}
-          <button
-            onClick={() => {
-              if (onOpenUniversityPortal) {
-                onOpenUniversityPortal();
-              } else {
-                const url = new URL(window.location.href);
-                url.searchParams.set('portal', 'university');
-                window.history.pushState({ portal: 'university' }, '', url.toString());
-                window.dispatchEvent(new Event('popstate'));
-              }
-            }}
-            className="hidden lg:flex px-3 py-1.5 bg-[#EAE4D8] hover:bg-[#DFD8CA] text-[#4A433B] hover:text-[#201C18] border border-[#E4DDD1] rounded-lg text-xs font-extrabold items-center space-x-1.5 transition-colors whitespace-nowrap cursor-pointer"
-          >
-            <Building2 className="w-3.5 h-3.5 text-[#C98A2C] shrink-0" />
-            <span>{t.nav.heiPortal}</span>
-          </button>
-
-          {/* Primary Action Button: Report Problem */}
-          {onOpenReportModal && (
-            <button
-              onClick={onOpenReportModal}
-              className="px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-black rounded-lg shadow-2xs transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap cursor-pointer"
-            >
-              <Camera className="w-3.5 h-3.5 shrink-0" />
-              <span className="whitespace-nowrap">{t.nav.reportProblem}</span>
-            </button>
-          )}
-
           {/* Login or User Profile Button */}
           {userDisplayName && userDisplayName !== 'Guest' && userDisplayName !== '' ? (
             <div className="flex items-center space-x-1.5">

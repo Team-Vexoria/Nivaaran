@@ -12,7 +12,13 @@ import {
   X, 
   MessageSquare, 
   AlertTriangle,
-  Award
+  Award,
+  LayoutDashboard,
+  ArrowRight,
+  Flame,
+  FileCheck,
+  Layers,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
@@ -20,7 +26,7 @@ import { useMapData, getSeverityBg, getStatusPillClass } from '../../services/ma
 import { govValidateChallenge, govRequestEvidence, ChallengeDoc } from '../../services/firebaseService';
 import { CertificateModal } from '../../components/CertificateModal';
 
-type GovTab = 'map' | 'queue' | 'reports';
+type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'reports';
 
 // ─── Action Modal ─────────────────────────────────────────────────────────────
 interface ActionModalProps {
@@ -96,7 +102,7 @@ const ActionModal: React.FC<ActionModalProps> = ({ type, challenge, officerName,
 // ─── Main Portal ──────────────────────────────────────────────────────────────
 export const GovPortal: React.FC = () => {
   const { currentUser, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<GovTab>('map');
+  const [activeTab, setActiveTab] = useState<GovTab>('overview');
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warning' } | null>(null);
   const [actionModal, setActionModal] = useState<{ type: 'validate' | 'evidence'; challenge: ChallengeDoc } | null>(null);
   const [certificateModal, setCertificateModal] = useState<{ isOpen: boolean; challenge: ChallengeDoc | null }>({
@@ -141,10 +147,13 @@ export const GovPortal: React.FC = () => {
   };
 
   const tabs: { id: GovTab; label: string; icon: React.ReactNode }[] = [
-    { id: 'map',     label: 'State Map',       icon: <Map className="w-3.5 h-3.5" /> },
-    { id: 'queue',   label: 'Challenge Queue',  icon: <ListFilter className="w-3.5 h-3.5" /> },
-    { id: 'reports', label: 'Reports & Analytics', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { id: 'overview',     label: 'Overview',              icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
+    { id: 'map',          label: 'State Map',             icon: <Map className="w-3.5 h-3.5" /> },
+    { id: 'queue',        label: 'Challenge Queue',       icon: <ListFilter className="w-3.5 h-3.5" /> },
+    { id: 'universities', label: 'HEI Allocations',       icon: <Building2 className="w-3.5 h-3.5" /> },
+    { id: 'reports',      label: 'Reports & Analytics',   icon: <BarChart3 className="w-3.5 h-3.5" /> },
   ];
+
 
   const pendingCount = challenges.filter(c => c.status === 'Under Review').length;
   const evidenceNeededCount = challenges.filter(c => c.needsHumanVerification).length;
@@ -255,6 +264,433 @@ export const GovPortal: React.FC = () => {
 
       {/* ── Tab Content ── */}
       <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+
+        {/* OVERVIEW TAB */}
+        {activeTab === 'overview' && (
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto w-full">
+
+            {/* Official Government Command Header (Clean Light Theme) */}
+            <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[11px] font-extrabold text-[#2C6E49] bg-[#2C6E49]/10 px-2.5 py-0.5 rounded-full border border-[#2C6E49]/25 uppercase tracking-wider">
+                      State Disaster & Innovation Command
+                    </span>
+                    <span className="text-[11px] font-bold text-[#8A7F72] hidden sm:inline">·</span>
+                    <span className="text-[11px] font-bold text-[#5A5247] hidden sm:inline">Govt of Jharkhand</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black font-heading text-[#201C18]">
+                    Societal Challenge & Disaster Response Hub
+                  </h2>
+                  <p className="text-xs text-[#6A6155] max-w-2xl leading-relaxed">
+                    Live multi-district operational telemetry, automated AI triage verification, and inter-university R&D assignment ledger for 24 Jharkhand districts.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                  <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl px-3.5 py-2 text-right">
+                    <p className="text-[10px] text-[#8A7F72] uppercase font-bold">Active District Coverage</p>
+                    <p className="text-sm font-extrabold text-[#201C18] font-heading">24 / 24 Connected</p>
+                  </div>
+                  <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl px-3.5 py-2 text-right">
+                    <p className="text-[10px] text-[#8A7F72] uppercase font-bold">Officer</p>
+                    <p className="text-sm font-extrabold text-[#2C6E49] font-heading">{officerName.split(' ')[0]}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white border border-[#E4DDD1] rounded-xl p-5 shadow-2xs space-y-1">
+                <p className="text-[10px] font-bold text-[#8A7F72] uppercase tracking-wider">Total Challenges</p>
+                <p className="text-3xl font-black text-[#201C18] font-heading">{loading ? '…' : totalCount}</p>
+                <p className="text-[11px] text-[#6A6155]">Across 24 districts</p>
+              </div>
+
+              <div className="bg-[#FFF0EE] border border-[#F5C6C0] rounded-xl p-5 shadow-2xs space-y-1">
+                <p className="text-[10px] font-bold text-[#B3261E] uppercase tracking-wider flex items-center gap-1">
+                  <Flame className="w-3.5 h-3.5 text-[#B3261E]" /> Critical Alerts
+                </p>
+                <p className="text-3xl font-black text-[#B3261E] font-heading">{loading ? '…' : criticalCount}</p>
+                <p className="text-[11px] text-[#8A7F72]">Immediate triage required</p>
+              </div>
+
+              <div className="bg-[#FFF8EC] border border-[#F0D99A] rounded-xl p-5 shadow-2xs space-y-1">
+                <p className="text-[10px] font-bold text-[#C98A2C] uppercase tracking-wider flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-[#C98A2C]" /> Pending Review
+                </p>
+                <p className="text-3xl font-black text-[#C98A2C] font-heading">{loading ? '…' : pendingCount}</p>
+                <p className="text-[11px] text-[#8A7F72]">Awaiting officer validation</p>
+              </div>
+
+              <div className="bg-[#F0FAF4] border border-[#C3E6D0] rounded-xl p-5 shadow-2xs space-y-1">
+                <p className="text-[10px] font-bold text-[#2C6E49] uppercase tracking-wider flex items-center gap-1">
+                  <FileCheck className="w-3.5 h-3.5 text-[#2C6E49]" /> Validated
+                </p>
+                <p className="text-3xl font-black text-[#2C6E49] font-heading">{loading ? '…' : validatedCount}</p>
+                <p className="text-[11px] text-[#8A7F72]">Queued for HEI matching</p>
+              </div>
+            </div>
+
+            {/* Main Command Grid: Left 7 cols (Queue & District Matrix), Right 5 cols (Domain Breakdown & Lifecycle) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+              {/* Left Column (7 cols) */}
+              <div className="lg:col-span-7 space-y-6">
+
+                {/* 1. Urgent Action Items Panel */}
+                <div className="bg-white border border-[#E4DDD1] rounded-2xl shadow-2xs overflow-hidden">
+                  <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0EBE0] bg-[#FAF8F4]">
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="w-4 h-4 text-[#C98A2C]" />
+                      <h3 className="text-sm font-extrabold text-[#201C18]">Urgent Triage & Validation Queue</h3>
+                      {pendingCount > 0 && (
+                        <span className="text-[10px] font-black text-white bg-[#B3261E] px-2 py-0.5 rounded-full">{pendingCount}</span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('queue')}
+                      className="text-xs font-extrabold text-[#2C6E49] hover:text-[#23583a] flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      View All in Queue <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  {loading ? (
+                    <div className="px-5 py-8 text-center text-[#8A7F72] text-xs">Loading live challenges…</div>
+                  ) : challenges.filter(c => c.status === 'Under Review').length === 0 ? (
+                    <div className="px-5 py-8 text-center">
+                      <CheckCircle2 className="w-6 h-6 text-[#2C6E49] mx-auto mb-2" />
+                      <p className="text-sm font-bold text-[#4A433B]">All clear — no challenges pending review.</p>
+                      <p className="text-xs text-[#8A7F72] mt-1">New citizen reports will appear here automatically.</p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-[#F0EBE0]">
+                      {challenges.filter(c => c.status === 'Under Review').slice(0, 4).map(ch => {
+                        const id = ch.id || ch.reportId;
+                        return (
+                          <div key={id} className="px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-[#FAF8F4] transition-colors">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${getSeverityBg(ch.riskLevel)}`} />
+                              <div className="min-w-0">
+                                <p className="text-xs font-bold text-[#201C18] truncate">{ch.title}</p>
+                                <p className="text-[11px] text-[#8A7F72]">{ch.district} · {ch.reportId}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getSeverityBg(ch.riskLevel)} text-white`}>
+                                {ch.riskLevel || 'STD'}
+                              </span>
+                              <button
+                                onClick={() => openValidate(ch)}
+                                className="text-[11px] font-extrabold text-white bg-[#2C6E49] hover:bg-[#23583a] px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                              >
+                                <CheckCircle2 className="w-3 h-3" /> Validate
+                              </button>
+                              <button
+                                onClick={() => openRequestEvidence(ch)}
+                                className="text-[11px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] hover:bg-[#FFF0D0] border border-[#F0D99A] px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                              >
+                                Evidence
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {pendingCount > 4 && (
+                        <div className="px-5 py-2.5 text-center bg-[#FAF8F4]">
+                          <button
+                            onClick={() => setActiveTab('queue')}
+                            className="text-xs font-bold text-[#2C6E49] hover:underline cursor-pointer"
+                          >
+                            + {pendingCount - 4} more challenges in queue →
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. District Allocation Stream Table */}
+                <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-sm font-extrabold text-[#201C18]">District Hotspots & HEI Allocation Status</h3>
+                      <p className="text-[11px] text-[#8A7F72]">Real-time operational distribution across top Jharkhand districts</p>
+                    </div>
+                    <button
+                      onClick={() => setActiveTab('map')}
+                      className="text-xs font-bold text-[#2C6E49] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      Open Map <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="border-b border-[#E4DDD1] text-[#8A7F72] font-bold bg-[#FAF8F4]">
+                        <tr>
+                          <th className="py-2.5 px-3">District</th>
+                          <th className="py-2.5 px-3">Active Reports</th>
+                          <th className="py-2.5 px-3">Highest Risk</th>
+                          <th className="py-2.5 px-3">Assigned HEI Lab</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#F0EBE0] text-[#4A433B]">
+                        {[
+                          { name: 'Ranchi', reports: 142, risk: 'CRITICAL', hei: 'BIT Mesra' },
+                          { name: 'Dhanbad', reports: 98, risk: 'CRITICAL', hei: 'IIT (ISM) Dhanbad' },
+                          { name: 'East Singhbhum', reports: 86, risk: 'HIGH', hei: 'NIT Jamshedpur' },
+                          { name: 'Palamu', reports: 114, risk: 'HIGH', hei: 'Birsa Agri Univ' },
+                          { name: 'Hazaribagh', reports: 65, risk: 'MEDIUM', hei: 'VBU Hazaribagh' },
+                        ].map((d, i) => (
+                          <tr key={i} className="hover:bg-[#FAF8F4]/80 transition-colors">
+                            <td className="py-2.5 px-3 font-bold text-[#201C18]">{d.name}</td>
+                            <td className="py-2.5 px-3">{d.reports}</td>
+                            <td className="py-2.5 px-3">
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getSeverityBg(d.risk)} text-white`}>
+                                {d.risk}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-[#2C6E49]">{d.hei}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Right Column (5 cols) */}
+              <div className="lg:col-span-5 space-y-6">
+
+                {/* 1. Category & Hazard Domain Breakdown */}
+                <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#F0EBE0] pb-3">
+                    <div className="flex items-center space-x-2">
+                      <Layers className="w-4 h-4 text-[#2C6E49]" />
+                      <h3 className="text-sm font-extrabold text-[#201C18]">Hazard Domain Breakdown</h3>
+                    </div>
+                    <span className="text-[11px] font-mono text-[#8A7F72]">5 Core Domains</span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[
+                      { domain: 'Flood, Water Logging & Drainage', count: '42%', color: 'bg-blue-600', text: 'text-blue-700' },
+                      { domain: 'Mining, Subsidence & Landslides', count: '24%', color: 'bg-amber-600', text: 'text-amber-700' },
+                      { domain: 'Rural Roads & Bridge Infrastructure', count: '18%', color: 'bg-emerald-600', text: 'text-emerald-700' },
+                      { domain: 'Agro-Drought & Groundwater Recharge', count: '11%', color: 'bg-[#C98A2C]', text: 'text-[#C98A2C]' },
+                      { domain: 'School Safety & Public Hazards', count: '5%', color: 'bg-purple-600', text: 'text-purple-700' },
+                    ].map((item, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-[#201C18] text-[11px] truncate">{item.domain}</span>
+                          <span className={`font-mono font-extrabold ${item.text}`}>{item.count}</span>
+                        </div>
+                        <div className="w-full bg-[#FAF8F4] border border-[#E4DDD1] h-2 rounded-full overflow-hidden">
+                          <div className={`h-full ${item.color} rounded-full`} style={{ width: item.count }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. 16-Stage Lifecycle Progress Summary */}
+                <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-3">
+                  <div className="flex items-center justify-between border-b border-[#F0EBE0] pb-3">
+                    <div className="flex items-center space-x-2">
+                      <Activity className="w-4 h-4 text-[#C98A2C]" />
+                      <h3 className="text-sm font-extrabold text-[#201C18]">16-Stage Lifecycle Distribution</h3>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
+                      <span className="text-[10px] font-bold text-[#2C6E49] bg-[#2C6E49]/10 px-2 py-0.5 rounded font-mono">Phase 1</span>
+                      <p className="text-xs font-bold text-[#201C18]">Triage & Review</p>
+                      <p className="text-[11px] text-[#8A7F72]">Stages 1–5</p>
+                    </div>
+
+                    <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
+                      <span className="text-[10px] font-bold text-[#C98A2C] bg-[#C98A2C]/10 px-2 py-0.5 rounded font-mono">Phase 2</span>
+                      <p className="text-xs font-bold text-[#201C18]">HEI Matching</p>
+                      <p className="text-[11px] text-[#8A7F72]">Stages 6–9</p>
+                    </div>
+
+                    <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
+                      <span className="text-[10px] font-bold text-[#B5502D] bg-[#B5502D]/10 px-2 py-0.5 rounded font-mono">Phase 3</span>
+                      <p className="text-xs font-bold text-[#201C18]">IoT Prototype</p>
+                      <p className="text-[11px] text-[#8A7F72]">Stages 10–13</p>
+                    </div>
+
+                    <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
+                      <span className="text-[10px] font-bold text-[#2C6E49] bg-[#2C6E49]/10 px-2 py-0.5 rounded font-mono">Phase 4</span>
+                      <p className="text-xs font-bold text-[#201C18]">Deployment</p>
+                      <p className="text-[11px] text-[#8A7F72]">Stages 14–16</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Quick Action Hub */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => setActiveTab('map')}
+                    className="p-4 bg-white border border-[#E4DDD1] hover:border-[#2C6E49] rounded-xl text-left transition-all group cursor-pointer shadow-2xs space-y-1.5"
+                  >
+                    <Map className="w-5 h-5 text-[#2C6E49]" />
+                    <p className="text-xs font-black text-[#201C18] group-hover:text-[#2C6E49]">GIS Map</p>
+                    <p className="text-[10px] text-[#8A7F72]">24 Districts Hotspots</p>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveTab('universities')}
+                    className="p-4 bg-white border border-[#E4DDD1] hover:border-[#C98A2C] rounded-xl text-left transition-all group cursor-pointer shadow-2xs space-y-1.5"
+                  >
+                    <Building2 className="w-5 h-5 text-[#C98A2C]" />
+                    <p className="text-xs font-black text-[#201C18] group-hover:text-[#C98A2C]">HEI Matrix</p>
+                    <p className="text-[10px] text-[#8A7F72]">BIT · IIT · NIT Teams</p>
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* HEI ALLOCATIONS TAB */}
+        {activeTab === 'universities' && (
+          <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto w-full">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs">
+              <div>
+                <span className="text-[11px] font-extrabold text-[#C98A2C] bg-[#C98A2C]/10 px-2.5 py-0.5 rounded-full border border-[#C98A2C]/25 uppercase tracking-wider">
+                  Academic Innovation Network
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black font-heading text-[#201C18] mt-1">
+                  Partner Universities & Specialized R&D Hubs
+                </h2>
+                <p className="text-xs text-[#6A6155] mt-0.5">
+                  Institutions assigned to solve validated ground challenges through multidisciplinary student & faculty engineering teams.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <div className="bg-[#FAF8F4] border border-[#E4DDD1] px-3.5 py-2 rounded-xl text-right">
+                  <p className="text-[10px] font-bold text-[#8A7F72] uppercase">Partner HEIs</p>
+                  <p className="text-sm font-extrabold text-[#201C18]">6 Institutions</p>
+                </div>
+                <div className="bg-[#FAF8F4] border border-[#E4DDD1] px-3.5 py-2 rounded-xl text-right">
+                  <p className="text-[10px] font-bold text-[#8A7F72] uppercase">R&D Labs</p>
+                  <p className="text-sm font-extrabold text-[#2C6E49]">48+ Connected</p>
+                </div>
+              </div>
+            </div>
+
+            {/* University Cards Grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {[
+                {
+                  name: 'BIT Mesra, Ranchi',
+                  role: 'Centre of Excellence in Flood Telemetry & Sensor Systems',
+                  domain: 'Water Logging, IoT Sensors, Early Warning Hardware',
+                  assigned: 4,
+                  teams: 8,
+                  lead: 'Dr. S. K. Verma (Dept of ECE)',
+                  facilities: 'IoT Fabrication Lab, Ultrasonic Water Sensors',
+                  badge: 'Lead Nodal Centre',
+                },
+                {
+                  name: 'IIT (ISM) Dhanbad',
+                  role: 'Geotechnical & Mine Safety Innovation Wing',
+                  domain: 'Landslides, Subsidence, Open-Cast Pit Flooding',
+                  assigned: 3,
+                  teams: 6,
+                  lead: 'Prof. R. Banerjee (Dept of Mining)',
+                  facilities: 'Ground Radar, Displacement Telemetry',
+                  badge: 'Premier R&D Lab',
+                },
+                {
+                  name: 'NIT Jamshedpur',
+                  role: 'Hydraulic Modeling & Spatial River Basin Lab',
+                  domain: 'River Overflow, Culvert Blockage, GIS Spatial Flow',
+                  assigned: 3,
+                  teams: 5,
+                  lead: 'Dr. A. K. Choudhary (Civil Engg)',
+                  facilities: 'Hydraulic Basin Simulator, Drone GIS',
+                  badge: 'Spatial GIS Node',
+                },
+                {
+                  name: 'Birsa Agricultural University',
+                  role: 'Agro-Water & Drought Mitigation Research Unit',
+                  domain: 'Groundwater Depletion, Check-Dam Telemetry',
+                  assigned: 2,
+                  teams: 4,
+                  lead: 'Dr. M. Soren (Soil & Water Engg)',
+                  facilities: 'Soil Moisture Testbed, Rainwater Loggers',
+                  badge: 'Agritech Centre',
+                },
+                {
+                  name: 'IIIT Ranchi',
+                  role: 'Low-Cost Edge AI & Embedded Telemetry Cell',
+                  domain: 'Edge AI Camera Triage, Low-Bandwidth LoRa Mesh',
+                  assigned: 2,
+                  teams: 4,
+                  lead: 'Dr. P. Roy (Computer Science)',
+                  facilities: 'Embedded AI Kits, LoRaWAN Gateway',
+                  badge: 'Edge AI Node',
+                },
+                {
+                  name: 'Ranchi University',
+                  role: 'Civic Field Surveys & Ground Impact Cell',
+                  domain: 'Socio-Economic Audit, Citizen Verification',
+                  assigned: 2,
+                  teams: 3,
+                  lead: 'Dr. K. Kumari (Social Science)',
+                  facilities: 'Field Survey Kit, Multilingual Audit App',
+                  badge: 'Impact Audit Cell',
+                },
+              ].map((hei, idx) => (
+                <div key={idx} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#2C6E49] transition-all">
+                  <div className="flex items-start justify-between gap-2 border-b border-[#FAF8F4] pb-3">
+                    <div className="space-y-0.5">
+                      <span className="text-[10px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2 py-0.5 rounded-full">
+                        {hei.badge}
+                      </span>
+                      <h3 className="text-base font-extrabold text-[#201C18] font-heading mt-1">{hei.name}</h3>
+                      <p className="text-[11px] text-[#8A7F72]">{hei.role}</p>
+                    </div>
+                    <Building2 className="w-5 h-5 text-[#2C6E49] shrink-0 mt-1" />
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Specialization:</span>
+                      <p className="text-[#201C18] font-semibold">{hei.domain}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Faculty Lead:</span>
+                      <p className="text-[#4A433B]">{hei.lead}</p>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Lab Facilities:</span>
+                      <p className="text-[#6A6155] text-[11px]">{hei.facilities}</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-[#F0EBE0] flex items-center justify-between text-xs">
+                    <span className="font-bold text-[#2C6E49]">{hei.assigned} Active Projects</span>
+                    <span className="text-[#8A7F72] font-mono">{hei.teams} Student Teams</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
 
         {/* MAP TAB */}
         {activeTab === 'map' && (

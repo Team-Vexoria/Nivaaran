@@ -16,9 +16,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     return params.get('portal') || '';
   });
 
-  // MUST be declared before any early returns — React Rules of Hooks
-  const [activePhaseIndex, setActivePhaseIndex] = useState<number>(0);
-
   const handleNavigatePortal = (portal: string) => {
     const url = new URL(window.location.href);
     if (portal) {
@@ -36,7 +33,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       const portalParam = params.get('portal');
       setCurrentPortal(portalParam || '');
     };
-
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
@@ -52,45 +48,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       />
     );
   }
-
-  const roleGateways = [
-    {
-      role: 'Government Department',
-      icon: <Building2 className="w-7 h-7 text-[#1D4ED8]" />,
-      bg: 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50/40',
-      badge: 'State & District Officers',
-      title: 'Government Department Portal',
-      desc: 'Validate geotagged reports, prioritize district hazards, assign university R&D teams, and monitor 24-district state analytics.',
-      action: 'Enter Government Portal',
-    },
-    {
-      role: 'University R&D',
-      icon: <Cpu className="w-7 h-7 text-purple-600" />,
-      bg: 'bg-white border-slate-200 hover:border-purple-300 hover:bg-purple-50/40',
-      badge: 'BIT, IIT, NIT, BAU & HEIs',
-      title: 'University & Student Portal',
-      desc: 'Discover matched community challenges, form multidisciplinary student/faculty teams, build IoT prototypes, and track milestone proposals.',
-      action: 'Enter HEI & Student Workspace',
-    },
-    {
-      role: 'Industry & CSR',
-      icon: <ShieldCheck className="w-7 h-7 text-[#F59E0B]" />,
-      bg: 'bg-white border-slate-200 hover:border-amber-300 hover:bg-amber-50/40',
-      badge: 'Corporate & MSME Partners',
-      title: 'Industry & CSR Network',
-      desc: 'Co-sponsor high-impact engineering projects, provide telemetry hardware grants, and mentor student research teams.',
-      action: 'Enter Industry / CSR Network',
-    },
-    {
-      role: 'Citizen & Community',
-      icon: <UserCheck className="w-7 h-7 text-[#16A34A]" />,
-      bg: 'bg-white border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40',
-      badge: 'Citizens & Panchayat Orgs',
-      title: 'Citizen & Community Intake',
-      desc: 'Report local flood risks, water shortage, or road hazards with GPS photos/videos. Track 16-stage progress & earn tree sapling rewards.',
-      action: 'Citizen Access & Report Problem',
-    },
-  ];
 
   const macroPhases = [
     {
@@ -226,7 +183,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           </div>
         </section>
 
-        {/* 3. Role Portals Gateway Grid */}
+        {/* 3. Role Portals Gateway Tree Diagram */}
         <section id="role-gateways" className="max-w-7xl mx-auto px-6 space-y-6">
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <span className="text-xs font-extrabold text-[#2C6E49] uppercase tracking-wider block">
@@ -235,135 +192,191 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             <h2 className="text-2xl sm:text-4xl font-extrabold font-heading text-[#201C18]">
               Select Your Role to Access Portal
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600">
-              Strict RBAC authorization tailored specifically for government officers, university researchers, industry CSR, and citizens.
-            </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {roleGateways.map((card, idx) => (
-              <div 
-                key={idx}
-                onClick={onOpenAuth}
-                className="p-6 rounded-2xl border bg-white border-[#E4DDD1] hover:border-[#C98A2C] transition-all duration-300 shadow-sm hover:shadow-md flex flex-col justify-between space-y-5 cursor-pointer group"
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="p-3 rounded-xl bg-[#FAF8F4] border border-[#E4DDD1]">
-                      {card.icon}
+          {/* Tree Diagram */}
+          <div className="flex flex-col items-center">
+
+            {/* Root Hub Node */}
+            <div className="bg-white border-2 border-[#2C6E49] text-[#201C18] px-8 py-3 rounded-2xl shadow-sm flex items-center justify-center relative z-10">
+              <p className="font-black text-base font-heading tracking-tight text-[#201C18]">NIVAARAN Platform</p>
+            </div>
+
+            {/* Vertical stem down from root */}
+            <div className="w-px h-8 bg-[#DCD6C6]" />
+
+            {/* Horizontal branch bar */}
+            <div className="relative w-full max-w-5xl">
+              <div className="absolute top-0 left-[12.5%] right-[12.5%] h-px bg-[#DCD6C6]" />
+
+              {/* 4 branch drops + cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-0">
+                {/* Gov */}
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-8 bg-[#DCD6C6]" />
+                  <button
+                    onClick={onOpenAuth}
+                    className="w-full p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-[#1D4ED8] hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-100">
+                        <Building2 className="w-6 h-6 text-[#1D4ED8]" />
+                      </div>
+                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">State & District</span>
                     </div>
-                    <span className="text-[11px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2.5 py-1 rounded-full border border-[#E4DDD1]">
-                      {card.badge}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold font-heading text-[#201C18] group-hover:text-[#2C6E49] transition-colors">
-                    {card.title}
-                  </h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {card.desc}
-                  </p>
+                    <div>
+                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-[#1D4ED8] transition-colors leading-tight">Government Portal</h3>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">Validate, prioritize & assign university R&D teams</p>
+                    </div>
+                    <div className="flex items-center space-x-1 text-[11px] font-extrabold text-[#1D4ED8] group-hover:translate-x-1 transition-transform">
+                      <span>Enter Portal</span>
+                      <ArrowRight className="w-3 h-3 shrink-0" />
+                    </div>
+                  </button>
                 </div>
-                <div className="flex items-center space-x-1 text-xs font-extrabold text-[#201C18] group-hover:translate-x-1 transition-transform">
-                  <span>{card.action}</span>
-                  <ArrowRight className="w-4 h-4 text-[#2C6E49] shrink-0" />
+
+                {/* University */}
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-8 bg-[#DCD6C6]" />
+                  <button
+                    onClick={onOpenAuth}
+                    className="w-full p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-purple-400 hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-100">
+                        <Cpu className="w-6 h-6 text-purple-600" />
+                      </div>
+                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">BIT · IIT · NIT</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-purple-600 transition-colors leading-tight">University Portal</h3>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">Build teams, IoT prototypes & milestone proposals</p>
+                    </div>
+                    <div className="flex items-center space-x-1 text-[11px] font-extrabold text-purple-600 group-hover:translate-x-1 transition-transform">
+                      <span>Enter Portal</span>
+                      <ArrowRight className="w-3 h-3 shrink-0" />
+                    </div>
+                  </button>
+                </div>
+
+                {/* Industry */}
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-8 bg-[#DCD6C6]" />
+                  <button
+                    onClick={onOpenAuth}
+                    className="w-full p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-[#C98A2C] hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-100">
+                        <ShieldCheck className="w-6 h-6 text-[#C98A2C]" />
+                      </div>
+                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">MSME · CSR</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-[#C98A2C] transition-colors leading-tight">Industry & CSR</h3>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">Fund projects, grant hardware & mentor teams</p>
+                    </div>
+                    <div className="flex items-center space-x-1 text-[11px] font-extrabold text-[#C98A2C] group-hover:translate-x-1 transition-transform">
+                      <span>Enter Portal</span>
+                      <ArrowRight className="w-3 h-3 shrink-0" />
+                    </div>
+                  </button>
+                </div>
+
+                {/* Citizen */}
+                <div className="flex flex-col items-center">
+                  <div className="w-px h-8 bg-[#DCD6C6]" />
+                  <button
+                    onClick={onOpenAuth}
+                    className="w-full p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-[#2C6E49] hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100">
+                        <UserCheck className="w-6 h-6 text-[#2C6E49]" />
+                      </div>
+                      <span className="text-[10px] font-bold text-[#4A433B] bg-[#FAF8F4] px-2 py-0.5 rounded-full border border-[#E4DDD1]">Citizens · Panchayat</span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black font-heading text-[#201C18] group-hover:text-[#2C6E49] transition-colors leading-tight">Citizen Intake</h3>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">Report hazards, track 16 stages & earn rewards</p>
+                    </div>
+                    <div className="flex items-center space-x-1 text-[11px] font-extrabold text-[#2C6E49] group-hover:translate-x-1 transition-transform">
+                      <span>Report Problem</span>
+                      <ArrowRight className="w-3 h-3 shrink-0" />
+                    </div>
+                  </button>
                 </div>
               </div>
-            ))}
+            </div>
+
           </div>
         </section>
 
-        {/* 4. Interactive 16-Stage Connected Lifecycle Stepper Stream */}
-        <section id="framework-16" className="max-w-7xl mx-auto px-6 space-y-6">
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-[#E4DDD1] shadow-sm space-y-8 relative overflow-hidden">
-            
-            {/* Motif Accent Line */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-[linear-gradient(90deg,#2C6E49_0%,#C98A2C_50%,#B5502D_100%)]"></div>
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#E4DDD1] pb-6 pt-2">
-              <div>
-                <span className="text-xs font-extrabold text-[#2C6E49] uppercase tracking-wider block">
-                  SIH 26043 ARCHITECTURE FRAMEWORK
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-[#201C18] mt-1">
-                  Connected 16-Stage Solution Lifecycle Stream
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
-                  Every societal challenge moves through 4 macro-phases and 16 transparent, audit-logged stages from citizen report to verified closure.
-                </p>
-              </div>
-
-              <div className="px-4 py-2 bg-[#211D19] text-white rounded-xl text-xs font-mono font-bold shrink-0 flex items-center space-x-2">
-                <span className="w-2 h-2 rounded-full bg-[#2C6E49] animate-pulse"></span>
-                <span>16 Accountable Stages</span>
-              </div>
+        {/* 4. 16-Stage Pipeline Flow Diagram */}
+        <section id="framework-16" className="max-w-7xl mx-auto px-6 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-[#201C18]">16-Stage Challenge Lifecycle</h2>
             </div>
-
-            {/* 4 Macro-Phase Interactive Tabs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {macroPhases.map((mp, pIdx) => {
-                const isActive = activePhaseIndex === pIdx;
-                return (
-                  <button
-                    key={pIdx}
-                    onClick={() => setActivePhaseIndex(pIdx)}
-                    className={`p-4 rounded-2xl border text-left transition-all cursor-pointer ${
-                      isActive
-                        ? `${mp.color} border-2 shadow-xs`
-                        : 'bg-[#FAF8F4] border-[#E4DDD1] hover:bg-[#F3EDE2] text-[#201C18]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white border border-[#E4DDD1] shadow-2xs">
-                        {mp.badge}
-                      </span>
-                      <span className="text-xs font-bold font-mono">
-                        {pIdx + 1}/4
-                      </span>
-                    </div>
-                    <p className="text-sm font-bold mt-2 font-heading">
-                      {mp.phase}
-                    </p>
-                  </button>
-                );
-              })}
+            <div className="px-3.5 py-1.5 bg-[#2C6E49]/10 text-[#2C6E49] border border-[#2C6E49]/30 rounded-xl text-xs font-mono font-bold shrink-0 flex items-center space-x-2">
+              <span className="w-2 h-2 rounded-full bg-[#2C6E49]"></span>
+              <span>Citizen → Closure · Full Audit Trail</span>
             </div>
+          </div>
 
-            {/* Connected Stage Nodes for Currently Selected Phase */}
-            <div className="bg-[#FAF8F4] p-5 rounded-2xl border border-[#E4DDD1] space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-bold text-[#201C18] uppercase">
-                  {macroPhases[activePhaseIndex].phase} — Stage Pipeline
-                </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  Click stage to inspect details
-                </span>
-              </div>
+          <div className="space-y-4">
+            {macroPhases.map((mp, pIdx) => {
+              const phaseColors = [
+                { bg: 'bg-[#2C6E49]', light: 'bg-[#2C6E49]/5', border: 'border-[#2C6E49]/25', text: 'text-[#2C6E49]', bubble: 'bg-[#2C6E49]' },
+                { bg: 'bg-[#C98A2C]', light: 'bg-[#C98A2C]/5', border: 'border-[#C98A2C]/25', text: 'text-[#C98A2C]', bubble: 'bg-[#C98A2C]' },
+                { bg: 'bg-[#B5502D]', light: 'bg-[#B5502D]/5', border: 'border-[#B5502D]/25', text: 'text-[#B5502D]', bubble: 'bg-[#B5502D]' },
+                { bg: 'bg-[#2C6E49]', light: 'bg-[#2C6E49]/5', border: 'border-[#2C6E49]/25', text: 'text-[#2C6E49]', bubble: 'bg-[#2C6E49]' },
+              ][pIdx];
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                {macroPhases[activePhaseIndex].stages.map((st, sIdx) => (
-                  <div
-                    key={st.stage}
-                    className="bg-white p-4 rounded-xl border border-[#E4DDD1] shadow-2xs space-y-2 relative group hover:border-[#2C6E49] transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="w-7 h-7 rounded-full bg-[#211D19] text-white text-xs font-black flex items-center justify-center font-mono">
-                        {st.stage}
-                      </span>
-                      {sIdx < macroPhases[activePhaseIndex].stages.length - 1 && (
-                        <span className="text-[#C4BDB0] font-bold text-sm hidden lg:inline">→</span>
-                      )}
+              const gridCols = mp.stages.length === 5 
+                ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5' 
+                : mp.stages.length === 4 
+                ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-4' 
+                : 'grid-cols-1 sm:grid-cols-3';
+
+              return (
+                <div key={pIdx} className={`${phaseColors.light} border ${phaseColors.border} rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs`}>
+                  {/* Phase label */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2.5">
+                      <span className={`${phaseColors.bg} text-white text-[11px] font-black px-3 py-1 rounded-full font-mono shadow-2xs`}>{mp.badge}</span>
+                      <span className={`${phaseColors.text} text-sm font-extrabold font-heading`}>{mp.phase}</span>
                     </div>
-                    <h4 className="font-bold text-xs text-[#201C18] font-heading">
-                      {st.name}
-                    </h4>
-                    <p className="text-[11px] text-slate-500 leading-tight">
-                      {st.desc}
-                    </p>
+                    <span className="text-[11px] text-slate-400 font-mono font-medium hidden sm:inline">
+                      {mp.stages.length} Connected Stages
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
 
+                  {/* Stage nodes full-width grid */}
+                  <div className={`grid ${gridCols} gap-3.5 w-full`}>
+                    {mp.stages.map((st, sIdx) => (
+                      <div 
+                        key={st.stage}
+                        className="bg-white p-4 rounded-xl border border-[#E4DDD1] shadow-2xs hover:border-[#2C6E49] transition-all flex flex-col justify-between space-y-3 relative group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className={`${phaseColors.bubble} text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-xs font-mono shadow-2xs shrink-0`}>
+                            {st.stage}
+                          </div>
+                          {sIdx < mp.stages.length - 1 && (
+                            <span className="text-[#C4BDB0] group-hover:text-[#2C6E49] font-bold text-xs hidden lg:inline transition-colors">→</span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-xs font-extrabold text-[#201C18] font-heading leading-tight">{st.name}</p>
+                          <p className="text-[11px] text-slate-500 leading-snug mt-1">{st.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
