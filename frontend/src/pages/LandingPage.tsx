@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { PublicNavbar } from '../components/PublicNavbar';
 import { UniversityPortal } from './portals/UniversityPortal';
 import { JharkhandMapExplorer } from '../components/map/JharkhandMapExplorer';
+import { PublicChallengeTracker } from '../components/tracking/PublicChallengeTracker';
 import { 
-  Building2, ShieldCheck, UserCheck, ArrowRight, Cpu
+  Building2, ShieldCheck, UserCheck, ArrowRight, Cpu, Search, Eye
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -15,6 +16,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     const params = new URLSearchParams(window.location.search);
     return params.get('portal') || '';
   });
+
+  const [trackingModal, setTrackingModal] = useState<{ isOpen: boolean; reportId?: string }>({
+    isOpen: false,
+    reportId: '',
+  });
+
+  const [heroTrackQuery, setHeroTrackQuery] = useState<string>('');
+
+  const handleOpenTracking = (reportId?: string) => {
+    setTrackingModal({
+      isOpen: true,
+      reportId: reportId || heroTrackQuery || 'JH-2026-RNC-001',
+    });
+  };
 
   const handleNavigatePortal = (portal: string) => {
     const url = new URL(window.location.href);
@@ -108,7 +123,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   return (
     <div id="main-content" className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col antialiased selection:bg-[#2C6E49] selection:text-white">
       {/* 1. Public Header Navbar (With GIGW Utility Strip & Bilingual Toggle) */}
-      <PublicNavbar onOpenAuth={onOpenAuth} onNavigatePortal={handleNavigatePortal} />
+      <PublicNavbar 
+        onOpenAuth={onOpenAuth} 
+        onNavigatePortal={handleNavigatePortal} 
+        onOpenTracking={handleOpenTracking}
+      />
+
+      {/* Tracking Modal */}
+      {trackingModal.isOpen && (
+        <PublicChallengeTracker
+          initialReportId={trackingModal.reportId}
+          onClose={() => setTrackingModal({ isOpen: false, reportId: '' })}
+        />
+      )}
 
       <main className="flex-1 space-y-16 pb-20">
         
@@ -149,6 +176,48 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               >
                 <span>View 16-Stage Lifecycle Map</span>
               </button>
+            </div>
+
+            {/* Live 16-Stage Challenge Tracking Bar */}
+            <div className="max-w-xl mx-auto pt-2">
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleOpenTracking(heroTrackQuery || 'JH-2026-RNC-001');
+                }}
+                className="bg-white border border-[#E4DDD1] rounded-2xl p-2 shadow-sm flex items-center gap-2"
+              >
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 text-[#8A7F72] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Track Challenge Status (e.g. JH-2026-RNC-001)..."
+                    value={heroTrackQuery}
+                    onChange={(e) => setHeroTrackQuery(e.target.value)}
+                    className="w-full bg-transparent pl-9 pr-3 py-1.5 text-xs text-[#201C18] font-medium focus:outline-none placeholder:text-[#8A7F72]"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-extrabold rounded-xl transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 shrink-0"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Track Status</span>
+                </button>
+              </form>
+              <div className="flex items-center justify-center gap-2 mt-2 text-[11px] text-[#6A6155]">
+                <span className="text-[#8A7F72]">Popular Audits:</span>
+                {['JH-2026-RNC-001', 'JH-2026-DHN-002', 'JH-2026-ESB-003'].map(code => (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => handleOpenTracking(code)}
+                    className="font-mono text-[10px] text-[#2C6E49] hover:underline cursor-pointer font-bold"
+                  >
+                    {code}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Integrated Monolithic Civic Impact Ticker Strip */}

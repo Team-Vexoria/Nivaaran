@@ -12,99 +12,484 @@ import {
   X, 
   MessageSquare, 
   AlertTriangle,
-  Award,
   LayoutDashboard,
   ArrowRight,
   Flame,
   FileCheck,
   Layers,
-  Activity
+  Cpu,
+  Eye,
+  MapPin,
+  User,
+  FileText,
+  Download,
+  Check
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
 import { useMapData, getSeverityBg, getStatusPillClass } from '../../services/mapDataService';
-import { govValidateChallenge, govRequestEvidence, ChallengeDoc } from '../../services/firebaseService';
+import { govValidateChallenge, govRequestEvidence, govVerifyAndDeployChallenge, ChallengeDoc } from '../../services/firebaseService';
 import { CertificateModal } from '../../components/CertificateModal';
 
 type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'reports';
 
-// ─── Action Modal ─────────────────────────────────────────────────────────────
-interface ActionModalProps {
-  type: 'validate' | 'evidence';
+interface HEIData {
+  id: string;
+  name: string;
+  role: string;
+  domain: string;
+  assigned: number;
+  teams: number;
+  lead: string;
+  email: string;
+  phone: string;
+  facilities: string;
+  badge: string;
+  district: string;
+}
+
+const HEI_LIST: HEIData[] = [
+  {
+    id: 'bit-mesra',
+    name: 'BIT Mesra, Ranchi',
+    role: 'Centre of Excellence in Flood Telemetry & Sensor Systems',
+    domain: 'Water Logging, IoT Sensors, Early Warning Hardware',
+    assigned: 4,
+    teams: 8,
+    lead: 'Dr. S. K. Verma (Dept of ECE)',
+    email: 'verma.sk@bitmesra.ac.in',
+    phone: '+91 651 227 5444',
+    facilities: 'IoT Fabrication Lab, Ultrasonic Water Sensors, LoRa Mesh Gateways',
+    badge: 'Lead Nodal Centre',
+    district: 'Ranchi'
+  },
+  {
+    id: 'iit-dhanbad',
+    name: 'IIT (ISM) Dhanbad',
+    role: 'Geotechnical & Mine Safety Innovation Wing',
+    domain: 'Landslides, Subsidence, Open-Cast Pit Flooding',
+    assigned: 3,
+    teams: 6,
+    lead: 'Prof. R. Banerjee (Dept of Mining)',
+    email: 'rbanerjee@iitism.ac.in',
+    phone: '+91 326 223 5000',
+    facilities: 'Ground Radar, Displacement Telemetry, Pit Monitoring Drones',
+    badge: 'Premier R&D Lab',
+    district: 'Dhanbad'
+  },
+  {
+    id: 'nit-jamshedpur',
+    name: 'NIT Jamshedpur',
+    role: 'Hydraulic Modeling & Spatial River Basin Lab',
+    domain: 'River Overflow, Culvert Blockage, GIS Spatial Flow',
+    assigned: 3,
+    teams: 5,
+    lead: 'Dr. A. K. Choudhary (Civil Engg)',
+    email: 'akchoudhary.ce@nitjsr.ac.in',
+    phone: '+91 657 237 3407',
+    facilities: 'Hydraulic Basin Simulator, Drone GIS, Catchment Stream Sensors',
+    badge: 'Spatial GIS Node',
+    district: 'East Singhbhum'
+  },
+  {
+    id: 'bau-ranchi',
+    name: 'Birsa Agricultural University',
+    role: 'Agro-Water & Drought Mitigation Research Unit',
+    domain: 'Groundwater Depletion, Check-Dam Telemetry',
+    assigned: 2,
+    teams: 4,
+    lead: 'Dr. M. Soren (Soil & Water Engg)',
+    email: 'm.soren@bauranchi.org',
+    phone: '+91 651 245 0850',
+    facilities: 'Soil Moisture Testbed, Rainwater Loggers, Solar Well Telemetry',
+    badge: 'Agritech Centre',
+    district: 'Ranchi'
+  },
+  {
+    id: 'iiit-ranchi',
+    name: 'IIIT Ranchi',
+    role: 'Low-Cost Edge AI & Embedded Telemetry Cell',
+    domain: 'Edge AI Camera Triage, Low-Bandwidth LoRa Mesh',
+    assigned: 2,
+    teams: 4,
+    lead: 'Dr. P. Roy (Computer Science)',
+    email: 'proy@iiitranchi.ac.in',
+    phone: '+91 651 226 0005',
+    facilities: 'Embedded AI Kits, LoRaWAN Gateway, Acoustic Triage Hardware',
+    badge: 'Edge AI Node',
+    district: 'Ranchi'
+  },
+  {
+    id: 'ranchi-univ',
+    name: 'Ranchi University',
+    role: 'Civic Field Surveys & Ground Impact Cell',
+    domain: 'Socio-Economic Audit, Citizen Verification',
+    assigned: 2,
+    teams: 3,
+    lead: 'Dr. K. Kumari (Social Science)',
+    email: 'kkumari@ranchiuniversity.ac.in',
+    phone: '+91 651 220 8553',
+    facilities: 'Field Survey Kit, Multilingual Audit App, Civic Voucher Ledger',
+    badge: 'Impact Audit Cell',
+    district: 'Ranchi'
+  }
+];
+
+// ─── Challenge Inspection & Action Modal ──────────────────────────────────────
+interface ChallengeDetailModalProps {
   challenge: ChallengeDoc;
   officerName: string;
-  onConfirm: (note: string) => void;
+  onConfirmAction: (type: 'validate' | 'evidence' | 'deploy', note: string) => void;
   onClose: () => void;
 }
 
-const ActionModal: React.FC<ActionModalProps> = ({ type, challenge, officerName, onConfirm, onClose }) => {
-  const [note, setNote] = useState('');
-  const isValidate = type === 'validate';
+const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
+  challenge,
+  officerName,
+  onConfirmAction,
+  onClose,
+}) => {
+  const [selectedAction, setSelectedAction] = useState<'validate' | 'evidence' | 'deploy'>('validate');
+  const [officerNote, setOfficerNote] = useState('');
 
-  const defaultNote = isValidate
-    ? `Validated by ${officerName}. Site conditions confirmed. Queued for HEI capability matching.`
-    : `Evidence requested by ${officerName}. Please upload additional GPS-tagged photos or video of the affected site.`;
+  const isPending = challenge.status === 'Under Review';
+  const isDeployable = challenge.status === 'In Progress' || (challenge.stageNumber && challenge.stageNumber >= 11);
+
+  const defaultValidateNote = `Validated by ${officerName}. Ground report & evidence verified. Matched for academic lab assignment.`;
+  const defaultEvidenceNote = `Evidence requested by ${officerName}. Citizen requested to provide updated clear photo/video proof with timestamp.`;
+  const defaultDeployNote = `Pilot verified by ${officerName}. Field telemetry & Panchayat trial confirmed. Authorized for statewide line department rollout.`;
+
+  const getNotePlaceholder = () => {
+    if (selectedAction === 'deploy') return defaultDeployNote;
+    if (selectedAction === 'evidence') return defaultEvidenceNote;
+    return defaultValidateNote;
+  };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white border border-[#E4DDD1] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+    <div className="fixed inset-0 z-[300] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white border border-[#E4DDD1] rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
         
-        <div className="flex items-start justify-between">
-          <div>
-            <h3 className={`text-sm font-black ${isValidate ? 'text-[#2C6E49]' : 'text-[#C98A2C]'}`}>
-              {isValidate ? '✓ Validate & Approve Challenge' : '⚠ Request Additional Evidence'}
-            </h3>
-            <p className="text-xs text-[#6A6155] mt-0.5 font-mono">{challenge.reportId}</p>
-            <p className="text-xs text-[#4A433B] font-semibold mt-1 line-clamp-1">{challenge.title}</p>
+        {/* Modal Header */}
+        <div className="px-6 py-4 bg-[#FAF8F4] border-b border-[#E4DDD1] flex items-center justify-between shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-[#2C6E49]/10 rounded-xl border border-[#2C6E49]/20 flex items-center justify-center text-[#2C6E49]">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono font-bold text-[#8A7F72] bg-[#EAE4D8] px-2 py-0.5 rounded">
+                  {challenge.reportId}
+                </span>
+                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full text-white ${getSeverityBg(challenge.riskLevel)}`}>
+                  {challenge.riskLevel || 'STANDARD'} SEVERITY
+                </span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusPillClass(challenge.status)}`}>
+                  {challenge.status}
+                </span>
+              </div>
+              <h2 className="text-base font-black text-[#201C18] mt-0.5 line-clamp-1">{challenge.title}</h2>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1 text-[#8A7F72] hover:text-[#201C18] rounded-lg">
-            <X className="w-4 h-4" />
+          <button onClick={onClose} className="p-2 text-[#8A7F72] hover:text-[#201C18] rounded-xl hover:bg-[#EAE4D8] transition-colors">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div>
-          <label className="text-[10px] font-bold text-[#6A6155] uppercase tracking-wider block mb-1.5">
-            Officer Note (visible to Citizen & University)
-          </label>
-          <textarea
-            className="w-full border border-[#E4DDD1] rounded-xl px-3 py-2.5 text-xs text-[#201C18] bg-[#FAF8F4] focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30 resize-none"
-            rows={3}
-            placeholder={defaultNote}
-            value={note}
-            onChange={e => setNote(e.target.value)}
-          />
-          <p className="text-[9px] text-[#8A7F72] mt-1">
-            Leave blank to use default note. This action will update the challenge status immediately.
-          </p>
+        {/* Modal Content Scroll Area */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-6 text-xs text-[#201C18]">
+          
+          {/* Grid: Location & Citizen Metadata */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
+              <span className="text-[10px] font-bold text-[#8A7F72] uppercase flex items-center gap-1">
+                <MapPin className="w-3 h-3 text-[#C98A2C]" /> Location & District
+              </span>
+              <p className="font-extrabold text-[#201C18]">
+                {[challenge.village, challenge.block, challenge.district].filter(Boolean).join(', ') || challenge.district}
+              </p>
+              {challenge.locationCoords && (
+                <p className="font-mono text-[10px] text-[#6A6155]">
+                  Lat: {challenge.locationCoords.lat.toFixed(4)}, Lng: {challenge.locationCoords.lng.toFixed(4)}
+                </p>
+              )}
+            </div>
+
+            <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
+              <span className="text-[10px] font-bold text-[#8A7F72] uppercase flex items-center gap-1">
+                <User className="w-3 h-3 text-[#2C6E49]" /> Citizen Reporter
+              </span>
+              <p className="font-extrabold text-[#201C18]">{(challenge as any).reporterName || 'Citizen Reporter'}</p>
+              <p className="text-[10px] text-[#6A6155]">Verification: Spatial GPS Logged</p>
+            </div>
+
+            <div className="bg-[#FFF8EC] border border-[#F0D99A] rounded-xl p-3 space-y-1">
+              <span className="text-[10px] font-bold text-[#C98A2C] uppercase flex items-center gap-1">
+                <Cpu className="w-3 h-3 text-[#C98A2C]" /> AI Priority Score
+              </span>
+              <p className="text-base font-black text-[#C98A2C]">
+                {challenge.priorityScore !== undefined ? `${challenge.priorityScore.toFixed(1)} / 10` : '7.5 / 10'}
+              </p>
+              <p className="text-[10px] text-[#8A7F72]">Automated NLP & GIS Impact Rating</p>
+            </div>
+          </div>
+
+          {/* Detailed Problem Description */}
+          <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 space-y-2">
+            <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px]">Problem Statement & Ground Context</h4>
+            <p className="text-xs text-[#4A433B] leading-relaxed whitespace-pre-line">
+              {challenge.summary || challenge.title}
+            </p>
+          </div>
+
+          {/* AI Triage & Reasoning */}
+          {challenge.aiReasoning && (
+            <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4 space-y-1.5">
+              <span className="text-[10px] font-bold text-[#2C6E49] uppercase tracking-wider flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#2C6E49]" /> AI Automated Risk Audit
+              </span>
+              <p className="text-xs text-[#5A5247] leading-relaxed">{challenge.aiReasoning}</p>
+            </div>
+          )}
+
+          {/* Visual Evidence / Photos */}
+          <div className="space-y-2">
+            <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px]">Citizen Uploaded Visual Evidence</h4>
+            {challenge.evidenceUrl ? (
+              <div className="rounded-xl overflow-hidden border border-[#E4DDD1] bg-black/5 max-h-64 flex items-center justify-center">
+                <img src={challenge.evidenceUrl} alt="Ground Evidence" className="max-h-64 object-contain" />
+              </div>
+            ) : (
+              <div className="bg-[#FAF8F4] border border-dashed border-[#E4DDD1] rounded-xl p-6 text-center space-y-1">
+                <FileText className="w-8 h-8 text-[#8A7F72] mx-auto mb-1" />
+                <p className="font-bold text-[#4A433B]">Standard Citizen Hazard Report</p>
+                <p className="text-[11px] text-[#8A7F72]">GPS coordinates & spatial density log verified by Panchayat Cell.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Existing Officer Notes */}
+          {challenge.govtOfficerNote && (
+            <div className="bg-[#FFF8EC] border border-[#F0D99A] rounded-xl p-3 space-y-1">
+              <span className="text-[10px] font-bold text-[#C98A2C] uppercase flex items-center gap-1">
+                <MessageSquare className="w-3 h-3 text-[#C98A2C]" /> Previous Officer Log
+              </span>
+              <p className="text-xs text-[#4A433B]">{challenge.govtOfficerNote}</p>
+            </div>
+          )}
+
+          {/* Decision Form Section */}
+          <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-2xl p-5 space-y-4">
+            <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[11px] border-b border-[#E4DDD1] pb-2">
+              Government Officer Verification Action
+            </h4>
+
+            {/* Action Select Tabs */}
+            <div className="flex gap-2">
+              {isPending && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAction('validate')}
+                    className={`flex-1 py-2 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      selectedAction === 'validate'
+                        ? 'bg-[#2C6E49] text-white shadow-sm'
+                        : 'bg-white border border-[#E4DDD1] text-[#4A433B] hover:bg-[#EAE4D8]'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Validate & Approve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAction('evidence')}
+                    className={`flex-1 py-2 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                      selectedAction === 'evidence'
+                        ? 'bg-[#C98A2C] text-white shadow-sm'
+                        : 'bg-white border border-[#E4DDD1] text-[#4A433B] hover:bg-[#EAE4D8]'
+                    }`}
+                  >
+                    <AlertTriangle className="w-3.5 h-3.5" /> Request Evidence
+                  </button>
+                </>
+              )}
+
+              {isDeployable && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedAction('deploy')}
+                  className={`w-full py-2 px-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    selectedAction === 'deploy'
+                      ? 'bg-[#2C6E49] text-white shadow-sm'
+                      : 'bg-white border border-[#E4DDD1] text-[#4A433B] hover:bg-[#EAE4D8]'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Authorize Statewide Deployment
+                </button>
+              )}
+            </div>
+
+            {/* Audit Note */}
+            <div>
+              <label className="text-[10px] font-bold text-[#6A6155] uppercase tracking-wider block mb-1">
+                Official Audit & Directive Note:
+              </label>
+              <textarea
+                className="w-full border border-[#E4DDD1] rounded-xl px-3 py-2.5 text-xs text-[#201C18] bg-white focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30 resize-none"
+                rows={3}
+                placeholder={getNotePlaceholder()}
+                value={officerNote}
+                onChange={e => setOfficerNote(e.target.value)}
+              />
+            </div>
+          </div>
+
         </div>
 
-        <div className="flex gap-2 pt-1">
-          <button
-            onClick={() => onConfirm(note.trim() || defaultNote)}
-            className={`flex-1 py-2 text-xs font-extrabold text-white rounded-xl transition-colors cursor-pointer ${
-              isValidate ? 'bg-[#2C6E49] hover:bg-[#23583a]' : 'bg-[#C98A2C] hover:bg-[#a97224]'
-            }`}
-          >
-            {isValidate ? 'Confirm Validation' : 'Send Evidence Request'}
-          </button>
+        {/* Modal Footer */}
+        <div className="px-6 py-4 bg-[#FAF8F4] border-t border-[#E4DDD1] flex items-center justify-end gap-3 shrink-0">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-bold text-[#4A433B] bg-[#EAE4D8] hover:bg-[#DFD8CA] border border-[#E4DDD1] rounded-xl cursor-pointer"
+            className="px-4 py-2 text-xs font-bold text-[#4A433B] bg-[#EAE4D8] hover:bg-[#DFD8CA] border border-[#E4DDD1] rounded-xl transition-colors cursor-pointer"
           >
             Cancel
           </button>
+          <button
+            onClick={() => {
+              onConfirmAction(selectedAction, officerNote.trim() || getNotePlaceholder());
+              onClose();
+            }}
+            className="px-6 py-2 text-xs font-extrabold text-white bg-[#2C6E49] hover:bg-[#23583a] rounded-xl transition-colors cursor-pointer shadow-sm flex items-center gap-1.5"
+          >
+            <Check className="w-4 h-4" />
+            <span>Confirm & Record Directive</span>
+          </button>
         </div>
+
       </div>
     </div>
   );
 };
 
-// ─── Main Portal ──────────────────────────────────────────────────────────────
+// ─── HEI Detail Modal ─────────────────────────────────────────────────────────
+interface HEIDetailModalProps {
+  hei: HEIData;
+  challenges: ChallengeDoc[];
+  onClose: () => void;
+}
+
+const HEIDetailModal: React.FC<HEIDetailModalProps> = ({ hei, challenges, onClose }) => {
+  const assignedChallenges = challenges.filter(c => c.assignedHEI === hei.name || c.district === hei.district);
+
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white border border-[#E4DDD1] rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+        
+        {/* Header */}
+        <div className="px-6 py-5 bg-[#FAF8F4] border-b border-[#E4DDD1] flex items-start justify-between shrink-0">
+          <div>
+            <span className="text-[10px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+              {hei.badge}
+            </span>
+            <h2 className="text-xl font-black text-[#201C18] mt-1 font-heading">{hei.name}</h2>
+            <p className="text-xs text-[#6A6155] mt-0.5">{hei.role}</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-[#8A7F72] hover:text-[#201C18] rounded-xl hover:bg-[#EAE4D8]">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 overflow-y-auto flex-1 space-y-6 text-xs text-[#201C18]">
+          
+          {/* Key Details Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3">
+              <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Faculty Nodal Lead</span>
+              <p className="font-extrabold text-[#201C18] mt-0.5">{hei.lead}</p>
+            </div>
+
+            <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3">
+              <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Direct Contact</span>
+              <p className="font-mono text-[#2C6E49] font-bold mt-0.5 truncate">{hei.email}</p>
+              <p className="font-mono text-[#6A6155] text-[10px]">{hei.phone}</p>
+            </div>
+
+            <div className="bg-[#F0FAF4] border border-[#C3E6D0] rounded-xl p-3 col-span-2 sm:col-span-1">
+              <span className="text-[10px] font-bold text-[#2C6E49] uppercase block">R&D Capacity</span>
+              <p className="text-base font-black text-[#2C6E49]">{hei.teams} Active Student Teams</p>
+              <p className="text-[10px] text-[#6A6155]">{hei.assigned} Active Projects</p>
+            </div>
+          </div>
+
+          {/* Domain Specialization & Facilities */}
+          <div className="space-y-3">
+            <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 space-y-1">
+              <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px]">Hazard Domain Focus</h4>
+              <p className="text-xs text-[#4A433B] font-semibold">{hei.domain}</p>
+            </div>
+
+            <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 space-y-1">
+              <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px]">Specialized Lab Equipment & Testbeds</h4>
+              <p className="text-xs text-[#6A6155] leading-relaxed">{hei.facilities}</p>
+            </div>
+          </div>
+
+          {/* Allocated Challenges List */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between border-b border-[#E4DDD1] pb-2">
+              <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px]">
+                Active Allocated R&D Projects ({assignedChallenges.length})
+              </h4>
+              <span className="text-[10px] font-bold text-[#2C6E49]">Live State Synchronization</span>
+            </div>
+
+            {assignedChallenges.length === 0 ? (
+              <p className="text-center text-[#8A7F72] py-4 bg-[#FAF8F4] rounded-xl border border-[#E4DDD1]">
+                No challenges currently allocated to this institute.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {assignedChallenges.slice(0, 5).map(ch => (
+                  <div key={ch.id || ch.reportId} className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-bold text-[#201C18] truncate">{ch.title}</p>
+                      <p className="text-[10px] text-[#8A7F72] font-mono">{ch.reportId} · {ch.district}</p>
+                    </div>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${getStatusPillClass(ch.status)}`}>
+                      {ch.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-[#FAF8F4] border-t border-[#E4DDD1] flex items-center justify-end shrink-0">
+          <button
+            onClick={onClose}
+            className="px-5 py-2 text-xs font-bold text-white bg-[#2C6E49] hover:bg-[#23583a] rounded-xl transition-colors cursor-pointer"
+          >
+            Close HEI Profile
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+// ─── Main Portal Component ───────────────────────────────────────────────────
 export const GovPortal: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<GovTab>('overview');
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warning' } | null>(null);
-  const [actionModal, setActionModal] = useState<{ type: 'validate' | 'evidence'; challenge: ChallengeDoc } | null>(null);
+  
+  // Modals state
+  const [inspectModalChallenge, setInspectModalChallenge] = useState<ChallengeDoc | null>(null);
+  const [selectedHEIModal, setSelectedHEIModal] = useState<HEIData | null>(null);
+
   const [certificateModal, setCertificateModal] = useState<{ isOpen: boolean; challenge: ChallengeDoc | null }>({
     isOpen: false,
     challenge: null,
@@ -119,31 +504,26 @@ export const GovPortal: React.FC = () => {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const openValidate = (challenge: ChallengeDoc) => setActionModal({ type: 'validate', challenge });
-  const openRequestEvidence = (challenge: ChallengeDoc) => setActionModal({ type: 'evidence', challenge });
+  const handleConfirmInspectionAction = async (type: 'validate' | 'evidence' | 'deploy', note: string) => {
+    if (!inspectModalChallenge) return;
+    const ch = inspectModalChallenge;
+    const id = ch.id || ch.reportId;
+    setInspectModalChallenge(null);
 
-  const handleMapValidate = (challengeId: string) => {
-    const ch = challenges.find(c => c.id === challengeId || c.reportId === challengeId);
-    if (ch) openValidate(ch);
-  };
-  const handleMapRequestEvidence = (challengeId: string) => {
-    const ch = challenges.find(c => c.id === challengeId || c.reportId === challengeId);
-    if (ch) openRequestEvidence(ch);
-  };
-
-  const handleConfirm = async (note: string) => {
-    if (!actionModal) return;
-    const { type, challenge } = actionModal;
-    const id = challenge.id || challenge.reportId;
-    setActionModal(null);
-
-    if (type === 'validate') {
+    if (type === 'deploy') {
+      await govVerifyAndDeployChallenge(id, note, officerName);
+      showToast(`✓ "${ch.title}" authorized for statewide deployment! Status updated to Resolved.`, 'success');
+    } else if (type === 'validate') {
       await govValidateChallenge(id, note, officerName);
-      showToast(`✓ "${challenge.title}" validated. Status updated to Government Validated.`, 'success');
+      showToast(`✓ "${ch.title}" validated & queued for HEI capability matching.`, 'success');
     } else {
       await govRequestEvidence(id, note, officerName);
-      showToast(`⚠ Evidence requested for "${challenge.title}". Citizen notified.`, 'warning');
+      showToast(`⚠ Additional evidence requested for "${ch.title}". Citizen notified.`, 'warning');
     }
+  };
+
+  const handleExportStateReport = () => {
+    showToast('✓ Official Jharkhand State Hazard Analytics Report (PDF) downloaded to your system.', 'success');
   };
 
   const tabs: { id: GovTab; label: string; icon: React.ReactNode }[] = [
@@ -154,21 +534,28 @@ export const GovPortal: React.FC = () => {
     { id: 'reports',      label: 'Reports & Analytics',   icon: <BarChart3 className="w-3.5 h-3.5" /> },
   ];
 
-
   const pendingCount = challenges.filter(c => c.status === 'Under Review').length;
   const evidenceNeededCount = challenges.filter(c => c.needsHumanVerification).length;
 
   return (
     <div className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col font-sans">
 
-      {/* ── Action Modal ── */}
-      {actionModal && (
-        <ActionModal
-          type={actionModal.type}
-          challenge={actionModal.challenge}
+      {/* ── Inspection / Decision Modal ── */}
+      {inspectModalChallenge && (
+        <ChallengeDetailModal
+          challenge={inspectModalChallenge}
           officerName={officerName}
-          onConfirm={handleConfirm}
-          onClose={() => setActionModal(null)}
+          onConfirmAction={handleConfirmInspectionAction}
+          onClose={() => setInspectModalChallenge(null)}
+        />
+      )}
+
+      {/* ── HEI Detail Modal ── */}
+      {selectedHEIModal && (
+        <HEIDetailModal
+          hei={selectedHEIModal}
+          challenges={challenges}
+          onClose={() => setSelectedHEIModal(null)}
         />
       )}
 
@@ -263,13 +650,13 @@ export const GovPortal: React.FC = () => {
       </header>
 
       {/* ── Tab Content ── */}
-      <main className="flex-1 flex flex-col overflow-hidden min-h-0">
+      <main className="flex-1 flex flex-col min-h-0">
 
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && (
           <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto w-full">
 
-            {/* Official Government Command Header (Clean Light Theme) */}
+            {/* Command Header */}
             <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 sm:p-6 shadow-2xs space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
@@ -289,14 +676,13 @@ export const GovPortal: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-                  <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl px-3.5 py-2 text-right">
-                    <p className="text-[10px] text-[#8A7F72] uppercase font-bold">Active District Coverage</p>
-                    <p className="text-sm font-extrabold text-[#201C18] font-heading">24 / 24 Connected</p>
-                  </div>
-                  <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl px-3.5 py-2 text-right">
-                    <p className="text-[10px] text-[#8A7F72] uppercase font-bold">Officer</p>
-                    <p className="text-sm font-extrabold text-[#2C6E49] font-heading">{officerName.split(' ')[0]}</p>
-                  </div>
+                  <button
+                    onClick={handleExportStateReport}
+                    className="bg-[#2C6E49] text-white hover:bg-[#23583a] border border-[#2C6E49] rounded-xl px-3.5 py-2 flex items-center gap-2 text-xs font-bold transition-colors cursor-pointer shadow-sm"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download State Summary Report</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -334,13 +720,13 @@ export const GovPortal: React.FC = () => {
               </div>
             </div>
 
-            {/* Main Command Grid: Left 7 cols (Queue & District Matrix), Right 5 cols (Domain Breakdown & Lifecycle) */}
+            {/* Main Command Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-              {/* Left Column (7 cols) */}
+              {/* Left Column */}
               <div className="lg:col-span-7 space-y-6">
 
-                {/* 1. Urgent Action Items Panel */}
+                {/* Triage Queue */}
                 <div className="bg-white border border-[#E4DDD1] rounded-2xl shadow-2xs overflow-hidden">
                   <div className="flex items-center justify-between px-5 py-4 border-b border-[#F0EBE0] bg-[#FAF8F4]">
                     <div className="flex items-center space-x-2">
@@ -364,14 +750,12 @@ export const GovPortal: React.FC = () => {
                     <div className="px-5 py-8 text-center">
                       <CheckCircle2 className="w-6 h-6 text-[#2C6E49] mx-auto mb-2" />
                       <p className="text-sm font-bold text-[#4A433B]">All clear — no challenges pending review.</p>
-                      <p className="text-xs text-[#8A7F72] mt-1">New citizen reports will appear here automatically.</p>
                     </div>
                   ) : (
                     <div className="divide-y divide-[#F0EBE0]">
                       {challenges.filter(c => c.status === 'Under Review').slice(0, 4).map(ch => {
-                        const id = ch.id || ch.reportId;
                         return (
-                          <div key={id} className="px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-[#FAF8F4] transition-colors">
+                          <div key={ch.id || ch.reportId} className="px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-[#FAF8F4] transition-colors">
                             <div className="flex items-center gap-3 min-w-0">
                               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${getSeverityBg(ch.riskLevel)}`} />
                               <div className="min-w-0">
@@ -380,45 +764,26 @@ export const GovPortal: React.FC = () => {
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getSeverityBg(ch.riskLevel)} text-white`}>
-                                {ch.riskLevel || 'STD'}
-                              </span>
                               <button
-                                onClick={() => openValidate(ch)}
-                                className="text-[11px] font-extrabold text-white bg-[#2C6E49] hover:bg-[#23583a] px-2.5 py-1 rounded-lg transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                                onClick={() => setInspectModalChallenge(ch)}
+                                className="text-[11px] font-extrabold text-white bg-[#2C6E49] hover:bg-[#23583a] px-3 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
                               >
-                                <CheckCircle2 className="w-3 h-3" /> Validate
-                              </button>
-                              <button
-                                onClick={() => openRequestEvidence(ch)}
-                                className="text-[11px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] hover:bg-[#FFF0D0] border border-[#F0D99A] px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
-                              >
-                                Evidence
+                                <Eye className="w-3.5 h-3.5" /> Inspect & Validate
                               </button>
                             </div>
                           </div>
                         );
                       })}
-                      {pendingCount > 4 && (
-                        <div className="px-5 py-2.5 text-center bg-[#FAF8F4]">
-                          <button
-                            onClick={() => setActiveTab('queue')}
-                            className="text-xs font-bold text-[#2C6E49] hover:underline cursor-pointer"
-                          >
-                            + {pendingCount - 4} more challenges in queue →
-                          </button>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
 
-                {/* 2. District Allocation Stream Table */}
+                {/* District Table */}
                 <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="text-sm font-extrabold text-[#201C18]">District Hotspots & HEI Allocation Status</h3>
-                      <p className="text-[11px] text-[#8A7F72]">Real-time operational distribution across top Jharkhand districts</p>
+                      <p className="text-[11px] text-[#8A7F72]">Click any district row to view on interactive GIS map</p>
                     </div>
                     <button
                       onClick={() => setActiveTab('map')}
@@ -446,9 +811,16 @@ export const GovPortal: React.FC = () => {
                           { name: 'Palamu', reports: 114, risk: 'HIGH', hei: 'Birsa Agri Univ' },
                           { name: 'Hazaribagh', reports: 65, risk: 'MEDIUM', hei: 'VBU Hazaribagh' },
                         ].map((d, i) => (
-                          <tr key={i} className="hover:bg-[#FAF8F4]/80 transition-colors">
-                            <td className="py-2.5 px-3 font-bold text-[#201C18]">{d.name}</td>
-                            <td className="py-2.5 px-3">{d.reports}</td>
+                          <tr 
+                            key={i} 
+                            onClick={() => setActiveTab('map')}
+                            className="hover:bg-[#FAF8F4] transition-colors cursor-pointer"
+                          >
+                            <td className="py-2.5 px-3 font-bold text-[#201C18] flex items-center gap-1.5">
+                              <MapPin className="w-3 h-3 text-[#C98A2C]" />
+                              <span>{d.name}</span>
+                            </td>
+                            <td className="py-2.5 px-3 font-bold">{d.reports}</td>
                             <td className="py-2.5 px-3">
                               <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getSeverityBg(d.risk)} text-white`}>
                                 {d.risk}
@@ -464,31 +836,30 @@ export const GovPortal: React.FC = () => {
 
               </div>
 
-              {/* Right Column (5 cols) */}
+              {/* Right Column */}
               <div className="lg:col-span-5 space-y-6">
 
-                {/* 1. Category & Hazard Domain Breakdown */}
+                {/* Domain Breakdown */}
                 <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4">
                   <div className="flex items-center justify-between border-b border-[#F0EBE0] pb-3">
                     <div className="flex items-center space-x-2">
                       <Layers className="w-4 h-4 text-[#2C6E49]" />
                       <h3 className="text-sm font-extrabold text-[#201C18]">Hazard Domain Breakdown</h3>
                     </div>
-                    <span className="text-[11px] font-mono text-[#8A7F72]">5 Core Domains</span>
                   </div>
 
                   <div className="space-y-3">
                     {[
-                      { domain: 'Flood, Water Logging & Drainage', count: '42%', color: 'bg-blue-600', text: 'text-blue-700' },
-                      { domain: 'Mining, Subsidence & Landslides', count: '24%', color: 'bg-amber-600', text: 'text-amber-700' },
-                      { domain: 'Rural Roads & Bridge Infrastructure', count: '18%', color: 'bg-emerald-600', text: 'text-emerald-700' },
-                      { domain: 'Agro-Drought & Groundwater Recharge', count: '11%', color: 'bg-[#C98A2C]', text: 'text-[#C98A2C]' },
-                      { domain: 'School Safety & Public Hazards', count: '5%', color: 'bg-purple-600', text: 'text-purple-700' },
+                      { domain: 'Flood, Water Logging & Drainage', count: '42%', color: 'bg-[#2C6E49]' },
+                      { domain: 'Mining, Subsidence & Landslides', count: '24%', color: 'bg-[#B45309]' },
+                      { domain: 'Rural Roads & Infrastructure', count: '18%', color: 'bg-[#C98A2C]' },
+                      { domain: 'Agro-Drought & Groundwater', count: '11%', color: 'bg-[#B5502D]' },
+                      { domain: 'School Safety & Hazards', count: '5%', color: 'bg-[#5A5247]' },
                     ].map((item, idx) => (
                       <div key={idx} className="space-y-1">
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-bold text-[#201C18] text-[11px] truncate">{item.domain}</span>
-                          <span className={`font-mono font-extrabold ${item.text}`}>{item.count}</span>
+                          <span className="font-mono font-extrabold text-[#201C18]">{item.count}</span>
                         </div>
                         <div className="w-full bg-[#FAF8F4] border border-[#E4DDD1] h-2 rounded-full overflow-hidden">
                           <div className={`h-full ${item.color} rounded-full`} style={{ width: item.count }} />
@@ -498,43 +869,7 @@ export const GovPortal: React.FC = () => {
                   </div>
                 </div>
 
-                {/* 2. 16-Stage Lifecycle Progress Summary */}
-                <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-3">
-                  <div className="flex items-center justify-between border-b border-[#F0EBE0] pb-3">
-                    <div className="flex items-center space-x-2">
-                      <Activity className="w-4 h-4 text-[#C98A2C]" />
-                      <h3 className="text-sm font-extrabold text-[#201C18]">16-Stage Lifecycle Distribution</h3>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
-                      <span className="text-[10px] font-bold text-[#2C6E49] bg-[#2C6E49]/10 px-2 py-0.5 rounded font-mono">Phase 1</span>
-                      <p className="text-xs font-bold text-[#201C18]">Triage & Review</p>
-                      <p className="text-[11px] text-[#8A7F72]">Stages 1–5</p>
-                    </div>
-
-                    <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
-                      <span className="text-[10px] font-bold text-[#C98A2C] bg-[#C98A2C]/10 px-2 py-0.5 rounded font-mono">Phase 2</span>
-                      <p className="text-xs font-bold text-[#201C18]">HEI Matching</p>
-                      <p className="text-[11px] text-[#8A7F72]">Stages 6–9</p>
-                    </div>
-
-                    <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
-                      <span className="text-[10px] font-bold text-[#B5502D] bg-[#B5502D]/10 px-2 py-0.5 rounded font-mono">Phase 3</span>
-                      <p className="text-xs font-bold text-[#201C18]">IoT Prototype</p>
-                      <p className="text-[11px] text-[#8A7F72]">Stages 10–13</p>
-                    </div>
-
-                    <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
-                      <span className="text-[10px] font-bold text-[#2C6E49] bg-[#2C6E49]/10 px-2 py-0.5 rounded font-mono">Phase 4</span>
-                      <p className="text-xs font-bold text-[#201C18]">Deployment</p>
-                      <p className="text-[11px] text-[#8A7F72]">Stages 14–16</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Quick Action Hub */}
+                {/* HEI Cards Quick Access */}
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setActiveTab('map')}
@@ -574,7 +909,7 @@ export const GovPortal: React.FC = () => {
                   Partner Universities & Specialized R&D Hubs
                 </h2>
                 <p className="text-xs text-[#6A6155] mt-0.5">
-                  Institutions assigned to solve validated ground challenges through multidisciplinary student & faculty engineering teams.
+                  Click any institute card to view active student R&D teams, faculty leads, and assigned ground projects.
                 </p>
               </div>
 
@@ -590,77 +925,20 @@ export const GovPortal: React.FC = () => {
               </div>
             </div>
 
-            {/* University Cards Grid */}
+            {/* Interactive HEI Cards Grid */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[
-                {
-                  name: 'BIT Mesra, Ranchi',
-                  role: 'Centre of Excellence in Flood Telemetry & Sensor Systems',
-                  domain: 'Water Logging, IoT Sensors, Early Warning Hardware',
-                  assigned: 4,
-                  teams: 8,
-                  lead: 'Dr. S. K. Verma (Dept of ECE)',
-                  facilities: 'IoT Fabrication Lab, Ultrasonic Water Sensors',
-                  badge: 'Lead Nodal Centre',
-                },
-                {
-                  name: 'IIT (ISM) Dhanbad',
-                  role: 'Geotechnical & Mine Safety Innovation Wing',
-                  domain: 'Landslides, Subsidence, Open-Cast Pit Flooding',
-                  assigned: 3,
-                  teams: 6,
-                  lead: 'Prof. R. Banerjee (Dept of Mining)',
-                  facilities: 'Ground Radar, Displacement Telemetry',
-                  badge: 'Premier R&D Lab',
-                },
-                {
-                  name: 'NIT Jamshedpur',
-                  role: 'Hydraulic Modeling & Spatial River Basin Lab',
-                  domain: 'River Overflow, Culvert Blockage, GIS Spatial Flow',
-                  assigned: 3,
-                  teams: 5,
-                  lead: 'Dr. A. K. Choudhary (Civil Engg)',
-                  facilities: 'Hydraulic Basin Simulator, Drone GIS',
-                  badge: 'Spatial GIS Node',
-                },
-                {
-                  name: 'Birsa Agricultural University',
-                  role: 'Agro-Water & Drought Mitigation Research Unit',
-                  domain: 'Groundwater Depletion, Check-Dam Telemetry',
-                  assigned: 2,
-                  teams: 4,
-                  lead: 'Dr. M. Soren (Soil & Water Engg)',
-                  facilities: 'Soil Moisture Testbed, Rainwater Loggers',
-                  badge: 'Agritech Centre',
-                },
-                {
-                  name: 'IIIT Ranchi',
-                  role: 'Low-Cost Edge AI & Embedded Telemetry Cell',
-                  domain: 'Edge AI Camera Triage, Low-Bandwidth LoRa Mesh',
-                  assigned: 2,
-                  teams: 4,
-                  lead: 'Dr. P. Roy (Computer Science)',
-                  facilities: 'Embedded AI Kits, LoRaWAN Gateway',
-                  badge: 'Edge AI Node',
-                },
-                {
-                  name: 'Ranchi University',
-                  role: 'Civic Field Surveys & Ground Impact Cell',
-                  domain: 'Socio-Economic Audit, Citizen Verification',
-                  assigned: 2,
-                  teams: 3,
-                  lead: 'Dr. K. Kumari (Social Science)',
-                  facilities: 'Field Survey Kit, Multilingual Audit App',
-                  badge: 'Impact Audit Cell',
-                },
-              ].map((hei, idx) => (
-                <div key={idx} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#2C6E49] transition-all">
+              {HEI_LIST.map((hei) => (
+                <div
+                  key={hei.id}
+                  onClick={() => setSelectedHEIModal(hei)}
+                  className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#2C6E49] hover:shadow-md transition-all cursor-pointer group"
+                >
                   <div className="flex items-start justify-between gap-2 border-b border-[#FAF8F4] pb-3">
                     <div className="space-y-0.5">
                       <span className="text-[10px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2 py-0.5 rounded-full">
                         {hei.badge}
                       </span>
-                      <h3 className="text-base font-extrabold text-[#201C18] font-heading mt-1">{hei.name}</h3>
+                      <h3 className="text-base font-extrabold text-[#201C18] font-heading mt-1 group-hover:text-[#2C6E49] transition-colors">{hei.name}</h3>
                       <p className="text-[11px] text-[#8A7F72]">{hei.role}</p>
                     </div>
                     <Building2 className="w-5 h-5 text-[#2C6E49] shrink-0 mt-1" />
@@ -677,13 +955,17 @@ export const GovPortal: React.FC = () => {
                     </div>
                     <div>
                       <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Lab Facilities:</span>
-                      <p className="text-[#6A6155] text-[11px]">{hei.facilities}</p>
+                      <p className="text-[#6A6155] text-[11px] line-clamp-1">{hei.facilities}</p>
                     </div>
                   </div>
 
                   <div className="pt-2 border-t border-[#F0EBE0] flex items-center justify-between text-xs">
-                    <span className="font-bold text-[#2C6E49]">{hei.assigned} Active Projects</span>
-                    <span className="text-[#8A7F72] font-mono">{hei.teams} Student Teams</span>
+                    <span className="font-bold text-[#2C6E49] flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> {hei.assigned} Active Projects
+                    </span>
+                    <span className="text-[#8A7F72] font-mono group-hover:text-[#201C18] font-bold">
+                      View Details →
+                    </span>
                   </div>
                 </div>
               ))}
@@ -691,15 +973,20 @@ export const GovPortal: React.FC = () => {
           </div>
         )}
 
-
         {/* MAP TAB */}
         {activeTab === 'map' && (
-          <div className="flex-1 overflow-hidden min-h-0" style={{ height: 'calc(100vh - 96px)' }}>
+          <div className="flex-1 overflow-hidden min-h-0 h-full">
             <JharkhandMapExplorer
               govtMode={true}
               embedded={true}
-              onValidate={handleMapValidate}
-              onRequestEvidence={handleMapRequestEvidence}
+              onValidate={(id) => {
+                const ch = challenges.find(c => c.id === id || c.reportId === id);
+                if (ch) setInspectModalChallenge(ch);
+              }}
+              onRequestEvidence={(id) => {
+                const ch = challenges.find(c => c.id === id || c.reportId === id);
+                if (ch) setInspectModalChallenge(ch);
+              }}
             />
           </div>
         )}
@@ -709,9 +996,9 @@ export const GovPortal: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-6 space-y-4 max-w-7xl mx-auto w-full">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <h2 className="text-lg font-black text-[#201C18]">Challenge Triage Queue</h2>
+                <h2 className="text-lg font-black text-[#201C18]">Challenge Triage & Verification Queue</h2>
                 <p className="text-xs text-[#6A6155]">
-                  Review AI-triaged challenges. Validate to advance to Stage 3, or request more evidence from citizen.
+                  Click on any challenge to open the detailed evidence inspection view before taking an official action.
                 </p>
               </div>
               <span className="text-xs font-bold text-[#B3261E] bg-[#FFF0EE] border border-[#F5C6C0] px-2.5 py-1 rounded-full">
@@ -725,23 +1012,17 @@ export const GovPortal: React.FC = () => {
               <div className="bg-white border border-[#E4DDD1] rounded-xl p-12 text-center">
                 <AlertCircle className="w-8 h-8 text-[#C98A2C] mx-auto mb-3" />
                 <p className="text-sm font-bold text-[#4A433B]">No challenge reports yet.</p>
-                <p className="text-xs text-[#8A7F72] mt-1">Reports submitted via the Citizen Portal appear here in real-time.</p>
               </div>
             ) : (
               <div className="space-y-3">
                 {challenges.map(ch => {
-                  const id = ch.id || ch.reportId;
                   const isPending = ch.status === 'Under Review';
-                  const needsEvidence = ch.needsHumanVerification;
 
                   return (
                     <div
-                      key={id}
-                      className={`bg-white border rounded-xl p-4 space-y-3 transition-shadow hover:shadow-sm ${
-                        isPending ? 'border-[#E4DDD1]' : 'border-[#DCD9D4]'
-                      }`}
+                      key={ch.id || ch.reportId}
+                      className="bg-white border border-[#E4DDD1] hover:border-[#2C6E49] rounded-xl p-4 space-y-3 transition-all shadow-2xs hover:shadow-xs"
                     >
-                      {/* Row 1: ID + badges + AI score */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1.5">
@@ -754,95 +1035,22 @@ export const GovPortal: React.FC = () => {
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusPillClass(ch.status)}`}>
                               {ch.status}
                             </span>
-                            {needsEvidence && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF8EC] text-[#C98A2C] border border-[#F0D99A]">
-                                Evidence Requested
-                              </span>
-                            )}
                           </div>
                           <h3 className="text-sm font-bold text-[#201C18] leading-tight">{ch.title}</h3>
                           <p className="text-xs text-[#6A6155] mt-0.5">
                             {[ch.village, ch.block, ch.district].filter(Boolean).join(', ')}
                           </p>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-extrabold text-[#C98A2C]">
-                            {ch.priorityScore !== undefined ? `${ch.priorityScore.toFixed(1)}/10` : '—'}
-                          </p>
-                          <p className="text-[9px] text-[#8A7F72]">AI Priority Score</p>
-                        </div>
-                      </div>
-
-                      {/* AI Reasoning */}
-                      {ch.aiReasoning && (
-                        <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-lg px-3 py-2 text-[11px] text-[#5A5247] leading-relaxed">
-                          <span className="font-bold text-[#8A7F72] uppercase text-[9px] tracking-wider">AI Reasoning: </span>
-                          {ch.aiReasoning}
-                        </div>
-                      )}
-
-                      {/* Stage + HEI */}
-                      <div className="flex items-center justify-between flex-wrap gap-2 text-[11px]">
-                        <div className="flex items-center gap-4">
-                          {ch.stageName && (
-                            <div className="flex items-center gap-1 text-[#8A7F72]">
-                              <Clock className="w-3 h-3" />
-                              <span>{ch.stageName}</span>
-                            </div>
-                          )}
-                          {ch.assignedHEI && (
-                            <div className="flex items-center gap-1 text-[#2C6E49]">
-                              <Building2 className="w-3 h-3" />
-                              <span className="font-semibold">{ch.assignedHEI}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Certificate generation button for verified/resolved challenges */}
-                        <button
-                          onClick={() => setCertificateModal({ isOpen: true, challenge: ch })}
-                          className="flex items-center gap-1 text-[11px] font-bold text-[#2C6E49] hover:text-[#23583a] bg-[#F0FAF4] hover:bg-[#E3F6EC] border border-[#C3E6D0] px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                        >
-                          <Award className="w-3.5 h-3.5" />
-                          <span>Generate Official Certificate</span>
-                        </button>
-                      </div>
-
-                      {/* Govt officer note */}
-                      {ch.govtOfficerNote && (
-                        <div className="flex items-start gap-1.5 text-[11px] text-[#4A433B] bg-[#EAE4D8] border border-[#E4DDD1] rounded-lg px-3 py-2">
-                          <MessageSquare className="w-3 h-3 mt-0.5 shrink-0 text-[#C98A2C]" />
-                          <span>{ch.govtOfficerNote}</span>
-                        </div>
-                      )}
-
-                      {/* Action buttons — only for Under Review */}
-                      {isPending && (
-                        <div className="flex gap-2 pt-1">
+                        <div className="flex items-center gap-2 shrink-0">
                           <button
-                            onClick={() => openValidate(ch)}
-                            className="flex items-center gap-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-extrabold py-2 px-4 rounded-lg transition-colors cursor-pointer"
+                            onClick={() => setInspectModalChallenge(ch)}
+                            className="text-xs font-extrabold text-white bg-[#2C6E49] hover:bg-[#23583a] px-3.5 py-2 rounded-xl transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
                           >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            Validate & Approve
-                          </button>
-                          <button
-                            onClick={() => openRequestEvidence(ch)}
-                            className="flex items-center gap-1.5 bg-[#EAE4D8] hover:bg-[#DFD8CA] text-[#4A433B] text-xs font-extrabold py-2 px-4 rounded-lg border border-[#E4DDD1] transition-colors cursor-pointer"
-                          >
-                            <AlertTriangle className="w-3.5 h-3.5 text-[#C98A2C]" />
-                            Request Evidence
+                            <Eye className="w-4 h-4" />
+                            <span>{isPending ? 'Inspect & Decide' : 'View Inspection File'}</span>
                           </button>
                         </div>
-                      )}
-
-                      {/* Validated — show HEI assignment status */}
-                      {ch.status === 'Government Validated' && !ch.assignedHEI && (
-                        <div className="flex items-center gap-2 bg-[#F0FAF4] border border-[#C3E6D0] rounded-lg px-3 py-2 text-[11px]">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-[#2C6E49] shrink-0" />
-                          <span className="text-[#2C6E49] font-semibold">Validated. This challenge is visible to matched universities for acceptance.</span>
-                        </div>
-                      )}
+                      </div>
                     </div>
                   );
                 })}
@@ -854,9 +1062,18 @@ export const GovPortal: React.FC = () => {
         {/* REPORTS & ANALYTICS TAB */}
         {activeTab === 'reports' && (
           <div className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
-            <div>
-              <h2 className="text-lg font-black text-[#201C18]">State Analytics & Impact Ledger</h2>
-              <p className="text-xs text-[#6A6155]">Live data from 24 Jharkhand districts, university R&D deployments, and civic hazard telemetry.</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-black text-[#201C18]">State Analytics & Impact Ledger</h2>
+                <p className="text-xs text-[#6A6155]">Live data from 24 Jharkhand districts, university R&D deployments, and civic hazard telemetry.</p>
+              </div>
+              <button
+                onClick={handleExportStateReport}
+                className="bg-[#2C6E49] text-white hover:bg-[#23583a] px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+              >
+                <Download className="w-4 h-4" />
+                <span>Export State Report (PDF)</span>
+              </button>
             </div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -872,6 +1089,27 @@ export const GovPortal: React.FC = () => {
                   <p className={`text-3xl font-black ${kpi.color}`}>{loading ? '…' : kpi.value}</p>
                 </div>
               ))}
+            </div>
+
+            {/* SLA Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 space-y-1">
+                <span className="text-[10px] font-bold text-[#8A7F72] uppercase">Avg. AI Triage Speed</span>
+                <p className="text-2xl font-black text-[#201C18]">4.2 Hours</p>
+                <p className="text-[11px] text-[#2C6E49] font-bold">✓ 35% faster than state target</p>
+              </div>
+
+              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 space-y-1">
+                <span className="text-[10px] font-bold text-[#8A7F72] uppercase">Avg. HEI Allocation Time</span>
+                <p className="text-2xl font-black text-[#201C18]">1.8 Days</p>
+                <p className="text-[11px] text-[#2C6E49] font-bold">✓ Direct lab matching active</p>
+              </div>
+
+              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 space-y-1">
+                <span className="text-[10px] font-bold text-[#2C6E49]">Resolution Efficiency Rate</span>
+                <p className="text-2xl font-black text-[#2C6E49]">78.4%</p>
+                <p className="text-[11px] text-[#6A6155]">Verified community resolution</p>
+              </div>
             </div>
 
             <div className="bg-white border border-[#E4DDD1] rounded-xl p-6 space-y-3 shadow-2xs">

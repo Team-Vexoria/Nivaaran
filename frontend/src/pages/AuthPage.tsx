@@ -295,6 +295,21 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
               </button>
             </div>
 
+            {/* 5b. CSR Foundation */}
+            <div className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-between transition-colors">
+              <div>
+                <span className="font-bold text-slate-900 block">🌱 CSR Foundation / Donor</span>
+                <code className="text-[11px] text-emerald-700 font-mono font-bold">foundation@csr.org</code> · <span className="text-[10px] text-slate-500">csr@123</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => fillOfficialCredentials('foundation@csr.org', 'csr@123', 'CSR Organization')}
+                className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white font-bold rounded text-[11px] shrink-0"
+              >
+                Auto-Fill
+              </button>
+            </div>
+
             {/* 6. Citizen */}
             <div className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-between transition-colors">
               <div>

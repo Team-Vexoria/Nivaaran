@@ -1,8 +1,8 @@
 import React from 'react';
-import { Building2, UserCheck, GraduationCap, CheckCircle2, ChevronDown, Layers, FileText, Users, Award, LogOut } from 'lucide-react';
+import { Building2, UserCheck, GraduationCap, CheckCircle2, ChevronDown, Layers, FileText, Users, Award, LogOut, Handshake } from 'lucide-react';
 import { JHARKHAND_UNIVERSITIES, UniversityDoc } from '../../services/universityData';
 
-export type UniversityTab = 'intake-queue' | 'team-builder' | 'proposals' | 'student-workspace';
+export type UniversityTab = 'intake-queue' | 'team-builder' | 'proposals' | 'student-workspace' | 'industry-collab';
 export type UserRoleType = 'admin' | 'faculty' | 'student';
 
 interface UniversityNavbarProps {
@@ -186,6 +186,18 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
           >
             <Award className="w-3.5 h-3.5 text-[#C98A2C]" />
             <span>4. Student R&D Workspace</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange('industry-collab')}
+            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+              activeTab === 'industry-collab'
+                ? 'bg-[#2C6E49] text-white shadow-2xs'
+                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+            }`}
+          >
+            <Handshake className="w-3.5 h-3.5 text-[#C98A2C]" />
+            <span>5. Industry / CSR Collaboration Requests</span>
           </button>
         </nav>
 

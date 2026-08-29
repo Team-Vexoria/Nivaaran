@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { GraduationCap, Award, CheckCircle2, Upload, ExternalLink } from 'lucide-react';
 import { UniversityDoc, StudentRosterItem } from '../../services/universityData';
-import { getProjectsFromStore, ProjectDoc } from '../../services/firebaseService';
+import { getProjectsFromStore, ProjectDoc, submitPrototypeProgress, submitPilotGroundTrial } from '../../services/firebaseService';
 import { CertificateModal } from '../CertificateModal';
+import { IoTSensorTelemetryCard } from '../telemetry/IoTSensorTelemetryCard';
 
 interface StudentWorkspaceTabProps {
   university: UniversityDoc;
@@ -23,15 +24,51 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
   const projects = getProjectsFromStore();
   const assignedProject: ProjectDoc | null = projects.length > 0 ? projects[0] : null;
 
+  const [activeMilestoneForm, setActiveMilestoneForm] = useState<'stage11' | 'stage12'>('stage11');
+  const [hardwareSpec, setHardwareSpec] = useState<string>('ESP32 Dual-Core + JSN-SR04T Ultrasonic Depth Sensor + LoRa SX1276 (868MHz) + Solar 18650 IP67 Node');
   const [githubUrl, setGithubUrl] = useState<string>('https://github.com/nivaaran-hei/iot-flood-telemetry-node');
-  const [telemetryLogs, setTelemetryLogs] = useState<string>('Sensor Node #04: Water depth 1.4m. Flow velocity 2.1 m/s. Geotag verified.');
+  const [telemetryLogs, setTelemetryLogs] = useState<string>('Sensor Node #04: Water depth 1.42m. Flow velocity 2.1 m/s. Geotag verified at [23.3441, 85.3096]. Battery: 94%.');
+  const [testingResults, setTestingResults] = useState<string>('Lab tested: ±1cm accuracy up to 4.5m range. LoRaWAN transmission range verified up to 8.2 km line-of-sight.');
+  
+  const [panchayatLocation, setPanchayatLocation] = useState<string>('Hesag Gram Panchayat, Namkum Block, Ranchi');
+  const [beneficiaries, setBeneficiaries] = useState<number>(3200);
+  const [groundReport, setGroundReport] = useState<string>('Live field installation on rural culvert. 3 warning sirens operational with SMS dispatch to Mukhiya and Block Development Officer.');
+
   const [isLoggedSuccess, setIsLoggedSuccess] = useState<boolean>(false);
+  const [successMessage, setSuccessMessage] = useState<string>('');
   const [isCertificateOpen, setIsCertificateOpen] = useState<boolean>(false);
 
-  const handleLogProgress = (e: React.FormEvent) => {
+  const handleLogProgress = async (e: React.FormEvent) => {
     e.preventDefault();
+    const challengeId = assignedProject?.challengeId || 'LOCAL-1787968429418';
+
+    if (activeMilestoneForm === 'stage11') {
+      await submitPrototypeProgress(
+        challengeId,
+        {
+          hardwareSpec,
+          githubUrl,
+          telemetryLogs,
+          testingResults,
+        },
+        currentStudent.name
+      );
+      setSuccessMessage('✓ Stage 11 IoT Prototype verified & saved to Firestore! Challenge stage advanced.');
+    } else {
+      await submitPilotGroundTrial(
+        challengeId,
+        {
+          panchayatLocation,
+          communityBeneficiaries: beneficiaries,
+          groundVerificationReport: groundReport,
+        },
+        currentStudent.name
+      );
+      setSuccessMessage('✓ Stage 12 Panchayat Pilot Trial submitted! Sent to Government Officer for deployment verification.');
+    }
+
     setIsLoggedSuccess(true);
-    setTimeout(() => setIsLoggedSuccess(false), 3000);
+    setTimeout(() => setIsLoggedSuccess(false), 5000);
   };
 
   return (
@@ -125,55 +162,159 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
 
       {/* Student Milestone Progress Submission Form */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-        <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center">
-          <Upload className="w-4 h-4 mr-1.5 text-emerald-600" />
-          Log R&D Milestone Progress & Hardware Telemetry
-        </h3>
-
-        <form onSubmit={handleLogProgress} className="space-y-3 text-xs">
-          <div className="space-y-1">
-            <label className="font-bold text-slate-800 block">GitHub / Hardware Code Repository Link:</label>
-            <div className="flex items-center space-x-2">
-              <input 
-                type="url"
-                value={githubUrl}
-                onChange={(e) => setGithubUrl(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900"
-              />
-              <a 
-                href={githubUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl shrink-0"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div className="flex items-center space-x-2">
+            <Upload className="w-4 h-4 text-emerald-600 shrink-0" />
+            <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">
+              Log R&D Milestone & Ground Telemetry
+            </h3>
           </div>
 
-          <div className="space-y-1">
-            <label className="font-bold text-slate-800 block">Field Sensor Telemetry / Trial Test Logs:</label>
-            <textarea 
-              rows={2}
-              value={telemetryLogs}
-              onChange={(e) => setTelemetryLogs(e.target.value)}
-              className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900"
-            />
+          <div className="flex items-center gap-1.5 text-xs bg-slate-100 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setActiveMilestoneForm('stage11')}
+              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                activeMilestoneForm === 'stage11'
+                  ? 'bg-white text-slate-900 shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Stage 11: IoT Prototype
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveMilestoneForm('stage12')}
+              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                activeMilestoneForm === 'stage12'
+                  ? 'bg-white text-slate-900 shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Stage 12: Ground Pilot
+            </button>
           </div>
+        </div>
+
+        <form onSubmit={handleLogProgress} className="space-y-3.5 text-xs">
+          {activeMilestoneForm === 'stage11' ? (
+            <>
+              <div className="space-y-1">
+                <label className="font-bold text-slate-800 block">Hardware / Sensor Specifications:</label>
+                <input
+                  type="text"
+                  value={hardwareSpec}
+                  onChange={(e) => setHardwareSpec(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium"
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-800 block">GitHub / Firmware Repository:</label>
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="url"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900"
+                    />
+                    <a 
+                      href={githubUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl shrink-0"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-800 block">Lab Test Results & Range:</label>
+                  <input
+                    type="text"
+                    value={testingResults}
+                    onChange={(e) => setTestingResults(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-800 block">Field Sensor Telemetry / Sensor Stream Log:</label>
+                <textarea 
+                  rows={2}
+                  value={telemetryLogs}
+                  onChange={(e) => setTelemetryLogs(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900 text-[11px]"
+                />
+              </div>
+
+              {/* Live Stitch Telemetry Visualizer Preview */}
+              <div className="pt-2">
+                <p className="text-[11px] font-extrabold text-[#2C6E49] uppercase tracking-wider mb-2">Live Node Sensor Telemetry Monitor:</p>
+                <IoTSensorTelemetryCard
+                  stationName={`Panchayat Sensor Station — ${assignedProject?.challengeTitle || 'Civic Prototype'}`}
+                  hardwareNode={hardwareSpec || 'ESP32 LoRaWAN v2.4 + Ultrasonic Sensor'}
+                  waterLevelMeters={4.2}
+                  dangerThresholdMeters={5.5}
+                  batteryPct={85}
+                  signalBars={4}
+                  lastSyncedText="Active Field Stream"
+                  rawLogs={telemetryLogs}
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-800 block">Panchayat Field Trial Location:</label>
+                  <input
+                    type="text"
+                    value={panchayatLocation}
+                    onChange={(e) => setPanchayatLocation(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-800 block">Estimated Community Beneficiaries:</label>
+                  <input
+                    type="number"
+                    value={beneficiaries}
+                    onChange={(e) => setBeneficiaries(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-bold font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-800 block">Ground Field Verification & Incident Log:</label>
+                <textarea 
+                  rows={2}
+                  value={groundReport}
+                  onChange={(e) => setGroundReport(e.target.value)}
+                  className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs"
+                />
+              </div>
+            </>
+          )}
 
           {isLoggedSuccess && (
             <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-emerald-900 font-bold flex items-center space-x-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Milestone telemetry log saved! +4 Academic R&D Credits awarded.</span>
+              <span>{successMessage || 'Milestone telemetry log saved! +4 Academic R&D Credits awarded.'}</span>
             </div>
           )}
 
           <div className="flex justify-end pt-1">
             <button
               type="submit"
-              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs"
+              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
             >
-              Submit Milestone Verification Update
+              {activeMilestoneForm === 'stage11' ? 'Submit Stage 11 IoT Prototype' : 'Submit Stage 12 Ground Pilot Report'}
             </button>
           </div>
         </form>

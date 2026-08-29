@@ -8,6 +8,8 @@ import { ProposalManagerTab } from '../../components/university/ProposalManagerT
 import { StudentWorkspaceTab } from '../../components/university/StudentWorkspaceTab';
 import { ChallengeDoc } from '../../services/firebaseService';
 
+import { CollaborationReviewPanel } from '../../components/university/CollaborationReviewPanel';
+
 interface UniversityPortalProps {
   onNavigateHome?: () => void;
 }
@@ -98,6 +100,10 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
           <StudentWorkspaceTab
             university={selectedUniversity}
           />
+        )}
+
+        {activeTab === 'industry-collab' && (
+          <CollaborationReviewPanel />
         )}
       </main>
 

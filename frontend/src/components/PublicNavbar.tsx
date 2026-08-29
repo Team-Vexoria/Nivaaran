@@ -4,6 +4,7 @@ import { SupportedLanguage } from '../i18n/translations';
 
 interface PublicNavbarProps {
   onOpenAuth: () => void;
+  onOpenTracking?: (reportId?: string) => void;
   onNavigatePortal?: (portal: string) => void;
   currentLang?: SupportedLanguage;
   onLangChange?: (lang: SupportedLanguage) => void;
@@ -11,6 +12,7 @@ interface PublicNavbarProps {
 
 export const PublicNavbar: React.FC<PublicNavbarProps> = ({ 
   onOpenAuth,
+  onOpenTracking,
   onNavigatePortal,
   currentLang = 'en',
   onLangChange
@@ -154,8 +156,17 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
 
           </nav>
 
-          {/* Primary Action Button */}
-          <div className="flex items-center">
+          {/* Primary Action Buttons */}
+          <div className="flex items-center space-x-2">
+            {onOpenTracking && (
+              <button
+                onClick={() => onOpenTracking()}
+                className="px-3.5 py-2 bg-[#FFF8EC] hover:bg-[#FFF0D0] text-[#C98A2C] font-extrabold text-xs rounded-lg border border-[#F0D99A] transition-all flex items-center space-x-1.5 active:scale-95 cursor-pointer shadow-2xs"
+              >
+                <Eye className="w-3.5 h-3.5 shrink-0 text-[#C98A2C]" />
+                <span>Track Challenge</span>
+              </button>
+            )}
             <button
               onClick={onOpenAuth}
               className="px-4 py-2 bg-[#2C6E49] hover:bg-[#23583a] text-white font-medium text-xs rounded-lg shadow-2xs transition-all flex items-center space-x-1.5 active:scale-95 cursor-pointer"

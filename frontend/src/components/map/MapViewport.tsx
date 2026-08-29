@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { ChallengeDoc } from '../../services/firebaseService';
@@ -156,6 +156,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
         const stat = districtStats[distName];
 
         layer.on('click', () => {
+          lastGeoClickRef.current = distName;
           onDistrictSelect(distName === selectedDistrict ? null : distName);
           const centroid = JHARKHAND_DISTRICT_CENTROIDS[distName];
           if (centroid) map.flyTo([centroid.lat, centroid.lng], 9, { duration: 0.8 });
@@ -229,10 +230,17 @@ export const MapViewport: React.FC<MapViewportProps> = ({
     }
   }, [challenges, districtStats, govtMode, onValidate, onRequestEvidence]);
 
-  // Fly-to when district selected from sidebar
+  // Fly-to when district selected from sidebar (but NOT when it was just clicked on the GeoJSON polygon,
+  // because the GeoJSON click handler already calls flyTo - avoid double fire).
+  const lastGeoClickRef = useRef<string | null>(null);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedDistrict) return;
+    if (lastGeoClickRef.current === selectedDistrict) {
+      lastGeoClickRef.current = null;
+      return;
+    }
     const centroid = JHARKHAND_DISTRICT_CENTROIDS[selectedDistrict];
     if (centroid) map.flyTo([centroid.lat, centroid.lng], 9, { duration: 0.8 });
   }, [selectedDistrict]);
@@ -241,7 +249,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
     <div
       ref={mapDivRef}
       className="flex-1 relative"
-      style={{ minHeight: 0 }}
+      style={{ minHeight: 0, height: '100%' }}
     />
   );
 };
