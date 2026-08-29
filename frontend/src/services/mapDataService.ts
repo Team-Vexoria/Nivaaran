@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { subscribeToChallenges, ChallengeDoc } from './firebaseService';
+import { getStageForStatus } from './workflowLifecycle';
 
 export const JHARKHAND_DISTRICT_CENTROIDS: Record<string, { lat: number; lng: number }> = {
   'Ranchi':               { lat: 23.3441, lng: 85.3096 },
@@ -69,12 +70,12 @@ export function getCategoryColor(category: string): string {
 }
 
 export function getStatusPillClass(status: string): string {
-  switch (status) {
-    case 'Government Validated': return 'bg-[#2C6E49] text-white';
-    case 'In Progress':          return 'bg-[#C98A2C] text-white';
-    case 'Resolved':             return 'bg-[#16293F] text-white';
-    default:                     return 'bg-[#E4DDD1] text-[#4A433B]';
-  }
+  const stageNumber = getStageForStatus(status)?.stageNumber;
+  if (!stageNumber) return 'bg-[#E4DDD1] text-[#4A433B]';
+  if (stageNumber >= 14) return 'bg-[#16293F] text-white';
+  if (stageNumber >= 8) return 'bg-[#C98A2C] text-white';
+  if (stageNumber >= 3) return 'bg-[#2C6E49] text-white';
+  return 'bg-[#E4DDD1] text-[#4A433B]';
 }
 
 export interface DistrictStat {
@@ -156,8 +157,11 @@ export function useMapData(): MapData {
     districtStats,
     totalCount: challenges.length,
     criticalCount: challenges.filter(c => c.riskLevel === 'CRITICAL').length,
-    validatedCount: challenges.filter(c => c.status === 'Government Validated').length,
-    resolvedCount: challenges.filter(c => c.status === 'Resolved').length,
+    validatedCount: challenges.filter(c => {
+      const stageNumber = getStageForStatus(c.status)?.stageNumber || 0;
+      return stageNumber >= 3 && stageNumber < 14;
+    }).length,
+    resolvedCount: challenges.filter(c => (getStageForStatus(c.status)?.stageNumber || 0) >= 14).length,
     loading,
   };
 }

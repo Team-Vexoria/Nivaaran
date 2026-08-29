@@ -511,14 +511,29 @@ export const GovPortal: React.FC = () => {
     setInspectModalChallenge(null);
 
     if (type === 'deploy') {
-      await govVerifyAndDeployChallenge(id, note, officerName);
-      showToast(`✓ "${ch.title}" authorized for statewide deployment! Status updated to Resolved.`, 'success');
+      const succeeded = await govVerifyAndDeployChallenge(id, note, officerName);
+      showToast(
+        succeeded
+          ? `✓ "${ch.title}" authorized for statewide deployment! Status updated to Resolved.`
+          : `Unable to authorize deployment for "${ch.title}".`,
+        succeeded ? 'success' : 'warning'
+      );
     } else if (type === 'validate') {
-      await govValidateChallenge(id, note, officerName);
-      showToast(`✓ "${ch.title}" validated & queued for HEI capability matching.`, 'success');
+      const succeeded = await govValidateChallenge(id, note, officerName);
+      showToast(
+        succeeded
+          ? `✓ "${ch.title}" validated & queued for HEI capability matching.`
+          : `Unable to validate "${ch.title}".`,
+        succeeded ? 'success' : 'warning'
+      );
     } else {
-      await govRequestEvidence(id, note, officerName);
-      showToast(`⚠ Additional evidence requested for "${ch.title}". Citizen notified.`, 'warning');
+      const succeeded = await govRequestEvidence(id, note, officerName);
+      showToast(
+        succeeded
+          ? `⚠ Additional evidence requested for "${ch.title}". Citizen notified.`
+          : `Unable to request evidence for "${ch.title}".`,
+        'warning'
+      );
     }
   };
 

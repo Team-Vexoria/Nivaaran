@@ -20,6 +20,7 @@ export const MultidisciplinaryTeamTab: React.FC<MultidisciplinaryTeamTabProps> =
     university.faculty.length > 0 ? university.faculty[0].id : ''
   );
   const [selectedMembers, setSelectedMembers] = useState<ProjectTeamMember[]>([]);
+  const [saveError, setSaveError] = useState<string>('');
 
   // Default pre-select multidisciplinary students if roster available
   React.useEffect(() => {
@@ -60,9 +61,10 @@ export const MultidisciplinaryTeamTab: React.FC<MultidisciplinaryTeamTabProps> =
 
   const handleSaveTeam = () => {
     if (!activeChallenge) return;
+    setSaveError('');
     const faculty = university.faculty.find(f => f.id === selectedFacultyId) || university.faculty[0];
 
-    saveProjectTeamToStore({
+    const saved = saveProjectTeamToStore({
       challengeId: activeChallenge.id || activeChallenge.reportId,
       challengeTitle: activeChallenge.title,
       category: activeChallenge.category,
@@ -80,6 +82,11 @@ export const MultidisciplinaryTeamTab: React.FC<MultidisciplinaryTeamTabProps> =
         { stageNumber: 4, title: 'Final Impact Verification & Handover', description: 'Government verification certificate issued', status: 'Pending', targetDays: 21 },
       ],
     });
+
+    if (!saved) {
+      setSaveError('The team could not be saved because the challenge is no longer at the university acceptance stage. Return to the intake queue and refresh.');
+      return;
+    }
 
     onProceedToProposal(activeChallenge.id || activeChallenge.reportId);
   };
@@ -244,6 +251,12 @@ export const MultidisciplinaryTeamTab: React.FC<MultidisciplinaryTeamTabProps> =
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
+
+      {saveError && (
+        <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl text-xs font-semibold text-rose-800">
+          {saveError}
+        </div>
+      )}
 
     </div>
   );

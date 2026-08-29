@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LogIn, PhoneCall, Globe, Eye, ChevronDown, Map } from 'lucide-react';
-import { SupportedLanguage } from '../i18n/translations';
+import { SupportedLanguage, JHARKHAND_LANGUAGES } from '../i18n/translations';
+import { useLanguage } from '../context/LanguageContext';
 
 interface PublicNavbarProps {
   onOpenAuth: () => void;
@@ -17,9 +18,14 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
   currentLang = 'en',
   onLangChange
 }) => {
+  const { t } = useLanguage();
   const [fontSize, setFontSize] = useState<'normal' | 'large' | 'small'>('normal');
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
+
+  const currentLangMeta = JHARKHAND_LANGUAGES.find(l => l.code === currentLang) || JHARKHAND_LANGUAGES[0];
 
   const scrollToSection = (id: string) => {
     setIsDropdownOpen(false);
@@ -33,6 +39,9 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target as Node)) {
+        setIsLangDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -82,7 +91,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               onClick={() => scrollToSection('role-gateways')} 
               className="hover:text-[#2C6E49] transition-colors cursor-pointer"
             >
-              Role Portals
+              {t.landing.navRolePortals}
             </button>
 
             {/* Top-Level Link 2 — Live Map */}
@@ -100,7 +109,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               className="hover:text-[#2C6E49] transition-colors cursor-pointer flex items-center space-x-1.5"
             >
               <Map className="w-3.5 h-3.5" />
-              <span>Explore Map</span>
+              <span>{t.landing.navExploreMap}</span>
             </button>
 
             {/* Top-Level Dropdown Link 3: Explore Platform */}
@@ -109,7 +118,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="hover:text-[#2C6E49] transition-colors cursor-pointer flex items-center space-x-1"
               >
-                <span>Explore Platform</span>
+                <span>{t.landing.navExplorePlatform}</span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
@@ -130,25 +139,25 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block cursor-pointer"
                   >
-                    24 Districts GIS Map 🗺️
+                    {t.landing.navDistrictsMap}
                   </button>
                   <button
                     onClick={() => scrollToSection('framework-16')}
                     className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block"
                   >
-                    16-Stage Lifecycle Stream
+                    {t.landing.navLifecycleStream}
                   </button>
                   <button
                     onClick={() => scrollToSection('university-network')}
                     className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block"
                   >
-                    University R&D Labs
+                    {t.landing.navUniLabs}
                   </button>
                   <button
                     onClick={() => scrollToSection('state-impact')}
                     className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block"
                   >
-                    State Impact Ledger
+                    {t.landing.navImpactLedger}
                   </button>
                 </div>
               )}
@@ -172,7 +181,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               className="px-4 py-2 bg-[#2C6E49] hover:bg-[#23583a] text-white font-medium text-xs rounded-lg shadow-2xs transition-all flex items-center space-x-1.5 active:scale-95 cursor-pointer"
             >
               <LogIn className="w-3.5 h-3.5 shrink-0 text-white" />
-              <span>Sign In / Portal Login</span>
+              <span>{t.landing.navSignIn}</span>
             </button>
           </div>
 
@@ -187,17 +196,17 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
           <div className="flex items-center space-x-2.5">
             <span className="font-semibold text-[#201C18] flex items-center gap-1.5">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#2C6E49]"></span>
-              Govt of Jharkhand
+              {t.landing.govStripGovt}
             </span>
             <span className="hidden md:inline text-[#C4BDB0]">·</span>
-            <span className="hidden md:inline text-[#5A5247]">Dept of Higher & Technical Education</span>
+            <span className="hidden md:inline text-[#5A5247]">{t.landing.govStripDept}</span>
             <span className="text-[#C4BDB0]">·</span>
             <a 
               href="tel:1070" 
               className="text-[#B5502D] font-bold hover:underline transition-colors flex items-center space-x-1"
             >
               <PhoneCall className="w-3 h-3 shrink-0" />
-              <span>Helpline: 1070</span>
+              <span>{t.landing.govStripHelpline}</span>
             </a>
           </div>
 
@@ -209,9 +218,8 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               href="#main-content" 
               className="sr-only focus:not-sr-only focus:px-2 focus:py-0.5 focus:bg-[#2C6E49] focus:text-white focus:rounded"
             >
-              Skip to Content
+              {t.landing.skipToContent}
             </a>
-
             {/* Font Size Adjusters: [ A- | A | A+ ] */}
             <div className="hidden sm:flex items-center space-x-1 bg-[#EAE4D8] px-1.5 py-0.5 rounded border border-[#D5CDBF]">
               <button 
@@ -245,26 +253,38 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
               <span className="text-[10px]">GIGW</span>
             </span>
 
-            {/* Language Switcher: [ English | हिन्दी ] */}
-            <div className="flex items-center bg-[#EAE4D8] px-1.5 py-0.5 rounded border border-[#D5CDBF]">
-              <Globe className="w-3 h-3 text-[#2C6E49] mr-1 shrink-0" />
+            {/* Language Switcher Dropdown (All 12 Jharkhand Languages) */}
+            <div className="relative" ref={langDropdownRef}>
               <button
-                onClick={() => onLangChange && onLangChange('en')}
-                className={`px-1 py-0.2 rounded text-[10px] font-bold transition-all ${
-                  currentLang === 'en' ? 'bg-[#2C6E49] text-white' : 'text-[#4A433B] hover:text-[#201C18]'
-                }`}
+                onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                className="flex items-center bg-[#EAE4D8] px-1.5 py-0.5 rounded border border-[#D5CDBF] cursor-pointer hover:bg-[#E4DDD1] transition-colors"
               >
-                English
+                <Globe className="w-3 h-3 text-[#2C6E49] mr-1 shrink-0" />
+                <span className="text-[10px] font-bold text-[#201C18]">{currentLangMeta.nativeName}</span>
+                <ChevronDown className={`w-3 h-3 ml-0.5 text-[#6A6155] transition-transform ${isLangDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
-              <span className="text-[#C4BDB0] mx-0.5">|</span>
-              <button
-                onClick={() => onLangChange && onLangChange('hi')}
-                className={`px-1.5 py-0.2 rounded text-[10px] font-bold transition-all ${
-                  currentLang === 'hi' ? 'bg-[#2C6E49] text-white' : 'text-[#4A433B] hover:text-[#201C18]'
-                }`}
-              >
-                हिन्दी
-              </button>
+
+              {isLangDropdownOpen && (
+                <div className="absolute right-0 mt-1.5 w-56 bg-white border border-[#E4DDD1] rounded-xl shadow-xl py-1.5 z-[120] max-h-72 overflow-y-auto">
+                  {JHARKHAND_LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => {
+                        if (onLangChange) onLangChange(lang.code);
+                        setIsLangDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 text-[11px] font-medium transition-colors flex items-center justify-between cursor-pointer ${
+                        currentLang === lang.code 
+                          ? 'bg-[#2C6E49]/10 text-[#2C6E49] font-bold' 
+                          : 'text-[#201C18] hover:bg-[#FAF8F4] hover:text-[#2C6E49]'
+                      }`}
+                    >
+                      <span>{lang.nativeName}</span>
+                      <span className="text-[9px] text-[#9A9084]">{lang.region}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>
@@ -275,3 +295,4 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
     </div>
   );
 };
+

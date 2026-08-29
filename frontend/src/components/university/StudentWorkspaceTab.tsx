@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
 import { GraduationCap, Award, CheckCircle2, Upload, ExternalLink } from 'lucide-react';
 import { UniversityDoc, StudentRosterItem } from '../../services/universityData';
-import { getProjectsFromStore, ProjectDoc, submitPrototypeProgress, submitPilotGroundTrial } from '../../services/firebaseService';
+import { 
+  ChallengeDoc, ProjectDoc, 
+  submitPrototypeProgress, submitPilotGroundTrial,
+  submitOutcomeAudit, submitPilotReport, submitPrototypeUpdate, 
+  subscribeToChallenges, subscribeToProjects 
+} from '../../services/firebaseService';
 import { CertificateModal } from '../CertificateModal';
 import { IoTSensorTelemetryCard } from '../telemetry/IoTSensorTelemetryCard';
+import { getStageForStatus } from '../../services/workflowLifecycle';
 
 interface StudentWorkspaceTabProps {
   university: UniversityDoc;
@@ -21,8 +27,11 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
     creditsEarned: 16,
   };
 
-  const projects = getProjectsFromStore();
-  const assignedProject: ProjectDoc | null = projects.length > 0 ? projects[0] : null;
+  const [projects, setProjects] = useState<ProjectDoc[]>([]);
+  const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
+  const assignedProject: ProjectDoc | null = projects.find(p => p.universityId === university.id || p.universityName === university.name) || null;
+  const assignedChallenge = assignedProject ? challenges.find(c => c.id === assignedProject.challengeId || c.reportId === assignedProject.challengeId) : undefined;
+  const currentStage = assignedChallenge ? getStageForStatus(assignedChallenge.status)?.stageNumber || 0 : 0;
 
   const [activeMilestoneForm, setActiveMilestoneForm] = useState<'stage11' | 'stage12'>('stage11');
   const [hardwareSpec, setHardwareSpec] = useState<string>('ESP32 Dual-Core + JSN-SR04T Ultrasonic Depth Sensor + LoRa SX1276 (868MHz) + Solar 18650 IP67 Node');
@@ -37,6 +46,16 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
   const [isLoggedSuccess, setIsLoggedSuccess] = useState<boolean>(false);
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [isCertificateOpen, setIsCertificateOpen] = useState<boolean>(false);
+  const [pilotLocation, setPilotLocation] = useState<string>('Pilot village / ward');
+  const [pilotObservations, setPilotObservations] = useState<string>('');
+  const [auditSummary, setAuditSummary] = useState<string>('');
+  const [phase3Error, setPhase3Error] = useState<string>('');
+
+  React.useEffect(() => {
+    const unsubscribeProjects = subscribeToProjects(setProjects);
+    const unsubscribeChallenges = subscribeToChallenges(setChallenges);
+    return () => { unsubscribeProjects(); unsubscribeChallenges(); };
+  }, []);
 
   const handleLogProgress = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +72,15 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
         },
         currentStudent.name
       );
+      if (assignedProject?.id) {
+        submitPrototypeUpdate(assignedProject.id, {
+          summary: telemetryLogs,
+          repositoryUrl: githubUrl,
+          telemetryLog: telemetryLogs,
+          evidenceUrls: [],
+          submittedBy: currentStudent.name,
+        });
+      }
       setSuccessMessage('✓ Stage 11 IoT Prototype verified & saved to Firestore! Challenge stage advanced.');
     } else {
       await submitPilotGroundTrial(
@@ -64,11 +92,46 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
         },
         currentStudent.name
       );
+      if (assignedProject?.id) {
+        submitPilotReport(assignedProject.id, {
+          location: panchayatLocation,
+          observations: groundReport,
+          evidenceUrls: [],
+          submittedBy: currentStudent.name,
+        });
+      }
       setSuccessMessage('✓ Stage 12 Panchayat Pilot Trial submitted! Sent to Government Officer for deployment verification.');
     }
 
     setIsLoggedSuccess(true);
     setTimeout(() => setIsLoggedSuccess(false), 5000);
+  };
+
+  const handlePilotReport = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignedProject?.id || !pilotObservations.trim()) return;
+    const saved = submitPilotReport(assignedProject.id, {
+      location: pilotLocation,
+      observations: pilotObservations.trim(),
+      evidenceUrls: [],
+      submittedBy: currentStudent.name,
+    });
+    setPhase3Error(saved ? '' : 'Pilot reports can be submitted once prototype work is active.');
+    if (saved) setPilotObservations('');
+  };
+
+  const handleOutcomeAudit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!assignedProject?.id || !auditSummary.trim()) return;
+    const saved = submitOutcomeAudit(assignedProject.id, {
+      summary: auditSummary.trim(),
+      verifiedBy: currentStudent.name,
+      metrics: {},
+      evidenceUrls: [],
+      verifiedAt: new Date().toISOString(),
+    });
+    setPhase3Error(saved ? '' : 'Outcome audits can be submitted after a pilot report is recorded.');
+    if (saved) setAuditSummary('');
   };
 
   return (
@@ -309,6 +372,8 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
             </div>
           )}
 
+          {phase3Error && <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl text-rose-800 font-semibold">{phase3Error}</div>}
+
           <div className="flex justify-end pt-1">
             <button
               type="submit"
@@ -317,6 +382,22 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
               {activeMilestoneForm === 'stage11' ? 'Submit Stage 11 IoT Prototype' : 'Submit Stage 12 Ground Pilot Report'}
             </button>
           </div>
+        </form>
+      </div>
+
+      {/* Phase 3 pilot and outcome submissions */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <form onSubmit={handlePilotReport} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+          <div><h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Stage 12 · Pilot field report</h3><p className="text-[11px] text-slate-500 mt-1">Record the real-world test location and observations after prototype readiness.</p></div>
+          <input value={pilotLocation} onChange={(e) => setPilotLocation(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="Pilot village / ward" />
+          <textarea rows={4} value={pilotObservations} onChange={(e) => setPilotObservations(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="Observed performance, community feedback, and test results" />
+          <button type="submit" disabled={!assignedProject || currentStage < 11} className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white text-xs font-black rounded-xl">Submit pilot report</button>
+        </form>
+
+        <form onSubmit={handleOutcomeAudit} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+          <div><h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Stage 13 · Outcome audit</h3><p className="text-[11px] text-slate-500 mt-1">Submit a concise technical and community validation summary for review.</p></div>
+          <textarea rows={4} value={auditSummary} onChange={(e) => setAuditSummary(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="Summarize pilot outcomes, limitations, and validation evidence" />
+          <button type="submit" disabled={!assignedProject || currentStage < 12} className="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white text-xs font-black rounded-xl">Submit outcome audit</button>
         </form>
       </div>
 

@@ -708,7 +708,6 @@ export const IndustryPortal: React.FC = () => {
           }}
         />
       )}
-
     </div>
   );
 };

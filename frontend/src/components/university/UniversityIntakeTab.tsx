@@ -3,6 +3,7 @@ import { CheckCircle2, XCircle, MapPin, Building2, ArrowRight, ShieldCheck } fro
 import { ChallengeDoc, subscribeToChallenges, updateChallengeUniversityAcceptance } from '../../services/firebaseService';
 import { UniversityDoc, DepartmentInfo } from '../../services/universityData';
 import { calculateHEIMatchScore, HEIMatchResult } from '../../services/heiMatchingEngine';
+import { getStageForStatus } from '../../services/workflowLifecycle';
 
 interface UniversityIntakeTabProps {
   university: UniversityDoc;
@@ -16,6 +17,7 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
   const [selectedChallengeMatch, setSelectedChallengeMatch] = useState<{ challenge: ChallengeDoc; match: HEIMatchResult } | null>(null);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
+  const [acceptanceError, setAcceptanceError] = useState<string>('');
 
   useEffect(() => {
     const unsubscribe = subscribeToChallenges((docs) => {
@@ -25,13 +27,17 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
   }, []);
 
   // Filter challenges matched against this specific university
-  const matchedChallenges = challenges.map((challenge) => {
-    const match = calculateHEIMatchScore(challenge, university);
-    return { challenge, match };
-  }).sort((a, b) => b.match.matchScore - a.match.matchScore);
+  const matchedChallenges = challenges
+    .filter((challenge) => (getStageForStatus(challenge.status)?.stageNumber || 0) >= 3)
+    .map((challenge) => {
+      const match = calculateHEIMatchScore(challenge, university);
+      return { challenge, match };
+    })
+    .sort((a, b) => b.match.matchScore - a.match.matchScore);
 
   const handleOpenAcceptModal = (item: { challenge: ChallengeDoc; match: HEIMatchResult }) => {
     setSelectedChallengeMatch(item);
+    setAcceptanceError('');
     if (item.match.recommendedDepartment) {
       setSelectedDepartmentId(item.match.recommendedDepartment.id);
     } else if (university.departments.length > 0) {
@@ -45,14 +51,19 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
     const targetDept = university.departments.find(d => d.id === selectedDepartmentId) || university.departments[0];
     
     if (challenge.id || challenge.reportId) {
-      updateChallengeUniversityAcceptance(
+      const accepted = updateChallengeUniversityAcceptance(
         challenge.id || challenge.reportId,
         university.name,
         targetDept.name
       );
+      if (!accepted) {
+        setAcceptanceError('This challenge could not be accepted because its lifecycle stage has changed. Refresh the queue and try again.');
+        return;
+      }
     }
 
     onAcceptAndProceedToTeam(challenge, targetDept);
+    setAcceptanceError('');
     setSelectedChallengeMatch(null);
   };
 
@@ -248,6 +259,12 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
                 Accepting this challenge commits your university team to Stage 7–9 multidisciplinary team building and prototype development.
               </span>
             </div>
+
+            {acceptanceError && (
+              <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl text-xs font-semibold text-rose-800">
+                {acceptanceError}
+              </div>
+            )}
 
             {/* Action Buttons */}
             <div className="pt-3 border-t border-slate-200 flex items-center justify-end space-x-3">
