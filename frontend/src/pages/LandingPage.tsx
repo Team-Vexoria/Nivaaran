@@ -16,6 +16,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     return params.get('portal') || '';
   });
 
+  // MUST be declared before any early returns — React Rules of Hooks
+  const [activePhaseIndex, setActivePhaseIndex] = useState<number>(0);
+
   const handleNavigatePortal = (portal: string) => {
     const url = new URL(window.location.href);
     if (portal) {
@@ -144,8 +147,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     { name: 'IIIT Ranchi', domain: 'Low-Cost Edge AI & Sensor Hardware', node: 'IoT Innovation Lab' },
     { name: 'Ranchi University', domain: 'Civic Surveys & Field Verification', node: 'Feedback Cell' },
   ];
-
-  const [activePhaseIndex, setActivePhaseIndex] = useState<number>(0);
 
   return (
     <div id="main-content" className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col antialiased selection:bg-[#2C6E49] selection:text-white">
@@ -439,7 +440,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           </div>
         </section>
 
- main
       </main>
 
       {/* 7. Official Government Footer */}
