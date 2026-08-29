@@ -3,6 +3,9 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
+import { workflowStore, STORE_EVENT } from './workflowStore';
+import { toWorkflowChallenge, toLegacyChallengeDoc, toWorkflowProject, toLegacyProjectDoc } from './workflowAdapters';
+import type { ChallengeStatus, MilestoneStatus, PriorityFactors, ProjectStatus, Proposal } from './workflowTypes';
 
 // Helper: Upload photo/video file to Firebase Storage
 export const uploadEvidenceImage = async (file: File): Promise<string> => {
@@ -26,7 +29,7 @@ export interface ChallengeDoc {
   block: string;
   village: string;
   category: string;
-  status: 'Under Review' | 'Government Validated' | 'In Progress' | 'Resolved';
+  status: ChallengeStatus;
   summary: string;
   evidenceUrl?: string;
   locationCoords?: { lat: number; lng: number };
@@ -35,7 +38,7 @@ export interface ChallengeDoc {
   confidenceScore?: number;
   riskLevel?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'STANDARD';
   aiReasoning?: string;
-  priorityFactors?: any;
+  priorityFactors?: PriorityFactors;
   needsHumanVerification?: boolean;
   assignedHEI?: string;
   assignedDept?: string;
@@ -43,44 +46,61 @@ export interface ChallengeDoc {
   stageNumber?: number;
   stageName?: string;
   govtOfficerNote?: string;
+  govtValidatedBy?: string;
+  govtValidatedAt?: string;
   createdAt?: any;
 }
 
 export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'>) => {
-  try {
-    const docRef = await addDoc(collection(db, 'challenges'), {
-      ...challenge,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
-  } catch (error) {
-    console.warn('[Firestore] Falling back to local storage for challenges:', error);
-    const existing = JSON.parse(localStorage.getItem('nivaaran_challenges') || '[]');
-    const newDoc = { ...challenge, id: `LOCAL-${Date.now()}` };
-    localStorage.setItem('nivaaran_challenges', JSON.stringify([newDoc, ...existing]));
-    return newDoc.id;
+  // 1. Add to workflowStore as primary source of truth
+  const legacyChallenge: ChallengeDoc = { ...challenge };
+  const result = workflowStore.addChallenge(toWorkflowChallenge(legacyChallenge));
+  const newId = result.created?.id || result.existing?.id || `CH-${Date.now()}`;
+
+  // 2. Attempt Firestore write as optional secondary persistence.
+  // Never create a second remote record for a duplicate report.
+  if (result.created) {
+    try {
+      await addDoc(collection(db, 'challenges'), {
+        ...challenge,
+        id: newId,
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.warn('[Firestore] Falling back to workflowStore only:', error);
+    }
   }
+  return newId;
 };
 
 export const subscribeToChallenges = (callback: (challenges: ChallengeDoc[]) => void) => {
+  const notifyStore = () => {
+    callback(workflowStore.getChallenges().map(toLegacyChallengeDoc));
+  };
+
+  // Immediate callback
+  notifyStore();
+
+  // Listen to workflowStore updates
+  window.addEventListener(STORE_EVENT, notifyStore);
+
+  // Firestore (optional secondary)
+  let unsubscribeFirestore = () => {};
   try {
     const q = query(collection(db, 'challenges'), orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snapshot) => {
-      const docs: ChallengeDoc[] = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      })) as ChallengeDoc[];
-      callback(docs);
+    unsubscribeFirestore = onSnapshot(q, () => {
+      // For the demo, workflowStore is the primary source of truth so we don't overwrite it here.
     }, (error) => {
-      console.warn('[Firestore] Using local storage listener for challenges:', error);
-      const existing = JSON.parse(localStorage.getItem('nivaaran_challenges') || '[]');
-      callback(existing);
+      console.warn('[Firestore] Not available, relying on workflowStore:', error);
     });
   } catch (error) {
-    const existing = JSON.parse(localStorage.getItem('nivaaran_challenges') || '[]');
-    callback(existing);
-    return () => {};
+    console.warn('[Firestore] Initialization failed:', error);
   }
+
+  return () => {
+    window.removeEventListener(STORE_EVENT, notifyStore);
+    unsubscribeFirestore();
+  };
 };
 
 // 2. Community Feed Persistence
@@ -258,7 +278,7 @@ export interface MilestoneItem {
   stageNumber: number;
   title: string;
   description: string;
-  status: 'Completed' | 'In Progress' | 'Pending';
+  status: MilestoneStatus;
   targetDays: number;
   evidenceUrl?: string;
 }
@@ -274,22 +294,25 @@ export interface ProjectDoc {
   facultyMentorName: string;
   facultyEmail: string;
   teamMembers: ProjectTeamMember[];
-  status: 'Accepted' | 'Team Formed' | 'Proposal Submitted' | 'Prototype Active' | 'Completed';
+  status: ProjectStatus;
   milestones: MilestoneItem[];
+  proposals?: Proposal[];
   budgetEstimated?: number;
+  budgetApproved?: number;
   createdAt?: any;
+  updatedAt?: any;
 }
 
 export const saveProjectTeamToStore = (project: ProjectDoc) => {
   try {
-    const existing: ProjectDoc[] = JSON.parse(localStorage.getItem('nivaaran_projects') || '[]');
-    const index = existing.findIndex(p => p.challengeId === project.challengeId);
-    if (index >= 0) {
-      existing[index] = { ...existing[index], ...project };
+    const workflowProj = toWorkflowProject(project);
+    const existing = workflowStore.getProject(workflowProj.id)
+      || workflowStore.getProjectByChallengeId(workflowProj.challengeId);
+    if (existing) {
+      workflowStore.updateProject(existing.id, { ...workflowProj, id: existing.id });
     } else {
-      existing.unshift({ ...project, id: `PROJ-${Date.now()}` });
+      workflowStore.createProject(workflowProj);
     }
-    localStorage.setItem('nivaaran_projects', JSON.stringify(existing));
     return true;
   } catch (err) {
     console.error('Error saving project team:', err);
@@ -299,7 +322,7 @@ export const saveProjectTeamToStore = (project: ProjectDoc) => {
 
 export const getProjectsFromStore = (): ProjectDoc[] => {
   try {
-    return JSON.parse(localStorage.getItem('nivaaran_projects') || '[]');
+    return workflowStore.getProjects().map(toLegacyProjectDoc);
   } catch {
     return [];
   }
@@ -311,18 +334,12 @@ export const updateChallengeUniversityAcceptance = (
   deptName: string
 ) => {
   try {
-    const localChallenges: ChallengeDoc[] = JSON.parse(localStorage.getItem('nivaaran_challenges') || '[]');
-    const idx = localChallenges.findIndex(c => (c.id === challengeId || c.reportId === challengeId));
-    if (idx >= 0) {
-      localChallenges[idx].assignedHEI = heiName;
-      localChallenges[idx].assignedDept = deptName;
-      localChallenges[idx].status = 'In Progress';
-      localChallenges[idx].stageNumber = 7;
-      localChallenges[idx].stageName = 'Stage 7: University Accepted & Project Allocation';
-      localChallenges[idx].govtOfficerNote = `Accepted by ${heiName} (${deptName}). Multidisciplinary R&D team assigned.`;
-      localStorage.setItem('nivaaran_challenges', JSON.stringify(localChallenges));
-    }
-    return true;
+    workflowStore.updateChallenge(challengeId, {
+      assignedHEI: heiName,
+      assignedDept: deptName
+    });
+    const note = `Accepted by ${heiName} (${deptName}). Multidisciplinary R&D team assigned.`;
+    return workflowStore.transitionChallenge(challengeId, 'University Accepted', heiName, 'Faculty / Mentor', note);
   } catch (err) {
     console.error('Error updating challenge acceptance:', err);
     return false;
@@ -344,27 +361,29 @@ export const govValidateChallenge = async (
     needsHumanVerification: false,
   };
 
-  // 1. Update localStorage (immediate, works offline)
+  // 1. Update workflowStore (primary)
   try {
-    const localChallenges: ChallengeDoc[] = JSON.parse(localStorage.getItem('nivaaran_challenges') || '[]');
-    const idx = localChallenges.findIndex(c => c.id === challengeId || c.reportId === challengeId);
-    if (idx >= 0) {
-      localChallenges[idx] = { ...localChallenges[idx], ...updates };
-      localStorage.setItem('nivaaran_challenges', JSON.stringify(localChallenges));
-    }
+    const transitioned = workflowStore.transitionChallenge(challengeId, 'Government Validated', officerName, 'Government Department', officerNote);
+    if (!transitioned) return false;
+    workflowStore.updateChallenge(challengeId, {
+      needsHumanVerification: false,
+      govtValidatedBy: officerName,
+      govtValidatedAt: new Date().toISOString(),
+    });
   } catch (err) {
-    console.warn('[localStorage] Failed to update challenge:', err);
+    console.warn('[WorkflowStore] Failed to transition challenge:', err);
+    return false;
   }
 
   // 2. Update Firestore (if available)
   try {
-    if (challengeId && !challengeId.startsWith('LOCAL-')) {
+    if (challengeId && !challengeId.startsWith('LOCAL-') && !challengeId.startsWith('CH-')) {
       await updateDoc(doc(db, 'challenges', challengeId), updates);
     }
     return true;
   } catch (err) {
-    console.warn('[Firestore] Govt validate failed, localStorage updated:', err);
-    return true; // localStorage update still succeeded
+    console.warn('[Firestore] Govt validate failed:', err);
+    return true;
   }
 };
 
@@ -376,30 +395,33 @@ export const govRequestEvidence = async (
   officerName: string
 ): Promise<boolean> => {
   const updates: Partial<ChallengeDoc> = {
+    status: 'Evidence Requested',
     needsHumanVerification: true,
     govtOfficerNote: officerNote || `Evidence requested by Government Officer (${officerName}). Please upload additional photos/GPS data.`,
     stageName: 'Stage 2: Evidence Requested by Government Officer',
     stageNumber: 2,
   };
 
+  // 1. Update workflowStore (primary)
   try {
-    const localChallenges: ChallengeDoc[] = JSON.parse(localStorage.getItem('nivaaran_challenges') || '[]');
-    const idx = localChallenges.findIndex(c => c.id === challengeId || c.reportId === challengeId);
-    if (idx >= 0) {
-      localChallenges[idx] = { ...localChallenges[idx], ...updates };
-      localStorage.setItem('nivaaran_challenges', JSON.stringify(localChallenges));
-    }
+    const transitioned = workflowStore.transitionChallenge(challengeId, 'Evidence Requested', officerName, 'Government Department', officerNote);
+    if (!transitioned) return false;
+    workflowStore.updateChallenge(challengeId, {
+      needsHumanVerification: true,
+    });
   } catch (err) {
-    console.warn('[localStorage] Failed to update challenge:', err);
+    console.warn('[WorkflowStore] Failed to transition challenge:', err);
+    return false;
   }
 
+  // 2. Update Firestore (if available)
   try {
-    if (challengeId && !challengeId.startsWith('LOCAL-')) {
+    if (challengeId && !challengeId.startsWith('LOCAL-') && !challengeId.startsWith('CH-')) {
       await updateDoc(doc(db, 'challenges', challengeId), updates);
     }
     return true;
   } catch (err) {
-    console.warn('[Firestore] Request evidence failed, localStorage updated:', err);
+    console.warn('[Firestore] Request evidence failed:', err);
     return true;
   }
 };
