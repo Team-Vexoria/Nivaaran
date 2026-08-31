@@ -25,8 +25,9 @@ import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer'
 import { useMapData, getSeverityBg, getStatusPillClass } from '../../services/mapDataService';
 import { govValidateChallenge, govRequestEvidence, govRejectChallenge, ChallengeDoc } from '../../services/firebaseService';
 import { CertificateModal } from '../../components/CertificateModal';
+import { ProposalReviewTab } from '../../components/gov/ProposalReviewTab';
 
-type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'reports';
+type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports';
 
 // ─── Action Modal ─────────────────────────────────────────────────────────────
 interface ActionModalProps {
@@ -188,6 +189,7 @@ export const GovPortal: React.FC = () => {
     { id: 'map',          label: 'State Map',             icon: <Map className="w-3.5 h-3.5" /> },
     { id: 'queue',        label: 'Challenge Queue',       icon: <ListFilter className="w-3.5 h-3.5" /> },
     { id: 'universities', label: 'HEI Allocations',       icon: <Building2 className="w-3.5 h-3.5" /> },
+    { id: 'proposals',    label: 'Proposal Review',       icon: <FileCheck className="w-3.5 h-3.5" /> },
     { id: 'reports',      label: 'Reports & Analytics',   icon: <BarChart3 className="w-3.5 h-3.5" /> },
   ];
 
@@ -905,6 +907,11 @@ export const GovPortal: React.FC = () => {
               </div>
             )}
           </div>
+        )}
+
+        {/* PROPOSAL REVIEW TAB */}
+        {activeTab === 'proposals' && (
+          <ProposalReviewTab officerName={officerName} />
         )}
 
         {/* REPORTS & ANALYTICS TAB */}

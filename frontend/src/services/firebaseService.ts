@@ -566,6 +566,119 @@ export const updateChallengeUniversityAcceptance = (
   }
 };
 
+// ── Government Proposal Review (Sprint 2 · Feature 2) ─────────────────────────
+// Government officers review university-submitted technical proposals (Stage 9).
+//   Approve          → challenge advances to Prototype Active (Stage 11)
+//   Request Revision → challenge stays at Proposal Submitted (Stage 9)
+//   Reject           → challenge reverts to In Progress (Stage 8) so the team
+//                      can refine and resubmit.
+export const govApproveProposal = (
+  projectId: string,
+  proposalId: string,
+  officerNote: string,
+  officerName: string
+): boolean => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+
+  const proposals = (project.proposals || []).map(p => p.id === proposalId
+    ? { ...p, status: 'Approved' as const, reviewNote: officerNote }
+    : p);
+
+  const note = officerNote || `Proposal approved by Government Officer (${officerName}). Solution work initiated.`;
+  const advanced = advanceChallengeIfNeeded(
+    challenge.id,
+    'Prototype Active',
+    officerName,
+    'Government Department',
+    note
+  );
+  if (!advanced) return false;
+
+  return updateProjectForPhase3(
+    project.id,
+    {
+      status: 'Prototype Active',
+      budgetApproved: project.budgetEstimated ?? project.budgetApproved,
+      proposals,
+    },
+    officerName,
+    'Government Department',
+    `Proposal ${proposalId} approved — advancing to prototype phase.`
+  );
+};
+
+export const govRequestProposalRevision = (
+  projectId: string,
+  proposalId: string,
+  officerNote: string,
+  officerName: string
+): boolean => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+
+  const proposals = (project.proposals || []).map(p => p.id === proposalId
+    ? { ...p, status: 'Revision Requested' as const, reviewNote: officerNote }
+    : p);
+
+  const note = officerNote || `Revision requested by Government Officer (${officerName}). Please refine the technical proposal.`;
+  // Challenge remains at Proposal Submitted (Stage 9).
+  workflowStore.updateChallenge(challenge.id, { govtOfficerNote: note });
+
+  return updateProjectForPhase3(
+    project.id,
+    { status: 'Proposal Submitted', proposals },
+    officerName,
+    'Government Department',
+    `Revision requested on proposal ${proposalId}.`
+  );
+};
+
+export const govRejectProposal = (
+  projectId: string,
+  proposalId: string,
+  officerNote: string,
+  officerName: string
+): boolean => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+
+  const proposals = (project.proposals || []).map(p => p.id === proposalId
+    ? { ...p, status: 'Rejected' as const, reviewNote: officerNote }
+    : p);
+
+  const note = officerNote || `Proposal rejected by Government Officer (${officerName}).`;
+  // Revert challenge to In Progress (Stage 8) so the team can refine & resubmit.
+  const reverted = workflowStore.updateChallenge(challenge.id, {
+    status: 'In Progress',
+    stageNumber: 8,
+    stageName: formatStageName(8),
+    govtOfficerNote: note,
+  });
+  if (!reverted) return false;
+
+  workflowStore.addTimelineEvent({
+    id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    entityType: 'challenge',
+    entityId: challenge.id,
+    action: 'status_changed',
+    actor: officerName,
+    actorRole: 'Government Department',
+    description: note,
+    previousValue: 'Proposal Submitted',
+    newValue: 'In Progress',
+    timestamp: new Date().toISOString(),
+  });
+
+  return updateProjectForPhase3(
+    project.id,
+    { status: 'Team Formed', proposals },
+    officerName,
+    'Government Department',
+    `Proposal ${proposalId} rejected — reverting to team formation.`
+  );
+};
+
 // ── Government Validation Action ──────────────────────────────────────────────
 // Sets status to 'Government Validated', stage 3. Then auto-runs HEI matching
 // to advance through Prioritized (stage 5) → HEI Matched (stage 6).
