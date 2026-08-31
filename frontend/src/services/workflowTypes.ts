@@ -10,6 +10,7 @@ export type ChallengeStatus =
   | 'Submitted'               // Stage 1: Citizen submits
   | 'Under Review'            // Stage 2: AI triage complete, awaiting govt review
   | 'Evidence Requested'      // Stage 2b: Govt officer requests more evidence
+  | 'Rejected'                // Terminal: Govt officer rejects (does not meet criteria / duplicate)
   | 'Government Validated'    // Stage 3: Govt validates & prioritizes
   | 'Clustered'               // Stage 4: Similar challenges grouped
   | 'Prioritized'             // Stage 5: Transparent priority assigned
@@ -87,6 +88,9 @@ export interface Challenge {
   assignedHEI?: string;
   assignedDept?: string;
   assignedProjectId?: string;
+
+  // Deduplication / Clustering
+  clusterId?: string;           // Set when AI groups this with similar challenges
 
   // CSR / Industry
   csrSponsor?: string;

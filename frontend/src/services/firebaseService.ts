@@ -59,6 +59,7 @@ export interface ChallengeDoc {
   govtOfficerNote?: string;
   govtValidatedBy?: string;
   govtValidatedAt?: string;
+  clusterId?: string;
   createdAt?: any;
 }
 
@@ -599,6 +600,60 @@ export const govValidateChallenge = async (
     return true;
   } catch (err) {
     console.warn('[Firestore] Govt validate failed:', err);
+    return true;
+  }
+};
+
+// ── Reject Challenge Action ───────────────────────────────────────────────────
+// Sets status to 'Rejected', removing it from the active queue. Visible to citizen.
+export const govRejectChallenge = async (
+  challengeId: string,
+  officerNote: string,
+  officerName: string
+): Promise<boolean> => {
+  const updates: Partial<ChallengeDoc> = {
+    status: 'Rejected',
+    govtOfficerNote: officerNote || `Rejected by Government Officer (${officerName}). Challenge does not meet submission criteria.`,
+    needsHumanVerification: false,
+  };
+
+  // 1. Update workflowStore (primary)
+  try {
+    workflowStore.updateChallenge(challengeId, {
+      status: 'Rejected',
+      stageNumber: 2,
+      stageName: 'Rejected',
+      govtOfficerNote: updates.govtOfficerNote,
+      needsHumanVerification: false,
+      govtValidatedBy: officerName,
+      govtValidatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    workflowStore.addTimelineEvent({
+      id: `TL-${Date.now()}-reject`,
+      entityType: 'challenge',
+      entityId: challengeId,
+      action: 'status_changed',
+      actor: officerName,
+      actorRole: 'Government Department',
+      description: officerNote || `Challenge rejected by ${officerName}.`,
+      previousValue: 'Under Review',
+      newValue: 'Rejected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('[WorkflowStore] Failed to reject challenge:', err);
+    return false;
+  }
+
+  // 2. Update Firestore (if available)
+  try {
+    if (challengeId && !challengeId.startsWith('LOCAL-') && !challengeId.startsWith('CH-')) {
+      await updateDoc(doc(db, 'challenges', challengeId), updates);
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Firestore] Reject failed:', err);
     return true;
   }
 };

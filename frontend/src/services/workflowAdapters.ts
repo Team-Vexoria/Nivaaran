@@ -81,6 +81,7 @@ export function toWorkflowChallenge(doc: ChallengeDoc): Challenge {
     needsHumanVerification: doc.needsHumanVerification,
     govtValidatedBy: doc.govtValidatedBy,
     govtValidatedAt: doc.govtValidatedAt,
+    clusterId: doc.clusterId,
     assignedHEI: doc.assignedHEI,
     assignedDept: doc.assignedDept,
     csrSponsor: doc.csrSponsor,
@@ -120,6 +121,7 @@ export function toLegacyChallengeDoc(challenge: Challenge): ChallengeDoc {
     govtOfficerNote: challenge.govtOfficerNote,
     govtValidatedBy: challenge.govtValidatedBy,
     govtValidatedAt: challenge.govtValidatedAt,
+    clusterId: challenge.clusterId,
     createdAt: challenge.createdAt,
   };
 }

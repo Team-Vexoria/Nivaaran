@@ -23,14 +23,14 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
 import { useMapData, getSeverityBg, getStatusPillClass } from '../../services/mapDataService';
-import { govValidateChallenge, govRequestEvidence, ChallengeDoc } from '../../services/firebaseService';
+import { govValidateChallenge, govRequestEvidence, govRejectChallenge, ChallengeDoc } from '../../services/firebaseService';
 import { CertificateModal } from '../../components/CertificateModal';
 
 type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'reports';
 
 // ─── Action Modal ─────────────────────────────────────────────────────────────
 interface ActionModalProps {
-  type: 'validate' | 'evidence';
+  type: 'validate' | 'evidence' | 'reject';
   challenge: ChallengeDoc;
   officerName: string;
   onConfirm: (note: string) => void;
@@ -40,20 +40,34 @@ interface ActionModalProps {
 const ActionModal: React.FC<ActionModalProps> = ({ type, challenge, officerName, onConfirm, onClose }) => {
   const [note, setNote] = useState('');
   const isValidate = type === 'validate';
+  const isReject = type === 'reject';
 
   const defaultNote = isValidate
     ? `Validated by ${officerName}. Site conditions confirmed. Queued for HEI capability matching.`
+    : isReject
+    ? `Rejected by ${officerName}. Challenge does not meet submission criteria or is a duplicate.`
     : `Evidence requested by ${officerName}. Please upload additional GPS-tagged photos or video of the affected site.`;
+
+  const headerColor = isValidate ? 'text-[#2C6E49]' : isReject ? 'text-[#B91C1C]' : 'text-[#C98A2C]';
+  const confirmBg = isValidate
+    ? 'bg-[#2C6E49] hover:bg-[#23583a]'
+    : isReject
+    ? 'bg-[#B91C1C] hover:bg-[#991b1b]'
+    : 'bg-[#C98A2C] hover:bg-[#a97224]';
+  const headerText = isValidate
+    ? '✓ Validate & Approve Challenge'
+    : isReject
+    ? '✗ Reject Challenge'
+    : '⚠ Request Additional Evidence';
+  const confirmLabel = isValidate ? 'Confirm Validation' : isReject ? 'Confirm Rejection' : 'Send Evidence Request';
 
   return (
     <div className="fixed inset-0 z-[200] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="bg-white border border-[#E4DDD1] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-        
+
         <div className="flex items-start justify-between">
           <div>
-            <h3 className={`text-sm font-black ${isValidate ? 'text-[#2C6E49]' : 'text-[#C98A2C]'}`}>
-              {isValidate ? '✓ Validate & Approve Challenge' : '⚠ Request Additional Evidence'}
-            </h3>
+            <h3 className={`text-sm font-black ${headerColor}`}>{headerText}</h3>
             <p className="text-xs text-[#6A6155] mt-0.5 font-mono">{challenge.reportId}</p>
             <p className="text-xs text-[#4A433B] font-semibold mt-1 line-clamp-1">{challenge.title}</p>
           </div>
@@ -61,6 +75,12 @@ const ActionModal: React.FC<ActionModalProps> = ({ type, challenge, officerName,
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        {isReject && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-xs text-red-800 font-medium">
+            ⚠ This will permanently remove the challenge from the active queue. The citizen will be notified with your reason.
+          </div>
+        )}
 
         <div>
           <label className="text-[10px] font-bold text-[#6A6155] uppercase tracking-wider block mb-1.5">
@@ -81,11 +101,9 @@ const ActionModal: React.FC<ActionModalProps> = ({ type, challenge, officerName,
         <div className="flex gap-2 pt-1">
           <button
             onClick={() => onConfirm(note.trim() || defaultNote)}
-            className={`flex-1 py-2 text-xs font-extrabold text-white rounded-xl transition-colors cursor-pointer ${
-              isValidate ? 'bg-[#2C6E49] hover:bg-[#23583a]' : 'bg-[#C98A2C] hover:bg-[#a97224]'
-            }`}
+            className={`flex-1 py-2 text-xs font-extrabold text-white rounded-xl transition-colors cursor-pointer ${confirmBg}`}
           >
-            {isValidate ? 'Confirm Validation' : 'Send Evidence Request'}
+            {confirmLabel}
           </button>
           <button
             onClick={onClose}
@@ -104,7 +122,7 @@ export const GovPortal: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<GovTab>('overview');
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warning' } | null>(null);
-  const [actionModal, setActionModal] = useState<{ type: 'validate' | 'evidence'; challenge: ChallengeDoc } | null>(null);
+  const [actionModal, setActionModal] = useState<{ type: 'validate' | 'evidence' | 'reject'; challenge: ChallengeDoc } | null>(null);
   const [certificateModal, setCertificateModal] = useState<{ isOpen: boolean; challenge: ChallengeDoc | null }>({
     isOpen: false,
     challenge: null,
@@ -121,6 +139,7 @@ export const GovPortal: React.FC = () => {
 
   const openValidate = (challenge: ChallengeDoc) => setActionModal({ type: 'validate', challenge });
   const openRequestEvidence = (challenge: ChallengeDoc) => setActionModal({ type: 'evidence', challenge });
+  const openReject = (challenge: ChallengeDoc) => setActionModal({ type: 'reject', challenge });
 
   const handleMapValidate = (challengeId: string) => {
     const ch = challenges.find(c => c.id === challengeId || c.reportId === challengeId);
@@ -144,6 +163,14 @@ export const GovPortal: React.FC = () => {
           ? `✓ "${challenge.title}" validated. Status updated to Government Validated.`
           : `Unable to validate "${challenge.title}". The challenge may no longer exist or may be at an invalid stage.`,
         succeeded ? 'success' : 'warning'
+      );
+    } else if (type === 'reject') {
+      const succeeded = await govRejectChallenge(id, note, officerName);
+      showToast(
+        succeeded
+          ? `✗ "${challenge.title}" rejected and removed from queue.`
+          : `Unable to reject "${challenge.title}". Please try again.`,
+        succeeded ? 'warning' : 'warning'
       );
     } else {
       const succeeded = await govRequestEvidence(id, note, officerName);
@@ -404,6 +431,12 @@ export const GovPortal: React.FC = () => {
                                 className="text-[11px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] hover:bg-[#FFF0D0] border border-[#F0D99A] px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
                               >
                                 Evidence
+                              </button>
+                              <button
+                                onClick={() => openReject(ch)}
+                                className="text-[11px] font-extrabold text-[#B91C1C] bg-[#FEF2F2] hover:bg-[#FEE2E2] border border-[#FECACA] px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                              >
+                                Reject
                               </button>
                             </div>
                           </div>
@@ -769,6 +802,12 @@ export const GovPortal: React.FC = () => {
                                 Evidence Requested
                               </span>
                             )}
+                            {ch.clusterId && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                                <Layers className="w-2.5 h-2.5" />
+                                Clustered
+                              </span>
+                            )}
                           </div>
                           <h3 className="text-sm font-bold text-[#201C18] leading-tight">{ch.title}</h3>
                           <p className="text-xs text-[#6A6155] mt-0.5">
@@ -842,6 +881,13 @@ export const GovPortal: React.FC = () => {
                           >
                             <AlertTriangle className="w-3.5 h-3.5 text-[#C98A2C]" />
                             Request Evidence
+                          </button>
+                          <button
+                            onClick={() => openReject(ch)}
+                            className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-extrabold py-2 px-4 rounded-lg border border-red-200 transition-colors cursor-pointer"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            Reject
                           </button>
                         </div>
                       )}
