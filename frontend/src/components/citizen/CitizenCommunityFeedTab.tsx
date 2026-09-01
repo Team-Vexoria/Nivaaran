@@ -8,6 +8,15 @@ import { tr } from '../../i18n/translationEngine';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 import { getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 
+// All 24 Jharkhand districts for the report district picker.
+const JHARKHAND_DISTRICTS = [
+  'Ranchi', 'Dhanbad', 'East Singhbhum (Jamshedpur)', 'Bokaro', 'Palamu',
+  'Hazaribagh', 'Deoghar', 'Giridih', 'Ramgarh', 'Latehar',
+  'Garhwa', 'Dumka', 'Godda', 'Sahebganj', 'Pakur', 'Jamtara',
+  'Khunti', 'Gumla', 'Simdega', 'West Singhbhum', 'Seraikela Kharsawan',
+  'Chatra', 'Koderma', 'Lohardaga',
+];
+
 interface FeedComment {
   id: string;
   author: string;
@@ -240,13 +249,11 @@ export const CitizenCommunityFeedTab: React.FC = () => {
             <select
               value={newPostDistrict}
               onChange={e => setNewPostDistrict(e.target.value)}
-              className="text-xs border border-slate-200 rounded-md px-2 py-1 bg-white font-semibold text-slate-800"
+              className="text-xs border border-slate-200 rounded-md px-2 py-1 bg-white font-semibold text-slate-800 max-w-[220px]"
             >
-              <option value="Ranchi">{tr('Ranchi', currentLang)}</option>
-              <option value="Dhanbad">{tr('Dhanbad', currentLang)}</option>
-              <option value="Palamu">{tr('Palamu', currentLang)}</option>
-              <option value="East Singhbhum">{tr('East Singhbhum', currentLang)}</option>
-              <option value="Hazaribagh">{tr('Hazaribagh', currentLang)}</option>
+              {JHARKHAND_DISTRICTS.map(d => (
+                <option key={d} value={d}>{tr(d, currentLang)}</option>
+              ))}
             </select>
           </div>
 
