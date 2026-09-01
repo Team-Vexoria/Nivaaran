@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PublicNavbar } from '../components/PublicNavbar';
 import { UniversityPortal } from './portals/UniversityPortal';
 import { JharkhandMapExplorer } from '../components/map/JharkhandMapExplorer';
-import { 
+import {
   Building2, ShieldCheck, UserCheck, ArrowRight, Cpu
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
+import { workflowStore, STORE_EVENT } from '../services/workflowStore';
+import { getStageForStatus } from '../services/workflowLifecycle';
 
 interface LandingPageProps {
   onOpenAuth: () => void;
@@ -38,6 +40,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Live subscription to workflowStore so hero stats reflect real activity.
+  const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());
+  useEffect(() => {
+    const handler = () => setWfChallenges(workflowStore.getChallenges());
+    window.addEventListener(STORE_EVENT, handler);
+    return () => window.removeEventListener(STORE_EVENT, handler);
+  }, []);
+
+  // Live civic-impact ticker numbers derived from the store (with seed fallbacks).
+  const liveTickerStats = useMemo(() => {
+    const total = wfChallenges.length;
+    const resolved = wfChallenges.filter(c => ['Resolved', 'Closed'].includes(c.status)).length;
+    const govVerified = wfChallenges.filter(c => {
+      const stage = getStageForStatus(c.status)?.stageNumber ?? 0;
+      return stage >= 3;
+    }).length;
+    const verifiedDistricts = new Set(wfChallenges.filter(c => c.district).map(c => c.district)).size;
+    const verificationRate = total > 0 ? Math.round((govVerified / total) * 100) : 94;
+    return {
+      total: total || 1284,
+      resolved,
+      verifiedDistricts: verifiedDistricts || 24,
+      verificationRate: verificationRate || 94,
+    };
+  }, [wfChallenges]);
 
   if (currentPortal === 'university') {
     return <UniversityPortal />;
@@ -157,7 +185,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             <div className="w-full max-w-5xl mx-auto mt-8 bg-white border border-[#E4DDD1] rounded-xl p-4 sm:p-5 grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#E4DDD1] text-left shadow-2xs relative z-10">
               
               <div className="p-3 space-y-0.5">
-                <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">24 / 24</p>
+                <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">{liveTickerStats.verifiedDistricts} / 24</p>
                 <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerDistrictsLabel}</p>
                 <p className="text-[11px] text-[#2C6E49] font-medium">{t.landing.tickerDistrictsNote}</p>
               </div>
@@ -169,7 +197,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               </div>
 
               <div className="p-3 space-y-0.5 md:pl-6">
-                <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">94.8%</p>
+                <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">{liveTickerStats.verificationRate}%</p>
                 <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerAuditLabel}</p>
                 <p className="text-[11px] text-[#2C6E49] font-medium">{t.landing.tickerAuditNote}</p>
               </div>
