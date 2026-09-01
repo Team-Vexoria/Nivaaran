@@ -1,12 +1,74 @@
 import React, { useState } from 'react';
-import { GraduationCap, Award, CheckCircle2, Upload, ExternalLink } from 'lucide-react';
+import { GraduationCap, Award, CheckCircle2, ExternalLink, Lock, ChevronRight, FlaskConical, Map, ClipboardCheck } from 'lucide-react';
 import { UniversityDoc, StudentRosterItem } from '../../services/universityData';
 import { ChallengeDoc, ProjectDoc, submitOutcomeAudit, submitPilotReport, submitPrototypeUpdate, subscribeToChallenges, subscribeToProjects } from '../../services/firebaseService';
 import { CertificateModal } from '../CertificateModal';
 import { getStageForStatus } from '../../services/workflowLifecycle';
+import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 
 interface StudentWorkspaceTabProps {
   university: UniversityDoc;
+}
+
+// Stage progress bar for stages 11-13
+const PHASE3_STAGES = [
+  { num: 11, label: 'Prototype', status: 'Prototype Active', icon: FlaskConical },
+  { num: 12, label: 'Pilot',      status: 'Pilot Active',      icon: Map },
+  { num: 13, label: 'Audit',      status: 'Outcome Audit',     icon: ClipboardCheck },
+];
+
+function StageProgressBar({ currentStage }: { currentStage: number }) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-2xs">
+      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-3">Phase 3 Progress</p>
+      <div className="flex items-center gap-0">
+        {PHASE3_STAGES.map((s, i) => {
+          const done    = currentStage >  s.num;
+          const active  = currentStage === s.num;
+          const locked  = currentStage <  s.num;
+          const Icon    = s.icon;
+          return (
+            <React.Fragment key={s.num}>
+              <div className="flex flex-col items-center gap-1.5 flex-1">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 transition-colors ${
+                  done   ? 'bg-emerald-500 border-emerald-500 text-white' :
+                  active ? 'bg-emerald-600 border-emerald-600 text-white ring-4 ring-emerald-100' :
+                           'bg-slate-100 border-slate-300 text-slate-400'
+                }`}>
+                  {done ? <CheckCircle2 className="w-5 h-5" /> : <Icon className="w-4.5 h-4.5" />}
+                </div>
+                <div className="text-center">
+                  <span className={`text-[10px] font-extrabold block ${
+                    done || active ? 'text-emerald-800' : 'text-slate-400'
+                  }`}>Stage {s.num}</span>
+                  <span className={`text-[10px] font-semibold block ${
+                    active ? 'text-emerald-700' : locked ? 'text-slate-400' : 'text-slate-600'
+                  }`}>{s.label}</span>
+                  {active && (
+                    <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded mt-0.5 inline-block">Active</span>
+                  )}
+                </div>
+              </div>
+              {i < PHASE3_STAGES.length - 1 && (
+                <div className={`h-0.5 flex-1 -mt-5 transition-colors ${done ? 'bg-emerald-500' : 'bg-slate-200'}`} />
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LockedSection({ availableAtStage }: { availableAtStage: number }) {
+  return (
+    <div className="flex items-center gap-2 p-4 bg-slate-50 rounded-xl border border-slate-200 border-dashed">
+      <Lock className="w-4 h-4 text-slate-400 shrink-0" />
+      <p className="text-xs text-slate-500 font-semibold">
+        Available at Stage {availableAtStage}. Complete and advance the current stage first.
+      </p>
+    </div>
+  );
 }
 
 export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ university }) => {
@@ -23,23 +85,56 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
 
   const [projects, setProjects] = useState<ProjectDoc[]>([]);
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
-  const assignedProject: ProjectDoc | null = projects.find(p => p.universityId === university.id || p.universityName === university.name) || null;
-  const assignedChallenge = assignedProject ? challenges.find(c => c.id === assignedProject.challengeId || c.reportId === assignedProject.challengeId) : undefined;
+
+  const assignedProject: ProjectDoc | null =
+    projects.find(p => p.universityId === university.id || p.universityName === university.name) || null;
+  const assignedChallenge = assignedProject
+    ? challenges.find(c => c.id === assignedProject.challengeId || c.reportId === assignedProject.challengeId)
+    : undefined;
   const currentStage = assignedChallenge ? getStageForStatus(assignedChallenge.status)?.stageNumber || 0 : 0;
 
-  const [githubUrl, setGithubUrl] = useState<string>('https://github.com/nivaaran-hei/iot-flood-telemetry-node');
-  const [telemetryLogs, setTelemetryLogs] = useState<string>('Sensor Node #04: Water depth 1.4m. Flow velocity 2.1 m/s. Geotag verified.');
-  const [isLoggedSuccess, setIsLoggedSuccess] = useState<boolean>(false);
-  const [isCertificateOpen, setIsCertificateOpen] = useState<boolean>(false);
-  const [pilotLocation, setPilotLocation] = useState<string>('Pilot village / ward');
-  const [pilotObservations, setPilotObservations] = useState<string>('');
-  const [auditSummary, setAuditSummary] = useState<string>('');
-  const [phase3Error, setPhase3Error] = useState<string>('');
+  // Form field state
+  const [githubUrl, setGithubUrl]           = useState('https://github.com/nivaaran-hei/iot-flood-telemetry-node');
+  const [telemetryLogs, setTelemetryLogs]   = useState('Sensor Node #04: Water depth 1.4m. Flow velocity 2.1 m/s. Geotag verified.');
+  const [pilotLocation, setPilotLocation]   = useState('Pilot village / ward');
+  const [pilotObservations, setPilotObservations] = useState('');
+  const [auditSummary, setAuditSummary]     = useState('');
+
+  // Submission success tracking (per form)
+  const [protoSubmitted, setProtoSubmitted] = useState(!!assignedProject?.prototypeUpdate);
+  const [pilotSubmitted, setPilotSubmitted] = useState(!!assignedProject?.pilotReport);
+  const [auditSubmitted, setAuditSubmitted] = useState(!!assignedProject?.outcomeAudit);
+
+  const [isLoggedSuccess, setIsLoggedSuccess] = useState(false);
+  const [isCertificateOpen, setIsCertificateOpen] = useState(false);
+  const [phase3Error, setPhase3Error] = useState('');
+
+  // Advance-stage loading states
+  const [advancingStage, setAdvancingStage] = useState<number | null>(null);
 
   React.useEffect(() => {
-    const unsubscribeProjects = subscribeToProjects(setProjects);
+    const unsubscribeProjects  = subscribeToProjects(setProjects);
     const unsubscribeChallenges = subscribeToChallenges(setChallenges);
     return () => { unsubscribeProjects(); unsubscribeChallenges(); };
+  }, []);
+
+  // Re-sync submitted flags when project data changes
+  React.useEffect(() => {
+    if (assignedProject) {
+      if (assignedProject.prototypeUpdate) setProtoSubmitted(true);
+      if (assignedProject.pilotReport)     setPilotSubmitted(true);
+      if (assignedProject.outcomeAudit)    setAuditSubmitted(true);
+    }
+  }, [assignedProject]);
+
+  // Also react to store events so the UI refreshes after advance
+  React.useEffect(() => {
+    const handler = () => {
+      const updated = workflowStore.getChallenges();
+      setChallenges(updated as unknown as ChallengeDoc[]);
+    };
+    window.addEventListener(STORE_EVENT, handler);
+    return () => window.removeEventListener(STORE_EVENT, handler);
   }, []);
 
   const handleLogProgress = (e: React.FormEvent) => {
@@ -52,10 +147,13 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
       evidenceUrls: [],
       submittedBy: currentStudent.name,
     });
-    setPhase3Error(saved ? '' : 'Prototype updates are available after the project reaches proposal review.');
     if (saved) {
+      setProtoSubmitted(true);
       setIsLoggedSuccess(true);
+      setPhase3Error('');
       setTimeout(() => setIsLoggedSuccess(false), 3000);
+    } else {
+      setPhase3Error('Prototype updates are available after the project reaches proposal review.');
     }
   };
 
@@ -68,8 +166,13 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
       evidenceUrls: [],
       submittedBy: currentStudent.name,
     });
-    setPhase3Error(saved ? '' : 'Pilot reports can be submitted once prototype work is active.');
-    if (saved) setPilotObservations('');
+    if (saved) {
+      setPilotSubmitted(true);
+      setPhase3Error('');
+      setPilotObservations('');
+    } else {
+      setPhase3Error('Pilot reports can be submitted once prototype work is active.');
+    }
   };
 
   const handleOutcomeAudit = (e: React.FormEvent) => {
@@ -82,13 +185,41 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
       evidenceUrls: [],
       verifiedAt: new Date().toISOString(),
     });
-    setPhase3Error(saved ? '' : 'Outcome audits can be submitted after a pilot report is recorded.');
-    if (saved) setAuditSummary('');
+    if (saved) {
+      setAuditSubmitted(true);
+      setPhase3Error('');
+      setAuditSummary('');
+    } else {
+      setPhase3Error('Outcome audits can be submitted after a pilot report is recorded.');
+    }
   };
+
+  const handleAdvanceStage = (fromStage: number) => {
+    if (!assignedChallenge) return;
+    const id = assignedChallenge.id || assignedChallenge.reportId;
+    const nextStatus = fromStage === 11 ? 'Pilot Active' : fromStage === 12 ? 'Outcome Audit' : null;
+    if (!nextStatus) return;
+    setAdvancingStage(fromStage);
+    try {
+      workflowStore.transitionChallenge(
+        id,
+        nextStatus,
+        currentStudent.name,
+        'Student Researcher',
+        `Stage ${fromStage} complete — advancing to ${nextStatus}.`,
+      );
+    } catch (err) {
+      console.error('Stage advance error:', err);
+    } finally {
+      setAdvancingStage(null);
+    }
+  };
+
+  const isPrePhase3 = currentStage < 11;
 
   return (
     <div className="space-y-6">
-      
+
       {/* Student Profile Identity Card */}
       <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6 rounded-2xl shadow-md border border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-3.5">
@@ -108,19 +239,34 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
           </div>
         </div>
 
-        {/* Academic R&D Credit Badges */}
         <div className="flex items-center space-x-3 shrink-0">
           <div className="bg-slate-800/90 border border-slate-700 p-3 rounded-xl text-center space-y-0.5">
             <span className="text-xs text-slate-400 font-semibold block">Academic Credits</span>
             <span className="text-xl font-black text-emerald-400 font-heading">{currentStudent.creditsEarned} Credits</span>
           </div>
-
           <div className="bg-slate-800/90 border border-slate-700 p-3 rounded-xl text-center space-y-0.5">
             <span className="text-xs text-slate-400 font-semibold block">CGPA</span>
             <span className="text-xl font-black text-amber-400 font-heading">{currentStudent.cgpa}</span>
           </div>
         </div>
       </div>
+
+      {/* Phase 3 Stage Progress Bar */}
+      {assignedProject && <StageProgressBar currentStage={currentStage} />}
+
+      {/* Pre-phase 3 waiting state */}
+      {assignedProject && isPrePhase3 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+          <Lock className="w-5 h-5 text-amber-600 shrink-0" />
+          <div>
+            <p className="text-sm font-bold text-amber-900">Awaiting Phase 3 Clearance</p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              The current project stage is {assignedChallenge?.status || 'earlier than Stage 11'}.
+              Phase 3 forms unlock once the government approves your proposal and the challenge advances to <strong>Prototype Active</strong> (Stage 11).
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Active Multidisciplinary Project Assignment */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
@@ -146,7 +292,6 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
               </p>
             </div>
 
-            {/* Stage Milestones Checklist */}
             <div className="space-y-2 pt-2">
               <span className="text-xs font-extrabold text-slate-700 uppercase tracking-wider block">
                 Project Milestone Checklist:
@@ -175,78 +320,206 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
         )}
       </div>
 
-      {/* Student Milestone Progress Submission Form */}
+      {/* ── Stage 11: Prototype ─────────────────────────────────────────────── */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
-        <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center">
-          <Upload className="w-4 h-4 mr-1.5 text-emerald-600" />
-          Log R&D Milestone Progress & Hardware Telemetry
-        </h3>
-
-        <form onSubmit={handleLogProgress} className="space-y-3 text-xs">
-          <div className="space-y-1">
-            <label className="font-bold text-slate-800 block">GitHub / Hardware Code Repository Link:</label>
-            <div className="flex items-center space-x-2">
-              <input 
-                type="url"
-                value={githubUrl}
-                onChange={(e) => setGithubUrl(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900"
-              />
-              <a 
-                href={githubUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl shrink-0"
-              >
-                <ExternalLink className="w-4 h-4" />
-              </a>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="font-bold text-slate-800 block">Field Sensor Telemetry / Trial Test Logs:</label>
-            <textarea 
-              rows={2}
-              value={telemetryLogs}
-              onChange={(e) => setTelemetryLogs(e.target.value)}
-              className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900"
-            />
-          </div>
-
-          {isLoggedSuccess && (
-            <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-emerald-900 font-bold flex items-center space-x-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>Milestone telemetry log saved! +4 Academic R&D Credits awarded.</span>
-            </div>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+            <FlaskConical className="w-4 h-4 text-emerald-600" />
+            Stage 11 · Prototype — Log R&D Milestone & Telemetry
+          </h3>
+          {currentStage >= 11 ? (
+            <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
+              {currentStage === 11 ? 'Active' : 'Complete'}
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200">Locked</span>
           )}
+        </div>
 
-          {phase3Error && <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl text-rose-800 font-semibold">{phase3Error}</div>}
+        {currentStage < 11 ? (
+          <LockedSection availableAtStage={11} />
+        ) : (
+          <form onSubmit={handleLogProgress} className="space-y-3 text-xs">
+            <div className="space-y-1">
+              <label className="font-bold text-slate-800 block">GitHub / Hardware Code Repository Link:</label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="url"
+                  value={githubUrl}
+                  onChange={(e) => setGithubUrl(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900"
+                />
+                <a href={githubUrl} target="_blank" rel="noreferrer"
+                  className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl shrink-0">
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              </div>
+            </div>
 
-          <div className="flex justify-end pt-1">
-            <button
-              type="submit"
-              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs"
-            >
-              Submit Milestone Verification Update
-            </button>
-          </div>
-        </form>
+            <div className="space-y-1">
+              <label className="font-bold text-slate-800 block">Field Sensor Telemetry / Trial Test Logs:</label>
+              <textarea
+                rows={2}
+                value={telemetryLogs}
+                onChange={(e) => setTelemetryLogs(e.target.value)}
+                className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900"
+              />
+            </div>
+
+            {isLoggedSuccess && (
+              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-emerald-900 font-bold flex items-center space-x-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Milestone telemetry log saved! +4 Academic R&D Credits awarded.</span>
+              </div>
+            )}
+
+            {phase3Error && (
+              <div className="bg-rose-50 border border-rose-200 p-3 rounded-xl text-rose-800 font-semibold">{phase3Error}</div>
+            )}
+
+            <div className="flex items-center justify-between pt-1 gap-3 flex-wrap">
+              <button type="submit"
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs">
+                Submit Milestone Verification Update
+              </button>
+
+              {/* Advance to Stage 12 */}
+              {currentStage === 11 && (
+                <button
+                  type="button"
+                  disabled={!protoSubmitted || advancingStage === 11}
+                  onClick={() => handleAdvanceStage(11)}
+                  title={!protoSubmitted ? 'Submit the prototype log above first' : 'Advance project to Stage 12: Pilot Active'}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-xs"
+                >
+                  {advancingStage === 11 ? 'Advancing…' : (
+                    <>Advance to Stage 12 — Pilot <ChevronRight className="w-3.5 h-3.5" /></>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {currentStage === 11 && !protoSubmitted && (
+              <p className="text-[11px] text-slate-500 italic">Submit the prototype update above to unlock the Stage 12 advance button.</p>
+            )}
+          </form>
+        )}
       </div>
 
-      {/* Phase 3 pilot and outcome submissions */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        <form onSubmit={handlePilotReport} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-          <div><h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Stage 12 · Pilot field report</h3><p className="text-[11px] text-slate-500 mt-1">Record the real-world test location and observations after prototype readiness.</p></div>
-          <input value={pilotLocation} onChange={(e) => setPilotLocation(e.target.value)} className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="Pilot village / ward" />
-          <textarea rows={4} value={pilotObservations} onChange={(e) => setPilotObservations(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="Observed performance, community feedback, and test results" />
-          <button type="submit" disabled={!assignedProject || currentStage < 11} className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white text-xs font-black rounded-xl">Submit pilot report</button>
-        </form>
+      {/* ── Stage 12: Pilot ─────────────────────────────────────────────────── */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+            <Map className="w-4 h-4 text-indigo-600" />
+            Stage 12 · Pilot — Field Report
+          </h3>
+          {currentStage >= 12 ? (
+            <span className="text-[10px] font-bold bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded border border-indigo-200">
+              {currentStage === 12 ? 'Active' : 'Complete'}
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200">Locked</span>
+          )}
+        </div>
+        <p className="text-[11px] text-slate-500">Record the real-world test location and observations after prototype readiness.</p>
 
-        <form onSubmit={handleOutcomeAudit} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
-          <div><h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider">Stage 13 · Outcome audit</h3><p className="text-[11px] text-slate-500 mt-1">Submit a concise technical and community validation summary for review.</p></div>
-          <textarea rows={4} value={auditSummary} onChange={(e) => setAuditSummary(e.target.value)} className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl text-xs" placeholder="Summarize pilot outcomes, limitations, and validation evidence" />
-          <button type="submit" disabled={!assignedProject || currentStage < 12} className="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white text-xs font-black rounded-xl">Submit outcome audit</button>
-        </form>
+        {currentStage < 12 ? (
+          <LockedSection availableAtStage={12} />
+        ) : (
+          <form onSubmit={handlePilotReport} className="space-y-3 text-xs">
+            <input
+              value={pilotLocation}
+              onChange={(e) => setPilotLocation(e.target.value)}
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl"
+              placeholder="Pilot village / ward"
+            />
+            <textarea
+              rows={4}
+              value={pilotObservations}
+              onChange={(e) => setPilotObservations(e.target.value)}
+              className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl"
+              placeholder="Observed performance, community feedback, and test results"
+            />
+
+            {pilotSubmitted && (
+              <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-emerald-900 font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Pilot report submitted successfully.</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between pt-1 gap-3 flex-wrap">
+              <button type="submit"
+                disabled={!pilotObservations.trim()}
+                className="px-4 py-2 bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white text-xs font-black rounded-xl">
+                Submit Pilot Report
+              </button>
+
+              {currentStage === 12 && (
+                <button
+                  type="button"
+                  disabled={!pilotSubmitted || advancingStage === 12}
+                  onClick={() => handleAdvanceStage(12)}
+                  title={!pilotSubmitted ? 'Submit the pilot report above first' : 'Advance to Stage 13: Outcome Audit'}
+                  className="flex items-center gap-1.5 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs rounded-xl shadow-xs"
+                >
+                  {advancingStage === 12 ? 'Advancing…' : (
+                    <>Advance to Stage 13 — Audit <ChevronRight className="w-3.5 h-3.5" /></>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {currentStage === 12 && !pilotSubmitted && (
+              <p className="text-[11px] text-slate-500 italic">Submit a pilot report above to unlock the Stage 13 advance button.</p>
+            )}
+          </form>
+        )}
+      </div>
+
+      {/* ── Stage 13: Outcome Audit ─────────────────────────────────────────── */}
+      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+            <ClipboardCheck className="w-4 h-4 text-amber-600" />
+            Stage 13 · Outcome Audit
+          </h3>
+          {currentStage >= 13 ? (
+            <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded border border-amber-200">
+              {currentStage === 13 ? 'Active' : 'Submitted'}
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200">Locked</span>
+          )}
+        </div>
+        <p className="text-[11px] text-slate-500">Submit a concise technical and community validation summary for government review.</p>
+
+        {currentStage < 13 ? (
+          <LockedSection availableAtStage={13} />
+        ) : (
+          <form onSubmit={handleOutcomeAudit} className="space-y-3 text-xs">
+            <textarea
+              rows={4}
+              value={auditSummary}
+              onChange={(e) => setAuditSummary(e.target.value)}
+              className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl"
+              placeholder="Summarize pilot outcomes, limitations, and validation evidence"
+            />
+
+            {auditSubmitted && (
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-amber-900 font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Outcome audit submitted. Awaiting government deployment approval.</span>
+              </div>
+            )}
+
+            <button type="submit"
+              disabled={!auditSummary.trim()}
+              className="px-4 py-2 bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white text-xs font-black rounded-xl">
+              Submit Outcome Audit
+            </button>
+          </form>
+        )}
       </div>
 
       {/* Official Government Student R&D Certificate Voucher */}
@@ -273,7 +546,6 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
         </button>
       </div>
 
-      {/* Official Government of Jharkhand Certificate Modal */}
       <CertificateModal
         isOpen={isCertificateOpen}
         onClose={() => setIsCertificateOpen(false)}

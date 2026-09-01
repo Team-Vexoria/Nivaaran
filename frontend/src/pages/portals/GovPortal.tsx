@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
-import { 
-  ShieldCheck, 
-  CheckCircle2, 
-  Map, 
-  ListFilter, 
-  BarChart3, 
-  LogOut, 
-  AlertCircle, 
-  Building2, 
-  Clock, 
-  X, 
-  MessageSquare, 
+import {
+  CheckCircle2,
+  Map,
+  ListFilter,
+  LogOut,
+  AlertCircle,
+  Building2,
+  Clock,
+  X,
+  MessageSquare,
   AlertTriangle,
   Award,
   LayoutDashboard,
@@ -18,7 +16,12 @@ import {
   Flame,
   FileCheck,
   Layers,
-  Activity
+  Activity,
+  Pencil,
+  Rocket,
+  Archive,
+  TrendingUp,
+  CheckCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
@@ -26,8 +29,13 @@ import { useMapData, getSeverityBg, getStatusPillClass } from '../../services/ma
 import { govValidateChallenge, govRequestEvidence, govRejectChallenge, ChallengeDoc } from '../../services/firebaseService';
 import { CertificateModal } from '../../components/CertificateModal';
 import { ProposalReviewTab } from '../../components/gov/ProposalReviewTab';
+import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
+import { getStageForStatus } from '../../services/workflowLifecycle';
+import { ClusterReviewTab } from '../../components/gov/ClusterReviewTab';
+import { DeploymentApprovalTab } from '../../components/gov/DeploymentApprovalTab';
+import { ClosureTab } from '../../components/gov/ClosureTab';
 
-type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports';
+type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports' | 'deployment' | 'closure' | 'clusters';
 
 // ─── Action Modal ─────────────────────────────────────────────────────────────
 interface ActionModalProps {
@@ -129,7 +137,20 @@ export const GovPortal: React.FC = () => {
     challenge: null,
   });
 
+  // Priority override editor state
+  const [editingPriorityId, setEditingPriorityId] = useState<string | null>(null);
+  const [priorityEditValue, setPriorityEditValue] = useState<string>('');
+
   const { challenges, totalCount, criticalCount, validatedCount, resolvedCount, loading } = useMapData();
+
+  // Live workflow store data for Impact KPIs tab
+  const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());
+
+  React.useEffect(() => {
+    const handler = () => setWfChallenges(workflowStore.getChallenges());
+    window.addEventListener(STORE_EVENT, handler);
+    return () => window.removeEventListener(STORE_EVENT, handler);
+  }, []);
 
   const officerName = currentUser?.displayName || 'Government Officer';
 
@@ -188,9 +209,12 @@ export const GovPortal: React.FC = () => {
     { id: 'overview',     label: 'Overview',              icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
     { id: 'map',          label: 'State Map',             icon: <Map className="w-3.5 h-3.5" /> },
     { id: 'queue',        label: 'Challenge Queue',       icon: <ListFilter className="w-3.5 h-3.5" /> },
+    { id: 'clusters',     label: 'Cluster Review',        icon: <Layers className="w-3.5 h-3.5" /> },
     { id: 'universities', label: 'HEI Allocations',       icon: <Building2 className="w-3.5 h-3.5" /> },
     { id: 'proposals',    label: 'Proposal Review',       icon: <FileCheck className="w-3.5 h-3.5" /> },
-    { id: 'reports',      label: 'Reports & Analytics',   icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { id: 'deployment',   label: 'Deployment Approval',   icon: <Rocket className="w-3.5 h-3.5" /> },
+    { id: 'reports',      label: 'Impact KPIs',           icon: <TrendingUp className="w-3.5 h-3.5" /> },
+    { id: 'closure',      label: 'Closure',               icon: <Archive className="w-3.5 h-3.5" /> },
   ];
 
 
@@ -817,9 +841,59 @@ export const GovPortal: React.FC = () => {
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-extrabold text-[#C98A2C]">
-                            {ch.priorityScore !== undefined ? `${ch.priorityScore.toFixed(1)}/10` : '—'}
-                          </p>
+                          {editingPriorityId === id ? (
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                step={0.1}
+                                min={0}
+                                max={10}
+                                value={priorityEditValue}
+                                onChange={(e) => setPriorityEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const val = parseFloat(priorityEditValue);
+                                    if (!isNaN(val) && val >= 0 && val <= 10) {
+                                      workflowStore.updateChallenge(id, { priorityScore: val });
+                                      workflowStore.addTimelineEvent({
+                                        id: `TL-${Date.now()}-prio-${id}`,
+                                        entityType: 'challenge',
+                                        entityId: id,
+                                        action: 'priority_overridden',
+                                        actor: officerName,
+                                        actorRole: 'Government Department',
+                                        description: `Priority overridden from ${ch.priorityScore?.toFixed(1) ?? '—'} to ${val.toFixed(1)}`,
+                                        previousValue: ch.priorityScore?.toFixed(1),
+                                        newValue: val.toFixed(1),
+                                        timestamp: new Date().toISOString(),
+                                      });
+                                      showToast(`Priority updated to ${val.toFixed(1)}/10 for "${ch.title}"`);
+                                    }
+                                    setEditingPriorityId(null);
+                                  }
+                                  if (e.key === 'Escape') setEditingPriorityId(null);
+                                }}
+                                onBlur={() => setEditingPriorityId(null)}
+                                autoFocus
+                                className="w-16 px-1.5 py-1 text-sm font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#C98A2C] rounded-lg text-right focus:outline-none"
+                              />
+                              <span className="text-[9px] text-[#8A7F72]">/10</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditingPriorityId(id);
+                                setPriorityEditValue(ch.priorityScore !== undefined ? String(ch.priorityScore) : '');
+                              }}
+                              className="group flex items-center gap-1 cursor-pointer"
+                              title="Click to override AI priority score"
+                            >
+                              <p className="text-sm font-extrabold text-[#C98A2C]">
+                                {ch.priorityScore !== undefined ? `${ch.priorityScore.toFixed(1)}/10` : '—'}
+                              </p>
+                              <Pencil className="w-3 h-3 text-[#C98A2C]/40 group-hover:text-[#C98A2C] transition-colors" />
+                            </button>
+                          )}
                           <p className="text-[9px] text-[#8A7F72]">AI Priority Score</p>
                         </div>
                       </div>
@@ -914,21 +988,45 @@ export const GovPortal: React.FC = () => {
           <ProposalReviewTab officerName={officerName} />
         )}
 
-        {/* REPORTS & ANALYTICS TAB */}
-        {activeTab === 'reports' && (
+        {/* CLUSTER REVIEW TAB */}
+        {activeTab === 'clusters' && (
+          <ClusterReviewTab officerName={officerName} showToast={showToast} />
+        )}
+
+        {/* DEPLOYMENT APPROVAL TAB */}
+        {activeTab === 'deployment' && (
+          <DeploymentApprovalTab officerName={officerName} showToast={showToast} />
+        )}
+
+        {/* CLOSURE TAB */}
+        {activeTab === 'closure' && (
+          <ClosureTab officerName={officerName} showToast={showToast} />
+        )}
+
+        {/* REPORTS & IMPACT KPIs TAB */}
+        {activeTab === 'reports' && (() => {
+          const wf = wfChallenges;
+          const resolvedCount2 = wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').length;
+          const deploymentCount = wf.filter(c => c.status === 'Outcome Audit').length;
+          const prototypeCount = wf.filter(c => {
+            const s = getStageForStatus(c.status)?.stageNumber || 0;
+            return s >= 11;
+          }).length;
+          return (
           <div className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
             <div>
-              <h2 className="text-lg font-black text-[#201C18]">State Analytics & Impact Ledger</h2>
-              <p className="text-xs text-[#6A6155]">Live data from 24 Jharkhand districts, university R&D deployments, and civic hazard telemetry.</p>
+              <h2 className="text-lg font-black text-[#201C18]">State Impact KPIs & Live Ledger</h2>
+              <p className="text-xs text-[#6A6155]">Live counts drawn from the workflow store — every citizen report, HEI match, and deployment in real time.</p>
             </div>
-            
+
+            {/* Top KPIs */}
             <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
               {[
                 { label: 'Total Challenges', value: totalCount, color: 'text-[#201C18]', bg: '' },
                 { label: 'Pending Review', value: pendingCount, color: 'text-[#C98A2C]', bg: 'bg-[#FFF8EC]' },
-                { label: 'Critical Alerts', value: criticalCount, color: 'text-[#B3261E]', bg: 'bg-[#FFF0EE]' },
-                { label: 'Govt. Validated', value: validatedCount, color: 'text-[#2C6E49]', bg: 'bg-[#F0FAF4]' },
-                { label: 'Resolved', value: resolvedCount, color: 'text-[#6A6155]', bg: '' },
+                { label: 'Deployments', value: deploymentCount, color: 'text-[#2C6E49]', bg: 'bg-[#F0FAF4]' },
+                { label: 'Resolved / Closed', value: resolvedCount2, color: 'text-[#B3261E]', bg: 'bg-[#FFF0EE]' },
+                { label: 'At Stage 11+', value: prototypeCount, color: 'text-[#6A6155]', bg: '' },
               ].map(kpi => (
                 <div key={kpi.label} className={`${kpi.bg || 'bg-white'} border border-[#E4DDD1] rounded-xl p-5 shadow-2xs`}>
                   <p className="text-xs text-[#6A6155] font-semibold mb-1">{kpi.label}</p>
@@ -937,24 +1035,75 @@ export const GovPortal: React.FC = () => {
               ))}
             </div>
 
+            {/* Lifecycle funnel */}
+            <div className="bg-white border border-[#E4DDD1] rounded-xl p-6 space-y-4 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[#2C6E49]" />
+                <p className="text-sm font-bold text-[#201C18]">Lifecycle Funnel</p>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { label: 'Submitted', match: (s: string) => s === 'Submitted' || s === 'Under Review', color: 'text-[#C98A2C]' },
+                  { label: 'Validated', match: (s: string) => s === 'Government Validated' || s === 'Clustered' || s === 'Prioritized', color: 'text-[#4A433B]' },
+                  { label: 'HEI Matched → Accepted', match: (s: string) => ['HEI Matched','University Accepted','In Progress','Proposal Submitted','Industry Collaboration'].includes(s), color: 'text-[#2C6E49]' },
+                  { label: 'Resolved / Closed', match: (s: string) => s === 'Resolved' || s === 'Closed', color: 'text-[#B3261E]' },
+                ].map(f => {
+                  const count = wf.filter(c => f.match(c.status)).length;
+                  return (
+                    <div key={f.label} className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4">
+                      <p className={`text-2xl font-black ${f.color}`}>{count}</p>
+                      <p className="text-[10px] text-[#6A6155] font-semibold mt-0.5">{f.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Impact records for resolved/closed */}
             <div className="bg-white border border-[#E4DDD1] rounded-xl p-6 space-y-3 shadow-2xs">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#2C6E49]" />
-                <p className="text-sm font-bold text-[#201C18]">Executive Summary</p>
+                <CheckCheck className="w-4 h-4 text-[#2C6E49]" />
+                <p className="text-sm font-bold text-[#201C18]">Verified Impact Records</p>
               </div>
-              <p className="text-xs text-[#6A6155] leading-relaxed">
-                The NIVAARAN platform currently tracks <strong className="text-[#201C18]">{totalCount}</strong> citizen-reported 
-                societal challenges across 24 Jharkhand districts. 
-                <strong className="text-[#B3261E]"> {criticalCount}</strong> are flagged as Critical severity by the AI triage engine, 
-                requiring immediate government attention.{' '}
-                <strong className="text-[#C98A2C]">{pendingCount}</strong> are pending government officer review.{' '}
-                <strong className="text-[#2C6E49]"> {validatedCount}</strong> challenges have been government-validated and are 
-                visible to matched university R&D labs for acceptance.{' '}
-                <strong className="text-[#6A6155]">{resolvedCount}</strong> have been resolved with verified community impact.
-              </p>
+              {wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').length === 0 ? (
+                <p className="text-xs text-[#8A7F72]">No challenges have reached 'Resolved' or 'Closed' yet. Approve deployments in the Deployment Approval tab to record impact.</p>
+              ) : (
+                <div className="space-y-3">
+                  {wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').map(c => {
+                    const proj = workflowStore.getProjects().find(p => p.challengeId === c.id || p.challengeId === c.reportId);
+                    const metrics = proj?.outcomeAudit?.metrics || {};
+                    const metricEntries = Object.entries(metrics);
+                    return (
+                      <div key={c.id} className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4 space-y-2">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <p className="text-sm font-bold text-[#201C18]">{c.title}</p>
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${c.status === 'Closed' ? 'bg-[#2C6E49] text-white' : 'bg-[#B3261E] text-white'}`}>
+                            {c.status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#6A6155]">{c.district} · {c.assignedHEI || 'University R&D'}</p>
+                        {proj?.outcomeAudit?.summary && (
+                          <p className="text-xs text-[#4A433B] bg-white border border-[#E4DDD1] rounded-lg px-3 py-2 italic">“{proj.outcomeAudit.summary}”</p>
+                        )}
+                        {metricEntries.length > 0 && (
+                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {metricEntries.map(([k, v]) => (
+                              <div key={k} className="bg-white border border-[#E4DDD1] rounded-lg px-3 py-2 text-center">
+                                <p className="text-lg font-black text-[#C98A2C]">{String(v)}</p>
+                                <p className="text-[9px] text-[#6A6155] font-semibold uppercase tracking-wider">{k}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
-        )}
+          );
+        })()}
       </main>
 
       {/* Toast */}

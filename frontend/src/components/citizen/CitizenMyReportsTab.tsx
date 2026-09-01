@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity } from 'lucide-react';
-import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send } from 'lucide-react';
+import { subscribeToChallenges, ChallengeDoc, uploadEvidenceImage } from '../../services/firebaseService';
 import { CHALLENGE_STATUS_OPTIONS, LIFECYCLE_STAGES, getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { workflowStore } from '../../services/workflowStore';
 import type { TimelineEvent } from '../../services/workflowTypes';
@@ -253,6 +253,60 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ report, wfStageNumber, ti
   const activeStageNumber = wfStageNumber ?? report.stageNumber ?? getStageForStatus(report.status)?.stageNumber ?? 1;
   const activeStatus = getPublicStatusLabel(report.status);
 
+  // ── Evidence reply state ─────────────────────────────────────────────────────
+  const [replyText, setReplyText] = useState('');
+  const [replyFile, setReplyFile] = useState<File | null>(null);
+  const [replyLoading, setReplyLoading] = useState(false);
+  const [replySuccess, setReplySuccess] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleEvidenceReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyText.trim() && !replyFile) return;
+    setReplyLoading(true);
+
+    try {
+      const id = report.id || report.reportId;
+      const wfChallenge = workflowStore.getChallenge(id);
+      const existingUrls: string[] = wfChallenge?.evidenceUrls ?? (report.evidenceUrl ? [report.evidenceUrl] : []);
+
+      let newUrls = [...existingUrls];
+      if (replyFile) {
+        const uploadedUrl = await uploadEvidenceImage(replyFile);
+        newUrls = [...newUrls, uploadedUrl];
+      }
+
+      workflowStore.updateChallenge(id, {
+        status: 'Under Review',
+        stageNumber: 2,
+        stageName: 'Stage 2: AI Understanding',
+        evidenceUrls: newUrls,
+        needsHumanVerification: false,
+      });
+
+      workflowStore.addTimelineEvent({
+        id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        entityType: 'challenge',
+        entityId: id,
+        action: 'evidence_submitted',
+        actor: 'Citizen',
+        actorRole: 'Citizen',
+        description: replyText.trim() || 'Citizen submitted additional evidence in response to officer request.',
+        previousValue: 'Evidence Requested',
+        newValue: 'Under Review',
+        timestamp: new Date().toISOString(),
+      });
+
+      setReplySuccess(true);
+      setReplyText('');
+      setReplyFile(null);
+    } catch (err) {
+      console.error('Evidence reply failed:', err);
+    } finally {
+      setReplyLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 pt-16">
       <div className="bg-white rounded-2xl max-w-3xl w-full p-6 space-y-5 shadow-2xl border border-slate-200/90 max-h-[85vh] overflow-y-auto">
@@ -428,6 +482,92 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ report, wfStageNumber, ti
             </div>
           )}
         </div>
+
+        {/* ── Evidence Reply Section (only when Evidence Requested) ─────────────── */}
+        {report.status === 'Evidence Requested' && !replySuccess && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4.5 space-y-3 shadow-2xs">
+            <div className="flex items-start gap-2 border-b border-amber-200 pb-3">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-extrabold text-amber-900">Action Required — Evidence Requested</p>
+                <p className="text-[11px] text-amber-800 mt-0.5">
+                  A government officer has reviewed your report and needs additional evidence before it can be validated.
+                </p>
+              </div>
+            </div>
+
+            {report.govtOfficerNote && (
+              <div className="bg-white border border-amber-200 rounded-xl px-3 py-2.5 space-y-1">
+                <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Officer's Request</span>
+                <p className="text-xs text-slate-800 font-medium leading-relaxed">{report.govtOfficerNote}</p>
+              </div>
+            )}
+
+            <form onSubmit={handleEvidenceReply} className="space-y-3">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                  Your Response
+                </label>
+                <textarea
+                  rows={3}
+                  value={replyText}
+                  onChange={e => setReplyText(e.target.value)}
+                  placeholder="Describe the additional information or context you are providing..."
+                  className="w-full px-3 py-2 text-xs bg-white border border-amber-300 rounded-xl text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-400/40 resize-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                  Upload Additional Evidence (optional)
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-1.5 bg-white border border-amber-300 text-amber-800 text-xs font-bold rounded-xl flex items-center gap-1.5 hover:bg-amber-50 transition-colors cursor-pointer"
+                  >
+                    <Paperclip className="w-3.5 h-3.5" />
+                    {replyFile ? replyFile.name : 'Attach photo / document'}
+                  </button>
+                  {replyFile && (
+                    <button type="button" onClick={() => setReplyFile(null)} className="text-amber-600 hover:text-amber-900 cursor-pointer">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="hidden"
+                  onChange={e => setReplyFile(e.target.files?.[0] ?? null)}
+                />
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="submit"
+                  disabled={replyLoading || (!replyText.trim() && !replyFile)}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-extrabold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {replyLoading ? 'Submitting…' : 'Submit Response'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {report.status === 'Evidence Requested' && replySuccess && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <div>
+              <p className="text-xs font-extrabold text-emerald-900">Response Submitted</p>
+              <p className="text-[11px] text-emerald-700 mt-0.5">Your report has been returned to the review queue. The government officer will be notified.</p>
+            </div>
+          </div>
+        )}
 
         {/* Academic & CSR Allocation Detail */}
         <div className="grid sm:grid-cols-2 gap-3 text-xs">
