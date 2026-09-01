@@ -12,7 +12,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, ch
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-nivaaran-bg flex items-center justify-center">
+      <div className="min-h-screen bg-page flex items-center justify-center">
         <div className="flex items-center space-x-3 text-nivaaran-primary">
           <div className="w-6 h-6 border-2 border-nivaaran-primary border-t-transparent rounded-full animate-spin" />
           <span className="text-sm font-medium">Authenticating user portal...</span>
@@ -23,13 +23,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, ch
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-nivaaran-bg flex items-center justify-center p-6">
-        <div className="bg-white p-8 rounded-xl border border-nivaaran-border max-w-md w-full text-center space-y-4 shadow-md">
+      <div className="min-h-screen bg-page flex items-center justify-center p-6">
+        <div className="bg-white p-8 rounded-xl border border-sand max-w-md w-full text-center space-y-4 shadow-md">
           <div className="w-12 h-12 bg-nivaaran-accent/10 text-nivaaran-accent rounded-full flex items-center justify-center mx-auto">
             <ShieldAlert className="w-6 h-6" />
           </div>
           <h2 className="text-xl font-bold text-nivaaran-primary">Authentication Required</h2>
-          <p className="text-sm text-nivaaran-text-secondary">
+          <p className="text-sm text-charcoal/70">
             Please sign in to access this NIVAARAN portal.
           </p>
         </div>
@@ -39,13 +39,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles, ch
 
   if (!allowedRoles.includes(currentUser.role)) {
     return (
-      <div className="min-h-screen bg-nivaaran-bg flex items-center justify-center p-6">
-        <div className="bg-white p-8 rounded-xl border border-nivaaran-danger/30 max-w-md w-full text-center space-y-4 shadow-md">
-          <div className="w-12 h-12 bg-nivaaran-danger/10 text-nivaaran-danger rounded-full flex items-center justify-center mx-auto">
+      <div className="min-h-screen bg-page flex items-center justify-center p-6">
+        <div className="bg-white p-8 rounded-xl border border-terracotta/30 max-w-md w-full text-center space-y-4 shadow-md">
+          <div className="w-12 h-12 bg-terracotta/10 text-terracotta rounded-full flex items-center justify-center mx-auto">
             <ShieldAlert className="w-6 h-6" />
           </div>
-          <h2 className="text-xl font-bold text-nivaaran-danger">Access Denied (RBAC Restricted)</h2>
-          <p className="text-sm text-nivaaran-text-secondary">
+          <h2 className="text-xl font-bold text-terracotta">Access Denied (RBAC Restricted)</h2>
+          <p className="text-sm text-charcoal/70">
             Your role (<strong className="text-nivaaran-primary">{currentUser.role}</strong>) does not have permission to view this portal.
           </p>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   CheckCircle2,
-  Map,
+  Map as MapIcon,
   ListFilter,
   LogOut,
   AlertCircle,
@@ -35,6 +35,7 @@ import { JHARKHAND_UNIVERSITIES } from '../../services/universityData';
 import { ClusterReviewTab } from '../../components/gov/ClusterReviewTab';
 import { DeploymentApprovalTab } from '../../components/gov/DeploymentApprovalTab';
 import { ClosureTab } from '../../components/gov/ClosureTab';
+import { useMemo } from 'react';
 
 type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports' | 'deployment' | 'closure' | 'clusters';
 
@@ -155,6 +156,46 @@ export const GovPortal: React.FC = () => {
 
   const officerName = currentUser?.displayName || 'Government Officer';
 
+  // ── Live computed stats from workflowStore ──────────────────────────────────────
+  const districtStats = useMemo(() => {
+    const wf = workflowStore.getChallenges();
+    const byDistrict = new Map<string, { total: number; risks: string[]; hei: string }>();
+    wf.forEach(c => {
+      const d = c.district || 'Unknown';
+      const existing = byDistrict.get(d) || { total: 0, risks: [], hei: '' };
+      existing.total += 1;
+      if (c.riskLevel) existing.risks.push(c.riskLevel);
+      if (c.assignedHEI && !existing.hei) existing.hei = c.assignedHEI;
+      byDistrict.set(d, existing);
+    });
+    return Array.from(byDistrict.entries())
+      .map(([district, data]) => ({
+        district,
+        total: data.total,
+        maxRisk: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].find(r => data.risks.includes(r)) || 'STD',
+        hei: data.hei || '',
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [wfChallenges]);
+
+  const hazardBreakdown = useMemo(() => {
+    const wf = workflowStore.getChallenges();
+    const total = wf.length || 1;
+    const byCategory = new Map<string, number>();
+    wf.forEach(c => {
+      const cat = c.category || 'Other';
+      byCategory.set(cat, (byCategory.get(cat) || 0) + 1);
+    });
+    return Array.from(byCategory.entries())
+      .map(([domain, count]) => ({
+        domain,
+        count: `${Math.round((count / total) * 100)}%`,
+        value: count / total,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [wfChallenges]);
+
   const showToast = (text: string, type: 'success' | 'warning' = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4000);
@@ -208,7 +249,7 @@ export const GovPortal: React.FC = () => {
 
   const tabs: { id: GovTab; label: string; icon: React.ReactNode }[] = [
     { id: 'overview',     label: 'Overview',              icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
-    { id: 'map',          label: 'State Map',             icon: <Map className="w-3.5 h-3.5" /> },
+    { id: 'map',          label: 'State Map',             icon: <MapIcon className="w-3.5 h-3.5" /> },
     { id: 'queue',        label: 'Challenge Queue',       icon: <ListFilter className="w-3.5 h-3.5" /> },
     { id: 'clusters',     label: 'Cluster Review',        icon: <Layers className="w-3.5 h-3.5" /> },
     { id: 'universities', label: 'HEI Allocations',       icon: <Building2 className="w-3.5 h-3.5" /> },
@@ -509,24 +550,26 @@ export const GovPortal: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#F0EBE0] text-[#4A433B]">
-                        {[
-                          { name: 'Ranchi', reports: 142, risk: 'CRITICAL', hei: 'BIT Mesra' },
-                          { name: 'Dhanbad', reports: 98, risk: 'CRITICAL', hei: 'IIT (ISM) Dhanbad' },
-                          { name: 'East Singhbhum', reports: 86, risk: 'HIGH', hei: 'NIT Jamshedpur' },
-                          { name: 'Palamu', reports: 114, risk: 'HIGH', hei: 'Birsa Agri Univ' },
-                          { name: 'Hazaribagh', reports: 65, risk: 'MEDIUM', hei: 'VBU Hazaribagh' },
-                        ].map((d, i) => (
-                          <tr key={i} className="hover:bg-[#FAF8F4]/80 transition-colors">
-                            <td className="py-2.5 px-3 font-bold text-[#201C18]">{d.name}</td>
-                            <td className="py-2.5 px-3">{d.reports}</td>
-                            <td className="py-2.5 px-3">
-                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getSeverityBg(d.risk)} text-white`}>
-                                {d.risk}
-                              </span>
+                        {districtStats.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="py-8 text-center text-[#8A7F72]">
+                              No district data available yet
                             </td>
-                            <td className="py-2.5 px-3 font-semibold text-[#2C6E49]">{d.hei}</td>
                           </tr>
-                        ))}
+                        ) : (
+                          districtStats.map((d) => (
+                            <tr key={d.district} className="hover:bg-[#FAF8F4]/80 transition-colors">
+                              <td className="py-2.5 px-3 font-bold text-[#201C18]">{d.district}</td>
+                              <td className="py-2.5 px-3">{d.total}</td>
+                              <td className="py-2.5 px-3">
+                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getSeverityBg(d.maxRisk)} text-white`}>
+                                  {d.maxRisk || 'STD'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 font-semibold text-[#2C6E49]">{d.hei || '—'}</td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -537,34 +580,44 @@ export const GovPortal: React.FC = () => {
               {/* Right Column (5 cols) */}
               <div className="lg:col-span-5 space-y-6">
 
-                {/* 1. Category & Hazard Domain Breakdown */}
+                {/* 1. Category & Hazard Domain Breakdown (live from workflowStore) */}
                 <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4">
                   <div className="flex items-center justify-between border-b border-[#F0EBE0] pb-3">
                     <div className="flex items-center space-x-2">
                       <Layers className="w-4 h-4 text-[#2C6E49]" />
                       <h3 className="text-sm font-extrabold text-[#201C18]">Hazard Domain Breakdown</h3>
                     </div>
-                    <span className="text-[11px] font-mono text-[#8A7F72]">5 Core Domains</span>
+                    <span className="text-[11px] font-mono text-[#8A7F72]">
+                      {hazardBreakdown.length} Active Domains
+                    </span>
                   </div>
 
                   <div className="space-y-3">
-                    {[
-                      { domain: 'Flood, Water Logging & Drainage', count: '42%', color: 'bg-blue-600', text: 'text-blue-700' },
-                      { domain: 'Mining, Subsidence & Landslides', count: '24%', color: 'bg-amber-600', text: 'text-amber-700' },
-                      { domain: 'Rural Roads & Bridge Infrastructure', count: '18%', color: 'bg-emerald-600', text: 'text-emerald-700' },
-                      { domain: 'Agro-Drought & Groundwater Recharge', count: '11%', color: 'bg-[#C98A2C]', text: 'text-[#C98A2C]' },
-                      { domain: 'School Safety & Public Hazards', count: '5%', color: 'bg-purple-600', text: 'text-purple-700' },
-                    ].map((item, idx) => (
-                      <div key={idx} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-[#201C18] text-[11px] truncate">{item.domain}</span>
-                          <span className={`font-mono font-extrabold ${item.text}`}>{item.count}</span>
-                        </div>
-                        <div className="w-full bg-[#FAF8F4] border border-[#E4DDD1] h-2 rounded-full overflow-hidden">
-                          <div className={`h-full ${item.color} rounded-full`} style={{ width: item.count }} />
-                        </div>
+                    {hazardBreakdown.length === 0 ? (
+                      <div className="text-center py-6 text-[#8A7F72] text-xs">
+                        No category data yet — challenges will populate this when submitted.
                       </div>
-                    ))}
+                    ) : (
+                      hazardBreakdown.map((item, idx) => (
+                        <div key={`${item.domain}-${idx}`} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-[#201C18] text-[11px] truncate">{item.domain}</span>
+                            <span className="font-mono font-extrabold text-[#8A7F72]">{item.count}</span>
+                          </div>
+                          <div className="w-full bg-[#FAF8F4] border border-[#E4DDD1] h-2 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                idx === 0 ? 'bg-[#2C6E49]' :
+                                idx === 1 ? 'bg-[#C98A2C]' :
+                                idx === 2 ? 'bg-[#B5502D]' :
+                                idx === 3 ? 'bg-blue-600' : 'bg-purple-600'
+                              }`}
+                              style={{ width: `${item.value * 100}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -610,7 +663,7 @@ export const GovPortal: React.FC = () => {
                     onClick={() => setActiveTab('map')}
                     className="p-4 bg-white border border-[#E4DDD1] hover:border-[#2C6E49] rounded-xl text-left transition-all group cursor-pointer shadow-2xs space-y-1.5"
                   >
-                    <Map className="w-5 h-5 text-[#2C6E49]" />
+                    <MapIcon className="w-5 h-5 text-[#2C6E49]" />
                     <p className="text-xs font-black text-[#201C18] group-hover:text-[#2C6E49]">GIS Map</p>
                     <p className="text-[10px] text-[#8A7F72]">24 Districts Hotspots</p>
                   </button>
@@ -633,7 +686,10 @@ export const GovPortal: React.FC = () => {
         )}
 
         {/* HEI ALLOCATIONS TAB */}
-        {activeTab === 'universities' && (
+        {activeTab === 'universities' && (() => {
+          const liveUniCount = JHARKHAND_UNIVERSITIES.length;
+          const liveDeptCount = JHARKHAND_UNIVERSITIES.reduce((sum, u) => sum + (u.departments?.length ?? 0), 0);
+          return (
           <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs">
               <div>
@@ -651,11 +707,11 @@ export const GovPortal: React.FC = () => {
               <div className="flex items-center gap-3 shrink-0">
                 <div className="bg-[#FAF8F4] border border-[#E4DDD1] px-3.5 py-2 rounded-xl text-right">
                   <p className="text-[10px] font-bold text-[#8A7F72] uppercase">Partner HEIs</p>
-                  <p className="text-sm font-extrabold text-[#201C18]">6 Institutions</p>
+                  <p className="text-sm font-extrabold text-[#201C18]">{liveUniCount} Institutions</p>
                 </div>
                 <div className="bg-[#FAF8F4] border border-[#E4DDD1] px-3.5 py-2 rounded-xl text-right">
                   <p className="text-[10px] font-bold text-[#8A7F72] uppercase">R&D Labs</p>
-                  <p className="text-sm font-extrabold text-[#2C6E49]">48+ Connected</p>
+                  <p className="text-sm font-extrabold text-[#2C6E49]">{liveDeptCount}+ Connected</p>
                 </div>
               </div>
             </div>
@@ -663,59 +719,60 @@ export const GovPortal: React.FC = () => {
             {/* University Cards Grid — driven by JHARKHAND_UNIVERSITIES + live project counts */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
               {JHARKHAND_UNIVERSITIES.slice(0, 6).map((uni) => {
-                const uniProjects = workflowStore.getProjects().filter(
-                  p => p.universityId === uni.id
-                );
-                const activeProjects = uniProjects.filter(p =>
-                  !['Completed', 'Cancelled'].includes(p.status || '')
-                ).length;
-                const teamCount = uni.departments?.length ?? 0;
-                // Derive a short role label from the first department
-                const primaryDept = uni.departments?.[0] ?? 'R&D';
-                const role = `${primaryDept} Research & Innovation Centre`;
-                // Badge based on type
-                const badge = uni.type === 'Central University' ? 'Premier R&D Lab'
-                  : uni.type === 'National Institute' || uni.type === 'Institute of National Importance' ? 'Technical Node'
-                  : uni.type === 'State University' ? 'State R&D Cell'
-                  : 'HEI Partner';
-                return (
-                <div key={uni.id} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#2C6E49] transition-all">
-                  <div className="flex items-start justify-between gap-2 border-b border-[#FAF8F4] pb-3">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2 py-0.5 rounded-full">
-                        {badge}
-                      </span>
-                      <h3 className="text-base font-extrabold text-[#201C18] font-heading mt-1">{uni.name}</h3>
-                      <p className="text-[11px] text-[#8A7F72]">{role}</p>
-                    </div>
-                    <Building2 className="w-5 h-5 text-[#2C6E49] shrink-0 mt-1" />
-                  </div>
+                    const uniProjects = workflowStore.getProjects().filter(
+                      p => p.universityId === uni.id
+                    );
+                    const activeProjects = uniProjects.filter(p =>
+                      !['Completed', 'Cancelled'].includes(p.status || '')
+                    ).length;
+                    const teamCount = uni.departments?.length ?? 0;
+                    // Derive a short role label from the first department
+                    const primaryDept = uni.departments?.[0] ?? 'R&D';
+                    const role = `${primaryDept} Research & Innovation Centre`;
+                    // Badge based on type
+                    const badge = uni.type === 'Central University' ? 'Premier R&D Lab'
+                      : uni.type === 'National Institute' || uni.type === 'Institute of National Importance' ? 'Technical Node'
+                      : uni.type === 'State University' ? 'State R&D Cell'
+                      : 'HEI Partner';
+                    return (
+                    <div key={uni.id} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#2C6E49] transition-all">
+                      <div className="flex items-start justify-between gap-2 border-b border-[#FAF8F4] pb-3">
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2 py-0.5 rounded-full">
+                            {badge}
+                          </span>
+                          <h3 className="text-base font-extrabold text-[#201C18] font-heading mt-1">{uni.name}</h3>
+                          <p className="text-[11px] text-[#8A7F72]">{role}</p>
+                        </div>
+                        <Building2 className="w-5 h-5 text-[#2C6E49] shrink-0 mt-1" />
+                      </div>
 
-                  <div className="space-y-2 text-xs">
-                    <div>
-                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Departments:</span>
-                      <p className="text-[#201C18] font-semibold">{uni.departments?.slice(0, 3).join(', ') ?? '—'}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">District:</span>
-                      <p className="text-[#4A433B]">{uni.district}, Jharkhand</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Students:</span>
-                      <p className="text-[#6A6155] text-[11px]">{uni.departments?.length ?? 0} departments</p>
-                    </div>
-                  </div>
+                      <div className="space-y-2 text-xs">
+                        <div>
+                          <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Departments:</span>
+                          <p className="text-[#201C18] font-semibold">{uni.departments?.slice(0, 3).join(', ') ?? '—'}</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">District:</span>
+                          <p className="text-[#4A433B]">{uni.district}, Jharkhand</p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Students:</span>
+                          <p className="text-[#6A6155] text-[11px]">{uni.departments?.length ?? 0} departments</p>
+                        </div>
+                      </div>
 
-                  <div className="pt-2 border-t border-[#F0EBE0] flex items-center justify-between text-xs">
-                    <span className="font-bold text-[#2C6E49]">{activeProjects} Active Projects</span>
-                    <span className="text-[#8A7F72] font-mono">{teamCount} Depts</span>
-                  </div>
-                </div>
-                );
-              })}
+                      <div className="pt-2 border-t border-[#F0EBE0] flex items-center justify-between text-xs">
+                        <span className="font-bold text-[#2C6E49]">{activeProjects} Active Projects</span>
+                        <span className="text-[#8A7F72] font-mono">{teamCount} Depts</span>
+                      </div>
+                    </div>
+                    );
+                  })}
             </div>
           </div>
-        )}
+          );
+        })()}
 
 
         {/* MAP TAB */}
