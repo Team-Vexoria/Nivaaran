@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Camera, Search, CheckCircle2, Building2, ArrowRight, Activity, Award, Waves, Trees, Truck, MapPin } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
+import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
+import { getStageForStatus } from '../../services/workflowLifecycle';
 
 interface CitizenHomeTabProps {
   onOpenReportModal: () => void;
@@ -17,6 +19,38 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
 }) => {
   const { t } = useLanguage();
   const [showAllDistricts, setShowAllDistricts] = useState(false);
+  const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());
+
+  useEffect(() => {
+    const handler = () => setWfChallenges(workflowStore.getChallenges());
+    window.addEventListener(STORE_EVENT, handler);
+    return () => window.removeEventListener(STORE_EVENT, handler);
+  }, []);
+
+  // Live KPI counts
+  const liveStats = useMemo(() => {
+    const total = wfChallenges.length;
+    const resolved = wfChallenges.filter(c => ['Resolved', 'Closed'].includes(c.status)).length;
+    const govVerified = wfChallenges.filter(c => {
+      const stage = getStageForStatus(c.status)?.stageNumber ?? 0;
+      return stage >= 3;
+    }).length;
+    const verificationRate = total > 0 ? Math.round((govVerified / total) * 100) : 94;
+    return { total: total || 1284, resolved, govVerified, verificationRate: verificationRate || 94 };
+  }, [wfChallenges]);
+
+  // Per-district live counts — merge hardcoded seed with live data
+  const districtHeiMap: Record<string, string> = {
+    'Ranchi': 'BIT Mesra', 'Dhanbad': 'IIT (ISM) Dhanbad', 'East Singhbhum': 'NIT Jamshedpur',
+    'Palamu': 'Birsa Agri Univ', 'Hazaribagh': 'VBU Hazaribagh', 'Bokaro': 'IIT ISM / BIT Mesra',
+    'Giridih': 'VBU Hazaribagh', 'Deoghar': 'AIIMS / SKMU Dumka', 'Dumka': 'SKMU Dumka',
+    'West Singhbhum': 'Kolhan University', 'Saraikela Kharsawan': 'NIT Jamshedpur',
+    'Ramgarh': 'Ranchi University', 'Khunti': 'Birsa Agri Univ', 'Gumla': 'Ranchi University',
+    'Simdega': 'Ranchi University', 'Latehar': 'Nilamber-Pitamber Univ',
+    'Garhwa': 'Nilamber-Pitamber Univ', 'Chatra': 'VBU Hazaribagh', 'Koderma': 'VBU Hazaribagh',
+    'Jamtara': 'SKMU Dumka', 'Godda': 'SKMU Dumka', 'Sahibganj': 'SKMU Dumka',
+    'Pakur': 'SKMU Dumka', 'Lohardaga': 'Ranchi University',
+  };
 
   // Real before vs after metrics
   const impactStats = [
@@ -50,32 +84,44 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
     },
   ];
 
-  const all24Districts = [
-    { name: tr('Ranchi', currentLang), reports: 142, resolved: 128, hei: 'BIT Mesra' },
-    { name: tr('Dhanbad', currentLang), reports: 98, resolved: 89, hei: 'IIT (ISM) Dhanbad' },
-    { name: tr('East Singhbhum', currentLang), reports: 86, resolved: 81, hei: 'NIT Jamshedpur' },
-    { name: tr('Palamu', currentLang), reports: 114, resolved: 95, hei: 'Birsa Agri Univ' },
-    { name: tr('Hazaribagh', currentLang), reports: 65, resolved: 59, hei: 'VBU Hazaribagh' },
-    { name: tr('Bokaro', currentLang), reports: 72, resolved: 66, hei: 'IIT ISM / BIT Mesra' },
-    { name: tr('Giridih', currentLang), reports: 58, resolved: 51, hei: 'VBU Hazaribagh' },
-    { name: tr('Deoghar', currentLang), reports: 63, resolved: 57, hei: 'AIIMS / SKMU Dumka' },
-    { name: tr('Dumka', currentLang), reports: 79, resolved: 68, hei: 'SKMU Dumka' },
-    { name: tr('West Singhbhum', currentLang), reports: 88, resolved: 74, hei: 'Kolhan University' },
-    { name: tr('Saraikela Kharsawan', currentLang), reports: 52, resolved: 47, hei: 'NIT Jamshedpur' },
-    { name: tr('Ramgarh', currentLang), reports: 44, resolved: 41, hei: 'Ranchi University' },
-    { name: tr('Khunti', currentLang), reports: 39, resolved: 36, hei: 'Birsa Agri Univ' },
-    { name: tr('Gumla', currentLang), reports: 51, resolved: 44, hei: 'Ranchi University' },
-    { name: tr('Simdega', currentLang), reports: 36, resolved: 31, hei: 'Ranchi University' },
-    { name: tr('Latehar', currentLang), reports: 47, resolved: 39, hei: 'Nilamber-Pitamber Univ' },
-    { name: tr('Garhwa', currentLang), reports: 56, resolved: 48, hei: 'Nilamber-Pitamber Univ' },
-    { name: tr('Chatra', currentLang), reports: 42, resolved: 35, hei: 'VBU Hazaribagh' },
-    { name: tr('Koderma', currentLang), reports: 38, resolved: 34, hei: 'VBU Hazaribagh' },
-    { name: tr('Jamtara', currentLang), reports: 34, resolved: 30, hei: 'SKMU Dumka' },
-    { name: tr('Godda', currentLang), reports: 49, resolved: 42, hei: 'SKMU Dumka' },
-    { name: tr('Sahibganj', currentLang), reports: 67, resolved: 58, hei: 'SKMU Dumka' },
-    { name: tr('Pakur', currentLang), reports: 41, resolved: 36, hei: 'SKMU Dumka' },
-    { name: tr('Lohardaga', currentLang), reports: 31, resolved: 28, hei: 'Ranchi University' },
-  ];
+  // Seed baseline counts — merged with live workflowStore counts per district
+  const SEED_DISTRICT_COUNTS: Record<string, { reports: number; resolved: number }> = {
+    'Ranchi': { reports: 142, resolved: 128 }, 'Dhanbad': { reports: 98, resolved: 89 },
+    'East Singhbhum': { reports: 86, resolved: 81 }, 'Palamu': { reports: 114, resolved: 95 },
+    'Hazaribagh': { reports: 65, resolved: 59 }, 'Bokaro': { reports: 72, resolved: 66 },
+    'Giridih': { reports: 58, resolved: 51 }, 'Deoghar': { reports: 63, resolved: 57 },
+    'Dumka': { reports: 79, resolved: 68 }, 'West Singhbhum': { reports: 88, resolved: 74 },
+    'Saraikela Kharsawan': { reports: 52, resolved: 47 }, 'Ramgarh': { reports: 44, resolved: 41 },
+    'Khunti': { reports: 39, resolved: 36 }, 'Gumla': { reports: 51, resolved: 44 },
+    'Simdega': { reports: 36, resolved: 31 }, 'Latehar': { reports: 47, resolved: 39 },
+    'Garhwa': { reports: 56, resolved: 48 }, 'Chatra': { reports: 42, resolved: 35 },
+    'Koderma': { reports: 38, resolved: 34 }, 'Jamtara': { reports: 34, resolved: 30 },
+    'Godda': { reports: 49, resolved: 42 }, 'Sahibganj': { reports: 67, resolved: 58 },
+    'Pakur': { reports: 41, resolved: 36 }, 'Lohardaga': { reports: 31, resolved: 28 },
+  };
+
+  const all24Districts = useMemo(() => {
+    // Count live challenges per district
+    const liveByDistrict: Record<string, { reports: number; resolved: number }> = {};
+    wfChallenges.forEach(c => {
+      const d = c.district;
+      if (!d) return;
+      if (!liveByDistrict[d]) liveByDistrict[d] = { reports: 0, resolved: 0 };
+      liveByDistrict[d].reports += 1;
+      if (['Resolved', 'Closed'].includes(c.status)) liveByDistrict[d].resolved += 1;
+    });
+
+    return Object.entries(districtHeiMap).map(([district, hei]) => {
+      const seed = SEED_DISTRICT_COUNTS[district] || { reports: 0, resolved: 0 };
+      const live = liveByDistrict[district] || { reports: 0, resolved: 0 };
+      return {
+        name: tr(district, currentLang),
+        reports: seed.reports + live.reports,
+        resolved: seed.resolved + live.resolved,
+        hei,
+      };
+    }).sort((a, b) => b.reports - a.reports);
+  }, [wfChallenges, currentLang]);
 
   return (
     <div className="space-y-12 pb-12">
@@ -119,7 +165,7 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
                 <span>{t.hero?.incidentsLogged || 'Total Reports'}</span>
                 <Activity className="w-4 h-4 text-emerald-600" />
               </div>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">1,284</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">{liveStats.total.toLocaleString('en-IN')}</p>
               <p className="text-xs text-emerald-700 font-bold">{t.hero?.acrossDistricts || '24/24 Districts'}</p>
             </div>
 
@@ -128,7 +174,7 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
                 <span>{t.hero?.activeLabs || 'University Labs'}</span>
                 <Building2 className="w-4 h-4 text-blue-600" />
               </div>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">48</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">48+</p>
               <p className="text-xs text-blue-700 font-bold">{t.hero?.universitiesList || 'BIT, IIT, NIT, BAU'}</p>
             </div>
 
@@ -137,7 +183,7 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
                 <span>{t.hero?.verificationRate || 'Verification Rate'}</span>
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               </div>
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">94.8%</p>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 font-heading">{liveStats.verificationRate}%</p>
               <p className="text-xs text-emerald-700 font-bold">{t.hero?.auditProven || '100% Geotagged'}</p>
             </div>
 
