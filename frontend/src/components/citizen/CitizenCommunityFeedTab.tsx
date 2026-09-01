@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon } from 'lucide-react';
-import { 
-  subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc 
+import React, { useState, useEffect, useMemo } from 'react';
+import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon, Zap } from 'lucide-react';
+import {
+  subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc
 } from '../../services/firebaseService';
 import { useLanguage } from '../../context/LanguageContext';
 import { tr } from '../../i18n/translationEngine';
+import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
+import { getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 
 interface FeedComment {
   id: string;
@@ -21,6 +23,7 @@ interface FeedPostUI extends FeedPostDoc {
   hasUpvoted?: boolean;
   timestamp?: string;
   comments?: FeedComment[];
+  isProgress?: boolean;
 }
 
 export const CitizenCommunityFeedTab: React.FC = () => {
@@ -31,6 +34,7 @@ export const CitizenCommunityFeedTab: React.FC = () => {
   const [newPostDistrict, setNewPostDistrict] = useState('Ranchi');
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState('');
+  const [challenges, setChallenges] = useState(workflowStore.getChallenges());
 
   const seedPosts: FeedPostUI[] = [
     {
@@ -98,6 +102,40 @@ export const CitizenCommunityFeedTab: React.FC = () => {
 
     return () => unsubscribe();
   }, []);
+
+  // Live subscription to workflowStore challenges so gov-validated
+  // reports surface as community progress updates in the feed.
+  useEffect(() => {
+    const handler = () => setChallenges(workflowStore.getChallenges());
+    window.addEventListener(STORE_EVENT, handler);
+    return () => window.removeEventListener(STORE_EVENT, handler);
+  }, []);
+
+  // Auto-generate an official progress post for every challenge that has
+  // crossed Stage 3 (Government Validated) onward — proof citizens can see
+  // their reports being acted on by the verified institutional pipeline.
+  const progressPosts: FeedPostUI[] = useMemo(() => {
+    return challenges
+      .filter(c => (getStageForStatus(c.status)?.stageNumber ?? 0) >= 3)
+      .slice(0, 6)
+      .map(c => ({
+        id: `PROG-${c.id}`,
+        author: 'NIVAARAN Verified Update',
+        district: c.district,
+        block: c.block || 'District HQ',
+        title: c.title,
+        content: `This community concern has entered the verified institutional pipeline and is now under an active government & university solution. Live stage: ${getPublicStatusLabel(c.status)}.`,
+        upvotes: 0,
+        hasUpvoted: false,
+        timestamp: 'Live',
+        category: c.category,
+        status: getPublicStatusLabel(c.status),
+        isProgress: true,
+      }));
+  }, [challenges]);
+
+  // Verified institutional progress first, then citizen + Firebase reports.
+  const allPosts = useMemo<FeedPostUI[]>(() => [...progressPosts, ...posts], [progressPosts, posts]);
 
   const handleUpvote = async (postId: string) => {
     const target = posts.find(p => p.id === postId);
@@ -224,7 +262,7 @@ export const CitizenCommunityFeedTab: React.FC = () => {
 
       {/* Posts Feed List */}
       <div className="space-y-4">
-        {posts.map((post, idx) => (
+        {allPosts.map((post, idx) => (
           <div key={post.id || idx} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
             
             {/* Post Author & Location Header */}
@@ -240,8 +278,14 @@ export const CitizenCommunityFeedTab: React.FC = () => {
                 </div>
               </div>
 
-              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap">
-                {tr(post.status, currentLang)}
+              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
+                post.isProgress
+                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              }`}>
+                {post.isProgress ? (
+                  <span className="inline-flex items-center"><Zap className="w-3 h-3 mr-1" />{tr(post.status, currentLang)}</span>
+                ) : tr(post.status, currentLang)}
               </span>
             </div>
 
@@ -250,6 +294,13 @@ export const CitizenCommunityFeedTab: React.FC = () => {
               <h3 className="font-bold text-base text-slate-900 leading-snug">{tr(post.title, currentLang)}</h3>
               <p className="text-xs text-slate-600 leading-relaxed">{tr(post.content, currentLang)}</p>
             </div>
+
+            {post.isProgress && (
+              <div className="flex items-center space-x-2 text-[11px] font-bold text-indigo-700 bg-indigo-50/70 border border-indigo-100 rounded-lg px-3 py-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{tr('In NIVAARAN verified pipeline — government & university working solution.', currentLang)}</span>
+              </div>
+            )}
 
             {/* Voting & Action Bar */}
             <div className="flex items-center space-x-4 pt-2 border-t border-slate-100 text-xs text-slate-600">
