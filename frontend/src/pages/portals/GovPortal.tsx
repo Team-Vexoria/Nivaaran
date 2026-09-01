@@ -31,6 +31,7 @@ import { CertificateModal } from '../../components/CertificateModal';
 import { ProposalReviewTab } from '../../components/gov/ProposalReviewTab';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 import { getStageForStatus } from '../../services/workflowLifecycle';
+import { JHARKHAND_UNIVERSITIES } from '../../services/universityData';
 import { ClusterReviewTab } from '../../components/gov/ClusterReviewTab';
 import { DeploymentApprovalTab } from '../../components/gov/DeploymentApprovalTab';
 import { ClosureTab } from '../../components/gov/ClosureTab';
@@ -659,103 +660,59 @@ export const GovPortal: React.FC = () => {
               </div>
             </div>
 
-            {/* University Cards Grid */}
+            {/* University Cards Grid — driven by JHARKHAND_UNIVERSITIES + live project counts */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {[
-                {
-                  name: 'BIT Mesra, Ranchi',
-                  role: 'Centre of Excellence in Flood Telemetry & Sensor Systems',
-                  domain: 'Water Logging, IoT Sensors, Early Warning Hardware',
-                  assigned: 4,
-                  teams: 8,
-                  lead: 'Dr. S. K. Verma (Dept of ECE)',
-                  facilities: 'IoT Fabrication Lab, Ultrasonic Water Sensors',
-                  badge: 'Lead Nodal Centre',
-                },
-                {
-                  name: 'IIT (ISM) Dhanbad',
-                  role: 'Geotechnical & Mine Safety Innovation Wing',
-                  domain: 'Landslides, Subsidence, Open-Cast Pit Flooding',
-                  assigned: 3,
-                  teams: 6,
-                  lead: 'Prof. R. Banerjee (Dept of Mining)',
-                  facilities: 'Ground Radar, Displacement Telemetry',
-                  badge: 'Premier R&D Lab',
-                },
-                {
-                  name: 'NIT Jamshedpur',
-                  role: 'Hydraulic Modeling & Spatial River Basin Lab',
-                  domain: 'River Overflow, Culvert Blockage, GIS Spatial Flow',
-                  assigned: 3,
-                  teams: 5,
-                  lead: 'Dr. A. K. Choudhary (Civil Engg)',
-                  facilities: 'Hydraulic Basin Simulator, Drone GIS',
-                  badge: 'Spatial GIS Node',
-                },
-                {
-                  name: 'Birsa Agricultural University',
-                  role: 'Agro-Water & Drought Mitigation Research Unit',
-                  domain: 'Groundwater Depletion, Check-Dam Telemetry',
-                  assigned: 2,
-                  teams: 4,
-                  lead: 'Dr. M. Soren (Soil & Water Engg)',
-                  facilities: 'Soil Moisture Testbed, Rainwater Loggers',
-                  badge: 'Agritech Centre',
-                },
-                {
-                  name: 'IIIT Ranchi',
-                  role: 'Low-Cost Edge AI & Embedded Telemetry Cell',
-                  domain: 'Edge AI Camera Triage, Low-Bandwidth LoRa Mesh',
-                  assigned: 2,
-                  teams: 4,
-                  lead: 'Dr. P. Roy (Computer Science)',
-                  facilities: 'Embedded AI Kits, LoRaWAN Gateway',
-                  badge: 'Edge AI Node',
-                },
-                {
-                  name: 'Ranchi University',
-                  role: 'Civic Field Surveys & Ground Impact Cell',
-                  domain: 'Socio-Economic Audit, Citizen Verification',
-                  assigned: 2,
-                  teams: 3,
-                  lead: 'Dr. K. Kumari (Social Science)',
-                  facilities: 'Field Survey Kit, Multilingual Audit App',
-                  badge: 'Impact Audit Cell',
-                },
-              ].map((hei, idx) => (
-                <div key={idx} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#2C6E49] transition-all">
+              {JHARKHAND_UNIVERSITIES.slice(0, 6).map((uni) => {
+                const uniProjects = workflowStore.getProjects().filter(
+                  p => p.universityId === uni.id
+                );
+                const activeProjects = uniProjects.filter(p =>
+                  !['Completed', 'Cancelled'].includes(p.status || '')
+                ).length;
+                const teamCount = uni.departments?.length ?? 0;
+                // Derive a short role label from the first department
+                const primaryDept = uni.departments?.[0] ?? 'R&D';
+                const role = `${primaryDept} Research & Innovation Centre`;
+                // Badge based on type
+                const badge = uni.type === 'Central University' ? 'Premier R&D Lab'
+                  : uni.type === 'National Institute' || uni.type === 'Institute of National Importance' ? 'Technical Node'
+                  : uni.type === 'State University' ? 'State R&D Cell'
+                  : 'HEI Partner';
+                return (
+                <div key={uni.id} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#2C6E49] transition-all">
                   <div className="flex items-start justify-between gap-2 border-b border-[#FAF8F4] pb-3">
                     <div className="space-y-0.5">
                       <span className="text-[10px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2 py-0.5 rounded-full">
-                        {hei.badge}
+                        {badge}
                       </span>
-                      <h3 className="text-base font-extrabold text-[#201C18] font-heading mt-1">{hei.name}</h3>
-                      <p className="text-[11px] text-[#8A7F72]">{hei.role}</p>
+                      <h3 className="text-base font-extrabold text-[#201C18] font-heading mt-1">{uni.name}</h3>
+                      <p className="text-[11px] text-[#8A7F72]">{role}</p>
                     </div>
                     <Building2 className="w-5 h-5 text-[#2C6E49] shrink-0 mt-1" />
                   </div>
 
                   <div className="space-y-2 text-xs">
                     <div>
-                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Specialization:</span>
-                      <p className="text-[#201C18] font-semibold">{hei.domain}</p>
+                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Departments:</span>
+                      <p className="text-[#201C18] font-semibold">{uni.departments?.slice(0, 3).join(', ') ?? '—'}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Faculty Lead:</span>
-                      <p className="text-[#4A433B]">{hei.lead}</p>
+                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">District:</span>
+                      <p className="text-[#4A433B]">{uni.district}, Jharkhand</p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Lab Facilities:</span>
-                      <p className="text-[#6A6155] text-[11px]">{hei.facilities}</p>
+                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Students:</span>
+                      <p className="text-[#6A6155] text-[11px]">{uni.departments?.length ?? 0} departments</p>
                     </div>
                   </div>
 
                   <div className="pt-2 border-t border-[#F0EBE0] flex items-center justify-between text-xs">
-                    <span className="font-bold text-[#2C6E49]">{hei.assigned} Active Projects</span>
-                    <span className="text-[#8A7F72] font-mono">{hei.teams} Student Teams</span>
+                    <span className="font-bold text-[#2C6E49]">{activeProjects} Active Projects</span>
+                    <span className="text-[#8A7F72] font-mono">{teamCount} Depts</span>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}

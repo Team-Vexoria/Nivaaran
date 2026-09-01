@@ -1,8 +1,9 @@
-﻿import React from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Trophy, Award, Sprout, Medal, Gift } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
+import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 
 interface CitizenGuardian {
   rank: number;
@@ -19,61 +20,76 @@ interface CitizenLeaderboardTabProps {
   currentLang?: SupportedLanguage;
 }
 
+// Seed guardians used as baseline — live submissions are merged on top
+const SEED_GUARDIANS: Omit<CitizenGuardian, 'rank'>[] = [
+  { name: 'Sunil Kumar Mahto', district: 'Ranchi (Kanke Block)', reportsSubmitted: 14, verifiedCount: 12, points: 1280, badge: 'Eco Guardian Supreme', plantsEarned: 4 },
+  { name: 'Pooja Rani', district: 'Dhanbad (Jharia)', reportsSubmitted: 11, verifiedCount: 10, points: 990, badge: 'Flood & Mine Safety Alert', plantsEarned: 3 },
+  { name: 'Rameshwar Oraon', district: 'Palamu (Daltonganj)', reportsSubmitted: 9, verifiedCount: 8, points: 820, badge: 'Panchayat Civic Guard', plantsEarned: 2 },
+  { name: 'Anita Hansda', district: 'East Singhbhum', reportsSubmitted: 7, verifiedCount: 7, points: 710, badge: 'Community Champion', plantsEarned: 2 },
+  { name: 'Vikas Singh', district: 'Hazaribagh', reportsSubmitted: 6, verifiedCount: 5, points: 540, badge: 'Active Reporter', plantsEarned: 1 },
+];
+
+function getBadge(verified: number): string {
+  if (verified >= 12) return 'Eco Guardian Supreme';
+  if (verified >= 9) return 'Flood & Mine Safety Alert';
+  if (verified >= 6) return 'Panchayat Civic Guard';
+  if (verified >= 3) return 'Community Champion';
+  return 'Active Reporter';
+}
+
 export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ currentLang = 'en' }) => {
   const { t } = useLanguage();
+  const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());
 
-  const topGuardians: CitizenGuardian[] = [
-    {
-      rank: 1,
-      name: 'Sunil Kumar Mahto',
-      district: 'Ranchi (Kanke Block)',
-      reportsSubmitted: 14,
-      verifiedCount: 12,
-      points: 1280,
-      badge: tr('Eco Guardian Supreme', currentLang),
-      plantsEarned: 4,
-    },
-    {
-      rank: 2,
-      name: 'Pooja Rani',
-      district: 'Dhanbad (Jharia)',
-      reportsSubmitted: 11,
-      verifiedCount: 10,
-      points: 990,
-      badge: tr('Flood & Mine Safety Alert', currentLang),
-      plantsEarned: 3,
-    },
-    {
-      rank: 3,
-      name: 'Rameshwar Oraon',
-      district: 'Palamu (Daltonganj)',
-      reportsSubmitted: 9,
-      verifiedCount: 8,
-      points: 820,
-      badge: tr('Panchayat Civic Guard', currentLang),
-      plantsEarned: 2,
-    },
-    {
-      rank: 4,
-      name: 'Anita Hansda',
-      district: 'East Singhbhum',
-      reportsSubmitted: 7,
-      verifiedCount: 7,
-      points: 710,
-      badge: tr('Community Champion', currentLang),
-      plantsEarned: 2,
-    },
-    {
-      rank: 5,
-      name: 'Vikas Singh',
-      district: 'Hazaribagh',
-      reportsSubmitted: 6,
-      verifiedCount: 5,
-      points: 540,
-      badge: tr('Active Reporter', currentLang),
-      plantsEarned: 1,
-    },
-  ];
+  useEffect(() => {
+    const handler = () => setWfChallenges(workflowStore.getChallenges());
+    window.addEventListener(STORE_EVENT, handler);
+    return () => window.removeEventListener(STORE_EVENT, handler);
+  }, []);
+
+  // Build a live leaderboard from workflowStore submissions
+  // Group by submittedBy, compute stats
+  const liveMap = new Map<string, { district: string; submitted: number; verified: number }>();
+  wfChallenges.forEach(c => {
+    const name = c.submittedBy;
+    if (!name) return;
+    const existing = liveMap.get(name) || { district: c.district || '', submitted: 0, verified: 0 };
+    existing.submitted += 1;
+    const isVerified = ['Government Validated','Clustered','Prioritized','HEI Matched',
+      'University Accepted','In Progress','Proposal Submitted','Industry Collaboration',
+      'Prototype Active','Pilot Active','Outcome Audit','Resolved','Closed'].includes(c.status);
+    if (isVerified) existing.verified += 1;
+    liveMap.set(name, existing);
+  });
+
+  // Merge live data on top of seed guardians
+  const merged = new Map<string, Omit<CitizenGuardian, 'rank'>>();
+  SEED_GUARDIANS.forEach(g => merged.set(g.name, { ...g }));
+  liveMap.forEach((data, name) => {
+    const existing = merged.get(name);
+    if (existing) {
+      existing.reportsSubmitted = Math.max(existing.reportsSubmitted, data.submitted);
+      existing.verifiedCount = Math.max(existing.verifiedCount, data.verified);
+      existing.points = existing.verifiedCount * 90 + existing.reportsSubmitted * 20;
+      existing.badge = getBadge(existing.verifiedCount);
+      existing.plantsEarned = Math.floor(existing.verifiedCount / 3);
+    } else {
+      merged.set(name, {
+        name,
+        district: data.district,
+        reportsSubmitted: data.submitted,
+        verifiedCount: data.verified,
+        points: data.verified * 90 + data.submitted * 20,
+        badge: getBadge(data.verified),
+        plantsEarned: Math.floor(data.verified / 3),
+      });
+    }
+  });
+
+  const topGuardians: CitizenGuardian[] = Array.from(merged.values())
+    .sort((a, b) => b.points - a.points)
+    .slice(0, 5)
+    .map((g, i) => ({ ...g, rank: i + 1, badge: tr(g.badge, currentLang) }));
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">

@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { JHARKHAND_LANGUAGES, SupportedLanguage } from '../../i18n/translations';
-import { 
-  User, MapPin, CheckCircle2, ShieldCheck, Mail, Sprout, 
+import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
+import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
+import {
+  User, MapPin, CheckCircle2, ShieldCheck, Mail, Sprout,
   FileText, Clock, Edit3, Save, ChevronRight, LogOut, Globe
 } from 'lucide-react';
 
@@ -31,39 +33,57 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
   const [phone, setPhone] = useState('+91 98351 40912');
   const [isEditing, setIsEditing] = useState(false);
 
+  // Live challenge data for stats
+  const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
+  useEffect(() => {
+    const unsub = subscribeToChallenges(setChallenges);
+    return () => unsub();
+  }, []);
+
+  // Also sync from workflowStore for transitions that don't hit Firebase
+  const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());
+  useEffect(() => {
+    const handler = () => setWfChallenges(workflowStore.getChallenges());
+    window.addEventListener(STORE_EVENT, handler);
+    return () => window.removeEventListener(STORE_EVENT, handler);
+  }, []);
+
+  // Merge: workflowStore is source of truth for status, Firebase for full list
+  const allChallenges = challenges.length > 0 ? challenges : (wfChallenges as unknown as ChallengeDoc[]);
+
+  const totalFiled = allChallenges.length;
+  const govtVerified = allChallenges.filter(c =>
+    ['Government Validated','Clustered','Prioritized','HEI Matched','University Accepted',
+     'In Progress','Proposal Submitted','Industry Collaboration','Prototype Active',
+     'Pilot Active','Outcome Audit','Resolved','Closed'].includes(c.status)
+  ).length;
+  const uniActive = allChallenges.filter(c =>
+    ['University Accepted','In Progress','Proposal Submitted','Industry Collaboration',
+     'Prototype Active','Pilot Active','Outcome Audit'].includes(c.status)
+  ).length;
+  const resolvedCount = allChallenges.filter(c => c.status === 'Resolved' || c.status === 'Closed').length;
+  const saplingCount = Math.min(resolvedCount + Math.floor(govtVerified / 3), 9);
+
   const stats = [
-    { label: t.profile.reportsFiledStat, value: '4', icon: <FileText className="w-5 h-5 text-blue-600" /> },
-    { label: t.profile.govtVerifiedStat, value: '3', icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" /> },
-    { label: t.profile.uniActiveStat, value: '2', icon: <ShieldCheck className="w-5 h-5 text-purple-600" /> },
-    { label: t.profile.treeVouchersStat, value: '3 Saplings', icon: <Sprout className="w-5 h-5 text-emerald-600" /> },
+    { label: t.profile.reportsFiledStat, value: String(totalFiled || 4), icon: <FileText className="w-5 h-5 text-blue-600" /> },
+    { label: t.profile.govtVerifiedStat, value: String(govtVerified || 3), icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" /> },
+    { label: t.profile.uniActiveStat, value: String(uniActive || 2), icon: <ShieldCheck className="w-5 h-5 text-purple-600" /> },
+    { label: t.profile.treeVouchersStat, value: `${saplingCount || 3} Saplings`, icon: <Sprout className="w-5 h-5 text-emerald-600" /> },
   ];
 
-  const recentActivity = [
-    {
-      id: 'JH-2026-FL-3125',
-      title: 'Monsoon flash flood risk near primary school road',
-      district: 'Ranchi',
-      date: '2 hours ago',
-      status: 'Under Review',
-      stage: 'Stage 1: Citizen Submission & Evidence Upload',
-    },
-    {
-      id: 'JH-2026-FL-0842',
-      title: 'River overflow floods Kanke village main highway',
-      district: 'Ranchi',
-      date: 'Yesterday',
-      status: 'In Progress',
-      stage: 'Stage 8: University Telemetry Team Assigned (BIT Mesra)',
-    },
-    {
-      id: 'JH-2026-DR-0319',
-      title: 'Borewell water level drop in Daltonganj village',
-      district: 'Palamu',
-      date: '3 days ago',
-      status: 'Government Validated',
-      stage: 'Stage 4: Geotag Validated & Deduplicated',
-    },
-  ];
+  // Live recent activity — most recently updated challenges
+  const recentActivity = allChallenges
+    .slice()
+    .sort((a, b) => ((b as any).updatedAt || b.createdAt || '').localeCompare((a as any).updatedAt || a.createdAt || ''))
+    .slice(0, 3)
+    .map(c => ({
+      id: c.reportId || c.id,
+      title: c.title,
+      district: c.district,
+      date: c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Recent',
+      status: c.status,
+      stage: c.stageName || `Stage ${c.stageNumber || 1}`,
+    }));
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
