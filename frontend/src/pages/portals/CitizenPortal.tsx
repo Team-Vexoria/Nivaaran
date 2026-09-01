@@ -113,6 +113,10 @@ export const CitizenPortal: React.FC = () => {
       <QuickReportModal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
+        onSuccess={() => {
+          setIsReportModalOpen(false);
+          setActiveTabState('my-reports');
+        }}
       />
     </div>
   );

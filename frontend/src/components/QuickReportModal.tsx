@@ -23,7 +23,7 @@ const JHARKHAND_DISTRICTS = [
   'Chatra', 'Koderma', 'Lohardaga'
 ];
 
-export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose }) => {
+export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { t } = useLanguage();
   const [step, setStep] = useState<'form' | 'submitting' | 'success'>('form');
   const [title, setTitle] = useState('');
@@ -315,6 +315,9 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
     setSubmittedId(generatedId);
     setStep('success');
+    if (onSuccess) {
+      onSuccess(generatedId);
+    }
   };
 
   const resetAndClose = () => {
