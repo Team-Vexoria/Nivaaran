@@ -5,6 +5,15 @@ import {
 } from '../../services/firebaseService';
 import { useLanguage } from '../../context/LanguageContext';
 
+// All 24 Jharkhand districts available as community chat rooms.
+const JHARKHAND_DISTRICTS = [
+  'Ranchi', 'Dhanbad', 'East Singhbhum (Jamshedpur)', 'Bokaro', 'Palamu',
+  'Hazaribagh', 'Deoghar', 'Giridih', 'Ramgarh', 'Latehar',
+  'Garhwa', 'Dumka', 'Godda', 'Sahebganj', 'Pakur', 'Jamtara',
+  'Khunti', 'Gumla', 'Simdega', 'West Singhbhum', 'Seraikela Kharsawan',
+  'Chatra', 'Koderma', 'Lohardaga',
+];
+
 export const CitizenRegionChatTab: React.FC = () => {
   const { t } = useLanguage();
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Ranchi');
@@ -85,7 +94,7 @@ export const CitizenRegionChatTab: React.FC = () => {
     }
   };
 
-  const districts = ['Ranchi', 'Dhanbad', 'Palamu', 'East Singhbhum', 'Hazaribagh', 'Bokaro', 'Deoghar', 'Giridih'];
+  const districts = JHARKHAND_DISTRICTS;
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
