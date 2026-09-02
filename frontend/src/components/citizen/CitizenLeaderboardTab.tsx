@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trophy, Award, Sprout, Medal, Gift } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage } from '../../i18n/translations';
@@ -20,15 +20,6 @@ interface CitizenLeaderboardTabProps {
   currentLang?: SupportedLanguage;
 }
 
-// Seed guardians used as baseline — live submissions are merged on top
-const SEED_GUARDIANS: Omit<CitizenGuardian, 'rank'>[] = [
-  { name: 'Sunil Kumar Mahto', district: 'Ranchi (Kanke Block)', reportsSubmitted: 14, verifiedCount: 12, points: 1280, badge: 'Eco Guardian Supreme', plantsEarned: 4 },
-  { name: 'Pooja Rani', district: 'Dhanbad (Jharia)', reportsSubmitted: 11, verifiedCount: 10, points: 990, badge: 'Flood & Mine Safety Alert', plantsEarned: 3 },
-  { name: 'Rameshwar Oraon', district: 'Palamu (Daltonganj)', reportsSubmitted: 9, verifiedCount: 8, points: 820, badge: 'Panchayat Civic Guard', plantsEarned: 2 },
-  { name: 'Anita Hansda', district: 'East Singhbhum', reportsSubmitted: 7, verifiedCount: 7, points: 710, badge: 'Community Champion', plantsEarned: 2 },
-  { name: 'Vikas Singh', district: 'Hazaribagh', reportsSubmitted: 6, verifiedCount: 5, points: 540, badge: 'Active Reporter', plantsEarned: 1 },
-];
-
 function getBadge(verified: number): string {
   if (verified >= 12) return 'Eco Guardian Supreme';
   if (verified >= 9) return 'Flood & Mine Safety Alert';
@@ -48,7 +39,6 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
   }, []);
 
   // Build a live leaderboard from workflowStore submissions
-  // Group by submittedBy, compute stats
   const liveMap = new Map<string, { district: string; submitted: number; verified: number }>();
   wfChallenges.forEach(c => {
     const name = c.submittedBy;
@@ -62,28 +52,17 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
     liveMap.set(name, existing);
   });
 
-  // Merge live data on top of seed guardians
   const merged = new Map<string, Omit<CitizenGuardian, 'rank'>>();
-  SEED_GUARDIANS.forEach(g => merged.set(g.name, { ...g }));
   liveMap.forEach((data, name) => {
-    const existing = merged.get(name);
-    if (existing) {
-      existing.reportsSubmitted = Math.max(existing.reportsSubmitted, data.submitted);
-      existing.verifiedCount = Math.max(existing.verifiedCount, data.verified);
-      existing.points = existing.verifiedCount * 90 + existing.reportsSubmitted * 20;
-      existing.badge = getBadge(existing.verifiedCount);
-      existing.plantsEarned = Math.floor(existing.verifiedCount / 3);
-    } else {
-      merged.set(name, {
-        name,
-        district: data.district,
-        reportsSubmitted: data.submitted,
-        verifiedCount: data.verified,
-        points: data.verified * 90 + data.submitted * 20,
-        badge: getBadge(data.verified),
-        plantsEarned: Math.floor(data.verified / 3),
-      });
-    }
+    merged.set(name, {
+      name,
+      district: data.district,
+      reportsSubmitted: data.submitted,
+      verifiedCount: data.verified,
+      points: data.verified * 90 + data.submitted * 20,
+      badge: getBadge(data.verified),
+      plantsEarned: Math.floor(data.verified / 3),
+    });
   });
 
   const topGuardians: CitizenGuardian[] = Array.from(merged.values())
@@ -154,49 +133,57 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
         </div>
 
         <div className="divide-y divide-slate-100">
-          {topGuardians.map((guardian) => (
-            <div 
-              key={guardian.rank} 
-              className={`p-4 sm:p-5 flex items-center justify-between gap-4 transition-colors hover:bg-slate-50 ${
-                guardian.rank === 1 ? 'bg-amber-50/40' : ''
-              }`}
-            >
-              <div className="flex items-center space-x-4">
-                <span className={`w-8 h-8 rounded-full font-black text-sm flex items-center justify-center ${
-                  guardian.rank === 1 
-                    ? 'bg-amber-500 text-white shadow-xs' 
-                    : guardian.rank === 2 
-                    ? 'bg-slate-300 text-slate-800' 
-                    : guardian.rank === 3 
-                    ? 'bg-amber-700 text-white' 
-                    : 'bg-slate-100 text-slate-600'
-                }`}>
-                  {guardian.rank}
-                </span>
-
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900">{guardian.name}</h4>
-                  <p className="text-xs text-slate-500">{guardian.district}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-4 text-right">
-                <div className="hidden sm:block">
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    {guardian.badge}
+          {topGuardians.length > 0 ? (
+            topGuardians.map((guardian) => (
+              <div 
+                key={guardian.rank} 
+                className={`p-4 sm:p-5 flex items-center justify-between gap-4 transition-colors hover:bg-slate-50 ${
+                  guardian.rank === 1 ? 'bg-amber-50/40' : ''
+                }`}
+              >
+                <div className="flex items-center space-x-4">
+                  <span className={`w-8 h-8 rounded-full font-black text-sm flex items-center justify-center ${
+                    guardian.rank === 1 
+                      ? 'bg-amber-500 text-white shadow-xs' 
+                      : guardian.rank === 2 
+                      ? 'bg-slate-300 text-slate-800' 
+                      : guardian.rank === 3 
+                      ? 'bg-amber-700 text-white' 
+                      : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {guardian.rank}
                   </span>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    {guardian.verifiedCount} {tr('Solved Issues', currentLang)}
-                  </p>
+
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900">{guardian.name}</h4>
+                    <p className="text-xs text-slate-500">{guardian.district}</p>
+                  </div>
                 </div>
 
-                <div className="bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-center shrink-0">
-                  <span className="text-xs font-black block">{guardian.points}</span>
-                  <span className="text-[9px] text-slate-300 uppercase tracking-wider font-semibold">{tr('pts', currentLang)}</span>
+                <div className="flex items-center space-x-4 text-right">
+                  <div className="hidden sm:block">
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      {guardian.badge}
+                    </span>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {guardian.verifiedCount} {tr('Solved Issues', currentLang)}
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-center shrink-0">
+                    <span className="text-xs font-black block">{guardian.points}</span>
+                    <span className="text-[9px] text-slate-300 uppercase tracking-wider font-semibold">{tr('pts', currentLang)}</span>
+                  </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="p-8 text-center text-slate-500">
+              <Sprout className="w-8 h-8 mx-auto mb-3 text-emerald-400 opacity-50" />
+              <p className="text-sm font-medium">{tr('No citizen guardians yet.', currentLang)}</p>
+              <p className="text-xs mt-1">{tr('Submit and verify community issues to climb the leaderboard!', currentLang)}</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
 

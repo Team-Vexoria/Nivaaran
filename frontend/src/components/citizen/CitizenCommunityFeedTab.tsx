@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon, Zap } from 'lucide-react';
 import {
-  subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc
+  subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc, addCommentToFeedPost
 } from '../../services/firebaseService';
 import { useLanguage } from '../../context/LanguageContext';
 import { tr } from '../../i18n/translationEngine';
@@ -184,28 +184,15 @@ export const CitizenCommunityFeedTab: React.FC = () => {
     setNewPostContent('');
   };
 
-  const handleAddComment = (postId: string) => {
+  const handleAddComment = async (postId: string) => {
     if (!commentInput.trim()) return;
 
-    setPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        const existingComments = p.comments || [];
-        return {
-          ...p,
-          comments: [
-            ...existingComments,
-            {
-              id: `C-${Date.now()}`,
-              author: 'You (Citizen)',
-              role: 'Citizen',
-              text: commentInput,
-              timestamp: 'Just now',
-            },
-          ],
-        };
-      }
-      return p;
-    }));
+    await addCommentToFeedPost(postId, {
+      postId,
+      author: 'You (Citizen)',
+      role: 'Citizen',
+      text: commentInput,
+    });
 
     setCommentInput('');
   };

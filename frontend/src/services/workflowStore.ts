@@ -29,6 +29,30 @@ class WorkflowStore {
         m.migrateLegacyProjects();
       }).catch(e => console.error("Migration import failed", e));
     }, 0);
+
+    // Cross-tab sync: when localStorage changes in another tab, reload state.
+    // The `storage` event fires in all tabs *except* the one that made the change,
+    // so the `CustomEvent(STORE_EVENT)` in `persist()` handles same-tab updates.
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (e: StorageEvent) => {
+        if (!e.key || !e.key.startsWith('nivaaran_')) return;
+        try {
+          if (e.key === STORE_KEY && e.newValue) {
+            const parsed: unknown = JSON.parse(e.newValue);
+            if (this.isWorkflowState(parsed)) {
+              this.state = parsed;
+            }
+          }
+          // Dispatch a generic event so all nivaaran_* subscribers
+          // (feed posts, chat, etc.) can re-read their own localStorage.
+          window.dispatchEvent(new CustomEvent('nivaaran-storage-changed', {
+            detail: { key: e.key }
+          }));
+        } catch {
+          // Ignore malformed cross-tab payload
+        }
+      });
+    }
   }
 
   // ── Persistence ─────────────────────────────────────────────────────────────

@@ -3,6 +3,8 @@ import { FileText, CheckCircle2 } from 'lucide-react';
 import { getProjectsFromStore, ProjectDoc, saveProjectTeamToStore } from '../../services/firebaseService';
 import { UniversityDoc } from '../../services/universityData';
 
+
+
 interface ProposalManagerTabProps {
   university: UniversityDoc;
   activeChallengeId?: string;
@@ -16,15 +18,14 @@ export const ProposalManagerTab: React.FC<ProposalManagerTabProps> = ({
 }) => {
   const [projects, setProjects] = useState<ProjectDoc[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
-  const [technicalApproach, setTechnicalApproach] = useState<string>(
-    'Deploy IoT telemetry sensors coupled with LoRaWAN wireless nodes for real-time flood monitoring. Integrate GIS satellite imagery mapping with a citizen mobile alert app.'
-  );
-  const [estimatedBudget, setEstimatedBudget] = useState<number>(150000);
+  const [technicalApproach, setTechnicalApproach] = useState<string>('');
+  const [estimatedBudget, setEstimatedBudget] = useState<number | ''>('');
   const [isSubmittedSuccess, setIsSubmittedSuccess] = useState<boolean>(false);
 
   useEffect(() => {
     const loaded = getProjectsFromStore().filter(p => p.universityId === university.id || p.universityName === university.name);
     setProjects(loaded);
+
     if (activeChallengeId) {
       const match = loaded.find(p => p.challengeId === activeChallengeId);
       if (match && match.id) {
@@ -46,7 +47,7 @@ export const ProposalManagerTab: React.FC<ProposalManagerTabProps> = ({
     const updated: ProjectDoc = {
       ...currentProject,
       status: 'Proposal Submitted',
-      budgetEstimated: estimatedBudget,
+      budgetEstimated: estimatedBudget || 0,
       proposals: [
         ...(currentProject.proposals || []),
         {
@@ -55,7 +56,7 @@ export const ProposalManagerTab: React.FC<ProposalManagerTabProps> = ({
           title: `Solution proposal for ${currentProject.challengeTitle}`,
           description: `Structured technical proposal for addressing ${currentProject.challengeTitle}.`,
           approach: technicalApproach,
-          estimatedBudget,
+          estimatedBudget: estimatedBudget || 0,
           estimatedTimeline: '21 days to pilot readiness',
           status: 'Submitted',
           submittedBy: university.name,

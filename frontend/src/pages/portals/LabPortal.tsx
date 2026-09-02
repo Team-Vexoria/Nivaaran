@@ -3,10 +3,137 @@ import {
   FlaskConical, LogOut, ExternalLink, Beaker, Cpu, BarChart3
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { tr } from '../../i18n/translationEngine';
 import { subscribeToChallenges, subscribeToProjects, ChallengeDoc, ProjectDoc } from '../../services/firebaseService';
 import { getStageForStatus } from '../../services/workflowLifecycle';
+import { PortalLoadingState, PortalEmptyState } from '../../components/PortalUIStates';
 
 type LabTab = 'overview' | 'projects' | 'research';
+
+// ─── Lab Action Modal ─────────────────────────────────────────────────────────
+interface LabActionModalProps {
+  type: 'update' | 'request' | 'resource';
+  resourceTitle?: string;
+  onClose: () => void;
+  projects: ProjectDoc[];
+}
+
+const LabActionModal: React.FC<LabActionModalProps> = ({ type, resourceTitle, onClose, projects }) => {
+  const [selectedProject, setSelectedProject] = useState<string>('');
+  const [details, setDetails] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      onClose();
+    }, 800);
+  };
+
+  const titles = {
+    update: 'Submit Research Update',
+    request: 'Request Equipment / Dataset',
+    resource: `Access ${resourceTitle}`,
+  };
+
+  const descriptions = {
+    update: 'Log a prototype milestone or submit field telemetry data for an active project.',
+    request: 'Request specialized sensors, compute resources, or historical datasets.',
+    resource: 'View technical documentation, JSON schemas, and calibration guides.',
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="p-5 border-b border-[#E4DDD1]">
+          <h3 className="text-lg font-black text-[#201C18]">{titles[type]}</h3>
+          <p className="text-xs text-[#6A6155] mt-1">{descriptions[type]}</p>
+        </div>
+        
+        {type === 'resource' ? (
+          <div className="p-5 space-y-4">
+            <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4 flex flex-col items-center justify-center space-y-2">
+              <ExternalLink className="w-8 h-8 text-[#6366F1]" />
+              <span className="text-sm font-bold text-[#4A433B]">Document Ready</span>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-[#6A6155] hover:bg-[#FAF8F4] rounded-lg transition-colors">
+                Cancel
+              </button>
+              <button onClick={onClose} className="px-4 py-2 text-sm font-bold text-white bg-[#6366F1] hover:bg-[#4F46E5] rounded-lg transition-colors">
+                Open Resource
+              </button>
+            </div>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="p-5 space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#4A433B]">Select Project</label>
+              <select
+                required
+                value={selectedProject}
+                onChange={e => setSelectedProject(e.target.value)}
+                className="w-full text-sm border border-[#E4DDD1] rounded-lg px-3 py-2 bg-[#FAF8F4] focus:outline-none focus:border-[#6366F1]"
+              >
+                <option value="">-- Select a project --</option>
+                {projects.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.challengeTitle}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#4A433B]">
+                {type === 'update' ? 'Prototype Status / Telemetry Summary' : 'Equipment/Dataset Details'}
+              </label>
+              <textarea
+                required
+                rows={3}
+                value={details}
+                onChange={e => setDetails(e.target.value)}
+                placeholder="Enter details..."
+                className="w-full text-sm border border-[#E4DDD1] rounded-lg px-3 py-2 bg-[#FAF8F4] focus:outline-none focus:border-[#6366F1] resize-none"
+              />
+            </div>
+            
+            {type === 'update' && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-[#4A433B]">Attach Telemetry File (JSON/CSV)</label>
+                <input 
+                  type="file" 
+                  className="w-full text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-[#6366F1]/10 file:text-[#6366F1] hover:file:bg-[#6366F1]/20 cursor-pointer"
+                />
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm font-bold text-[#6A6155] hover:bg-[#FAF8F4] rounded-lg transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-bold text-white bg-[#6366F1] hover:bg-[#4F46E5] rounded-lg transition-colors disabled:opacity-70 min-w-[100px] cursor-pointer"
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Research Lab / Industry Lab Portal
@@ -18,13 +145,22 @@ type LabTab = 'overview' | 'projects' | 'research';
  */
 export const LabPortal: React.FC = () => {
   const { currentUser, logout } = useAuth();
+  const { currentLang, languages, setLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState<LabTab>('overview');
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
   const [projects, setProjects] = useState<ProjectDoc[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionModal, setActionModal] = useState<{ type: 'update' | 'request' | 'resource', resourceTitle?: string } | null>(null);
 
   useEffect(() => {
-    const unsubCh = subscribeToChallenges(setChallenges);
-    const unsubPr = subscribeToProjects(setProjects);
+    const unsubCh = subscribeToChallenges((data) => {
+      setChallenges(data);
+      setLoading(false);
+    });
+    const unsubPr = subscribeToProjects((data) => {
+      setProjects(data);
+      setLoading(false);
+    });
     return () => { unsubCh(); unsubPr(); };
   }, []);
 
@@ -48,17 +184,26 @@ export const LabPortal: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-black tracking-tight">NIVAARAN</span>
+                <span className="text-base font-black tracking-tight">{tr('NIVAARAN', currentLang)}</span>
                 <span className="text-[10px] font-extrabold bg-white/15 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  Research Lab Portal
+                  {tr('Research Lab Portal', currentLang)}
                 </span>
               </div>
               <span className="text-[10px] text-white/60 font-semibold block">
-                {currentUser?.role || 'Research Lab'} · {labName}
+                {tr(currentUser?.role || 'Research Lab', currentLang)} · {labName}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <select
+              value={currentLang}
+              onChange={(e) => setLanguage(e.target.value as any)}
+              className="bg-white/10 text-white text-[11px] px-2 py-1 rounded-lg border-none focus:ring-0 cursor-pointer"
+            >
+              {languages.map(lang => (
+                <option key={lang.code} value={lang.code}>{lang.name}</option>
+              ))}
+            </select>
             <span className="hidden sm:inline text-[11px] bg-white/10 px-3 py-1 rounded-full text-white/70 font-semibold">
               {labName}
             </span>
@@ -74,9 +219,9 @@ export const LabPortal: React.FC = () => {
 
         <div className="max-w-7xl mx-auto mt-2.5 flex items-center gap-1 border-t border-white/10 pt-2">
           {([
-            { id: 'overview', label: 'Lab Overview', icon: FlaskConical },
-            { id: 'projects', label: 'Assigned Projects', icon: Beaker },
-            { id: 'research', label: 'R&D Resources', icon: Cpu },
+            { id: 'overview', label: tr('Lab Overview', currentLang), icon: FlaskConical },
+            { id: 'projects', label: tr('Assigned Projects', currentLang), icon: Beaker },
+            { id: 'research', label: tr('R&D Resources', currentLang), icon: Cpu },
           ] as const).map(tab => (
             <button
               key={tab.id}
@@ -96,6 +241,10 @@ export const LabPortal: React.FC = () => {
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
 
+        {loading ? (
+          <PortalLoadingState />
+        ) : (
+          <>
         {activeTab === 'overview' && (
           <>
             <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs">
@@ -153,11 +302,11 @@ export const LabPortal: React.FC = () => {
             </div>
 
             {projects.length === 0 ? (
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-12 text-center">
-                <Beaker className="w-10 h-10 text-slate-300 mx-auto" />
-                <h4 className="font-black text-slate-800 mt-3">No projects assigned yet</h4>
-                <p className="text-xs text-slate-500 mt-1">Projects appear here once a university team links their prototype work to your lab.</p>
-              </div>
+              <PortalEmptyState
+                title="No projects assigned yet"
+                description="Projects appear here once a university team links their prototype work to your lab."
+                icon={<Beaker className="w-8 h-8 text-slate-400" />}
+              />
             ) : (
               <div className="space-y-3">
                 {projects.map(proj => {
@@ -210,39 +359,105 @@ export const LabPortal: React.FC = () => {
         )}
 
         {activeTab === 'research' && (
-          <>
-            <div>
-              <h2 className="text-lg font-black text-[#201C18]">R&D Resources & References</h2>
-              <p className="text-xs text-[#6A6155]">
-                Technical references, sensor specifications, and deployment guides for NIVAARAN projects.
-              </p>
+          <div className="space-y-6">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-black text-[#201C18]">R&D Resources & References</h2>
+                <p className="text-xs text-[#6A6155]">
+                  Technical references, sensor specifications, and deployment guides for NIVAARAN projects.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setActionModal({ type: 'update' })}
+                  className="text-xs font-bold bg-[#6366F1] hover:bg-[#4F46E5] text-white px-3 py-2 rounded-lg transition-colors cursor-pointer shadow-sm"
+                >
+                  Submit Research Update
+                </button>
+                <button 
+                  onClick={() => setActionModal({ type: 'request' })}
+                  className="text-xs font-bold bg-white hover:bg-[#FAF8F4] border border-[#E4DDD1] text-[#201C18] px-3 py-2 rounded-lg transition-colors cursor-pointer shadow-sm"
+                >
+                  Request Resources
+                </button>
+              </div>
+            </div>
+
+            {/* Telemetry Dashboard Mini-View */}
+            <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4">
+              <h3 className="text-sm font-extrabold text-[#201C18] flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-[#6366F1]" /> Field Telemetry Status
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-[#6A6155] uppercase tracking-wider">Active Sensor Nodes</span>
+                  <p className="text-xl font-black text-[#201C18] mt-1">14</p>
+                </div>
+                <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-[#6A6155] uppercase tracking-wider">Last Data Push</span>
+                  <p className="text-xl font-black text-[#201C18] mt-1 text-emerald-600">5 mins ago</p>
+                </div>
+                <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3">
+                  <span className="text-[10px] font-bold text-[#6A6155] uppercase tracking-wider">Total Readings (24h)</span>
+                  <p className="text-xl font-black text-[#201C18] mt-1 text-[#6366F1]">4,892</p>
+                </div>
+              </div>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
               {[
-                { title: 'IoT Sensor Specifications', desc: 'Hardware specs for water level, flow velocity, air quality, and seismic sensors used in NIVAARAN field deployments.', link: '#' },
-                { title: 'Telemetry Data Format', desc: 'Standardized JSON schema for sensor node telemetry data submission and aggregation.', link: '#' },
-                { title: 'Field Deployment Guide', desc: 'Step-by-step guide for installing and calibrating sensor nodes in Jharkhand field conditions.', link: '#' },
-                { title: 'AI Model Registry', desc: 'Version-controlled AI models for triage, classification, and predictive analytics.', link: '#' },
+                { 
+                  title: 'IoT Sensor Specifications', 
+                  desc: 'Hardware specs for water level, flow velocity, air quality, and seismic sensors used in NIVAARAN field deployments.',
+                  action: 'Download Spec'
+                },
+                { 
+                  title: 'Telemetry Data Format', 
+                  desc: 'Standardized JSON schema for sensor node telemetry data submission and aggregation.',
+                  action: 'View Schema'
+                },
+                { 
+                  title: 'Field Deployment Guide', 
+                  desc: 'Step-by-step guide for installing and calibrating sensor nodes in Jharkhand field conditions.',
+                  action: 'Open Guide'
+                },
+                { 
+                  title: 'AI Model Registry', 
+                  desc: 'Version-controlled AI models for triage, classification, and predictive analytics.',
+                  action: 'Browse Models'
+                },
               ].map((item, i) => (
-                <div key={i} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-3 hover:border-[#6366F1] transition-colors cursor-pointer">
-                  <h3 className="text-sm font-extrabold text-[#201C18]">{item.title}</h3>
-                  <p className="text-xs text-[#6A6155] leading-relaxed">{item.desc}</p>
-                  <span className="text-[11px] font-bold text-[#6366F1] flex items-center gap-1">
-                    View Documentation <ExternalLink className="w-3 h-3" />
-                  </span>
+                <div key={i} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#6366F1] transition-colors">
+                  <div className="space-y-2">
+                    <h3 className="text-sm font-extrabold text-[#201C18]">{item.title}</h3>
+                    <p className="text-xs text-[#6A6155] leading-relaxed">{item.desc}</p>
+                  </div>
+                  <div className="pt-3 border-t border-[#E4DDD1]">
+                    <button 
+                      onClick={() => setActionModal({ type: 'resource', resourceTitle: item.title })}
+                      className="text-[11px] font-bold text-[#6366F1] flex items-center gap-1.5 hover:text-[#4F46E5] transition-colors cursor-pointer"
+                    >
+                      {item.action} <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
-
-            <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-2xl p-5 text-center space-y-2">
-              <p className="text-xs text-[#8A7F72]">
-                Full R&D documentation, version-controlled model registry, and sensor calibration tools are available in the production build.
-              </p>
-            </div>
+          </div>
+        )}
           </>
         )}
       </main>
+
+      {/* Action Modal */}
+      {actionModal && (
+        <LabActionModal 
+          type={actionModal.type} 
+          resourceTitle={actionModal.resourceTitle}
+          projects={projects}
+          onClose={() => setActionModal(null)} 
+        />
+      )}
     </div>
   );
 };

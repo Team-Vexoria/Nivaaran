@@ -31,6 +31,7 @@ export const AdminPortal: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
 
   // Live store sync
   useEffect(() => {
@@ -137,8 +138,8 @@ export const AdminPortal: React.FC = () => {
           {([
             { id: 'overview', label: 'Platform Overview', icon: BarChart3 },
             { id: 'challenges', label: 'All Challenges', icon: Database },
+            { id: 'taxonomy', label: 'Taxonomy & Controls', icon: ShieldCheck },
             { id: 'audit', label: 'Audit Log', icon: Activity },
-            { id: 'taxonomy', label: 'Domain Taxonomy', icon: ShieldCheck },
           ] as { id: AdminTab; label: string; icon: React.FC<{ className?: string }> }[]).map(tab => (
             <button
               key={tab.id}
@@ -322,6 +323,7 @@ export const AdminPortal: React.FC = () => {
                       <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Status</th>
                       <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Risk</th>
                       <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Category</th>
+                      <th className="px-4 py-2.5 text-right font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#F0EBE0]">
@@ -352,6 +354,14 @@ export const AdminPortal: React.FC = () => {
                             )}
                           </td>
                           <td className="px-4 py-2.5 text-[#6A6155]">{c.category}</td>
+                          <td className="px-4 py-2.5 text-right">
+                            <button
+                              onClick={() => setSelectedChallenge(c)}
+                              className="px-3 py-1 bg-white border border-[#E4DDD1] text-[#201C18] text-xs font-bold rounded-lg hover:bg-slate-50 transition-colors"
+                            >
+                              Manage
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
@@ -410,38 +420,84 @@ export const AdminPortal: React.FC = () => {
           </div>
         )}
 
-        {/* TAXONOMY TAB */}
+        {/* TAXONOMY & CONTROLS TAB */}
         {activeTab === 'taxonomy' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-black text-[#201C18]">Domain Taxonomy</h2>
-              <p className="text-xs text-[#6A6155]">Challenge categories used for AI triage and routing. Read-only in demo mode.</p>
+              <h2 className="text-lg font-black text-[#201C18]">Taxonomy & System Controls</h2>
+              <p className="text-xs text-[#6A6155]">Configure AI triage routing, manage platform rules, and administer user security.</p>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {DOMAIN_CATEGORIES.map(cat => {
-                const count = kpis.byCategory[cat.label] || kpis.byCategory[cat.id] || 0;
-                return (
-                  <div key={cat.id} className="bg-white border border-[#E4DDD1] rounded-2xl p-4 shadow-2xs space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${cat.color}`}>
-                        {cat.label}
-                      </span>
-                      <span className="text-xs font-extrabold text-[#201C18]">{count}</span>
-                    </div>
-                    <div className="h-1.5 bg-[#F0EBE0] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-[#2C6E49] rounded-full transition-all duration-500"
-                        style={{ width: kpis.total > 0 ? `${Math.round((count / kpis.total) * 100)}%` : '0%' }}
-                      />
-                    </div>
-                    <p className="text-[10px] text-[#8A7F72]">
-                      {kpis.total > 0 ? Math.round((count / kpis.total) * 100) : 0}% of total challenges
-                    </p>
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Security & Moderation */}
+              <div className="bg-white border border-red-200 rounded-2xl p-6 shadow-2xs space-y-4">
+                <div className="flex items-center space-x-2 text-red-800">
+                  <ShieldCheck className="w-5 h-5" />
+                  <h3 className="text-sm font-extrabold">Security & Moderation</h3>
+                </div>
+                <p className="text-xs text-slate-600 mb-4">Ban malicious users or bots from the platform. This will lock their account and optionally purge their submitted challenges.</p>
+                
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input type="text" placeholder="Enter User ID or Email" className="flex-1 text-xs border border-slate-300 rounded-lg px-3 py-2 focus:ring-1 focus:ring-red-500 outline-none" />
+                    <button className="px-4 py-2 bg-red-600 text-white font-bold text-xs rounded-lg hover:bg-red-700 transition-colors shrink-0">Ban User</button>
                   </div>
-                );
-              })}
+                  <label className="flex items-center space-x-2 text-xs text-slate-600">
+                    <input type="checkbox" className="rounded text-red-600 focus:ring-red-500" defaultChecked />
+                    <span>Also purge all associated challenges & comments</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* AI Priority Engine Settings */}
+              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-6 shadow-2xs space-y-4">
+                <div className="flex items-center space-x-2 text-[#201C18]">
+                  <Activity className="w-5 h-5 text-[#B5502D]" />
+                  <h3 className="text-sm font-extrabold">AI Prioritization Engine</h3>
+                </div>
+                <p className="text-xs text-slate-600 mb-4">Adjust global weights used by the AI to calculate the priority score of incoming challenges.</p>
+                
+                <div className="space-y-3">
+                  {['Population Impact', 'Infrastructure Criticality', 'Hazard Urgency'].map(factor => (
+                    <div key={factor} className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-slate-700">{factor}</span>
+                      <input type="range" min="0" max="10" defaultValue="5" className="w-32 accent-[#B5502D]" />
+                    </div>
+                  ))}
+                  <div className="pt-2">
+                    <button className="w-full px-4 py-2 bg-[#FAF8F4] border border-[#E4DDD1] text-[#201C18] font-bold text-xs rounded-lg hover:bg-[#F0EBE0] transition-colors">
+                      Save Global Weights
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            <div className="pt-4 border-t border-[#E4DDD1]">
+              <h3 className="text-sm font-extrabold text-[#201C18] mb-4">Active Domain Taxonomy</h3>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {DOMAIN_CATEGORIES.map(cat => {
+                  const count = kpis.byCategory[cat.label] || kpis.byCategory[cat.id] || 0;
+                  return (
+                    <div key={cat.id} className="bg-white border border-[#E4DDD1] rounded-2xl p-4 shadow-2xs space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${cat.color}`}>
+                          {cat.label}
+                        </span>
+                        <span className="text-xs font-extrabold text-[#201C18]">{count}</span>
+                      </div>
+                      <div className="h-1.5 bg-[#F0EBE0] rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-[#2C6E49] rounded-full transition-all duration-500"
+                          style={{ width: kpis.total > 0 ? `${Math.round((count / kpis.total) * 100)}%` : '0%' }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
 
             {/* Workflow lifecycle reference */}
             <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-3">
@@ -464,6 +520,126 @@ export const AdminPortal: React.FC = () => {
         )}
 
       </main>
+
+      {/* MANAGE CHALLENGE MODAL */}
+      {selectedChallenge && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="px-6 py-4 border-b border-[#E4DDD1] flex items-center justify-between bg-[#FAF8F4]">
+              <div>
+                <h3 className="text-base font-black text-[#201C18]">Manage Challenge</h3>
+                <p className="text-xs font-mono text-slate-500">{selectedChallenge.reportId}</p>
+              </div>
+              <button
+                onClick={() => setSelectedChallenge(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 transition-colors text-slate-600 font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="p-6 overflow-y-auto space-y-6">
+              {/* Force Transition */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-extrabold text-[#201C18] border-b border-[#E4DDD1] pb-1">Force State Transition</h4>
+                <p className="text-xs text-slate-600">Manually advance or regress the workflow stage if the normal process is stuck.</p>
+                <div className="flex gap-2">
+                  <select
+                    id="status-override"
+                    className="flex-1 text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white"
+                    defaultValue={selectedChallenge.status}
+                  >
+                    {LIFECYCLE_STAGES.map(s => (
+                      <option key={s.status} value={s.status}>{s.stageNumber}: {s.displayName}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      const sel = document.getElementById('status-override') as HTMLSelectElement;
+                      if (sel) {
+                        workflowStore.transitionChallenge(selectedChallenge.id, sel.value as any, currentUser?.uid || 'admin', 'Super Admin forced transition');
+                        setSelectedChallenge(null);
+                      }
+                    }}
+                    className="px-4 py-2 bg-[#2C6E49] text-white font-bold text-xs rounded-lg hover:bg-[#1E4D33] transition-colors shrink-0"
+                  >
+                    Force Update
+                  </button>
+                </div>
+              </div>
+
+              {/* AI Override */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-extrabold text-[#201C18] border-b border-[#E4DDD1] pb-1">Override AI Prioritization</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="block space-y-1">
+                    <span className="text-[10px] font-bold text-slate-600 uppercase">Priority Score (0-100)</span>
+                    <input
+                      type="number"
+                      id="priority-override"
+                      defaultValue={selectedChallenge.priorityScore}
+                      className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white"
+                    />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="text-[10px] font-bold text-slate-600 uppercase">Risk Level</span>
+                    <select
+                      id="risk-override"
+                      defaultValue={selectedChallenge.riskLevel}
+                      className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white"
+                    >
+                      <option value="CRITICAL">CRITICAL</option>
+                      <option value="HIGH">HIGH</option>
+                      <option value="MEDIUM">MEDIUM</option>
+                      <option value="STANDARD">STANDARD</option>
+                    </select>
+                  </label>
+                </div>
+                <button
+                  onClick={() => {
+                    const p = document.getElementById('priority-override') as HTMLInputElement;
+                    const r = document.getElementById('risk-override') as HTMLSelectElement;
+                    if (p && r) {
+                      workflowStore.updateChallenge(selectedChallenge.id, {
+                        priorityScore: parseInt(p.value, 10) || 0,
+                        riskLevel: r.value as any
+                      });
+                      workflowStore.addTimelineEvent(selectedChallenge.id, {
+                        action: 'Admin Override',
+                        actor: currentUser?.uid || 'admin',
+                        description: `Super Admin overridden AI Priority to ${p.value} and Risk to ${r.value}`
+                      });
+                      setSelectedChallenge(null);
+                    }
+                  }}
+                  className="w-full px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Apply AI Override
+                </button>
+              </div>
+              
+              {/* Ban / Delete */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-extrabold text-red-700 border-b border-red-200 pb-1">Danger Actions</h4>
+                <div className="flex gap-2">
+                   <button
+                    onClick={() => {
+                      if (confirm('Delete this challenge permanently? This cannot be undone.')) {
+                         // Mock deletion from store (workflowStore does not have delete method, but we can transition to 'Rejected' or mock delete if implemented)
+                         workflowStore.transitionChallenge(selectedChallenge.id, 'Rejected', currentUser?.uid || 'admin', 'Deleted by Super Admin');
+                         setSelectedChallenge(null);
+                      }
+                    }}
+                    className="flex-1 px-4 py-2 bg-red-100 text-red-800 border border-red-300 font-bold text-xs rounded-lg hover:bg-red-200 transition-colors"
+                  >
+                    Delete / Reject Challenge
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

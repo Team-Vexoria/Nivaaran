@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   CheckCircle2,
   Map as MapIcon,
@@ -35,7 +35,8 @@ import { JHARKHAND_UNIVERSITIES } from '../../services/universityData';
 import { ClusterReviewTab } from '../../components/gov/ClusterReviewTab';
 import { DeploymentApprovalTab } from '../../components/gov/DeploymentApprovalTab';
 import { ClosureTab } from '../../components/gov/ClosureTab';
-import { useMemo } from 'react';
+import { PortalLoadingState, PortalEmptyState } from '../../components/PortalUIStates';
+
 
 type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports' | 'deployment' | 'closure' | 'clusters';
 
@@ -552,8 +553,11 @@ export const GovPortal: React.FC = () => {
                       <tbody className="divide-y divide-[#F0EBE0] text-[#4A433B]">
                         {districtStats.length === 0 ? (
                           <tr>
-                            <td colSpan={4} className="py-8 text-center text-[#8A7F72]">
-                              No district data available yet
+                            <td colSpan={4} className="p-0">
+                              <PortalEmptyState
+                                title="No district data available yet"
+                                description="Once challenges are submitted, they will appear here."
+                              />
                             </td>
                           </tr>
                         ) : (
@@ -594,9 +598,10 @@ export const GovPortal: React.FC = () => {
 
                   <div className="space-y-3">
                     {hazardBreakdown.length === 0 ? (
-                      <div className="text-center py-6 text-[#8A7F72] text-xs">
-                        No category data yet — challenges will populate this when submitted.
-                      </div>
+                      <PortalEmptyState
+                        title="No category data yet"
+                        description="Challenges will populate this when submitted."
+                      />
                     ) : (
                       hazardBreakdown.map((item, idx) => (
                         <div key={`${item.domain}-${idx}`} className="space-y-1">
@@ -803,13 +808,12 @@ export const GovPortal: React.FC = () => {
             </div>
 
             {loading ? (
-              <div className="text-center py-16 text-[#8A7F72] text-sm">Loading live challenge data…</div>
+              <PortalLoadingState />
             ) : challenges.length === 0 ? (
-              <div className="bg-white border border-[#E4DDD1] rounded-xl p-12 text-center">
-                <AlertCircle className="w-8 h-8 text-[#C98A2C] mx-auto mb-3" />
-                <p className="text-sm font-bold text-[#4A433B]">No challenge reports yet.</p>
-                <p className="text-xs text-[#8A7F72] mt-1">Reports submitted via the Citizen Portal appear here in real-time.</p>
-              </div>
+              <PortalEmptyState
+                title="No challenge reports yet"
+                description="Reports submitted via the Citizen Portal appear here in real-time."
+              />
             ) : (
               <div className="space-y-3">
                 {challenges.map(ch => {
@@ -1080,7 +1084,10 @@ export const GovPortal: React.FC = () => {
                 <p className="text-sm font-bold text-[#201C18]">Verified Impact Records</p>
               </div>
               {wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').length === 0 ? (
-                <p className="text-xs text-[#8A7F72]">No challenges have reached 'Resolved' or 'Closed' yet. Approve deployments in the Deployment Approval tab to record impact.</p>
+                <PortalEmptyState
+                  title="No impact records yet"
+                  description="Approve deployments in the Deployment Approval tab to record impact."
+                />
               ) : (
                 <div className="space-y-3">
                   {wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').map(c => {

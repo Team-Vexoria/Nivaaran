@@ -4,10 +4,109 @@ import {
   AlertTriangle, FileText, Building
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
+import { tr } from '../../i18n/translationEngine';
 import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
 import { getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
+import { PortalLoadingState, PortalEmptyState } from '../../components/PortalUIStates';
 
 type PRITab = 'overview' | 'challenges' | 'coordination';
+
+// ─── Coordination Action Modal ────────────────────────────────────────────────
+interface ActionModalProps {
+  type: 'escalate' | 'field_visit' | 'update';
+  onClose: () => void;
+  challenges: ChallengeDoc[];
+}
+
+const CoordinationActionModal: React.FC<ActionModalProps> = ({ type, onClose, challenges }) => {
+  const [selectedChallenge, setSelectedChallenge] = useState<string>('');
+  const [note, setNote] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    // Simulate API call
+    setTimeout(() => {
+      setIsSubmitting(false);
+      onClose();
+    }, 800);
+  };
+
+  const titles = {
+    escalate: 'Escalate to District Collector',
+    field_visit: 'Request HEI Field Visit',
+    update: 'Send Status Update',
+  };
+
+  const descriptions = {
+    escalate: 'Escalate a critical challenge to the district administration for immediate attention.',
+    field_visit: 'Request the assigned University/HEI team to conduct a ground inspection.',
+    update: 'Broadcast a status update to all stakeholders involved in a challenge.',
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div className="p-5 border-b border-[#E4DDD1]">
+          <h3 className="text-lg font-black text-[#201C18]">{titles[type]}</h3>
+          <p className="text-xs text-[#6A6155] mt-1">{descriptions[type]}</p>
+        </div>
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#4A433B]">Select Challenge</label>
+            <select
+              required
+              value={selectedChallenge}
+              onChange={e => setSelectedChallenge(e.target.value)}
+              className="w-full text-sm border border-[#E4DDD1] rounded-lg px-3 py-2 bg-[#FAF8F4] focus:outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED]"
+            >
+              <option value="">-- Select a challenge --</option>
+              {challenges.map(c => (
+                <option key={c.id || c.reportId} value={c.id || c.reportId}>
+                  {c.title} ({getPublicStatusLabel(c.status)})
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#4A433B]">
+              {type === 'escalate' ? 'Urgency Note' : type === 'field_visit' ? 'Preferred Dates / Context' : 'Update Message'}
+            </label>
+            <textarea
+              required
+              rows={3}
+              value={note}
+              onChange={e => setNote(e.target.value)}
+              placeholder="Enter details here..."
+              className="w-full text-sm border border-[#E4DDD1] rounded-lg px-3 py-2 bg-[#FAF8F4] focus:outline-none focus:border-[#7C3AED] focus:ring-1 focus:ring-[#7C3AED] resize-none"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-bold text-[#6A6155] hover:bg-[#FAF8F4] rounded-lg transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="px-4 py-2 text-sm font-bold text-white bg-[#7C3AED] hover:bg-[#6D28D9] rounded-lg transition-colors disabled:opacity-70 flex items-center justify-center min-w-[100px] cursor-pointer"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+// ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * PRI (Panchayat Raj Institution) Portal
@@ -19,11 +118,24 @@ type PRITab = 'overview' | 'challenges' | 'coordination';
  */
 export const PRIPortal: React.FC = () => {
   const { currentUser, logout } = useAuth();
+  const { currentLang, languages, setLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState<PRITab>('overview');
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionModal, setActionModal] = useState<{ type: 'escalate' | 'field_visit' | 'update' } | null>(null);
+
+  // Mock activity log
+  const [activities] = useState([
+    { id: 1, action: 'Escalated to DC', challenge: 'Water pipeline burst in Ward 4', date: '2 hours ago' },
+    { id: 2, action: 'Field Visit Requested', challenge: 'Soil erosion near primary school', date: 'Yesterday' },
+    { id: 3, action: 'SHG Mobilized', challenge: 'Waste management awareness drive', date: '3 days ago' },
+  ]);
 
   useEffect(() => {
-    const unsub = subscribeToChallenges(setChallenges);
+    const unsub = subscribeToChallenges((data) => {
+      setChallenges(data);
+      setLoading(false);
+    });
     return () => unsub();
   }, []);
 
@@ -54,17 +166,26 @@ export const PRIPortal: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-base font-black tracking-tight">NIVAARAN</span>
+                <span className="text-base font-black tracking-tight">{tr('NIVAARAN', currentLang)}</span>
                 <span className="text-[10px] font-extrabold bg-white/15 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                  PRI Portal
+                  {tr('PRI Portal', currentLang)}
                 </span>
               </div>
               <span className="text-[10px] text-white/60 font-semibold block">
-                Panchayat Raj Institution · {district} District
+                {tr('Panchayat Raj Institution', currentLang)} · {district} {tr('District', currentLang)}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <select
+              value={currentLang}
+              onChange={(e) => setLanguage(e.target.value as any)}
+              className="bg-white/10 text-white text-[11px] px-2 py-1 rounded-lg border-none focus:ring-0 cursor-pointer"
+            >
+              {languages.map(lang => (
+                <option key={lang.code} value={lang.code}>{lang.name}</option>
+              ))}
+            </select>
             <span className="hidden sm:inline text-[11px] bg-white/10 px-3 py-1 rounded-full text-white/70 font-semibold">
               {officialName}
             </span>
@@ -80,9 +201,9 @@ export const PRIPortal: React.FC = () => {
 
         <div className="max-w-7xl mx-auto mt-2.5 flex items-center gap-1 border-t border-white/10 pt-2">
           {([
-            { id: 'overview', label: 'Panchayat Overview', icon: Landmark },
-            { id: 'challenges', label: 'Local Challenges', icon: AlertTriangle },
-            { id: 'coordination', label: 'Coordination', icon: Users },
+            { id: 'overview', label: tr('Panchayat Overview', currentLang), icon: Landmark },
+            { id: 'challenges', label: tr('Local Challenges', currentLang), icon: AlertTriangle },
+            { id: 'coordination', label: tr('Coordination', currentLang), icon: Users },
           ] as const).map(tab => (
             <button
               key={tab.id}
@@ -102,6 +223,10 @@ export const PRIPortal: React.FC = () => {
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
 
+        {loading ? (
+          <PortalLoadingState />
+        ) : (
+          <>
         {activeTab === 'overview' && (
           <>
             <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs">
@@ -190,7 +315,12 @@ export const PRIPortal: React.FC = () => {
                     })}
                     {challenges.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="px-4 py-12 text-center text-[#8A7F72] text-sm">No challenges yet.</td>
+                        <td colSpan={5} className="p-0">
+                          <PortalEmptyState
+                            title="No challenges yet"
+                            description="Citizen-reported challenges for this panchayat will appear here once filed."
+                          />
+                        </td>
                       </tr>
                     )}
                   </tbody>
@@ -201,7 +331,7 @@ export const PRIPortal: React.FC = () => {
         )}
 
         {activeTab === 'coordination' && (
-          <>
+          <div className="space-y-6">
             <div>
               <h2 className="text-lg font-black text-[#201C18]">Inter-Agency Coordination</h2>
               <p className="text-xs text-[#6A6155]">
@@ -211,29 +341,88 @@ export const PRIPortal: React.FC = () => {
 
             <div className="grid sm:grid-cols-2 gap-4">
               {[
-                { title: 'District Collector Office', desc: 'Escalate high-priority challenges and request emergency response coordination.', status: 'Active', color: 'bg-emerald-100 text-emerald-800' },
-                { title: 'University Liaison', desc: 'Connect with assigned HEI teams for field visits and pilot coordination.', status: 'Available', color: 'bg-blue-100 text-blue-800' },
-                { title: 'Block Development Officer', desc: 'Coordinate infrastructure challenges requiring block-level resources.', status: 'Active', color: 'bg-emerald-100 text-emerald-800' },
-                { title: 'SHG Network', desc: 'Engage self-help groups for community mobilization and solution testing.', status: 'Available', color: 'bg-blue-100 text-blue-800' },
+                { 
+                  title: 'District Collector Office', 
+                  desc: 'Escalate high-priority challenges and request emergency response coordination.', 
+                  status: 'Active', 
+                  color: 'bg-emerald-100 text-emerald-800',
+                  action: 'Escalate Challenge',
+                  actionType: 'escalate' as const
+                },
+                { 
+                  title: 'University Liaison', 
+                  desc: 'Connect with assigned HEI teams for field visits and pilot coordination.', 
+                  status: 'Available', 
+                  color: 'bg-blue-100 text-blue-800',
+                  action: 'Request Field Visit',
+                  actionType: 'field_visit' as const
+                },
+                { 
+                  title: 'Block Development Officer', 
+                  desc: 'Coordinate infrastructure challenges requiring block-level resources.', 
+                  status: 'Active', 
+                  color: 'bg-emerald-100 text-emerald-800',
+                  action: 'Send Update',
+                  actionType: 'update' as const
+                },
+                { 
+                  title: 'SHG Network', 
+                  desc: 'Engage self-help groups for community mobilization and solution testing.', 
+                  status: 'Available', 
+                  color: 'bg-blue-100 text-blue-800',
+                  action: 'Mobilize SHG',
+                  actionType: 'update' as const
+                },
               ].map((item, i) => (
-                <div key={i} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-3 hover:border-[#7C3AED] transition-colors cursor-pointer">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-extrabold text-[#201C18]">{item.title}</h3>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.color}`}>{item.status}</span>
+                <div key={i} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#7C3AED] transition-colors">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-extrabold text-[#201C18]">{item.title}</h3>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${item.color}`}>{item.status}</span>
+                    </div>
+                    <p className="text-xs text-[#6A6155] leading-relaxed">{item.desc}</p>
                   </div>
-                  <p className="text-xs text-[#6A6155] leading-relaxed">{item.desc}</p>
+                  <div className="pt-3 border-t border-[#E4DDD1]">
+                    <button 
+                      onClick={() => setActionModal({ type: item.actionType })}
+                      className="text-xs font-bold text-[#7C3AED] hover:text-[#5B21B6] transition-colors cursor-pointer"
+                    >
+                      {item.action} &rarr;
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
 
-            <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-2xl p-5 text-center space-y-2">
-              <p className="text-xs text-[#8A7F72]">
-                Full coordination messaging and scheduling features are available in the production build.
-              </p>
+            {/* Activity Log */}
+            <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4">
+              <h3 className="text-sm font-extrabold text-[#201C18]">Recent Coordination Activity</h3>
+              <div className="space-y-3">
+                {activities.map(activity => (
+                  <div key={activity.id} className="flex items-start justify-between gap-4 p-3 bg-[#FAF8F4] rounded-xl border border-[#E4DDD1]">
+                    <div>
+                      <span className="text-xs font-bold text-[#201C18] block">{activity.action}</span>
+                      <span className="text-[11px] text-[#6A6155] block mt-0.5">Re: {activity.challenge}</span>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#8A7F72] whitespace-nowrap">{activity.date}</span>
+                  </div>
+                ))}
+              </div>
             </div>
+          </div>
+        )}
           </>
         )}
       </main>
+
+      {/* Action Modal */}
+      {actionModal && (
+        <CoordinationActionModal 
+          type={actionModal.type} 
+          challenges={challenges}
+          onClose={() => setActionModal(null)} 
+        />
+      )}
     </div>
   );
 };

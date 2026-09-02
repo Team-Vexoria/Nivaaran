@@ -94,11 +94,16 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
   const currentStage = assignedChallenge ? getStageForStatus(assignedChallenge.status)?.stageNumber || 0 : 0;
 
   // Form field state
-  const [githubUrl, setGithubUrl]           = useState('https://github.com/nivaaran-hei/iot-flood-telemetry-node');
-  const [telemetryLogs, setTelemetryLogs]   = useState('Sensor Node #04: Water depth 1.4m. Flow velocity 2.1 m/s. Geotag verified.');
-  const [pilotLocation, setPilotLocation]   = useState('Pilot village / ward');
+  const [githubUrl, setGithubUrl]           = useState('');
+  const [telemetryLogs, setTelemetryLogs]   = useState('');
+  const [pilotLocation, setPilotLocation]   = useState('');
   const [pilotObservations, setPilotObservations] = useState('');
   const [auditSummary, setAuditSummary]     = useState('');
+  
+  // File upload state
+  const [protoFiles, setProtoFiles] = useState<File[]>([]);
+  const [pilotFiles, setPilotFiles] = useState<File[]>([]);
+  const [auditFiles, setAuditFiles] = useState<File[]>([]);
 
   // Submission success tracking (per form)
   const [protoSubmitted, setProtoSubmitted] = useState(!!assignedProject?.prototypeUpdate);
@@ -137,58 +142,71 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
     return () => window.removeEventListener(STORE_EVENT, handler);
   }, []);
 
-  const handleLogProgress = (e: React.FormEvent) => {
+  const handleLogProgress = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignedProject?.id) return;
+    
+    // Convert files to object URLs for demo (or real upload if Firebase is configured)
+    const evidenceUrls = protoFiles.map(f => URL.createObjectURL(f));
+    
     const saved = submitPrototypeUpdate(assignedProject.id, {
       summary: telemetryLogs,
       repositoryUrl: githubUrl,
       telemetryLog: telemetryLogs,
-      evidenceUrls: [],
+      evidenceUrls: evidenceUrls,
       submittedBy: currentStudent.name,
     });
     if (saved) {
       setProtoSubmitted(true);
       setIsLoggedSuccess(true);
       setPhase3Error('');
+      setProtoFiles([]);
       setTimeout(() => setIsLoggedSuccess(false), 3000);
     } else {
       setPhase3Error('Prototype updates are available after the project reaches proposal review.');
     }
   };
 
-  const handlePilotReport = (e: React.FormEvent) => {
+  const handlePilotReport = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignedProject?.id || !pilotObservations.trim()) return;
+    
+    const evidenceUrls = pilotFiles.map(f => URL.createObjectURL(f));
+    
     const saved = submitPilotReport(assignedProject.id, {
       location: pilotLocation,
       observations: pilotObservations.trim(),
-      evidenceUrls: [],
+      evidenceUrls: evidenceUrls,
       submittedBy: currentStudent.name,
     });
     if (saved) {
       setPilotSubmitted(true);
       setPhase3Error('');
       setPilotObservations('');
+      setPilotFiles([]);
     } else {
       setPhase3Error('Pilot reports can be submitted once prototype work is active.');
     }
   };
 
-  const handleOutcomeAudit = (e: React.FormEvent) => {
+  const handleOutcomeAudit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!assignedProject?.id || !auditSummary.trim()) return;
+    
+    const evidenceUrls = auditFiles.map(f => URL.createObjectURL(f));
+    
     const saved = submitOutcomeAudit(assignedProject.id, {
       summary: auditSummary.trim(),
       verifiedBy: currentStudent.name,
       metrics: {},
-      evidenceUrls: [],
+      evidenceUrls: evidenceUrls,
       verifiedAt: new Date().toISOString(),
     });
     if (saved) {
       setAuditSubmitted(true);
       setPhase3Error('');
       setAuditSummary('');
+      setAuditFiles([]);
     } else {
       setPhase3Error('Outcome audits can be submitted after a pilot report is recorded.');
     }
@@ -362,7 +380,19 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
                 rows={2}
                 value={telemetryLogs}
                 onChange={(e) => setTelemetryLogs(e.target.value)}
+                placeholder="e.g. Sensor Node #04: Water depth 1.4m. Flow velocity 2.1 m/s. Geotag verified."
                 className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl font-mono text-slate-900"
+              />
+            </div>
+            
+            <div className="space-y-1">
+              <label className="font-bold text-slate-800 block">Upload Evidence (Photos/Videos):</label>
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={(e) => setProtoFiles(Array.from(e.target.files || []))}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
               />
             </div>
 
@@ -440,6 +470,17 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
               className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl"
               placeholder="Observed performance, community feedback, and test results"
             />
+            
+            <div className="space-y-1">
+              <label className="font-bold text-slate-800 block">Upload Field Photos/Videos:</label>
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={(e) => setPilotFiles(Array.from(e.target.files || []))}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+              />
+            </div>
 
             {pilotSubmitted && (
               <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-emerald-900 font-bold flex items-center gap-2">
@@ -505,6 +546,17 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
               className="w-full p-3 bg-slate-50 border border-slate-300 rounded-xl"
               placeholder="Summarize pilot outcomes, limitations, and validation evidence"
             />
+            
+            <div className="space-y-1">
+              <label className="font-bold text-slate-800 block">Upload Audit Reports / Data (PDF/Images):</label>
+              <input
+                type="file"
+                multiple
+                accept="image/*,application/pdf"
+                onChange={(e) => setAuditFiles(Array.from(e.target.files || []))}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+              />
+            </div>
 
             {auditSubmitted && (
               <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-amber-900 font-bold flex items-center gap-2">

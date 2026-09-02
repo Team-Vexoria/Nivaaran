@@ -1,5 +1,5 @@
 import { 
-  collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, where, serverTimestamp
+  collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp, getDoc
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
@@ -127,6 +127,7 @@ export interface FeedPostDoc {
   upvotes: number;
   category: string;
   status: string;
+  comments?: FeedCommentDoc[];
   createdAt?: any;
 }
 
@@ -159,24 +160,52 @@ export const submitFeedPostToFirestore = async (post: Omit<FeedPostDoc, 'id'>) =
 };
 
 export const subscribeToFeedPosts = (callback: (posts: FeedPostDoc[]) => void) => {
+  let unsubscribeFirestore = () => {};
+  
+  const notifyLocal = () => {
+    try {
+      callback(JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]'));
+    } catch {
+      callback([]);
+    }
+  };
+
   try {
     const q = query(collection(db, 'community_posts'), orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snapshot) => {
-      const docs: FeedPostDoc[] = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      })) as FeedPostDoc[];
-      callback(docs);
-    }, (error) => {
-      console.warn('[Firestore] Using local storage listener for feed posts:', error);
-      const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
-      callback(existing);
+    unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+      const posts: FeedPostDoc[] = [];
+      snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() } as FeedPostDoc));
+      
+      // Merge with local storage for offline support
+      const local = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
+      const localMap = new Map(local.map((p: any) => [p.id, p]));
+      posts.forEach(p => localMap.set(p.id, p));
+      
+      const merged = Array.from(localMap.values()).sort((a: any, b: any) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return timeB - timeA;
+      });
+      callback(merged);
+    }, (err) => {
+      console.warn('[Firestore] Feed subscription failed, using local storage:', err);
+      notifyLocal();
     });
   } catch (error) {
-    const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
-    callback(existing);
-    return () => {};
+    console.warn('[Firestore] Initialization failed, using local storage:', error);
+    notifyLocal();
   }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('nivaaran-storage-changed', notifyLocal);
+  }
+
+  return () => {
+    unsubscribeFirestore();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('nivaaran-storage-changed', notifyLocal);
+    }
+  };
 };
 
 export const upvotePostInFirestore = async (postId: string, currentUpvotes: number) => {
@@ -184,13 +213,47 @@ export const upvotePostInFirestore = async (postId: string, currentUpvotes: numb
     if (!postId.startsWith('LOCAL-')) {
       const postRef = doc(db, 'community_posts', postId);
       await updateDoc(postRef, { upvotes: currentUpvotes + 1 });
-    } else {
-      const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
-      const updated = existing.map((p: any) => p.id === postId ? { ...p, upvotes: p.upvotes + 1 } : p);
-      localStorage.setItem('nivaaran_feed_posts', JSON.stringify(updated));
     }
   } catch (error) {
     console.warn('[Firestore] Local upvote fallback:', error);
+  }
+  
+  // Local storage fallback
+  const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
+  const updated = existing.map((p: any) => p.id === postId ? { ...p, upvotes: p.upvotes + 1 } : p);
+  localStorage.setItem('nivaaran_feed_posts', JSON.stringify(updated));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('nivaaran-storage-changed'));
+  }
+};
+
+export const addCommentToFeedPost = async (postId: string, comment: Omit<FeedCommentDoc, 'id'>) => {
+  const newComment = { ...comment, id: `C-${Date.now()}` };
+  try {
+    if (!postId.startsWith('LOCAL-')) {
+      const postRef = doc(db, 'community_posts', postId);
+      const postSnap = await getDoc(postRef);
+      if (postSnap.exists()) {
+        const postData = postSnap.data() as FeedPostDoc;
+        const existingComments = postData.comments || [];
+        await updateDoc(postRef, { comments: [...existingComments, newComment] });
+      }
+    }
+  } catch (error) {
+    console.warn('[Firestore] Local comment fallback:', error);
+  }
+  
+  // Local storage fallback
+  const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
+  const updated = existing.map((p: any) => {
+    if (p.id === postId) {
+      return { ...p, comments: [...(p.comments || []), newComment] };
+    }
+    return p;
+  });
+  localStorage.setItem('nivaaran_feed_posts', JSON.stringify(updated));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('nivaaran-storage-changed'));
   }
 };
 
@@ -231,51 +294,63 @@ export const sendChatMessageToFirestore = async (msg: Omit<ChatMessageDoc, 'id'>
 };
 
 export const subscribeToDistrictChat = (district: string, callback: (messages: ChatMessageDoc[]) => void) => {
+  let unsubscribeFirestore = () => {};
+  const key = `nivaaran_chat_${district}`;
+
   const loadLocalMessages = (): ChatMessageDoc[] => {
     try {
-      const key = `nivaaran_chat_${district}`;
-      const saved = JSON.parse(localStorage.getItem(key) || '[]');
-      return saved;
+      return JSON.parse(localStorage.getItem(key) || '[]');
     } catch {
       return [];
     }
   };
 
-  // Immediate callback with local storage messages
-  callback(loadLocalMessages());
-
   try {
-    const q = query(
-      collection(db, 'district_chats'),
-      where('district', '==', district)
-    );
-    return onSnapshot(q, (snapshot) => {
-      if (snapshot.docs.length > 0) {
-        const firestoreDocs: ChatMessageDoc[] = snapshot.docs.map(docSnap => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        })) as ChatMessageDoc[];
-        
-        // Merge firestore docs with local storage docs without duplicates
-        const localDocs = loadLocalMessages();
-        const combined = [...localDocs];
-        firestoreDocs.forEach(fDoc => {
-          if (!combined.some(c => c.id === fDoc.id || c.text === fDoc.text)) {
-            combined.push(fDoc);
-          }
-        });
-        callback(combined);
-      } else {
-        callback(loadLocalMessages());
-      }
-    }, (error) => {
-      console.warn('[Firestore] Using local storage listener for chat:', error);
+    // Wait for the firebase query to return something
+    // Because we use firestore we do an actual query for chat
+    // Ensure you fetch district specific chats
+    const q = query(collection(db, 'district_chats'), orderBy('createdAt', 'asc'));
+    unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+      const msgs: ChatMessageDoc[] = [];
+      snapshot.forEach(doc => {
+        const data = doc.data() as ChatMessageDoc;
+        if (data.district === district) {
+          msgs.push({ id: doc.id, ...data });
+        }
+      });
+      
+      const local = loadLocalMessages();
+      const localMap = new Map(local.map((m: any) => [m.id, m]));
+      msgs.forEach(m => localMap.set(m.id, m));
+      
+      callback(Array.from(localMap.values()).sort((a: any, b: any) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return timeA - timeB;
+      }));
+    }, (err) => {
+      console.warn('[Firestore] Chat subscription failed:', err);
       callback(loadLocalMessages());
     });
-  } catch (error) {
+  } catch (err) {
+    console.warn('[Firestore] Chat init failed:', err);
     callback(loadLocalMessages());
-    return () => {};
   }
+
+  const handleStorageChange = () => {
+    callback(loadLocalMessages());
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('nivaaran-storage-changed', handleStorageChange);
+  }
+
+  return () => {
+    unsubscribeFirestore();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('nivaaran-storage-changed', handleStorageChange);
+    }
+  };
 };
 
 // 4. University Projects & Multidisciplinary Teams Persistence
