@@ -185,6 +185,9 @@ export interface OutcomeAudit {
   metrics: Record<string, string | number>;
   evidenceUrls: string[];
   verifiedAt: string;
+  auditNotes?: string;
+  communityFeedback?: string;
+  isSuccessful?: boolean;
 }
 
 // ── Project ───────────────────────────────────────────────────────────────────

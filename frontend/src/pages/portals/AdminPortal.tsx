@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
-import { LIFECYCLE_STAGES, getStageForStatus } from '../../services/workflowLifecycle';
+import { LIFECYCLE_STAGES, getStageForStatus, CHALLENGE_STATUS_OPTIONS, STATUS_TO_STAGE_MAP } from '../../services/workflowLifecycle';
 import { Challenge } from '../../services/workflowTypes';
 import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
 
@@ -549,8 +549,8 @@ export const AdminPortal: React.FC = () => {
                     className="flex-1 text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white"
                     defaultValue={selectedChallenge.status}
                   >
-                    {LIFECYCLE_STAGES.map(s => (
-                      <option key={s.status} value={s.status}>{s.stageNumber}: {s.displayName}</option>
+                    {CHALLENGE_STATUS_OPTIONS.map(status => (
+                      <option key={status} value={status}>{STATUS_TO_STAGE_MAP[status]}: {status}</option>
                     ))}
                   </select>
                   <button
@@ -604,10 +604,15 @@ export const AdminPortal: React.FC = () => {
                         priorityScore: parseInt(p.value, 10) || 0,
                         riskLevel: r.value as any
                       });
-                      workflowStore.addTimelineEvent(selectedChallenge.id, {
+                      workflowStore.addTimelineEvent({
+                        id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                        entityType: 'challenge',
+                        entityId: selectedChallenge.id,
                         action: 'Admin Override',
                         actor: currentUser?.uid || 'admin',
-                        description: `Super Admin overridden AI Priority to ${p.value} and Risk to ${r.value}`
+                        actorRole: 'Platform Super Admin',
+                        description: `Super Admin overridden AI Priority to ${p.value} and Risk to ${r.value}`,
+                        timestamp: new Date().toISOString(),
                       });
                       setSelectedChallenge(null);
                     }

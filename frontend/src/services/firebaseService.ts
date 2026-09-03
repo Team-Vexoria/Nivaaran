@@ -133,10 +133,11 @@ export interface FeedPostDoc {
 
 export interface FeedCommentDoc {
   id?: string;
-  postId: string;
+  postId?: string;
   author: string;
   role: 'Citizen' | 'Government Admin' | 'University Student';
   text: string;
+  timestamp?: string;
   isVerifiedGovt?: boolean;
   beforeImg?: string;
   afterImg?: string;
@@ -186,7 +187,7 @@ export const subscribeToFeedPosts = (callback: (posts: FeedPostDoc[]) => void) =
         const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
         return timeB - timeA;
       });
-      callback(merged);
+      callback(merged as FeedPostDoc[]);
     }, (err) => {
       console.warn('[Firestore] Feed subscription failed, using local storage:', err);
       notifyLocal();

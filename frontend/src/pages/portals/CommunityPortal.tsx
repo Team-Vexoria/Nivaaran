@@ -70,11 +70,13 @@ export const CommunityPortal: React.FC = () => {
   const handleSubmitAudit = () => {
     if (!selectedProjectId) return;
     submitOutcomeAudit(selectedProjectId, {
+      summary: auditNotes || 'Community Outcome Audit',
       verifiedBy: orgName,
       verifiedAt: new Date().toISOString(),
       communityFeedback,
       auditNotes,
-      impactMetrics: { summary: impactMetrics },
+      metrics: { summary: impactMetrics },
+      evidenceUrls: [],
       isSuccessful: true,
     });
     setSelectedProjectId(null);
@@ -513,9 +515,10 @@ export const CommunityPortal: React.FC = () => {
               </div>
             )}
           </section>
-          </>
         )}
-      </main>
-    </div>
-  );
+        </>
+      )}
+    </main>
+  </div>
+);
 };

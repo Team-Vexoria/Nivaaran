@@ -19,6 +19,7 @@ const JHARKHAND_DISTRICTS = [
 
 interface FeedComment {
   id: string;
+  postId?: string;
   author: string;
   role: 'Citizen' | 'Government Admin' | 'University Student';
   text: string;

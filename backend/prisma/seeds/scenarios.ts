@@ -1,0 +1,3 @@
+export const FLOOD_SCENARIO = { title: 'Monsoon Waterlogging — Ranchi Ward Kanke/Harmu', district_code: 'RANCHI', block_code: 'RANCHI_KANKE', type: 'FLOOD', severity: 'MODERATE', description: 'Annual monsoon runoff overwhelms drains; 30–60cm standing water; 2,000+ households; 3 schools disrupted.' };
+export const SCHOOL_SCENARIO = { title: 'School WASH & Solar — Khunti Block (5 schools)', district_code: 'KHOUNTI', block_code: 'KHOUNTI_KANKE', type: 'EDUCATION_INFRASTRUCTURE', severity: 'HIGH', description: '5 government primaries lack functional toilets + reliable electricity; solar ~5kW/roof; attendance drops 12%.' };
+console.log('Canonical scenarios: FLOOD (Ranchi) + SCHOOL (Khunti)');
