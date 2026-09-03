@@ -139,6 +139,9 @@ const evidenceRoutes = express.Router();
 evidenceRoutes.post('/presign', (req,res,next)=>require('./modules/evidence/controller.js').presign(req,res,next));
 evidenceRoutes.post('/confirm', (req,res,next)=>require('./modules/evidence/controller.js').confirm(req,res,next));
 app.use('/api/v1/evidence', evidenceRoutes);
+const analyticsRoutes = express.Router();
+analyticsRoutes.get('/district-heatmap', (req,res,next)=>require('./modules/analytics/controller.js').districtHeatmap(req,res,next));
+app.use('/api/v1/analytics', analyticsRoutes);
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: 'Endpoint not found' } });
 });
