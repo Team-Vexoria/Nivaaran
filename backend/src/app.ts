@@ -74,6 +74,71 @@ app.use('/api/v1/projects', projectRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 
 // 404 catch-all
+// 2.2 REST module routes (wired into app.ts)
+const validationRoutes = express.Router();
+validationRoutes.get('/', (req,res,next)=>require('./modules/validation/controller.js').list(req,res,next));
+validationRoutes.post('/', (req,res,next)=>require('./modules/validation/controller.js').create(req,res,next));
+app.use('/api/v1/validations', validationRoutes);
+
+const universityRoutes = express.Router();
+universityRoutes.get('/', (req,res,next)=>require('./modules/university/controller.js').list(req,res,next));
+universityRoutes.get('/:id', (req,res,next)=>require('./modules/university/controller.js').getById(req,res,next));
+universityRoutes.get('/:id/acceptances', (req,res,next)=>require('./modules/university/controller.js').listAcceptances(req,res,next));
+universityRoutes.post('/:id/accept', (req,res,next)=>require('./modules/university/controller.js').accept(req,res,next));
+universityRoutes.post('/:id/decline', (req,res,next)=>require('./modules/university/controller.js').decline(req,res,next));
+app.use('/api/v1/universities', universityRoutes);
+
+const teamRoutes = express.Router();
+teamRoutes.get('/', (req,res,next)=>require('./modules/team/controller.js').list(req,res,next));
+teamRoutes.post('/', (req,res,next)=>require('./modules/team/controller.js').create(req,res,next));
+teamRoutes.post('/:id/members', (req,res,next)=>require('./modules/team/controller.js').addMember(req,res,next));
+app.use('/api/v1/teams', teamRoutes);
+
+const proposalRoutes = express.Router();
+proposalRoutes.get('/', (req,res,next)=>require('./modules/proposal/controller.js').list(req,res,next));
+proposalRoutes.post('/', (req,res,next)=>require('./modules/proposal/controller.js').submit(req,res,next));
+proposalRoutes.post('/:id/approve', (req,res,next)=>require('./modules/proposal/controller.js').approve(req,res,next));
+proposalRoutes.post('/:id/revision', (req,res,next)=>require('./modules/proposal/controller.js').requestRevision(req,res,next));
+app.use('/api/v1/proposals', proposalRoutes);
+
+const collaborationRoutes = express.Router();
+collaborationRoutes.get('/', (req,res,next)=>require('./modules/collaboration/controller.js').list(req,res,next));
+collaborationRoutes.post('/', (req,res,next)=>require('./modules/collaboration/controller.js').create(req,res,next));
+collaborationRoutes.post('/:id/accept', (req,res,next)=>require('./modules/collaboration/controller.js').accept(req,res,next));
+app.use('/api/v1/collaborations', collaborationRoutes);
+
+const milestoneRoutes = express.Router();
+milestoneRoutes.get('/', (req,res,next)=>require('./modules/milestone/controller.js').list(req,res,next));
+milestoneRoutes.post('/', (req,res,next)=>require('./modules/milestone/controller.js').create(req,res,next));
+milestoneRoutes.post('/:milestoneId', (req,res,next)=>require('./modules/milestone/controller.js').update(req,res,next));
+// Wired under projects/:id/milestones via project route extension — kept here as direct alias
+app.use('/api/v1/milestones', milestoneRoutes);
+
+const prototypeRoutes = express.Router();
+prototypeRoutes.get('/', (req,res,next)=>require('./modules/prototype/controller.js').list(req,res,next));
+prototypeRoutes.post('/', (req,res,next)=>require('./modules/prototype/controller.js').create(req,res,next));
+app.use('/api/v1/prototypes', prototypeRoutes);
+
+const pilotRoutes = express.Router();
+pilotRoutes.get('/', (req,res,next)=>require('./modules/pilot/controller.js').list(req,res,next));
+pilotRoutes.post('/', (req,res,next)=>require('./modules/pilot/controller.js').create(req,res,next));
+app.use('/api/v1/pilots', pilotRoutes);
+
+const deploymentRoutes = express.Router();
+deploymentRoutes.get('/', (req,res,next)=>require('./modules/deployment/controller.js').list(req,res,next));
+deploymentRoutes.post('/:id/approve', (req,res,next)=>require('./modules/deployment/controller.js').approve(req,res,next));
+app.use('/api/v1/deployments', deploymentRoutes);
+
+const impactRoutes = express.Router();
+impactRoutes.get('/', (req,res,next)=>require('./modules/impact/controller.js').list(req,res,next));
+impactRoutes.post('/', (req,res,next)=>require('./modules/impact/controller.js').create(req,res,next));
+impactRoutes.post('/:id/verify', (req,res,next)=>require('./modules/impact/controller.js').verify(req,res,next));
+app.use('/api/v1/impact', impactRoutes);
+
+const evidenceRoutes = express.Router();
+evidenceRoutes.post('/presign', (req,res,next)=>require('./modules/evidence/controller.js').presign(req,res,next));
+evidenceRoutes.post('/confirm', (req,res,next)=>require('./modules/evidence/controller.js').confirm(req,res,next));
+app.use('/api/v1/evidence', evidenceRoutes);
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: 'Endpoint not found' } });
 });
