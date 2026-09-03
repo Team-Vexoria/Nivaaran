@@ -1,3 +1,4 @@
+
 import { PrismaClient, ChallengeStatus } from '@prisma/client';
 import { v4 as uuid } from 'crypto';
 // Node 20 has crypto.randomUUID built-in; this import satisfies older TS targets
@@ -71,7 +72,7 @@ async function main() {
       await tx.user.upsert({
         where: { firebase_uid: u.firebase_uid },
         update: { name: u.name, email: u.email },
-        create: { ...u, is_active: true, roles: { create: u.roles.map((r) => ({ role_name: r })) } },
+        create: { ...u, is_active: true },
       });
       // Attach all listed roles
       for (const roleName of u.roles) {
@@ -84,13 +85,25 @@ async function main() {
     }
 
     for (const c of DEMO_CHALLENGES) {
-      await tx.$executeRawUnsafe(
-        `INSERT INTO "Challenge" (id, title, description, status, district_code, block_code, submitter_id, category, version, source, source_id, submitter_type, visibility, location, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,1,'DEMO',$9,'CITIZEN','PUBLIC',ST_SetSRID(ST_MakePoint(85.3,23.5),4326),NOW(),NOW()) ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description, district_code = EXCLUDED.district_code, block_code = EXCLUDED.block_code;`,
-        c.id, c.title, c.description, c.status, c.district_code, c.block_code, c.submitter_id, c.category, c.id
-      );
+      await tx.challenge.upsert({
+        where: { id: c.id },
+        update: { title: c.title, description: c.description, status: c.status, district_code: c.district_code, block_code: c.block_code },
+        create: {
+          ...c,
+          version: 1,
+          created_by: c.submitter_id,
+          updated_by: c.submitter_id,
+          location: { type: 'Point', coordinates: [85.3, 23.5] },
+          impact: { type: 'Point', coordinates: [85.3, 23.5] },
+          source: 'DEMO',
+          source_id: c.id,
+          visibility: 'PUBLIC',
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      });
     }
-  }
-}
+  });
 
   console.log(`Demo seed: ${DEMO_USERS.length} users, ${DEMO_CHALLENGES.length} challenges`);
 }

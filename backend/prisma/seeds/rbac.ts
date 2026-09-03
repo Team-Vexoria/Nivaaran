@@ -1,23 +1,8 @@
+
 import { PrismaClient, UserRole } from '@prisma/client';
+import { ROLE_CAPABILITIES } from '../../src/core/auth';
 
 const prisma = new PrismaClient();
-
-// Capability registry (mirrors core/auth.ts ROLE_CAPABILITIES)
-const ROLE_CAPABILITIES: Record<string, string[]> = {
-  SUPER_ADMIN: ['*'],
-  GOV_VALIDATOR: ['challenge:validate', 'challenge:reject', 'challenge:requestClarification', 'challenge:understand', 'validation:confirm'],
-  GOV_DEPARTMENT: ['challenge:prioritize', 'challenge:cluster', 'challenge:match', 'matching:accept', 'matching:decline', 'project:prototype', 'project:pilot', 'project:validate', 'deployment:approve', 'impact:verify', 'challenge:close', 'workflow:escalate', 'workflow:resolve'],
-  UNIVERSITY: ['matching:accept', 'matching:decline'],
-  FACULTY: ['proposal:submit', 'proposal:approve', 'proposal:requestRevision'],
-  STUDENT: ['proposal:submit'],
-  INDUSTRY: ['proposal:submit'],
-  CSR: ['proposal:submit'],
-  LAB: ['proposal:submit'],
-  COMMUNITY_NGO: ['challenge:resubmit', 'challenge:comment'],
-  CITIZEN: ['challenge:create', 'challenge:resubmit'],
-  PRI: ['challenge:create', 'challenge:resubmit'],
-  ULB: ['challenge:create', 'challenge:resubmit'],
-};
 
 // ── 1. Roles ──────────────────────────────────────────────
 

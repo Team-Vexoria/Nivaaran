@@ -24,3 +24,12 @@ export async function listTransitions(req: Request, res: Response, next: NextFun
     res.json({ ok: true, data: TRANSITIONS.filter((t:any)=>t.from===req.params.id||t.action===req.query.action) });
   } catch (e) { next(e); }
 }
+export async function getById(req: Request, res: Response, next: NextFunction) {
+  try { res.json({ ok: true, data: await challengeService.getById(req.params.id) }); } catch (e) { next(e); }
+}
+export async function timeline(req: Request, res: Response, next: NextFunction) {
+  try { res.json({ ok: true, data: await challengeService.timeline(req.params.id) }); } catch (e) { next(e); }
+}
+export async function mine(req: Request, res: Response, next: NextFunction) {
+  try { res.json({ ok: true, data: await challengeService.mine(req.auth?.user?.id) }); } catch (e) { next(e); }
+}
