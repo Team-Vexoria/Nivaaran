@@ -796,10 +796,7 @@ Name the gap instead of inventing an API:
   `PRISMA_SERVICE_TOKEN`; there is no `login` flow.
 - **No in-memory contract bindings.** A dependency can't yet be wired to a
   co-located handler without HTTP; use `bootstrapService` with a loopback
-  fake.
-- **RPC over HTTP is the only contract kind.** No gRPC, WebSocket, or
-  streaming contracts.
-
+  fake. 
 For anything else missing, check the examples and design docs in the
 prisma/composer repo (`examples/`, `docs/design/10-domains/`,
 `docs/design/90-decisions/`), then file an issue there rather than guessing.

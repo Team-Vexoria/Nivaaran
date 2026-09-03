@@ -707,16 +707,18 @@ The current frontend uses `workflowStore` (localStorage + `STORE_EVENT` CustomEv
 
 ---
 
-## 26. Architecture Documentation Status
+## 26. Open Decisions to Finalize (in subsequent docs)
 
-| Decision | Document | Status |
-| --- | --- | --- |
-| Exact Prisma schema, columns, indexes, spatial types, migration + seed strategy | `DATABASE_DESIGN.md` | ✅ Complete (34 models, 23 enums, validated against Prisma 5.22) |
-| Exact endpoint list + request/response schemas | `API_CONTRACTS.md` | ✅ Complete (56 endpoints, 24 groups, transition catalogue) |
-| Concrete AI provider, recommendation→decision contract, model versioning | `AI_ARCHITECTURE.md` | ✅ Complete (provider interface, deterministic MVP, BullMQ integration) |
-| Threat model, PII encryption, rate limiting, evidence access control, audit-as-control | `SECURITY_ARCHITECTURE.md` | ✅ Complete (STRIDE-lite, AES-256-GCM PII, tiered rate limits) |
-| Concrete RBAC permission rows, authorize() middleware, capability catalogue | `RBAC_MATRIX.md` | ✅ Complete (40+ capabilities, 12 roles, seed rows, resolver chain) |
-| PostGIS schema, boundary data sources, geocoding, spatial queries, Leaflet contract | `GIS_ARCHITECTURE.md` | ✅ Complete (GiST indexes, 4 spatial query patterns, heatmap contract) |
+These remain deliberately to be resolved in the next documents, not here:
+
+| Decision | Next doc |
+| --- | --- |
+| Exact Prisma schema, columns, indexes, spatial types, migration + seed strategy (expands §10.2 into an executable schema) | `DATABASE_DESIGN.md` |
+| Exact endpoint list + request/response schemas | `API_CONTRACTS.md` |
+| Concrete AI provider (LLM/embedding) and prompt/model contract | `AI_ARCHITECTURE.md` |
+| Threat model, RBAC matrix, rate-limit policy, secrets | `SECURITY_ARCHITECTURE.md` |
+| Concrete RBAC permission rows | `RBAC_MATRIX.md` |
+| Map provider / boundary data source | `GIS_ARCHITECTURE.md` |
 
 ---
 
@@ -737,7 +739,5 @@ The current frontend uses `workflowStore` (localStorage + `STORE_EVENT` CustomEv
 * async jobs with retry/dead-letter
 * security, observability, testing, stage-1 deployment shape
 
-**Companion docs (all complete):**
-`DATABASE_DESIGN.md` → `API_CONTRACTS.md` → `AI_ARCHITECTURE.md` → `SECURITY_ARCHITECTURE.md` → `RBAC_MATRIX.md` → `GIS_ARCHITECTURE.md`.
+**Next:** `DATABASE_DESIGN.md` → `API_CONTRACTS.md` → `AI_ARCHITECTURE.md` → `SECURITY_ARCHITECTURE.md` → `RBAC_MATRIX.md` → `GIS_ARCHITECTURE.md`.
 
-The full architecture documentation series is now complete. All 7 documents (`BACKEND_ARCHITECTURE.md` through `GIS_ARCHITECTURE.md`) are cross-referenced, internally consistent, and ready to serve as the authoritative design specification for implementation.
