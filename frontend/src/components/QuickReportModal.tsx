@@ -244,7 +244,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     });
 
     // ── Also add to the local workflowStore so the citizen portal tracks it ──
-    workflowStore.addChallenge({
+    await workflowStore.addChallenge({
       id: generatedId,
       reportId: generatedId,
       title: title || 'Local Community Issue',

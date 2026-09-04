@@ -22,9 +22,9 @@ export const ClosureTab: React.FC<ClosureTabProps> = ({ officerName, showToast }
   const closable = challenges.filter(c => c.status === 'Resolved');
   const archived = challenges.filter(c => c.status === 'Closed');
 
-  const handleClose = (challenge: Challenge) => {
+  const handleClose = async (challenge: Challenge) => {
     const id = challenge.id || challenge.reportId;
-    const res = workflowStore.transitionChallenge(
+    const res = await workflowStore.transitionChallenge(
       id,
       'Closed',
       officerName,

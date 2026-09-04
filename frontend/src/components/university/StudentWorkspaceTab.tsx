@@ -149,7 +149,7 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
     // Convert files to object URLs for demo (or real upload if Firebase is configured)
     const evidenceUrls = protoFiles.map(f => URL.createObjectURL(f));
     
-    const saved = submitPrototypeUpdate(assignedProject.id, {
+    const saved = await submitPrototypeUpdate(assignedProject.id, {
       summary: telemetryLogs,
       repositoryUrl: githubUrl,
       telemetryLog: telemetryLogs,
@@ -173,7 +173,7 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
     
     const evidenceUrls = pilotFiles.map(f => URL.createObjectURL(f));
     
-    const saved = submitPilotReport(assignedProject.id, {
+    const saved = await submitPilotReport(assignedProject.id, {
       location: pilotLocation,
       observations: pilotObservations.trim(),
       evidenceUrls: evidenceUrls,
@@ -195,7 +195,7 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
     
     const evidenceUrls = auditFiles.map(f => URL.createObjectURL(f));
     
-    const saved = submitOutcomeAudit(assignedProject.id, {
+    const saved = await submitOutcomeAudit(assignedProject.id, {
       summary: auditSummary.trim(),
       verifiedBy: currentStudent.name,
       metrics: {},
@@ -212,14 +212,14 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
     }
   };
 
-  const handleAdvanceStage = (fromStage: number) => {
+  const handleAdvanceStage = async (fromStage: number) => {
     if (!assignedChallenge) return;
     const id = assignedChallenge.id || assignedChallenge.reportId;
     const nextStatus = fromStage === 11 ? 'Pilot Active' : fromStage === 12 ? 'Outcome Audit' : null;
     if (!nextStatus) return;
     setAdvancingStage(fromStage);
     try {
-      workflowStore.transitionChallenge(
+      await workflowStore.transitionChallenge(
         id,
         nextStatus,
         currentStudent.name,

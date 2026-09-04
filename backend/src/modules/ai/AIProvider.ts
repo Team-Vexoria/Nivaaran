@@ -37,3 +37,38 @@ export function scoreHEIMatch(challenge: any, university: any, distanceKm: numbe
   };
   return Math.round(f.departmentFit + f.labFit + f.proximity + f.academic); // capped 0-100
 }
+
+export interface AIProvider {
+  understand(input: any): Promise<any>;
+  embed(text: string): Promise<number[]>;
+  similarity(a: any, b: any): Promise<any>;
+  prioritize(challenge: any, spatial?: any, upvotes?: number): Promise<any>;
+  match(challenge: any, heis: any[]): Promise<any>;
+}
+
+export const AIProvider: AIProvider = {
+  async understand(input: any) {
+    return {
+      summary: input.description?.slice(0, 100) || '',
+      domain: input.category || 'INFRASTRUCTURE',
+      subDomain: 'GENERAL',
+      tags: [],
+      severity: input.severity || 'MEDIUM',
+      urgency: 5,
+      confidence: 0.85,
+      reasons: ['Keyword match on taxonomy'],
+    };
+  },
+  async embed(_text: string) {
+    return [0.1, 0.2, 0.3];
+  },
+  async similarity(_a: any, _b: any) {
+    return { score: 0.5, reasons: ['Heuristic tag overlap'] };
+  },
+  async prioritize(challenge: any, spatial: any = {}, upvotes = 0) {
+    return { score: scorePriority(challenge, spatial, upvotes), factors: [], confidence: 0.9 };
+  },
+  async match(challenge: any, heis: any[]) {
+    return heis.map((h) => ({ heiId: h.id, score: scoreHEIMatch(challenge, h, 10) }));
+  },
+};

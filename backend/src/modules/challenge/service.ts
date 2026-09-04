@@ -1,5 +1,5 @@
 import { prisma } from '../../core/prisma.js';
-import { ChallengeStatus } from '@prisma/client';
+import { ChallengeStatus, UserRole } from '@prisma/client';
 
 export const challengeService = {
   async list() {
@@ -28,6 +28,10 @@ export const challengeService = {
     });
   },
 
+  async getTimeline(id: string) {
+    return this.timeline(id);
+  },
+
   async mine(submitterId?: string) {
     if (!submitterId) return [];
     return prisma.challenge.findMany({
@@ -38,22 +42,32 @@ export const challengeService = {
 
   async create(input: any) {
     const id = input.id || crypto.randomUUID();
-    return prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(
-        `INSERT INTO "Challenge" (id, title, description, status, district_code, block_code, submitter_id, category, version, source, source_id, submitter_type, visibility, location, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,1,'API',$1,'CITIZEN','PUBLIC',ST_SetSRID(ST_MakePoint($9,$10),4326),NOW(),NOW()) ON CONFLICT (id) DO NOTHING`,
-        id, input.title, input.description, input.status || ChallengeStatus.SUBMITTED, input.district_code || 'RANCHI', input.block_code || null, input.submitter_id, input.category || 'GENERAL', input.lon || 85.3, input.lat || 23.5
-      );
-      await tx.outboxEvent.create({
-        data: {
-          event_type: 'challenge:created',
-          aggregate_type: 'challenge',
-          aggregate_id: id,
-          payload: { id, title: input.title },
-          created_at: new Date(),
-        },
-      });
-      return { id, ...input };
+    const data = {
+      id,
+      title: input.title,
+      description: input.description || '',
+      status: input.status || ChallengeStatus.SUBMITTED,
+      district_code: input.district_code || input.district || 'RANCHI',
+      block_code: input.block_code || null,
+      submitter_id: input.submitter_id || 'demo-citizen',
+      category: input.category || 'GENERAL',
+      sub_category: input.sub_category || null,
+      version: 1,
+      submitter_type: (input.submitter_type as UserRole) || UserRole.CITIZEN,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+    const challenge = await prisma.challenge.create({ data });
+    await prisma.outboxEvent.create({
+      data: {
+        event_type: 'challenge:created',
+        aggregate_type: 'challenge',
+        aggregate_id: id,
+        payload: { id, title: input.title },
+        created_at: new Date(),
+      },
     });
+    return { ...challenge, ...input };
   },
 
   async transition(id: string, action: string, auth: any, payload?: any, ifMatchVersion?: number) {

@@ -99,14 +99,14 @@ export const IndustryPortal: React.FC = () => {
 
   const partnerName = currentUser?.displayName || 'Industry Partner';
 
-  const handleOffer = () => {
+  const handleOffer = async () => {
     if (!selectedProject?.id) return;
     if (message.trim().length < 20) {
       setModalError('Please provide a detailed offer message (at least 20 characters).');
       return;
     }
     setModalError('');
-    const saved = submitCollaborationOffer(selectedProject.id, {
+    const saved = await submitCollaborationOffer(selectedProject.id, {
       partnerName,
       partnerType,
       supportType,
@@ -121,9 +121,9 @@ export const IndustryPortal: React.FC = () => {
     }
   };
 
-  const handleRequestDetails = (project: Phase3Project) => {
+  const handleRequestDetails = async (project: Phase3Project) => {
     if (!project.id) return;
-    const requested = requestCollaborationDetails(project.id, partnerName);
+    const requested = await requestCollaborationDetails(project.id, partnerName);
     setNotice(requested
       ? { type: 'success', text: `Technical details requested from ${project.universityName}.` }
       : { type: 'error', text: 'The request could not be recorded. Please refresh and try again.' });

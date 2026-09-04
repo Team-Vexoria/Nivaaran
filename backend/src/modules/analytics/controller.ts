@@ -1,12 +1,37 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../core/prisma.js';
+import { DISTRICTS } from '../../constants/regions.js';
+
 export async function districtHeatmap(req: Request, res: Response, next: NextFunction) {
   try {
-    // Pre-aggregated server-side heatmap per district (challenge count + severity + priority score aggregation)
-    const data = await prisma.$queryRaw`
-      SELECT c.district_code, COUNT(*) as challenge_count, AVG(c.priority_score) as avg_priority
-      FROM "Challenge" c WHERE c.deleted_at IS NULL GROUP BY c.district_code ORDER BY challenge_count DESC LIMIT 24;
-    `;
-    res.json({ ok: true, data, endpoint: '/api/v1/analytics/district-heatmap', aggregated: true, source: 'Postgres $queryRaw' });
-  } catch (e) { next(e); }
+    const groups = await prisma.challenge.groupBy({
+      by: ['district_code'],
+      where: { deleted_at: null },
+      _count: { id: true },
+      _avg: { priority_score: true },
+    });
+
+    const districts = DISTRICTS.map((d) => {
+      const match = groups.find((g) => g.district_code === d.code);
+      const total = match ? match._count.id : 0;
+      return {
+        districtCode: d.code,
+        districtName: d.name,
+        totalChallenges: total,
+        activeChallenges: total,
+        avgPriorityScore: match?._avg.priority_score ? Number(match._avg.priority_score) : null,
+      };
+    });
+
+    res.json({
+      ok: true,
+      data: {
+        districts,
+        totalCount: districts.reduce((acc, d) => acc + d.totalChallenges, 0),
+      },
+    });
+  } catch (e) {
+    next(e);
+  }
 }
+

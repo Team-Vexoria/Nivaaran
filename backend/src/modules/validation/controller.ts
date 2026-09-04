@@ -9,7 +9,15 @@ export async function list(req: Request, res: Response, next: NextFunction) {
 }
 export async function create(req: Request, res: Response, next: NextFunction) {
   try {
-    const v = await prisma.validation.create({ data: { challenge_id: req.body.challenge_id, validator_id: req.auth?.user?.id || 'system', decision: req.body.decision, reason: req.body.reason, decided_at: new Date() } });
+    const v = await prisma.validation.create({
+      data: {
+        challenge_id: req.body.challenge_id,
+        reviewer_id: req.auth?.user?.id || 'system',
+        decision: req.body.decision,
+        reason: req.body.reason,
+        decided_at: new Date(),
+      },
+    });
     res.json({ ok: true, data: v });
   } catch (e) { next(e); }
 }

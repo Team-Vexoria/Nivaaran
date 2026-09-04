@@ -20,10 +20,10 @@ export const DeploymentApprovalTab: React.FC<DeploymentApprovalTabProps> = ({ of
   const candidates = challenges.filter(c => c.status === 'Outcome Audit');
   const approved = challenges.filter(c => c.status === 'Resolved' || c.status === 'Closed');
 
-  const handleApprove = (challenge: Challenge) => {
+  const handleApprove = async (challenge: Challenge) => {
     const id = challenge.id || challenge.reportId;
     const proj = workflowStore.getProjects().find(p => p.challengeId === id || p.challengeId === challenge.reportId);
-    const res = workflowStore.transitionChallenge(
+    const res = await workflowStore.transitionChallenge(
       id,
       'Resolved',
       officerName,

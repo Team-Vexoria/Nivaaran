@@ -30,15 +30,15 @@ export const ClusterReviewTab: React.FC<ClusterReviewTabProps> = ({ officerName,
 
   const clusterList = Array.from(clusters.entries());
 
-  const handleConfirm = (clusterId: string) => {
+  const handleConfirm = async (clusterId: string) => {
     const members = clusters.get(clusterId) || [];
     let ok = 0;
-    members.forEach(c => {
+    for (const c of members) {
       const id = c.id || c.reportId;
-      const res = workflowStore.transitionChallenge(id, 'Clustered', officerName, 'Government Department',
+      const res = await workflowStore.transitionChallenge(id, 'Clustered', officerName, 'Government Department',
         `Cluster ${clusterId} confirmed by ${officerName}. Similar challenges grouped for unified response.`);
       if (res.success) ok++;
-    });
+    }
     showToast(ok > 0
       ? `✓ Cluster ${clusterId} confirmed — ${ok} challenge${ok > 1 ? 's' : ''} marked as Clustered.`
       : 'Unable to confirm cluster. Check that members are at an eligible stage.',

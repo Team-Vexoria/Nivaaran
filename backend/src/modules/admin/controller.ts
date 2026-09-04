@@ -1,10 +1,21 @@
+import { Request, Response, NextFunction } from 'express';
+import { prisma } from '../../core/prisma.js';
+import { DISTRICTS, BLOCKS } from '../../constants/regions.js';
+
 // Admin config + user/role management
 
-export async function seedRegions(req: Request, res: Response, next: NextFunction) {
+export async function seedRegions(_req: Request, res: Response, next: NextFunction) {
   try {
-    const { seedRegions } = await import('../../prisma/seeds/regions.js');
-    const { seedRegions: sr } = await import('../../prisma/seeds/regions.js');
-    // Actual seed logic lives in seed file; endpoint delegates
-    res.json({ ok: true, message: 'Region seed invoked — see ../prisma/seeds/regions.ts' });
-  } catch (e) { next(e); }
+    await prisma.$transaction(async (tx) => {
+      for (const d of DISTRICTS) {
+        await tx.district.upsert({ where: { code: d.code }, update: { name: d.name }, create: { code: d.code, name: d.name } });
+      }
+      for (const b of BLOCKS) {
+        await tx.block.upsert({ where: { code: b.code }, update: { name: b.name }, create: { ...b } });
+      }
+    });
+    res.json({ ok: true, message: `Seeded ${DISTRICTS.length} districts and ${BLOCKS.length} blocks` });
+  } catch (e) {
+    next(e);
+  }
 }

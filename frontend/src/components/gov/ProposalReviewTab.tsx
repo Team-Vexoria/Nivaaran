@@ -73,16 +73,16 @@ export const ProposalReviewTab: React.FC<ProposalReviewTabProps> = ({ officerNam
     setNote('');
   };
 
-  const confirmAction = () => {
+  const confirmAction = async () => {
     if (!modal) return;
     const { type, projectId, proposalId } = modal;
     let ok = false;
-    if (type === 'approve') ok = govApproveProposal(projectId, proposalId, note, officerName);
-    else if (type === 'revision') ok = govRequestProposalRevision(projectId, proposalId, note, officerName);
-    else ok = govRejectProposal(projectId, proposalId, note, officerName);
+    if (type === 'approve') ok = await govApproveProposal(projectId, proposalId, note, officerName);
+    else if (type === 'revision') ok = await govRequestProposalRevision(projectId, proposalId, note, officerName);
+    else ok = await govRejectProposal(projectId, proposalId, note, officerName);
     setModal(null);
     return ok;
-  };
+  }
 
   const statusPill = (status: string) =>
     `text-[10px] font-bold px-2 py-0.5 rounded-full border ${STATUS_PILL[status] || STATUS_PILL['Draft']}`;

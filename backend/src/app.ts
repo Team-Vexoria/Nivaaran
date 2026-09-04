@@ -2,6 +2,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { getConfig } from './core/config';
+import { loadConfig } from './core/config';
+loadConfig();
 import { logger } from './core/logger';
 import { requestId } from './middleware/requestId';
 import { authenticate } from './core/auth';
@@ -142,6 +144,24 @@ app.use('/api/v1/evidence', evidenceRoutes);
 const analyticsRoutes = express.Router();
 analyticsRoutes.get('/district-heatmap', (req,res,next)=>require('./modules/analytics/controller.js').districtHeatmap(req,res,next));
 app.use('/api/v1/analytics', analyticsRoutes);
+
+const districtRoutes = express.Router();
+districtRoutes.get('/', async (_req, res, next) => {
+  try {
+    const districts = await prisma.district.findMany({
+      orderBy: { name: 'asc' },
+    });
+    if (districts && districts.length > 0) {
+      return res.json({ ok: true, data: districts });
+    }
+    const { DISTRICTS } = await import('./constants/regions.js');
+    return res.json({ ok: true, data: DISTRICTS });
+  } catch {
+    const { DISTRICTS } = await import('./constants/regions.js');
+    return res.json({ ok: true, data: DISTRICTS });
+  }
+});
+app.use('/api/v1/districts', districtRoutes);
 app.use((_req: Request, res: Response) => {
   res.status(404).json({ ok: false, error: { code: 'NOT_FOUND', message: 'Endpoint not found' } });
 });

@@ -1,0 +1,32 @@
+export const DISTRICTS = [
+  { name: 'Ranchi', code: 'RANCHI' },
+  { name: 'Dhanbad', code: 'DHANBAD' },
+  { name: 'East Singhbhum', code: 'EAST_SINGHBHUM' },
+  { name: 'Bokaro', code: 'BOKARO' },
+  { name: 'Palamu', code: 'PALAMU' },
+  { name: 'Hazaribagh', code: 'HAZARIBAGH' },
+  { name: 'Deoghar', code: 'DEOGHAR' },
+  { name: 'Giridih', code: 'GIRIDIH' },
+  { name: 'Ramgarh', code: 'RAMGARH' },
+  { name: 'Latehar', code: 'LATEHAR' },
+  { name: 'Garhwa', code: 'GARHWA' },
+  { name: 'Dumka', code: 'DUMKA' },
+  { name: 'Godda', code: 'GODDA' },
+  { name: 'Sahebganj', code: 'SAHEBGANJ' },
+  { name: 'Pakur', code: 'PAKUR' },
+  { name: 'Jamtara', code: 'JAMTARA' },
+  { name: 'Khunti', code: 'KHOUNTI' },
+  { name: 'Gumla', code: 'GUMLA' },
+  { name: 'Simdega', code: 'SIMDEGA' },
+  { name: 'West Singhbhum', code: 'WEST_SINGHBHUM' },
+  { name: 'Seraikela Kharsawan', code: 'SERAKEELA_KHARSAWAN' },
+  { name: 'Chatra', code: 'CHATRA' },
+  { name: 'Koderma', code: 'KODERMA' },
+  { name: 'Lohardaga', code: 'LOHARDAGA' },
+];
+
+export const BLOCKS = DISTRICTS.map((d) => ({
+  code: `${d.code}_KANKE`,
+  district_code: d.code,
+  name: 'Kanke',
+}));

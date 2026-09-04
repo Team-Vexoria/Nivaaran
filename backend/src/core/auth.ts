@@ -26,7 +26,7 @@ declare global {
 
 // ── Role -> capability map (mirrors RBAC_MATRIX.md) ────────────
 
-const ROLE_CAPABILITIES: Record<string, string[]> = {
+export const ROLE_CAPABILITIES: Record<string, string[]> = {
   SUPER_ADMIN: ['challenge:close', 'challenge:validate', 'challenge:prioritize', 'deployment:approve', 'impact:verify', 'workflow:escalate', 'workflow:resolve'],
   GOV_VALIDATOR: [
     'challenge:validate', 'challenge:reject', 'challenge:requestClarification',

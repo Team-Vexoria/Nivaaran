@@ -276,11 +276,11 @@ function calculateRecencyScore(a: Partial<Challenge>, b: Challenge): number {
 /**
  * Assign a challenge to a cluster (called after government validation)
  */
-export function assignToCluster(
+export async function assignToCluster(
   challengeId: string,
   clusterId: string
-): Challenge | undefined {
-  return workflowStore.updateChallenge(challengeId, {
+): Promise<Challenge | undefined> {
+  return await workflowStore.updateChallenge(challengeId, {
     clusterId,
     status: 'Clustered',
   } as any);

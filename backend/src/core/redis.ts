@@ -20,6 +20,14 @@ export function getRedis(): Redis {
   return _redis;
 }
 
+export const redisClient = {
+  get: (key: string) => getRedis().get(key),
+  set: (key: string, val: string) => getRedis().set(key, val),
+  setex: (key: string, seconds: number, val: string) => getRedis().setex(key, seconds, val),
+  incr: (key: string) => getRedis().incr(key),
+  expire: (key: string, seconds: number) => getRedis().expire(key, seconds),
+};
+
 // ── Namespaced helpers ──────────────────────────────────────────────
 
 const NS = 'nivaaran:';

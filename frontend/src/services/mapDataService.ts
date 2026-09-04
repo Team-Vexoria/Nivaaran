@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
-import { subscribeToChallenges, ChallengeDoc } from './firebaseService';
+import { apiClient } from '../api/client';
+import { ChallengeDoc } from './firebaseService';
 import { getStageForStatus } from './workflowLifecycle';
 
 export const JHARKHAND_DISTRICT_CENTROIDS: Record<string, { lat: number; lng: number }> = {
@@ -131,6 +132,8 @@ function buildDistrictStats(challenges: ChallengeDoc[]): Record<string, District
 export interface MapData {
   challenges: ChallengeDoc[];
   districtStats: Record<string, DistrictStat>;
+  heatmapData: Record<string, unknown> | null;
+  districts: unknown[];
   totalCount: number;
   criticalCount: number;
   validatedCount: number;
@@ -140,21 +143,42 @@ export interface MapData {
 
 export function useMapData(): MapData {
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
+  const [heatmapData, setHeatmapData] = useState<Record<string, unknown> | null>(null);
+  const [districts, setDistricts] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = subscribeToChallenges((docs) => {
-      setChallenges(docs);
+    let cancelled = false;
+    // Phase 4.3: fetch real aggregates from API instead of localStorage only
+    Promise.all([
+      apiClient.getDistrictHeatmap(),
+      apiClient.getDistricts(),
+      apiClient.getChallenges(),
+    ]).then(([heatRes, distRes, chalRes]) => {
+      if (cancelled) return;
+      if (heatRes.ok && heatRes.data) {
+        const d = heatRes.data as { districts?: unknown[] };
+        setHeatmapData(d);
+      }
+      if (distRes.ok && distRes.data) {
+        const arr = Array.isArray(distRes.data) ? distRes.data : ((distRes.data as any).districts || []);
+        setDistricts(arr);
+      }
+      if (chalRes.ok && chalRes.data) {
+        setChallenges((chalRes.data as unknown) as ChallengeDoc[]);
+      }
       setLoading(false);
+    }).catch(() => {
+      if (!cancelled) setLoading(false);
     });
-    return () => { if (typeof unsub === 'function') unsub(); };
+    return () => { cancelled = true; };
   }, []);
-
-  const districtStats = buildDistrictStats(challenges);
 
   return {
     challenges,
-    districtStats,
+    districtStats: buildDistrictStats(challenges),
+    heatmapData,
+    districts,
     totalCount: challenges.length,
     criticalCount: challenges.filter(c => c.riskLevel === 'CRITICAL').length,
     validatedCount: challenges.filter(c => {

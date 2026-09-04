@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { admin } from '../config/firebase';
-import { prisma } from './prisma';
-import { redisClient } from './redis';
+import { prisma } from '../core/prisma';
+import { redisClient } from '../core/redis';
 import { AuthContext } from '../core/auth';
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
@@ -15,13 +15,13 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     let bundle: AuthContext | null = null;
     try { const cached = await redisClient.get(cacheKey); if (cached) bundle = JSON.parse(cached); } catch {}
     if (!bundle) {
-      const user = await prisma.user.findUnique({ where: { firebaseUid: uid }, include: { userRoleLinks: { include: { role: true } } } });
+      const user = await prisma.user.findUnique({ where: { firebase_uid: uid }, include: { roles: { include: { role: true } } } });
       if (!user) { req.auth = undefined; return next(); }
-      const roles = user.userRoleLinks.map(l => l.role.name);
+      const roles = user.roles.map((l: any) => l.role.name);
       const permissions = new Set<string>();
       for (const r of roles) { /* simplified: mirror core/auth ROLE_CAPABILITIES logic */ }
       // Minimal bundle for BE-020
-      bundle = { user: { id: user.id, firebaseUid: user.firebaseUid, name: user.name || undefined }, roles, permissions: new Set(), geoScopes: [] };
+      bundle = { user: { id: user.id, firebaseUid: user.firebase_uid, name: user.name || undefined }, roles, permissions: new Set(), geoScopes: [] };
       await redisClient.setex(cacheKey, 300, JSON.stringify({ ...bundle, permissions: Array.from(bundle.permissions) }));
     }
     req.auth = bundle;

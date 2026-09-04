@@ -67,7 +67,7 @@ export interface ChallengeDoc {
 export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'>) => {
   // 1. Add to workflowStore as primary source of truth
   const legacyChallenge: ChallengeDoc = { ...challenge };
-  const result = workflowStore.addChallenge(toWorkflowChallenge(legacyChallenge));
+  const result = await workflowStore.addChallenge(toWorkflowChallenge(legacyChallenge));
   const newId = result.created?.id || result.existing?.id || `CH-${Date.now()}`;
 
   // 2. Attempt Firestore write as optional secondary persistence.
@@ -396,7 +396,7 @@ export interface ProjectDoc {
   updatedAt?: any;
 }
 
-export const saveProjectTeamToStore = (project: ProjectDoc) => {
+export const saveProjectTeamToStore = async (project: ProjectDoc) => {
   try {
     const workflowProj = toWorkflowProject(project);
 
@@ -419,7 +419,7 @@ export const saveProjectTeamToStore = (project: ProjectDoc) => {
       const targetStage = getStageForStatus(target)?.stageNumber;
       if (currentStage === undefined || targetStage === undefined) return false;
       if (currentStage < targetStage) {
-        const transition = workflowStore.transitionChallenge(
+        const transition = await workflowStore.transitionChallenge(
           linkedChallenge.id,
           target,
           workflowProj.facultyMentorName || workflowProj.universityName,
@@ -435,7 +435,7 @@ export const saveProjectTeamToStore = (project: ProjectDoc) => {
     if (existing) {
       workflowStore.updateProject(existing.id, { ...workflowProj, id: existing.id });
     } else {
-      workflowStore.createProject(workflowProj);
+      await workflowStore.createProject(workflowProj);
     }
     return true;
   } catch (err) {
@@ -449,28 +449,28 @@ const getProjectForPhase3 = (projectId: string): { project: ReturnType<typeof wo
   challenge: workflowStore.getChallenge(workflowStore.getProject(projectId)?.challengeId || ''),
 });
 
-const advanceChallengeIfNeeded = (
+const advanceChallengeIfNeeded = async (
   challengeId: string,
   targetStatus: ChallengeStatus,
   actor: string,
   actorRole: string,
   note: string
-): boolean => {
+): Promise<boolean> => {
   const challenge = workflowStore.getChallenge(challengeId);
   const currentStage = challenge ? getStageForStatus(challenge.status)?.stageNumber : undefined;
   const targetStage = getStageForStatus(targetStatus)?.stageNumber;
   if (!challenge || currentStage === undefined || targetStage === undefined) return false;
   if (currentStage >= targetStage) return true;
-  return workflowStore.transitionChallenge(challenge.id, targetStatus, actor, actorRole, note).success;
+  return (await workflowStore.transitionChallenge(challenge.id, targetStatus, actor, actorRole, note)).success;
 };
 
-const updateProjectForPhase3 = (
+const updateProjectForPhase3 = async (
   projectId: string,
   updates: Partial<ReturnType<typeof toWorkflowProject>>,
   actor: string,
   actorRole: string,
   description: string
-): boolean => {
+): Promise<boolean> => {
   const updated = workflowStore.updateProject(projectId, updates);
   if (!updated) return false;
   workflowStore.addTimelineEvent({
@@ -486,10 +486,10 @@ const updateProjectForPhase3 = (
   return true;
 };
 
-export const submitCollaborationOffer = (
+export const submitCollaborationOffer = async (
   projectId: string,
   offer: Omit<CollaborationOffer, 'id' | 'projectId' | 'status' | 'submittedAt'>
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
@@ -516,7 +516,7 @@ export const submitCollaborationOffer = (
   }, offer.partnerName, 'Industry / CSR Partner', `${offer.supportType} collaboration offer submitted.`);
 };
 
-export const requestCollaborationDetails = (projectId: string, partnerName: string): boolean => {
+export const requestCollaborationDetails = async (projectId: string, partnerName: string): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
   const newOffer: CollaborationOffer = {
@@ -534,10 +534,10 @@ export const requestCollaborationDetails = (projectId: string, partnerName: stri
   }, partnerName, 'Industry / CSR Partner', 'Technical details requested from university project team.');
 };
 
-export const submitPrototypeUpdate = (
+export const submitPrototypeUpdate = async (
   projectId: string,
   update: Omit<PrototypeUpdate, 'submittedAt'>
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
@@ -549,10 +549,10 @@ export const submitPrototypeUpdate = (
   }, update.submittedBy, 'University / Project Team', 'Prototype documentation and telemetry submitted.');
 };
 
-export const submitPilotReport = (
+export const submitPilotReport = async (
   projectId: string,
   report: Omit<PilotReport, 'submittedAt'>
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
@@ -564,10 +564,10 @@ export const submitPilotReport = (
   }, report.submittedBy, 'University / Project Team', 'Pilot report and field observations submitted.');
 };
 
-export const submitOutcomeAudit = (
+export const submitOutcomeAudit = async (
   projectId: string,
   audit: OutcomeAudit
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
@@ -594,7 +594,7 @@ export const subscribeToProjects = (callback: (projects: ProjectDoc[]) => void) 
   return () => window.removeEventListener(STORE_EVENT, notify);
 };
 
-export const updateChallengeUniversityAcceptance = (
+export const updateChallengeUniversityAcceptance = async (
   challengeId: string, 
   heiName: string, 
   deptName: string
@@ -611,7 +611,7 @@ export const updateChallengeUniversityAcceptance = (
       const currentStage = current ? getStageForStatus(current.status)?.stageNumber : undefined;
       const bridgeStage = getStageForStatus(bridgeStatus)?.stageNumber;
       if (currentStage !== undefined && bridgeStage !== undefined && currentStage < bridgeStage) {
-        const bridgeResult = workflowStore.transitionChallenge(
+        const bridgeResult = await workflowStore.transitionChallenge(
           challengeId,
           bridgeStatus,
           'Nivaaran Matching Engine',
@@ -623,7 +623,7 @@ export const updateChallengeUniversityAcceptance = (
     }
 
     const note = `Accepted by ${heiName} (${deptName}). Multidisciplinary R&D team assigned.`;
-    const transitioned = workflowStore.transitionChallenge(
+    const transitioned = await workflowStore.transitionChallenge(
       challengeId,
       'University Accepted',
       heiName,
@@ -632,7 +632,7 @@ export const updateChallengeUniversityAcceptance = (
     );
     if (!transitioned.success) return false;
 
-    return Boolean(workflowStore.updateChallenge(challengeId, {
+    return Boolean(await workflowStore.updateChallenge(challengeId, {
       assignedHEI: heiName,
       assignedDept: deptName,
     }));
@@ -648,12 +648,12 @@ export const updateChallengeUniversityAcceptance = (
 //   Request Revision → challenge stays at Proposal Submitted (Stage 9)
 //   Reject           → challenge reverts to In Progress (Stage 8) so the team
 //                      can refine and resubmit.
-export const govApproveProposal = (
+export const govApproveProposal = async (
   projectId: string,
   proposalId: string,
   officerNote: string,
   officerName: string
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
 
@@ -684,12 +684,12 @@ export const govApproveProposal = (
   );
 };
 
-export const govRequestProposalRevision = (
+export const govRequestProposalRevision = async (
   projectId: string,
   proposalId: string,
   officerNote: string,
   officerName: string
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
 
@@ -699,7 +699,7 @@ export const govRequestProposalRevision = (
 
   const note = officerNote || `Revision requested by Government Officer (${officerName}). Please refine the technical proposal.`;
   // Challenge remains at Proposal Submitted (Stage 9).
-  workflowStore.updateChallenge(challenge.id, { govtOfficerNote: note });
+  await workflowStore.updateChallenge(challenge.id, { govtOfficerNote: note });
 
   return updateProjectForPhase3(
     project.id,
@@ -710,12 +710,12 @@ export const govRequestProposalRevision = (
   );
 };
 
-export const govRejectProposal = (
+export const govRejectProposal = async (
   projectId: string,
   proposalId: string,
   officerNote: string,
   officerName: string
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
 
@@ -725,7 +725,7 @@ export const govRejectProposal = (
 
   const note = officerNote || `Proposal rejected by Government Officer (${officerName}).`;
   // Revert challenge to In Progress (Stage 8) so the team can refine & resubmit.
-  const reverted = workflowStore.updateChallenge(challenge.id, {
+  const reverted = await workflowStore.updateChallenge(challenge.id, {
     status: 'In Progress',
     stageNumber: 8,
     stageName: formatStageName(8),
@@ -771,9 +771,9 @@ export const govValidateChallenge = async (
 
   // 1. Update workflowStore (primary)
   try {
-    const transitioned = workflowStore.transitionChallenge(challengeId, 'Government Validated', officerName, 'Government Department', officerNote);
+    const transitioned = await workflowStore.transitionChallenge(challengeId, 'Government Validated', officerName, 'Government Department', officerNote);
     if (!transitioned.success) return false;
-    workflowStore.updateChallenge(challengeId, {
+    await workflowStore.updateChallenge(challengeId, {
       needsHumanVerification: false,
       govtValidatedBy: officerName,
       govtValidatedAt: new Date().toISOString(),
@@ -784,7 +784,7 @@ export const govValidateChallenge = async (
   }
 
   // 2. Auto-run HEI matching (stages 5 → 6) after a brief delay for UX
-  setTimeout(() => {
+  setTimeout(async () => {
     try {
       const challenge = workflowStore.getChallenge(challengeId);
       if (!challenge) return;
@@ -811,7 +811,7 @@ export const govValidateChallenge = async (
       const stageHEIMatched = 6;
 
       // Advance through Prioritized (5) → HEI Matched (6)
-      workflowStore.updateChallenge(challengeId, {
+      await workflowStore.updateChallenge(challengeId, {
         status: 'HEI Matched',
         stageNumber: stageHEIMatched,
         stageName: formatStageName(stageHEIMatched),
@@ -879,7 +879,7 @@ export const govRejectChallenge = async (
 
   // 1. Update workflowStore (primary)
   try {
-    workflowStore.updateChallenge(challengeId, {
+    await workflowStore.updateChallenge(challengeId, {
       status: 'Rejected',
       stageNumber: 2,
       stageName: 'Rejected',
@@ -933,9 +933,9 @@ export const govRequestEvidence = async (
 
   // 1. Update workflowStore (primary)
   try {
-    const transitioned = workflowStore.transitionChallenge(challengeId, 'Evidence Requested', officerName, 'Government Department', officerNote);
+    const transitioned = await workflowStore.transitionChallenge(challengeId, 'Evidence Requested', officerName, 'Government Department', officerNote);
     if (!transitioned.success) return false;
-    workflowStore.updateChallenge(challengeId, {
+    await workflowStore.updateChallenge(challengeId, {
       needsHumanVerification: true,
     });
   } catch (err) {

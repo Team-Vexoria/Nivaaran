@@ -1,1 +1,3 @@
-import { setup } from 'testcontainers'; export const init = async () => { /* Postgres + Redis containers */ };
+export const init = async () => {
+  // Test harness init hook
+};
