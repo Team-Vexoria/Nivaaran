@@ -5,8 +5,9 @@ export async function getPresignedUrl(
   contentType: string,
   operation: 'upload' | 'download' = 'upload'
 ): Promise<string> {
-  const base = process.env.STORAGE_ENDPOINT || 'http://localhost:5000/storage';
-  return `${base}/${encodeURIComponent(filename)}?op=${operation}&type=${encodeURIComponent(contentType)}&expires=900`;
+  const base = process.env.STORAGE_ENDPOINT || 'http://localhost:9000'; // MinIO / S3 endpoint
+  // Real S3 presigned: use AWS SDK or MinIO SDK in production; here return endpoint + key
+  return `${base}/${encodeURIComponent(filename)}?op=${operation}`;
 }
 
 export async function confirmUpload(_storageRef: string): Promise<boolean> {
