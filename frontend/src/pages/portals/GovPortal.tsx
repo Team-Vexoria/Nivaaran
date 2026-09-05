@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/useTranslation';
 import React, { useState, useMemo } from 'react';
 import {
   CheckCircle2,

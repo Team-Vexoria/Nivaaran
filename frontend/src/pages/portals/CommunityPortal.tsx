@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/useTranslation';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Users, LogOut, MapPin, CheckCircle2, AlertTriangle,

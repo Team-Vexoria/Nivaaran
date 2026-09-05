@@ -1,3 +1,4 @@
+import { useTranslation } from '../../i18n/useTranslation';
 import React, { useState } from 'react';
 import { CitizenNavbar, CitizenTab } from '../../components/citizen/CitizenNavbar';
 import { CitizenHomeTab } from '../../components/citizen/CitizenHomeTab';
