@@ -94,17 +94,19 @@ export function toWorkflowChallenge(doc: ChallengeDoc): Challenge {
  * Converts a new workflow Challenge to a legacy ChallengeDoc.
  */
 export function toLegacyChallengeDoc(challenge: Challenge): ChallengeDoc {
+  if (!challenge) return {} as ChallengeDoc;
+  const evUrls = challenge.evidenceUrls || (challenge as any).evidenceUrls || [];
   return {
     id: challenge.id,
-    reportId: challenge.reportId,
-    title: challenge.title,
-    district: challenge.district,
-    block: challenge.block,
-    village: challenge.village,
-    category: challenge.category,
-    status: challenge.status,
-    summary: challenge.description,
-    evidenceUrl: challenge.evidenceUrls.length > 0 ? challenge.evidenceUrls[0] : undefined,
+    reportId: challenge.reportId || challenge.id,
+    title: challenge.title || 'Untitled Issue',
+    district: challenge.district || 'Ranchi',
+    block: challenge.block || '',
+    village: challenge.village || '',
+    category: challenge.category || 'General',
+    status: challenge.status || 'Under Review',
+    summary: challenge.description || (challenge as any).summary || '',
+    evidenceUrl: Array.isArray(evUrls) && evUrls.length > 0 ? evUrls[0] : ((challenge as any).evidenceUrl || undefined),
     locationCoords: challenge.locationCoords,
     formattedAddress: challenge.formattedAddress,
     priorityScore: challenge.priorityScore ?? challenge.aiAnalysis?.priorityScore,
@@ -116,13 +118,13 @@ export function toLegacyChallengeDoc(challenge: Challenge): ChallengeDoc {
     assignedHEI: challenge.assignedHEI,
     assignedDept: challenge.assignedDept,
     csrSponsor: challenge.csrSponsor,
-    stageNumber: challenge.stageNumber,
-    stageName: challenge.stageName,
+    stageNumber: challenge.stageNumber || 2,
+    stageName: challenge.stageName || 'Under Review',
     govtOfficerNote: challenge.govtOfficerNote,
     govtValidatedBy: challenge.govtValidatedBy,
     govtValidatedAt: challenge.govtValidatedAt,
     clusterId: challenge.clusterId,
-    createdAt: challenge.createdAt,
+    createdAt: challenge.createdAt || new Date().toISOString(),
   };
 }
 
@@ -140,22 +142,22 @@ export function toWorkflowProject(doc: ProjectDoc): Project {
     universityName: doc.universityName,
     facultyMentorName: doc.facultyMentorName,
     facultyEmail: doc.facultyEmail,
-    teamMembers: doc.teamMembers.map((m: ProjectTeamMember) => ({
+    teamMembers: Array.isArray(doc.teamMembers) ? doc.teamMembers.map((m: ProjectTeamMember) => ({
       id: m.studentId,
       name: m.name,
       departmentName: m.departmentName,
       role: m.role,
       skills: m.skills,
-    })),
+    })) : [],
     status: doc.status,
-    milestones: doc.milestones.map((m, index) => ({
+    milestones: Array.isArray(doc.milestones) ? doc.milestones.map((m, index) => ({
       id: `m-${index}`,
       stageNumber: m.stageNumber,
       title: m.title,
       description: m.description,
       status: isMilestoneStatus(m.status) ? m.status : 'Pending',
       targetDays: m.targetDays,
-    })),
+    })) : [],
     proposals: doc.proposals || [],
     collaborationOffers: doc.collaborationOffers || [],
     prototypeUpdate: doc.prototypeUpdate,
@@ -182,21 +184,21 @@ export function toLegacyProjectDoc(project: Project): ProjectDoc {
     universityName: project.universityName,
     facultyMentorName: project.facultyMentorName,
     facultyEmail: project.facultyEmail,
-    teamMembers: project.teamMembers.map((m: TeamMember) => ({
+    teamMembers: Array.isArray(project.teamMembers) ? project.teamMembers.map((m: TeamMember) => ({
       studentId: m.id,
       name: m.name,
       departmentName: m.departmentName,
       role: m.role,
       skills: m.skills,
-    })),
+    })) : [],
     status: project.status,
-    milestones: project.milestones.map(m => ({
+    milestones: Array.isArray(project.milestones) ? project.milestones.map(m => ({
       stageNumber: m.stageNumber,
       title: m.title,
       description: m.description,
       status: m.status,
       targetDays: m.targetDays,
-    })),
+    })) : [],
     proposals: project.proposals,
     collaborationOffers: project.collaborationOffers || [],
     prototypeUpdate: project.prototypeUpdate,

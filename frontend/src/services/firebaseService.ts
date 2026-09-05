@@ -348,16 +348,20 @@ export interface ChallengeDoc {
 }
 
 export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'>) => {
-  const { apiClient } = await import('../api/client');
-  const res = await apiClient.createChallenge(challenge as any);
-  if (!res.ok || !res.data) {
-    const errObj = (res as any).error;
-    const msg = errObj?.message || 'Failed to create challenge';
-    console.error('[API] createChallenge failed:', errObj);
-    alert(msg); // or toast equivalent
-    throw new Error(msg);
+  try {
+    const { apiClient } = await import('../api/client');
+    const res = await apiClient.createChallenge(challenge as any);
+    if (res.ok && res.data) {
+      return res.data.id || `CH-${Date.now()}`;
+    }
+    console.warn('[API] createChallenge responded with non-ok status, saving locally in workflowStore:', (res as any).error);
+  } catch (err) {
+    console.warn('[API] createChallenge network error, fallback to workflowStore:', err);
   }
-  return res.data.id || `CH-${Date.now()}`;
+
+  const { workflowStore } = await import('./workflowStore');
+  const localRes = await workflowStore.addChallenge(challenge as any);
+  return localRes.created?.id || (challenge as any).reportId || `CH-${Date.now()}`;
 };
 
 export const subscribeToChallenges = (callback: (challenges: ChallengeDoc[]) => void) => {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw
+  Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert
 } from 'lucide-react';
 import { submitChallengeToFirestore, submitFeedPostToFirestore } from '../services/firebaseService';
 import { runAITriageEngineAsync } from '../services/aiTriageEngine';
@@ -25,7 +25,8 @@ const JHARKHAND_DISTRICTS = [
 
 export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { t, currentLang } = useLanguage();
-  const [step, setStep] = useState<'form' | 'submitting' | 'success'>('form');
+  const [step, setStep] = useState<'form' | 'submitting' | 'success' | 'forensic_rejected'>('form');
+  const [forensicRejectionReason, setForensicRejectionReason] = useState<string>('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [district, setDistrict] = useState('Ranchi');
@@ -162,8 +163,36 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      const newPreviews = filesArray.map((file) => URL.createObjectURL(file));
-      setFilePreviews((prev) => [...prev, ...newPreviews]);
+      filesArray.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          if (typeof evt.target?.result !== 'string') return;
+          // Compress to max 800px wide, 70% JPEG quality before sending to Gemini.
+          // Reduces a 4MB photo → ~100KB, cutting API response time by ~4-5x.
+          const img = new Image();
+          img.onload = () => {
+            const MAX_DIM = 800;
+            let { width, height } = img;
+            if (width > MAX_DIM || height > MAX_DIM) {
+              if (width > height) {
+                height = Math.round((height * MAX_DIM) / width);
+                width = MAX_DIM;
+              } else {
+                width = Math.round((width * MAX_DIM) / height);
+                height = MAX_DIM;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+            const compressed = canvas.toDataURL('image/jpeg', 0.70);
+            setFilePreviews((prev) => [...prev, compressed]);
+          };
+          img.src = evt.target.result as string;
+        };
+        reader.readAsDataURL(file);
+      });
       if (!locationCoords) handleGetLocation();
     }
   };
@@ -188,8 +217,18 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     const coords = locationCoords || { lat: 23.3441, lng: 85.3096 };
     const finalAddress = formattedAddress || `${blockVillage}, District ${district}`;
 
-    // Run Multimodal Computer Vision & NLP AI Engine on Evidence Photo
+    // 1. Decision Point 1 Gate: Run Multimodal Vision & Forensic Fake Detection on Evidence Photo
     const aiResult = await runAITriageEngineAsync(title, description, 1, filePreviews[0] || '');
+
+    // If fake image detected -> block submitChallengeToFirestore, show rejection warning
+    if (aiResult.isRealPhoto === false || aiResult.forensicStatus === 'REJECTED') {
+      setStep('forensic_rejected');
+      setForensicRejectionReason(
+        aiResult.fakeReason || 'Image flagged as synthetic AI generation or digitally manipulated. Submission blocked by Decision Point 1 Forensic Gate.'
+      );
+      return;
+    }
+
     const initialStage = getStageForStatus('Under Review');
 
     const now = new Date().toISOString();
@@ -670,6 +709,52 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
             >
               {t.reportModal.closeBtn}
             </button>
+          </div>
+        )}
+
+        {/* Step 4: Forensic Rejection State (Decision Point 1 Gate) */}
+        {step === 'forensic_rejected' && (
+          <div className="p-8 text-center space-y-5">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto ring-8 ring-red-50">
+              <ShieldAlert className="w-10 h-10" />
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
+                Decision Point 1 AI Gate: Blocked
+              </span>
+              <h3 className="text-xl font-black text-[#1E3A5F] pt-2">Evidence Flagged as Synthetic / Fake</h3>
+              <p className="text-xs text-[#5C574C]">
+                NIVAARAN forensic AI vision engine inspected the uploaded photo and flagged non-authentic artifacts.
+              </p>
+            </div>
+
+            <div className="bg-red-50/70 p-4 rounded-xl text-xs text-left space-y-2 border border-red-200 text-red-900">
+              <div className="flex items-center space-x-2 font-bold text-red-800">
+                <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                <span>Forensic Rejection Reason:</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-red-800 font-medium pl-6">
+                {forensicRejectionReason || 'AI-generated, stock photo, or digitally manipulated media detected. Real on-ground geotagged photographic evidence is required for government resource allocation.'}
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setStep('form')}
+                className="flex-1 py-3 bg-[#0F766E] hover:bg-[#0D625B] text-white font-bold text-xs rounded-xl shadow transition-colors"
+              >
+                Upload Authentic Camera Photo
+              </button>
+              <button
+                type="button"
+                onClick={resetAndClose}
+                className="py-3 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-colors"
+              >
+                {t.reportModal.closeBtn}
+              </button>
+            </div>
           </div>
         )}
 

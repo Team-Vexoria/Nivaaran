@@ -104,6 +104,7 @@ enum ValidationDecision {
   NEEDS_CLARIFICATION
   INVALID
   DEFER
+  FAKE_REJECTED
 }
 
 enum ClusterProcessState {

@@ -49,8 +49,13 @@ async function apiRequest<T>(
       headers: { ...headers, ...(options.headers as Record<string, string> || {}) },
       signal: controller.signal,
     });
-    clearTimeout(timeout);
-    const body: ApiResponse<T> = await res.json();
+    let body: ApiResponse<T>;
+    const text = await res.text();
+    try {
+      body = text ? JSON.parse(text) : { ok: res.ok, data: undefined as any };
+    } catch {
+      body = { ok: false, error: { code: 'INVALID_JSON', message: `Server returned non-JSON response (${res.status})` } };
+    }
     return body;
   } catch (e) {
     clearTimeout(timeout);

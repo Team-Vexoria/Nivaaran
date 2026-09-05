@@ -1,2 +1,29 @@
-export interface VisionResult { hasHazard: boolean; confidence: number; description: string; modelVersion: string; }
-export async function processEvidenceImage(url: string): Promise<VisionResult> { const ai = (await import('../AIProvider')).AIProvider; if (ai.vision) return await ai.vision(url); else throw new Error('Vision not configured'); }
+import { detectFakeAndHazard, ForensicResult } from './fakeDetector.js';
+
+export interface VisionPipelineResult extends ForensicResult {
+  vision: {
+    isRealPhoto: boolean;
+    fakeReason: string | null;
+    hasHazard: boolean;
+    hazardType: 'FLOODING' | 'CONTAMINATED_WATER' | 'MINE_SUBSIDENCE' | 'ROAD_DAMAGE' | 'WILDLIFE' | 'NONE';
+  };
+}
+
+/**
+ * Main Vision Processing Pipeline:
+ * Coordinates Forensic Fake Detection and Hazard Classification
+ */
+export async function processEvidenceImage(imageInput: string | Buffer, fileUri?: string): Promise<VisionPipelineResult> {
+  const result = await detectFakeAndHazard(imageInput, fileUri);
+  return {
+    ...result,
+    vision: {
+      isRealPhoto: result.isRealPhoto,
+      fakeReason: result.fakeReason,
+      hasHazard: result.hasHazard,
+      hazardType: result.hazardType,
+    }
+  };
+}
+
+export { detectFakeAndHazard };
