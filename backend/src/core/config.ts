@@ -20,16 +20,9 @@ const AppConfig = z.object({
 });
 
 const FirebaseConfig = z.object({
-  FIREBASE_TYPE: z.string().optional(),
-  FIREBASE_PROJECT_ID: z.string().optional(),
-  FIREBASE_PRIVATE_KEY_ID: z.string().optional(),
-  FIREBASE_PRIVATE_KEY: z.string().optional(),
-  FIREBASE_CLIENT_EMAIL: z.string().optional(),
-  FIREBASE_CLIENT_ID: z.string().optional(),
-  FIREBASE_AUTH_URI: z.string().optional(),
-  FIREBASE_TOKEN_URI: z.string().optional(),
-  FIREBASE_AUTH_PROVIDER_X509_CERT_URL: z.string().optional(),
-  FIREBASE_CLIENT_CERT_URL: z.string().optional(),
+  FIREBASE_SERVICE_ACCOUNT_JSON: z.string().min(10, 'FIREBASE_SERVICE_ACCOUNT_JSON must be a valid JSON string'),
+}).transform((data) => {
+  try { return { serviceAccount: JSON.parse(data.FIREBASE_SERVICE_ACCOUNT_JSON) }; } catch (e) { throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON parse failed: ' + e.message); }
 });
 
 const ConfigSchema = DatabaseConfig.merge(RedisConfig).merge(AppConfig).merge(FirebaseConfig);
