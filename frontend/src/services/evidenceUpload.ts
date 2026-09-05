@@ -1,12 +1,10 @@
 import { getAuth } from 'firebase/auth';
 
-async function getBearerToken(): Promise<string> {
-  try { const auth = getAuth(); const u = auth.currentUser; return u ? await u.getIdToken() : ''; } catch { return ''; }
-}
-
+import { apiClient } from '../api/client';
+// Reuse apiClient's getBearerToken via shared pattern; direct fetch kept for raw PUT to presigned URL
 export async function uploadEvidenceS3(file: File): Promise<{ storageRef: string }> {
   const base = (import.meta.env?.VITE_API_URL || '') + '/api/v1';
-  const token = await getBearerToken();
+  const token = await (async () => { try { const a = await import('firebase/auth'); const u = a.getAuth().currentUser; return u ? await u.getIdToken() : ''; } catch { return ''; } })();
   const presignRes = await fetch(`${base}/evidence/presign`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ filename: file.name, contentType: file.type }),
