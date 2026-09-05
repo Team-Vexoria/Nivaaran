@@ -46,16 +46,16 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Official pre-assigned accounts mapping
 const OFFICIAL_ROLE_MAP: Record<string, UserRole> = {
-  'nivaaran@gov.in': 'Government Department',
-  'admin@bitmesra.in': 'University Admin',
-  'faculty@bitmesra.in': 'Faculty / Mentor',
-  'student@bitmesra.in': 'Student',
-  'partner@tatasteel.com': 'Industry / MSME',
-  'foundation@csr.org': 'CSR Organization',
-  'citizen@nivaaran.in': 'Citizen',
-  'admin@nivaaran.in': 'Platform Super Admin',
-  'ngo@nivaaran.in': 'Community / NGO',
-  'pri@nivaaran.in': 'PRI (Panchayat)',
+  'nivaaran@gov.in': 'GOV_DEPARTMENT',
+  'admin@bitmesra.in': 'UNIVERSITY',
+  'faculty@bitmesra.in': 'FACULTY',
+  'student@bitmesra.in': 'STUDENT',
+  'partner@tatasteel.com': 'INDUSTRY',
+  'foundation@csr.org': 'CSR',
+  'citizen@nivaaran.in': 'CITIZEN',
+  'admin@nivaaran.in': 'SUPER_ADMIN',
+  'ngo@nivaaran.in': 'COMMUNITY_NGO',
+  'pri@nivaaran.in': 'PRI',
   'ulb@nivaaran.in': 'ULB (Urban Local Body)',
   'lab@nivaaran.in': 'Research Lab / Industry Lab',
 };

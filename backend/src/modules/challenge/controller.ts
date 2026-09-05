@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { z } from 'zod';
 import { challengeService } from './service.js';
 
 export async function list(req: Request, res: Response, next: NextFunction) {
@@ -27,13 +28,9 @@ export async function transition(req: Request, res: Response, next: NextFunction
       ? parseInt(req.headers['if-match'] as string, 10)
       : undefined;
 
-    const data = await challengeService.transition(
-      req.params.id,
-      req.body.action,
-      req.auth,
-      req.body.payload,
-      ifMatch
-    );
+    const schema = z.object({ action: z.string().min(1), payload: z.record(z.any()).optional(), ifMatch: z.number().optional() });
+    const parsed = schema.parse(req.body);
+    const data = await challengeService.transition(req.params.id, parsed.action, req.auth, parsed.payload, ifMatch);
     res.json({ ok: true, data });
   } catch (e) {
     next(e);

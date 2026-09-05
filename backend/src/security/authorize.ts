@@ -26,8 +26,8 @@ export function authorize(options: AuthorizeOptions) {
 
     // 1. Role check
     const hasRole =
-      roles.includes('SUPER_ADMIN') ||
-      roles.includes('Platform Super Admin') ||
+      roles.includes('SUPER_ADMIN') || roles.includes('GOV_DEPARTMENT') || roles.includes('GOV_VALIDATOR') ||
+      roles.includes('Platform Super Admin') || roles.includes('Government Department') || roles.includes('Government Validator') ||
       perms.has('*');
 
     // 2. Capability check
