@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import React from 'react';
 import { 
   Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert
 } from 'lucide-react';
 import { submitChallengeToFirestore, submitFeedPostToFirestore } from '../services/firebaseService';
+import { uploadEvidenceS3 } from '../services/evidenceUpload';
 import { runAITriageEngineAsync } from '../services/aiTriageEngine';
 import { useLanguage } from '../context/LanguageContext';
 import { formatStageName, getStageForStatus } from '../services/workflowLifecycle';
@@ -145,7 +147,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
   };
 
   // Take Snapshot from Live Camera Stream
-  const takeCameraSnapshot = () => {
+  const takeCameraSnapshot = async () => {
     if (!videoRef.current) return;
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth || 640;
@@ -153,22 +155,25 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      setFilePreviews(prev => [...prev, snapshotDataUrl]);
+      const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.85));
+      const file = new File([blob], `snap-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const { storageRef } = await uploadEvidenceS3(file);
+      setFilePreviews(prev => [...prev, storageRef]);
       stopCamera();
       if (!locationCoords) handleGetLocation();
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      filesArray.forEach((file) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    if (input.files && input.files.length > 0) {
+      const filesArray = Array.from(input.files);
+      for (const file of filesArray) {
+        // Compress to max 800px wide, 70% JPEG quality before sending to Gemini.
+        // Reduces a 4MB photo -> ~100KB, cutting API response time by ~4-5x.
         const reader = new FileReader();
         reader.onload = (evt) => {
           if (typeof evt.target?.result !== 'string') return;
-          // Compress to max 800px wide, 70% JPEG quality before sending to Gemini.
-          // Reduces a 4MB photo → ~100KB, cutting API response time by ~4-5x.
           const img = new Image();
           img.onload = () => {
             const MAX_DIM = 800;
@@ -192,7 +197,15 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
           img.src = evt.target.result as string;
         };
         reader.readAsDataURL(file);
-      });
+
+        // Also attempt uploadEvidenceS3 in background if configured
+        try {
+          await uploadEvidenceS3(file);
+        } catch {
+          // Fallback to local data URL in filePreviews
+        }
+      }
+      input.value = ''; // allow re-selecting same file
       if (!locationCoords) handleGetLocation();
     }
   };
@@ -256,7 +269,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         category: aiResult.category,
         status: 'Under Review',
         summary: description || 'Reported by citizen with geotagged photo evidence.',
-        evidenceUrl: filePreviews[0] || '',
+        evidenceUrl: filePreviews[0] || '', // S3 storage_ref (not blob URL)
         locationCoords: coords,
         formattedAddress: finalAddress,
         priorityScore: aiResult.priorityScore,
@@ -514,7 +527,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                   </div>
 
                   {/* Option 2: File Upload (Testing Mode) */}
-                  <div className="border-2 border-dashed border-[#DCD6C6] bg-white hover:bg-[#F3F0E8]/50 rounded-xl p-4 text-center transition-colors">
+                  <div onClick={() => document.getElementById("evidence-upload-input")?.click()} className="border-2 border-dashed border-[#DCD6C6] bg-white hover:bg-[#F3F0E8]/50 rounded-xl p-4 text-center transition-colors cursor-pointer">
                     <input
                       type="file"
                       id="evidence-upload-input"

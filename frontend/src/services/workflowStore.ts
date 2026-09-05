@@ -1,8 +1,8 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// NIVAARAN — Frontend Workflow Store (SIH 26043)
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// NIVAARAN â€” Frontend Workflow Store (SIH 26043)
 // A singleton data store using localStorage to simulate backend persistence
 // for the demo. It dispatches a CustomEvent on update so React can re-render.
-// ─────────────────────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 import { createSeedData } from './workflowSeedData';
 import type {
@@ -56,7 +56,7 @@ class WorkflowStore {
     }
   }
 
-  // ── Persistence ─────────────────────────────────────────────────────────────
+  // â”€â”€ Persistence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   private loadState(): WorkflowState {
     try {
@@ -101,7 +101,7 @@ class WorkflowStore {
     }
   }
 
-  // ── General ─────────────────────────────────────────────────────────────────
+  // â”€â”€ General â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   public getState(): WorkflowState {
     return this.state;
@@ -119,7 +119,7 @@ class WorkflowStore {
     return seed;
   }
 
-  // ── Challenges ──────────────────────────────────────────────────────────────
+  // â”€â”€ Challenges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   public getChallenges(): Challenge[] {
     return this.state.challenges || [];
@@ -146,9 +146,10 @@ class WorkflowStore {
       this.persist({ ...this.state, challenges });
       return { created: serverChallenge };
     }
-
+    
+    // Fallback to local persistence if API is unavailable
     const now = new Date().toISOString();
-    const newChallenge = {
+    const newChallenge: Challenge = {
       ...challenge,
       id: challenge.id || `CH-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       createdAt: challenge.createdAt || now,
@@ -199,6 +200,10 @@ class WorkflowStore {
     }
 
     const apiRes = await apiClient.transitionChallenge(challenge.id, 'statusChange', { newStatus, note, actor, actorRole });
+    if (!apiRes.ok) {
+      const errMsg = (apiRes.error?.message || 'Transition failed') + ' [code=' + (apiRes.error?.code || 'UNKNOWN') + ']';
+      throw new Error(errMsg);
+    }
     if (apiRes.ok) {
       const updated = await this.updateChallenge(challenge.id, {
         status: newStatus,
@@ -223,7 +228,7 @@ class WorkflowStore {
     return { success: true };
   }
 
-  // ── Projects ────────────────────────────────────────────────────────────────
+  // â”€â”€ Projects â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   public getProjects(): Project[] {
     return this.state.projects || [];
@@ -244,7 +249,11 @@ class WorkflowStore {
     }
     
     const apiRes = await apiClient.createProject(project as Omit<Project, 'id' | 'createdAt' | 'updatedAt'>);
-    const serverProject = apiRes.ok && apiRes.data ? (apiRes.data as Project) : project;
+    if (!apiRes.ok) {
+      const errMsg = (apiRes.error?.message || 'Project creation failed') + ' [code=' + (apiRes.error?.code || 'UNKNOWN') + ']';
+      throw new Error(errMsg);
+    }
+    const serverProject = apiRes.data as Project;
     const projects = [...this.state.projects, serverProject];
     this.persist({ ...this.state, projects });
 
@@ -278,7 +287,7 @@ class WorkflowStore {
     return updatedProject;
   }
 
-  // ── Timeline ────────────────────────────────────────────────────────────────
+  // â”€â”€ Timeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   public getTimelineEvents(entityId: string): TimelineEvent[] {
     return this.state.timelineEvents

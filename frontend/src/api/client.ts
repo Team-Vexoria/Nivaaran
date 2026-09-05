@@ -12,7 +12,7 @@ interface ErrEnvelope { ok: false; error: { code: string; message: string; detai
 export type ApiResponse<T> = OkEnvelope<T> | ErrEnvelope;
 
 // ── Auth token helper ────────────────────────────────────────────────────
-async function getBearerToken(): Promise<string | null> {
+export async function getBearerToken(): Promise<string | null> {
   try {
     const firebaseAuth = getAuth();
     const currentUser = firebaseAuth.currentUser;
@@ -25,7 +25,7 @@ async function getBearerToken(): Promise<string | null> {
 }
 
 // ── Base client ──────────────────────────────────────────────────────────
-const BASE = '/api/v1';
+const BASE = (import.meta.env?.VITE_API_URL || '') + '/api/v1';
 
 async function apiRequest<T>(
   path: string,

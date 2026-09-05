@@ -4,7 +4,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 import { workflowStore, STORE_EVENT } from './workflowStore';
-import { toLegacyChallengeDoc, toWorkflowProject, toLegacyProjectDoc } from './workflowAdapters';
+import { toLegacyChallengeDoc, toWorkflowChallenge, toWorkflowProject, toLegacyProjectDoc } from './workflowAdapters';
 import type {
   ChallengeStatus,
   CollaborationOffer,
@@ -343,70 +343,84 @@ export interface ChallengeDoc {
   govtValidatedBy?: string;
   govtValidatedAt?: string;
   clusterId?: string;
+  translations?: Record<string, any>;
   createdAt?: any;
-  translations?: Record<string, { title: string; summary: string }>;
 }
 
 export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'>) => {
+  // 1. Primary: Save to local workflowStore so UI responds immediately
+  const legacyChallenge: ChallengeDoc = { ...challenge };
+  const { workflowStore } = await import('./workflowStore');
+  const result = await workflowStore.addChallenge(toWorkflowChallenge(legacyChallenge));
+  const newId = result.created?.id || result.existing?.id || `CH-${Date.now()}`;
+
+  // 2. Secondary: Sync with backend API
   try {
     const { apiClient } = await import('../api/client');
-    const res = await apiClient.createChallenge(challenge as any);
+    const res = await apiClient.createChallenge({ ...challenge, id: newId } as any);
     if (res.ok && res.data) {
-      return res.data.id || `CH-${Date.now()}`;
+      return res.data.id || newId;
     }
-    console.warn('[API] createChallenge responded with non-ok status, saving locally in workflowStore:', (res as any).error);
   } catch (err) {
-    console.warn('[API] createChallenge network error, fallback to workflowStore:', err);
+    console.warn('[API] createChallenge sync failed, persisted in workflowStore:', err);
   }
 
-  const { workflowStore } = await import('./workflowStore');
-  const localRes = await workflowStore.addChallenge(challenge as any);
-  return localRes.created?.id || (challenge as any).reportId || `CH-${Date.now()}`;
+  // 3. Optional Firestore write
+  if (result.created) {
+    try {
+      await addDoc(collection(db, 'challenges'), {
+        ...challenge,
+        id: newId,
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.warn('[Firestore] Falling back to workflowStore only:', error);
+    }
+  }
+  return newId;
 };
 
 export const subscribeToChallenges = (callback: (challenges: ChallengeDoc[]) => void) => {
-  let apiInterval: ReturnType<typeof setInterval> | null = null;
-
-  const loadFromApi = async () => {
-    try {
-      const { apiClient } = await import('../api/client');
-      const res = await apiClient.getChallenges();
-      if (res.ok && res.data) {
-        callback(res.data.map((c: any) => toLegacyChallengeDoc(c as any)));
-        return true;
-      }
-      const errObj = (res as any).error;
-      if (errObj?.code === 'UNAUTHENTICATED' || errObj?.code === 'SERVER_ERROR') {
-        // Fallback to local read
-      }
-    } catch (e) {
-      console.warn('[API] getChallenges failed, falling back to store:', e);
-    }
-    return false;
-  };
-
-  // Immediate API load, fallback to workflowStore
-  (async () => {
-    const fromApi = await loadFromApi();
-    if (!fromApi) {
-      callback(workflowStore.getChallenges().map(toLegacyChallengeDoc));
-    }
-  })();
-
-  // Refresh every 5s from API
-  apiInterval = setInterval(async () => {
-    await loadFromApi();
-  }, 5000);
-
-  // Keep workflowStore event listener for non-API mutations (read-only fallback)
   const notifyStore = () => {
     callback(workflowStore.getChallenges().map(toLegacyChallengeDoc));
   };
+
+  // Immediate callback
+  notifyStore();
+
+  // Listen to workflowStore updates
   window.addEventListener(STORE_EVENT, notifyStore);
 
+  // Poll API for backend challenges every 5 seconds
+  const apiInterval = setInterval(async () => {
+    try {
+      const { apiClient } = await import('../api/client');
+      const res = await apiClient.getChallenges();
+      if (res.ok && res.data && res.data.length > 0) {
+        callback(res.data.map((c: any) => toLegacyChallengeDoc(c as any)));
+      }
+    } catch {
+      // Keep using local store
+    }
+  }, 5000);
+
+  // Firestore (optional secondary)
+  let unsubscribeFirestore = () => {};
+  try {
+    const q = query(collection(db, 'challenges'), orderBy('createdAt', 'desc'));
+    unsubscribeFirestore = onSnapshot(q, () => {
+      // For the demo, workflowStore is the primary source of truth so we don't overwrite it here.
+    }, (error) => {
+      console.warn('[Firestore] Not available, relying on workflowStore:', error);
+    });
+  } catch (error) {
+    console.warn('[Firestore] Initialization failed:', error);
+  }
+
   return () => {
+    clearInterval(apiInterval);
     window.removeEventListener(STORE_EVENT, notifyStore);
-    if (apiInterval) clearInterval(apiInterval);
+    unsubscribeFirestore();
   };
 };
 
@@ -422,8 +436,8 @@ export interface FeedPostDoc {
   category: string;
   status: string;
   comments?: FeedCommentDoc[];
+  translations?: Record<string, any>;
   createdAt?: any;
-  translations?: Record<string, { title: string; content: string }>;
 }
 
 export interface FeedCommentDoc {
@@ -444,7 +458,6 @@ export const submitFeedPostToFirestore = async (post: Omit<FeedPostDoc, 'id'>) =
     const docRef = await addDoc(collection(db, 'community_posts'), {
       ...post,
       createdAt: serverTimestamp(),
-      translations: post.translations || {},
     });
     return docRef.id;
   } catch (error) {
@@ -938,11 +951,11 @@ export const updateChallengeUniversityAcceptance = async (
   }
 };
 
-// ── Government Proposal Review (Sprint 2 · Feature 2) ─────────────────────────
+// ΓöÇΓöÇ Government Proposal Review (Sprint 2 ┬╖ Feature 2) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Government officers review university-submitted technical proposals (Stage 9).
-//   Approve          → challenge advances to Prototype Active (Stage 11)
-//   Request Revision → challenge stays at Proposal Submitted (Stage 9)
-//   Reject           → challenge reverts to In Progress (Stage 8) so the team
+//   Approve          ΓåÆ challenge advances to Prototype Active (Stage 11)
+//   Request Revision ΓåÆ challenge stays at Proposal Submitted (Stage 9)
+//   Reject           ΓåÆ challenge reverts to In Progress (Stage 8) so the team
 //                      can refine and resubmit.
 export const govApproveProposal = async (
   projectId: string,
@@ -976,7 +989,7 @@ export const govApproveProposal = async (
     },
     officerName,
     'Government Department',
-    `Proposal ${proposalId} approved — advancing to prototype phase.`
+    `Proposal ${proposalId} approved ΓÇö advancing to prototype phase.`
   );
 };
 
@@ -1047,33 +1060,47 @@ export const govRejectProposal = async (
     { status: 'Team Formed', proposals },
     officerName,
     'Government Department',
-    `Proposal ${proposalId} rejected — reverting to team formation.`
+    `Proposal ${proposalId} rejected ΓÇö reverting to team formation.`
   );
 };
 
-// ── Government Validation Action ──────────────────────────────────────────────
+// ΓöÇΓöÇ Government Validation Action ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 // Sets status to 'Government Validated', stage 3. Then auto-runs HEI matching
-// to advance through Prioritized (stage 5) → HEI Matched (stage 6).
+// to advance through Prioritized (stage 5) ΓåÆ HEI Matched (stage 6).
 export const govValidateChallenge = async (
   challengeId: string,
   officerNote: string,
   officerName: string
 ): Promise<boolean> => {
-try {
-    const { apiClient } = await import('../api/client');
-    const res = await apiClient.transitionChallenge(challengeId, 'Government Validated', { note: officerNote, officer: officerName });
-    if (!res.ok || !res.data) {
-      const errObj = (res as any).error;
-      console.error('[API] govValidate transition failed:', errObj);
-      throw new Error(errObj?.message || 'Validation failed');
-    }
-    // Backend emits AuditEvent + OutboxEvent automatically
+  const updates: Partial<ChallengeDoc> = {
+    status: 'Government Validated',
+    govtOfficerNote: officerNote || `Validated by Government Officer (${officerName}). Queued for HEI matching.`,
+    needsHumanVerification: false,
+  };
+
+  // 1. Update workflowStore (primary)
+  try {
+    const transitioned = await workflowStore.transitionChallenge(challengeId, 'Government Validated', officerName, 'Government Department', officerNote);
+    if (!transitioned.success) return false;
+    await workflowStore.updateChallenge(challengeId, {
+      needsHumanVerification: false,
+      govtValidatedBy: officerName,
+      govtValidatedAt: new Date().toISOString(),
+    });
   } catch (err) {
-    console.error('[API] govValidate failed:', err);
+    console.warn('[WorkflowStore] Failed to transition challenge:', err);
     return false;
   }
 
-  // 2. Auto-run HEI matching (stages 5 → 6) after a brief delay for UX
+  // 2. Sync to Backend API if available
+  try {
+    const { apiClient } = await import('../api/client');
+    await apiClient.transitionChallenge(challengeId, 'Government Validated', { note: officerNote, officer: officerName });
+  } catch (e) {
+    console.warn('[API] govValidate transition sync skipped:', e);
+  }
+
+  // 3. Auto-run HEI matching (stages 5 -> 6) after a brief delay for UX
   setTimeout(async () => {
     try {
       const challenge = workflowStore.getChallenge(challengeId);
@@ -1100,7 +1127,7 @@ try {
       const now = new Date().toISOString();
       const stageHEIMatched = 6;
 
-      // Advance through Prioritized (5) → HEI Matched (6)
+      // Advance through Prioritized (5) -> HEI Matched (6)
       await workflowStore.updateChallenge(challengeId, {
         status: 'HEI Matched',
         stageNumber: stageHEIMatched,
@@ -1132,7 +1159,7 @@ try {
         action: 'status_changed',
         actor: 'AI HEI Matching Engine',
         actorRole: 'AI System',
-        description: `Matched to ${bestMatch.university.name} (${bestMatch.university.shortName}) — ${bestMatch.matchScore}% compatibility. Department: ${bestMatch.recommendedDepartment?.name || 'General'}. ${bestMatch.matchingReasons[0] || ''}`,
+        description: `Matched to ${bestMatch.university.name} (${bestMatch.university.shortName}) - ${bestMatch.matchScore}% compatibility. Department: ${bestMatch.recommendedDepartment?.name || 'General'}. ${bestMatch.matchingReasons[0] || ''}`,
         previousValue: 'Prioritized',
         newValue: 'HEI Matched',
         timestamp: new Date(Date.now() + 2).toISOString(),
@@ -1142,32 +1169,80 @@ try {
     }
   }, 800); // 800ms delay so the gov validated status renders first
 
+  // 4. Update Firestore (if available)
+  try {
+    if (challengeId && !challengeId.startsWith('LOCAL-') && !challengeId.startsWith('CH-')) {
+      await updateDoc(doc(db, 'challenges', challengeId), updates);
+    }
+  } catch (err) {
+    console.warn('[Firestore] Govt validate failed:', err);
+  }
+
   return true;
 };
 
-// ── Reject Challenge Action ───────────────────────────────────────────────────
+// -- Reject Challenge Action ---------------------------------------------------
 // Sets status to 'Rejected', removing it from the active queue. Visible to citizen.
 export const govRejectChallenge = async (
   challengeId: string,
   officerNote: string,
   officerName: string
 ): Promise<boolean> => {
+  const updates: Partial<ChallengeDoc> = {
+    status: 'Rejected',
+    govtOfficerNote: officerNote || `Rejected by Government Officer (${officerName}). Challenge does not meet submission criteria.`,
+    needsHumanVerification: false,
+  };
+
+  // 1. Update workflowStore (primary)
   try {
-    const { apiClient } = await import('../api/client');
-    const res = await apiClient.transitionChallenge(challengeId, 'Rejected', { note: officerNote, officer: officerName });
-    if (!res.ok || !res.data) {
-      const errObj = (res as any).error;
-      throw new Error(errObj?.message || 'Rejection failed');
-    }
-    return true;
-  } catch (err: any) {
-    console.error('[API] govReject failed:', err);
-    alert(err?.message || 'Failed to reject challenge');
+    await workflowStore.updateChallenge(challengeId, {
+      status: 'Rejected',
+      stageNumber: 2,
+      stageName: 'Rejected',
+      govtOfficerNote: updates.govtOfficerNote,
+      needsHumanVerification: false,
+      govtValidatedBy: officerName,
+      govtValidatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    workflowStore.addTimelineEvent({
+      id: `TL-${Date.now()}-reject`,
+      entityType: 'challenge',
+      entityId: challengeId,
+      action: 'status_changed',
+      actor: officerName,
+      actorRole: 'Government Department',
+      description: officerNote || `Challenge rejected by ${officerName}.`,
+      previousValue: 'Under Review',
+      newValue: 'Rejected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('[WorkflowStore] Failed to reject challenge:', err);
     return false;
   }
+
+  // 2. Sync to API if available
+  try {
+    const { apiClient } = await import('../api/client');
+    await apiClient.transitionChallenge(challengeId, 'Rejected', { note: officerNote, officer: officerName });
+  } catch (err) {
+    console.warn('[API] govReject transition skipped:', err);
+  }
+
+  // 3. Update Firestore (if available)
+  try {
+    if (challengeId && !challengeId.startsWith('LOCAL-') && !challengeId.startsWith('CH-')) {
+      await updateDoc(doc(db, 'challenges', challengeId), updates);
+    }
+  } catch (err) {
+    console.warn('[Firestore] Reject failed:', err);
+  }
+  return true;
 };
 
-// ── Request Additional Evidence Action ────────────────────────────────────────
+// -- Request Additional Evidence Action ----------------------------------------
 // Marks the challenge as needing more evidence from the citizen. Visible to citizen.
 export const govRequestEvidence = async (
   challengeId: string,
@@ -1187,7 +1262,7 @@ export const govRequestEvidence = async (
   }
 };
 
-// ── University Prototype Progress (Stage 11) ──────────────────────────────────
+// -- University Prototype Progress (Stage 11) ----------------------------------
 export const submitPrototypeProgress = async (
   challengeId: string,
   prototype: PrototypeDetails,
@@ -1217,7 +1292,7 @@ export const submitPrototypeProgress = async (
   }
 
   try {
-    if (challengeId && !challengeId.startsWith('LOCAL-')) {
+    if (challengeId && !challengeId.startsWith('LOCAL-') && !challengeId.startsWith('CH-')) {
       await updateDoc(doc(db, 'challenges', challengeId), updates);
     }
     return true;
@@ -1334,3 +1409,4 @@ export const getChallengeByReportId = (
   );
   return partial || null;
 };
+
