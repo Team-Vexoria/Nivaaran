@@ -1,10 +1,9 @@
 import { getAuth } from 'firebase/auth';
 
-import { apiClient } from '../api/client';
-// Reuse apiClient's getBearerToken via shared pattern; direct fetch kept for raw PUT to presigned URL
+import { getBearerToken } from '../api/client';
 export async function uploadEvidenceS3(file: File): Promise<{ storageRef: string }> {
   const base = (import.meta.env?.VITE_API_URL || '') + '/api/v1';
-  const token = await (async () => { try { const a = await import('firebase/auth'); const u = a.getAuth().currentUser; return u ? await u.getIdToken() : ''; } catch { return ''; } })();
+  const token = await getBearerToken();
   const presignRes = await fetch(`${base}/evidence/presign`, {
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ filename: file.name, contentType: file.type }),
@@ -16,6 +15,7 @@ export async function uploadEvidenceS3(file: File): Promise<{ storageRef: string
     method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: JSON.stringify({ storageRef: file.name }),
   });
-  if (!confirmRes.ok) throw new Error('Confirm failed');
-  return { storageRef: file.name };
+  if (!confirmRes.ok) throw new Error('Confirm failed: ' + confirmRes.status);
+  const confirmData = await confirmRes.json();
+  return { storageRef: (confirmData.data || confirmData).storageRef || file.name };
 }
