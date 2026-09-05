@@ -273,11 +273,11 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-bold text-[#1E3A5F] uppercase tracking-wider mb-1">
-                  1. Problem Title <span className="text-red-600">*</span>
+                  {t.reportModal.problemTitleLabel} <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. River overflow submerging primary school road during heavy rain"
+                  placeholder={t.reportModal.problemTitlePlaceholder}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-white border border-[#DCD6C6] rounded-lg text-sm text-[#22201B] focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
@@ -287,11 +287,11 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
               <div>
                 <label className="block text-xs font-bold text-[#1E3A5F] uppercase tracking-wider mb-1">
-                  2. Detailed Description & Hazard Context <span className="text-red-600">*</span>
+                  {t.reportModal.descLabel} <span className="text-red-600">*</span>
                 </label>
                 <textarea
                   rows={3}
-                  placeholder="Describe the current problem, frequency, and local impact..."
+                  placeholder={t.reportModal.descPlaceholder}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-white border border-[#DCD6C6] rounded-lg text-sm text-[#22201B] focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
@@ -303,7 +303,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
             {/* Photo / Video Evidence Intake (Camera & File Picker) */}
             <div className="space-y-2">
               <label className="block text-xs font-bold text-[#1E3A5F] uppercase tracking-wider mb-1 flex items-center justify-between">
-                <span>3. Mandatory Photo / Video Evidence <span className="text-red-600">*</span></span>
+                <span>{t.reportModal.uploadTitle} <span className="text-red-600">*</span></span>
                 <span className={`text-[11px] font-bold px-2 py-0.5 rounded border ${
                   isEvidenceAttached 
                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
@@ -427,7 +427,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
             <div className="grid sm:grid-cols-2 gap-3 pt-1">
               <div>
                 <label className="block text-xs font-bold text-[#1E3A5F] uppercase tracking-wider mb-1">
-                  4. District (Jharkhand) <span className="text-red-600">*</span>
+                  {t.reportModal.districtLabel} <span className="text-red-600">*</span>
                 </label>
                 <select
                   value={district}
@@ -442,7 +442,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
               <div>
                 <label className="block text-xs font-bold text-[#1E3A5F] uppercase tracking-wider mb-1">
-                  Block / Village / Landmark <span className="text-red-600">*</span>
+                  {t.reportModal.panchayatLabel} <span className="text-red-600">*</span>
                 </label>
                 <input
                   type="text"
@@ -532,10 +532,10 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
             </div>
 
             <div className="space-y-1">
-              <span className="text-xs font-mono font-bold text-[#C2760C]">TRACKING CODE</span>
+              <span className="text-xs font-mono font-bold text-[#C2760C]">{t.reportModal.trackingIdLabel}</span>
               <h3 className="text-2xl font-black font-mono text-[#1E3A5F]">{submittedId}</h3>
               <p className="text-xs text-[#5C574C] pt-1">
-                Your geotagged incident report has been registered in the Government of Jharkhand Intake System.
+                {t.reportModal.successDesc}
               </p>
             </div>
 
@@ -556,7 +556,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
               onClick={resetAndClose}
               className="w-full py-3 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-bold text-xs rounded-xl shadow transition-colors"
             >
-              Done & Return to Portal
+              {t.reportModal.closeBtn}
             </button>
           </div>
         )}

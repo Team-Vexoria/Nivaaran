@@ -68,3 +68,35 @@
     color: #201C18;
   }
 }
+
+/* Custom map marker styling */
+.custom-map-marker {
+  background: transparent !important;
+  border: none !important;
+  animation: markerPulse 2s ease-in-out infinite;
+}
+
+@keyframes markerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+.custom-map-marker:hover {
+  transform: scale(1.1) !important;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+  z-index: 1000 !important;
+}
+
+/* Map tiles styling for dark theme */
+.map-tiles {
+  filter: brightness(0.7) contrast(1.1) saturate(0.9);
+}
+
+/* Scrollbar hiding */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

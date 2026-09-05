@@ -4,6 +4,7 @@ import { MapViewport } from './MapViewport';
 import { MapSidebar, FilterState } from './MapSidebar';
 import { useMapData } from '../../services/mapDataService';
 import { ChallengeDoc } from '../../services/firebaseService';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface JharkhandMapExplorerProps {
   govtMode?: boolean;
@@ -21,6 +22,7 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
   onValidate: externalValidate,
   onRequestEvidence: externalRequestEvidence,
 }) => {
+  const { t } = useLanguage();
   const { challenges, districtStats, totalCount, criticalCount, validatedCount, resolvedCount, loading } =
     useMapData();
 
@@ -62,10 +64,10 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
           {onNavigateHome && !embedded && (
             <button
               onClick={onNavigateHome}
-              className="flex items-center gap-1.5 text-[11px] font-bold text-[#4A433B] hover:text-[#201C18] bg-[#EAE4D8] hover:bg-[#DFD8CA] border border-[#E4DDD1] px-2.5 py-1.5 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-[#4A433B] hover:text-[#201C18] bg-[#EAE4D8] hover:bg-[#DFD8CA] border border-[#E4DDD1] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back</span>
+              <span>{t.common.back}</span>
             </button>
           )}
           <div className="flex items-center gap-2">
@@ -74,10 +76,10 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
             </div>
             <div>
               <h1 className="text-sm font-black text-[#201C18] leading-none">
-                Jharkhand Disaster Hotspot Explorer
+                {t.map.explorerTitle}
               </h1>
               <p className="text-[10px] text-[#6A6155]">
-                24-District Live Challenge Map · Government of Jharkhand
+                {t.map.explorerSubtitle}
               </p>
             </div>
           </div>
@@ -87,29 +89,29 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
         <div className="hidden md:flex items-center gap-4 text-center">
           <div>
             <p className="text-base font-black text-[#201C18]">{totalCount}</p>
-            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">Reports</p>
+            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statReports}</p>
           </div>
           <div className="h-6 w-px bg-[#E4DDD1]" />
           <div>
             <p className="text-base font-black text-[#B3261E]">{criticalCount}</p>
-            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">Critical</p>
+            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statCritical}</p>
           </div>
           <div className="h-6 w-px bg-[#E4DDD1]" />
           <div>
             <p className="text-base font-black text-[#2C6E49]">{validatedCount}</p>
-            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">Validated</p>
+            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statValidated}</p>
           </div>
           <div className="h-6 w-px bg-[#E4DDD1]" />
           <div>
             <p className="text-base font-black text-[#6A6155]">{resolvedCount}</p>
-            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">Resolved</p>
+            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statResolved}</p>
           </div>
         </div>
 
         {loading && (
           <div className="flex items-center gap-1.5 text-[11px] text-[#8A7F72]">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>Loading...</span>
+            <span>{t.common.loading}</span>
           </div>
         )}
       </div>
@@ -118,7 +120,7 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
       {!loading && totalCount === 0 && (
         <div className="shrink-0 bg-[#FFF8F0] border-b border-[#E4DDD1] px-4 py-2 flex items-center gap-2 text-[11px] text-[#B45309]">
           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-          <span>No challenge reports yet. Submit a challenge via the Citizen Portal to see it appear on the map.</span>
+          <span>{t.map.noReportsNotice}</span>
         </div>
       )}
 

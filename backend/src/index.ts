@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import poiRoutes from './routes/poiRoutes';
 
 dotenv.config();
 
@@ -14,15 +15,19 @@ app.use(cors({
 
 app.use(express.json());
 
+// Routes
+app.use('/api', poiRoutes);
+
 // Health Check Endpoint
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
-    service: 'NIVAARAN Backend API',
+    service: 'NIVAARAN / LOKIVA Backend API',
     timestamp: new Date().toISOString(),
   });
 });
 
 app.listen(PORT, () => {
-  console.log(`[NIVAARAN] Backend server listening on port ${PORT}`);
+  console.log(`[Backend] Server listening on port ${PORT}`);
 });
+

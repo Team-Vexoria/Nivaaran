@@ -73,14 +73,9 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             className="flex items-center space-x-2.5 cursor-pointer select-none"
           >
             <img src="/logo.png" alt="NIVAARAN Logo" className="h-8 w-auto object-contain shrink-0" />
-            <div className="flex items-center space-x-2">
-              <span className="text-xl font-black font-heading text-[#201C18] tracking-tight leading-none block">
-                NIVAARAN
-              </span>
-              <span className="text-[10px] bg-[#EAE4D8] text-[#C98A2C] font-extrabold px-1.5 py-0.5 rounded border border-[#E4DDD1]">
-                JH-SAMADHAN
-              </span>
-            </div>
+            <span className="text-xl font-black font-heading text-[#201C18] tracking-tight leading-none block">
+              NIVAARAN
+            </span>
           </div>
 
           {/* Consolidated Nav Links */}
@@ -173,7 +168,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                 className="px-3.5 py-2 bg-[#FFF8EC] hover:bg-[#FFF0D0] text-[#C98A2C] font-extrabold text-xs rounded-lg border border-[#F0D99A] transition-all flex items-center space-x-1.5 active:scale-95 cursor-pointer shadow-2xs"
               >
                 <Eye className="w-3.5 h-3.5 shrink-0 text-[#C98A2C]" />
-                <span>Track Challenge</span>
+                <span>{t.landing.navTrackChallenge}</span>
               </button>
             )}
             <button

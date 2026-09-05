@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth, UserRole } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import { AlertCircle, ArrowLeft, Info, ShieldCheck } from 'lucide-react';
 
 interface RoleEmailConfig {
@@ -44,7 +45,8 @@ const ROLE_CONFIGS: Record<UserRole, RoleEmailConfig> = {
 
 export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome }) => {
   const { loginWithEmail, signupWithEmail, loginWithGoogle } = useAuth();
-  
+  const { t } = useLanguage();
+
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
@@ -90,20 +92,20 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
         {onBackToHome && (
           <button
             onClick={onBackToHome}
-            className="absolute top-6 left-6 text-xs text-nivaaran-text-secondary hover:text-nivaaran-primary flex items-center space-x-1 font-medium"
+            className="absolute top-6 left-6 text-xs text-nivaaran-text-secondary hover:text-nivaaran-primary flex items-center space-x-1 font-medium cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
+            <span>{t.auth.backBtn}</span>
           </button>
         )}
 
         <div className="text-center space-y-2 pt-2">
           <img src="/logo.png" alt="NIVAARAN Logo" className="h-12 w-auto object-contain mx-auto" />
           <h2 className="text-2xl font-bold text-nivaaran-primary">
-            {isSignUp ? 'Create NIVAARAN Account' : 'Sign In to NIVAARAN'}
+            {isSignUp ? t.auth.signUpTitle : t.auth.signInTitle}
           </h2>
           <p className="text-xs text-nivaaran-text-secondary">
-            Jharkhand Societal Challenge & Innovation Network
+            {t.auth.tagline}
           </p>
         </div>
 
@@ -116,7 +118,7 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-nivaaran-primary mb-1">Select Portal Role</label>
+            <label className="block text-xs font-semibold text-nivaaran-primary mb-1">{t.auth.selectRole}</label>
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
@@ -135,7 +137,7 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
 
           {isSignUp && (
             <div>
-              <label className="block text-xs font-semibold text-nivaaran-primary mb-1">Full Name</label>
+              <label className="block text-xs font-semibold text-nivaaran-primary mb-1">{t.auth.fullName}</label>
               <input
                 type="text"
                 placeholder="Ramesh Kumar"
@@ -148,7 +150,7 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-nivaaran-primary mb-1">Email Address</label>
+            <label className="block text-xs font-semibold text-nivaaran-primary mb-1">{t.auth.emailAddress}</label>
             <input
               type="email"
               placeholder={currentRoleConfig.placeholder}
@@ -164,7 +166,7 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-nivaaran-primary mb-1">Password</label>
+            <label className="block text-xs font-semibold text-nivaaran-primary mb-1">{t.auth.password}</label>
             <input
               type="password"
               placeholder="••••••••"
@@ -177,23 +179,23 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
 
           <button
             type="submit"
-            className="w-full py-3 bg-nivaaran-primary hover:bg-nivaaran-primary-hover text-white text-sm font-semibold rounded-lg shadow transition-colors"
+            className="w-full py-3 bg-nivaaran-primary hover:bg-nivaaran-primary-hover text-white text-sm font-semibold rounded-lg shadow transition-colors cursor-pointer"
           >
-            {isSignUp ? 'Sign Up & Create Account' : 'Sign In'}
+            {isSignUp ? t.auth.signUpBtn : t.auth.signInBtn}
           </button>
         </form>
 
         <div className="relative flex py-1 items-center">
           <div className="flex-grow border-t border-nivaaran-border"></div>
-          <span className="flex-shrink mx-3 text-xs text-nivaaran-text-secondary uppercase font-semibold">Or</span>
+          <span className="flex-shrink mx-3 text-xs text-nivaaran-text-secondary uppercase font-semibold">{t.auth.orDivider}</span>
           <div className="flex-grow border-t border-nivaaran-border"></div>
         </div>
 
         <button
           onClick={handleGoogleSignIn}
-          className="w-full py-2.5 bg-white border border-nivaaran-border text-nivaaran-text-primary hover:bg-nivaaran-surface text-xs font-semibold rounded-lg transition-colors flex items-center justify-center space-x-2"
+          className="w-full py-2.5 bg-white border border-nivaaran-border text-nivaaran-text-primary hover:bg-nivaaran-surface text-xs font-semibold rounded-lg transition-colors flex items-center justify-center space-x-2 cursor-pointer"
         >
-          <span>Sign In with Google</span>
+          <span>{t.auth.googleSignIn}</span>
         </button>
 
         <div className="text-center pt-2">
@@ -203,9 +205,9 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
               setIsSignUp(!isSignUp);
               setErrorMessage(null);
             }}
-            className="text-xs text-nivaaran-secondary hover:underline font-semibold"
+            className="text-xs text-nivaaran-secondary hover:underline font-semibold cursor-pointer"
           >
-            {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+            {isSignUp ? t.auth.haveAccount : t.auth.needAccount}
           </button>
         </div>
 
@@ -214,7 +216,7 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
           <div className="flex items-center justify-between text-[11px] font-extrabold text-slate-800 uppercase tracking-wider">
             <span className="flex items-center">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 mr-1" />
-              Testing Credentials Quick-Fill & Demo Login:
+              {t.auth.officialAccounts}
             </span>
           </div>
 

@@ -3,6 +3,7 @@ import { MapPin, AlertTriangle, CheckCircle2, Clock, Building2, Cpu } from 'luci
 import { ChallengeDoc } from '../../services/firebaseService';
 import { getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { getSeverityColor, getStatusPillClass, getCategoryColor } from '../../services/mapDataService';
+import { useLanguage } from '../../context/LanguageContext';
 
 interface ChallengePopupCardProps {
   challenge: ChallengeDoc;
@@ -17,8 +18,23 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
   onValidate,
   onRequestEvidence,
 }) => {
+  const { t } = useLanguage();
   const severityColor = getSeverityColor(challenge.riskLevel);
   const categoryColor = getCategoryColor(challenge.category || '');
+
+  const riskLabel: Record<string, string> = {
+    CRITICAL: t.map.riskCritical,
+    HIGH: t.map.riskHigh,
+    MEDIUM: t.map.riskMedium,
+    STANDARD: t.map.riskStandard,
+  };
+
+  const statusLabel: Record<string, string> = {
+    'Under Review': t.map.statusUnderReview,
+    'Government Validated': t.map.statusGovtValidated,
+    'University Active': t.map.statusUniActive,
+    'Resolved': t.map.statusResolved,
+  };
 
   return (
     <div className="w-72 font-sans text-[#201C18]" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -38,7 +54,7 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
             className="text-[10px] font-extrabold px-2 py-0.5 rounded-full text-white shrink-0 whitespace-nowrap"
             style={{ backgroundColor: severityColor }}
           >
-            {challenge.riskLevel || 'STANDARD'}
+            {riskLabel[challenge.riskLevel || 'STANDARD'] || challenge.riskLevel || 'STANDARD'}
           </span>
         </div>
 
@@ -51,13 +67,13 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
       {/* Status + Category */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusPillClass(challenge.status)}`}>
-          {challenge.status}
+          {statusLabel[challenge.status] || challenge.status}
         </span>
         <span
           className="text-[10px] font-semibold px-2 py-0.5 rounded-full text-white"
           style={{ backgroundColor: categoryColor }}
         >
-          {challenge.category || 'General'}
+          {challenge.category || t.map.categoryGeneral}
         </span>
       </div>
 
@@ -66,7 +82,7 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1 text-[10px] font-bold text-[#6A6155] uppercase tracking-wider">
             <Cpu className="w-3 h-3" />
-            <span>AI Priority Score</span>
+            <span>{t.map.aiPriorityScore}</span>
           </div>
           <span
             className="text-sm font-black"
@@ -83,7 +99,7 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
         )}
 
         <p className="text-[9px] text-[#8A7F72] italic">
-          Advisory only — subject to Government officer review
+          {t.map.aiAdvisory}
         </p>
       </div>
 
@@ -97,7 +113,7 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
               <p className="text-[9px] text-[#6A6155] truncate">{challenge.assignedDept}</p>
             )}
           </div>
-          <span className="ml-auto text-[9px] font-bold text-[#2C6E49] shrink-0">Assigned</span>
+          <span className="ml-auto text-[9px] font-bold text-[#2C6E49] shrink-0">{t.map.assigned}</span>
         </div>
       )}
 
@@ -106,17 +122,17 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
         <div className="flex gap-2 mt-2">
           <button
             onClick={() => onValidate?.(challenge.id || challenge.reportId)}
-            className="flex-1 flex items-center justify-center gap-1 bg-[#2C6E49] hover:bg-[#23583a] text-white text-[10px] font-extrabold py-1.5 px-2 rounded-lg transition-colors"
+            className="flex-1 flex items-center justify-center gap-1 bg-[#2C6E49] hover:bg-[#23583a] text-white text-[10px] font-extrabold py-1.5 px-2 rounded-lg transition-colors cursor-pointer"
           >
             <CheckCircle2 className="w-3 h-3" />
-            Validate & Assign
+            {t.map.validateAndAssign}
           </button>
           <button
             onClick={() => onRequestEvidence?.(challenge.id || challenge.reportId)}
-            className="flex-1 flex items-center justify-center gap-1 bg-[#EAE4D8] hover:bg-[#DFD8CA] text-[#4A433B] text-[10px] font-extrabold py-1.5 px-2 rounded-lg border border-[#E4DDD1] transition-colors"
+            className="flex-1 flex items-center justify-center gap-1 bg-[#EAE4D8] hover:bg-[#DFD8CA] text-[#4A433B] text-[10px] font-extrabold py-1.5 px-2 rounded-lg border border-[#E4DDD1] transition-colors cursor-pointer"
           >
             <AlertTriangle className="w-3 h-3 text-[#C98A2C]" />
-            Request Evidence
+            {t.map.requestEvidence}
           </button>
         </div>
       )}

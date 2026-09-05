@@ -346,6 +346,85 @@ export interface LandingTranslations {
   govStripDept: string;
   govStripHelpline: string;
   skipToContent: string;
+  navTrackChallenge: string;
+  trackStatusBtn: string;
+  popularAudits: string;
+  trackChallengePlaceholder: string;
+  uniNode1: string;
+  uniNode2: string;
+  uniNode3: string;
+  uniNode4: string;
+  uniNode5: string;
+  uniNode6: string;
+  uniDomain1: string;
+  uniDomain2: string;
+  uniDomain3: string;
+  uniDomain4: string;
+  uniDomain5: string;
+  uniDomain6: string;
+  uniName1: string;
+  uniName2: string;
+  uniName3: string;
+  uniName4: string;
+  uniName5: string;
+  uniName6: string;
+  tickerResolutionValue: string;
+  footerVersion: string;
+}
+
+export interface AuthTranslations {
+  signInTitle: string;
+  signUpTitle: string;
+  tagline: string;
+  selectRole: string;
+  fullName: string;
+  emailAddress: string;
+  password: string;
+  signInBtn: string;
+  signUpBtn: string;
+  orDivider: string;
+  googleSignIn: string;
+  needAccount: string;
+  haveAccount: string;
+  officialAccounts: string;
+  backBtn: string;
+}
+
+export interface MapTranslations {
+  explorerTitle: string;
+  explorerSubtitle: string;
+  statReports: string;
+  statCritical: string;
+  statValidated: string;
+  statResolved: string;
+  noReportsNotice: string;
+  totalReports: string;
+  critical: string;
+  filters: string;
+  clearAll: string;
+  severity: string;
+  status: string;
+  districtsByReports: string;
+  clearDistrictFilter: string;
+  riskCritical: string;
+  riskHigh: string;
+  riskMedium: string;
+  riskStandard: string;
+  statusUnderReview: string;
+  statusGovtValidated: string;
+  statusUniActive: string;
+  statusResolved: string;
+  aiPriorityScore: string;
+  aiAdvisory: string;
+  assigned: string;
+  validateAndAssign: string;
+  requestEvidence: string;
+  categoryGeneral: string;
+  mapSectionBadge: string;
+  mapSectionTitle: string;
+  mapSectionSubtitle: string;
+  viewFullMapBtn: string;
+  reportsCountSuffix: string;
 }
 
 export interface TranslationDictionary {
@@ -360,6 +439,8 @@ export interface TranslationDictionary {
   leaderboard: LeaderboardTranslations;
   profile: ProfileTranslations;
   landing: LandingTranslations;
+  auth: AuthTranslations;
+  map: MapTranslations;
   common: {
     loading: string;
     error: string;

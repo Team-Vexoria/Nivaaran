@@ -3,8 +3,8 @@ import { PublicNavbar } from '../components/PublicNavbar';
 import { UniversityPortal } from './portals/UniversityPortal';
 import { JharkhandMapExplorer } from '../components/map/JharkhandMapExplorer';
 import { PublicChallengeTracker } from '../components/tracking/PublicChallengeTracker';
-import { 
-  Building2, ShieldCheck, UserCheck, ArrowRight, Cpu, Search, Eye
+import {
+  Building2, ShieldCheck, UserCheck, ArrowRight, Cpu, Search, Eye, Map, Maximize2
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -114,12 +114,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   ];
 
   const universityNodes = [
-    { name: 'BIT Mesra, Ranchi', domain: 'Disaster Electronics & Flood Telemetry', node: 'Center of Excellence' },
-    { name: 'IIT (ISM) Dhanbad', domain: 'Mine Safety & Geotechnical Displacement', node: 'Mining R&D Wing' },
-    { name: 'NIT Jamshedpur', domain: 'Water Basin GIS & Hydraulic Modeling', node: 'Spatial Data Lab' },
-    { name: 'Birsa Agricultural University', domain: 'Agro-Water & Drought Recharge', node: 'Irrigation Division' },
-    { name: 'IIIT Ranchi', domain: 'Low-Cost Edge AI & Sensor Hardware', node: 'IoT Innovation Lab' },
-    { name: 'Ranchi University', domain: 'Civic Surveys & Field Verification', node: 'Feedback Cell' },
+    { name: t.landing.uniName1, domain: t.landing.uniDomain1, node: t.landing.uniNode1 },
+    { name: t.landing.uniName2, domain: t.landing.uniDomain2, node: t.landing.uniNode2 },
+    { name: t.landing.uniName3, domain: t.landing.uniDomain3, node: t.landing.uniNode3 },
+    { name: t.landing.uniName4, domain: t.landing.uniDomain4, node: t.landing.uniNode4 },
+    { name: t.landing.uniName5, domain: t.landing.uniDomain5, node: t.landing.uniNode5 },
+    { name: t.landing.uniName6, domain: t.landing.uniDomain6, node: t.landing.uniNode6 },
   ];
 
   return (
@@ -195,7 +195,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                   <Search className="w-4 h-4 text-[#8A7F72] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Track Challenge Status (e.g. JH-2026-RNC-001)..."
+                    placeholder={t.landing.trackChallengePlaceholder}
                     value={heroTrackQuery}
                     onChange={(e) => setHeroTrackQuery(e.target.value)}
                     className="w-full bg-transparent pl-9 pr-3 py-1.5 text-xs text-[#201C18] font-medium focus:outline-none placeholder:text-[#8A7F72]"
@@ -206,11 +206,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                   className="px-4 py-2 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-extrabold rounded-xl transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 shrink-0"
                 >
                   <Eye className="w-3.5 h-3.5" />
-                  <span>Track Status</span>
+                  <span>{t.landing.trackStatusBtn}</span>
                 </button>
               </form>
               <div className="flex items-center justify-center gap-2 mt-2 text-[11px] text-[#6A6155]">
-                <span className="text-[#8A7F72]">Popular Audits:</span>
+                <span className="text-[#8A7F72]">{t.landing.popularAudits}</span>
                 {['JH-2026-RNC-001', 'JH-2026-DHN-002', 'JH-2026-ESB-003'].map(code => (
                   <button
                     key={code}
@@ -246,7 +246,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               </div>
 
               <div className="p-3 space-y-0.5 md:pl-6">
-                <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">14 Days</p>
+                <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">{t.landing.tickerResolutionValue}</p>
                 <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerResolutionLabel}</p>
                 <p className="text-[11px] text-[#2C6E49] font-medium">{t.landing.tickerResolutionNote}</p>
               </div>
@@ -453,7 +453,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           </div>
         </section>
 
-        {/* 5. 24 Districts GIS & Partner Universities */}
+        {/* 5. 24-Districts Live GIS Disaster & Challenge Hotspot Map */}
+        <section id="gis-map" className="max-w-7xl mx-auto px-6 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div className="space-y-2 max-w-2xl">
+              <span className="text-xs font-extrabold text-[#2C6E49] uppercase tracking-wider flex items-center">
+                <Map className="w-3.5 h-3.5 inline-block mr-1.5" />
+                <span>{t.map.mapSectionBadge}</span>
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-[#201C18]">
+                {t.map.mapSectionTitle}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600">
+                {t.map.mapSectionSubtitle}
+              </p>
+            </div>
+            <button
+              onClick={() => handleNavigatePortal('map')}
+              className="self-start md:self-auto px-4 py-2.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-bold rounded-xl shadow-2xs transition-all flex items-center space-x-2 cursor-pointer shrink-0"
+            >
+              <Maximize2 className="w-4 h-4" />
+              <span>{t.map.viewFullMapBtn}</span>
+            </button>
+          </div>
+
+          <div className="h-[520px] rounded-2xl border border-[#E4DDD1] overflow-hidden shadow-sm bg-white">
+            <JharkhandMapExplorer embedded={true} />
+          </div>
+        </section>
+
+        {/* 6. Partner Universities & Specialization Nodes */}
         <section id="university-network" className="max-w-7xl mx-auto px-6 space-y-6">
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <span className="text-xs font-extrabold text-[#C98A2C] uppercase tracking-wider block">
@@ -586,7 +615,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
           <div className="border-t border-[#3D4550] pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 gap-3">
             <span>{t.landing.footerCopyright}</span>
-            <span className="font-mono text-xs text-slate-300">NIVAARAN Platform v2.0 • SIH 26043</span>
+            <span className="font-mono text-xs text-slate-300">{t.landing.footerVersion}</span>
           </div>
         </div>
       </footer>
