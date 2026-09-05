@@ -67,6 +67,8 @@ export interface ChallengeDoc {
 
 export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'>) => {
   const { apiClient } = await import('../api/client');
+  const { toWorkflowChallengeFromApi } = await import('./workflowAdapters');
+  // Ensure adapter converts backend response if needed; for create, pass correct payload
   const res = await apiClient.createChallenge(challenge as any);
   if (!res.ok || !res.data) {
     const msg = res.error?.message || 'Failed to create challenge';
