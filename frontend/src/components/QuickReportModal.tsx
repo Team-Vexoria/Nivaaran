@@ -164,6 +164,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('FILE PICKER FIRED', e.target.files ? e.target.files.length : 0);
     const input = e.target;
     if (input.files && input.files.length > 0) {
       try {
@@ -519,6 +520,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
               )}
 
               {/* Media Previews */}
+              {console.log('PREVIEWS', filePreviews.length)}
               {filePreviews.length > 0 && (
                 <div className="space-y-2 mt-3 pt-2 border-t border-[#DCD6C6]">
                   <div className="flex items-center justify-between text-xs font-bold text-slate-700">
