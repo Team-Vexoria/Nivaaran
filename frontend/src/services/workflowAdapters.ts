@@ -81,6 +81,7 @@ export function toWorkflowChallenge(doc: ChallengeDoc): Challenge {
     needsHumanVerification: doc.needsHumanVerification,
     govtValidatedBy: doc.govtValidatedBy,
     govtValidatedAt: doc.govtValidatedAt,
+    clusterId: doc.clusterId,
     assignedHEI: doc.assignedHEI,
     assignedDept: doc.assignedDept,
     csrSponsor: doc.csrSponsor,
@@ -120,6 +121,7 @@ export function toLegacyChallengeDoc(challenge: Challenge): ChallengeDoc {
     govtOfficerNote: challenge.govtOfficerNote,
     govtValidatedBy: challenge.govtValidatedBy,
     govtValidatedAt: challenge.govtValidatedAt,
+    clusterId: challenge.clusterId,
     createdAt: challenge.createdAt,
   };
 }
@@ -245,4 +247,31 @@ export function migrateLegacyProjects(): void {
   } catch (e) {
     console.warn('Failed to migrate legacy projects', e);
   }
+}
+
+/**
+ * Converts a backend API Challenge entity (from PostgreSQL/Prisma) to the frontend Workflow Challenge type.
+ */
+export function toWorkflowChallengeFromApi(item: any): Challenge {
+  const status = toChallengeStatus(item.status);
+  const stage = getStageForStatus(status);
+  return {
+    id: item.id,
+    reportId: item.reportId || item.id.slice(0, 8).toUpperCase(),
+    title: item.title,
+    description: item.description,
+    district: item.district_code || item.district || 'Ranchi',
+    block: item.block_code || item.block || 'Kanke',
+    village: item.area_panchayat || item.village || '',
+    category: item.category || 'General',
+    status,
+    stageNumber: stage?.stageNumber || 1,
+    stageName: stage ? formatStageName(stage.stageNumber) : 'Submitted',
+    priorityScore: item.priority_score ? Number(item.priority_score) : undefined,
+    evidenceUrls: Array.isArray(item.evidence)
+      ? item.evidence.map((e: any) => e.storage_ref)
+      : (item.evidenceUrls || []),
+    createdAt: item.created_at ? new Date(item.created_at).toISOString() : new Date().toISOString(),
+    updatedAt: item.updated_at ? new Date(item.updated_at).toISOString() : new Date().toISOString(),
+  };
 }

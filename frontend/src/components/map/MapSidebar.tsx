@@ -40,19 +40,18 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
   criticalCount,
 }) => {
   const { t } = useLanguage();
-
   const riskLabel: Record<string, string> = {
-    CRITICAL: t.map.riskCritical,
-    HIGH: t.map.riskHigh,
-    MEDIUM: t.map.riskMedium,
-    STANDARD: t.map.riskStandard,
+    CRITICAL: t.map.riskCritical || t.map.legendCritical || 'CRITICAL',
+    HIGH: t.map.riskHigh || t.map.legendHigh || 'HIGH',
+    MEDIUM: t.map.riskMedium || t.map.legendMedium || 'MEDIUM',
+    STANDARD: t.map.riskStandard || t.map.legendStandard || 'STANDARD',
   };
 
   const statusLabel: Record<string, string> = {
-    'Under Review': t.map.statusUnderReview,
-    'Government Validated': t.map.statusGovtValidated,
-    'University Active': t.map.statusUniActive,
-    'Resolved': t.map.statusResolved,
+    'Under Review': t.map.statusUnderReview || 'Under Review',
+    'Government Validated': t.map.statusGovtValidated || 'Government Validated',
+    'University Active': t.map.statusUniActive || 'University Active',
+    'Resolved': t.map.statusResolved || 'Resolved',
   };
 
   const sortedDistricts = Object.values(districtStats).sort((a, b) => b.total - a.total);
@@ -67,11 +66,11 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
       <div className="px-3 py-3 border-b border-[#E4DDD1] bg-[#F3EDE2] shrink-0">
         <div className="grid grid-cols-2 gap-2">
           <div className="bg-white rounded-lg border border-[#E4DDD1] px-2.5 py-2">
-            <p className="text-[10px] text-[#6A6155] uppercase font-semibold">{t.map.totalReports}</p>
+            <p className="text-[10px] text-[#6A6155] uppercase font-semibold">{t.map.statsTotal || t.map.totalReports}</p>
             <p className="text-xl font-black text-[#201C18]">{totalCount}</p>
           </div>
           <div className="bg-white rounded-lg border border-[#E4DDD1] px-2.5 py-2">
-            <p className="text-[10px] text-[#6A6155] uppercase font-semibold">{t.map.critical}</p>
+            <p className="text-[10px] text-[#6A6155] uppercase font-semibold">{t.map.statsCritical || t.map.critical}</p>
             <p className="text-xl font-black text-[#B3261E]">{criticalCount}</p>
           </div>
         </div>
@@ -82,7 +81,7 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1 text-[10px] font-bold text-[#6A6155] uppercase tracking-wider">
             <Filter className="w-3 h-3" />
-            <span>{t.map.filters}</span>
+            <span>{t.map.filtersTitle || t.map.filters}</span>
           </div>
           {hasFilters && (
             <button
@@ -95,7 +94,7 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
         </div>
 
         {/* Risk Level */}
-        <p className="text-[9px] text-[#8A7F72] uppercase font-bold tracking-wider mb-1">{t.map.severity}</p>
+        <p className="text-[9px] text-[#8A7F72] uppercase font-bold tracking-wider mb-1">{t.map.severityTitle || t.map.severity}</p>
         <div className="flex flex-wrap gap-1 mb-2">
           {RISK_OPTIONS.map(r => (
             <button
@@ -114,7 +113,7 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
         </div>
 
         {/* Status */}
-        <p className="text-[9px] text-[#8A7F72] uppercase font-bold tracking-wider mb-1">{t.map.status}</p>
+        <p className="text-[9px] text-[#8A7F72] uppercase font-bold tracking-wider mb-1">{t.map.statusTitle || t.map.status}</p>
         <div className="flex flex-wrap gap-1">
           {STATUS_OPTIONS.map(s => (
             <button
@@ -136,7 +135,7 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
       <div className="flex-1 overflow-y-auto">
         <div className="sticky top-0 bg-[#FAF8F4] border-b border-[#E4DDD1] px-3 py-2 flex items-center gap-1 z-10">
           <TrendingUp className="w-3.5 h-3.5 text-[#2C6E49]" />
-          <p className="text-[10px] font-bold text-[#4A433B] uppercase tracking-wider">{t.map.districtsByReports}</p>
+          <p className="text-[10px] font-bold text-[#4A433B] uppercase tracking-wider">{t.map.districtsTitle || t.map.districtsByReports}</p>
         </div>
 
         {selectedDistrict && (
@@ -145,7 +144,7 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
               onClick={() => onDistrictSelect(null)}
               className="text-[10px] font-bold text-[#B5502D] flex items-center gap-1 hover:underline cursor-pointer"
             >
-              <X className="w-3 h-3" /> {t.map.clearDistrictFilter}
+              <X className="w-3 h-3" /> {t.map.clearDistrict || t.map.clearDistrictFilter}
             </button>
           </div>
         )}
@@ -200,13 +199,13 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
 
       {/* ── Legend ── */}
       <div className="border-t border-[#E4DDD1] px-3 py-2 bg-[#F3EDE2] shrink-0">
-        <p className="text-[9px] text-[#8A7F72] font-bold uppercase tracking-wider mb-1.5">{t.map.severity}</p>
+        <p className="text-[9px] text-[#8A7F72] font-bold uppercase tracking-wider mb-1.5">{t.map.legendTitle || t.map.severity}</p>
         <div className="grid grid-cols-2 gap-x-3 gap-y-1">
           {[
-            { label: t.map.riskCritical, color: '#B3261E' },
-            { label: t.map.riskHigh, color: '#B45309' },
-            { label: t.map.riskMedium, color: '#C98A2C' },
-            { label: t.map.riskStandard, color: '#2C6E49' },
+            { label: t.map.legendCritical || t.map.riskCritical, color: '#B3261E' },
+            { label: t.map.legendHigh, color: '#B45309' },
+            { label: t.map.legendMedium, color: '#C98A2C' },
+            { label: t.map.legendStandard, color: '#2C6E49' },
           ].map(({ label, color }) => (
             <div key={label} className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/50" style={{ backgroundColor: color }} />

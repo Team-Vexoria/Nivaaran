@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 
-export type UserRole = 
+export type UserRole =
   | 'Citizen'
   | 'Government Department'
   | 'University Admin'
@@ -17,7 +17,11 @@ export type UserRole =
   | 'Student'
   | 'Industry / MSME'
   | 'CSR Organization'
-  | 'Platform Super Admin';
+  | 'Platform Super Admin'
+  | 'Community / NGO'
+  | 'PRI (Panchayat)'
+  | 'ULB (Urban Local Body)'
+  | 'Research Lab / Industry Lab';
 
 export interface UserProfile {
   uid: string;
@@ -50,6 +54,10 @@ const OFFICIAL_ROLE_MAP: Record<string, UserRole> = {
   'foundation@csr.org': 'CSR Organization',
   'citizen@nivaaran.in': 'Citizen',
   'admin@nivaaran.in': 'Platform Super Admin',
+  'ngo@nivaaran.in': 'Community / NGO',
+  'pri@nivaaran.in': 'PRI (Panchayat)',
+  'ulb@nivaaran.in': 'ULB (Urban Local Body)',
+  'lab@nivaaran.in': 'Research Lab / Industry Lab',
 };
 
 const OFFICIAL_NAME_MAP: Record<string, string> = {
@@ -61,6 +69,10 @@ const OFFICIAL_NAME_MAP: Record<string, string> = {
   'foundation@csr.org': 'CSR Foundation Lead',
   'citizen@nivaaran.in': 'Ramesh Soren',
   'admin@nivaaran.in': 'NIVAARAN State Super Admin',
+  'ngo@nivaaran.in': 'Sewa Samiti Jharkhand',
+  'pri@nivaaran.in': 'Gram Panchayat Adhyaksh',
+  'ulb@nivaaran.in': 'Ranchi Municipal Commissioner',
+  'lab@nivaaran.in': 'IIT(ISM) Dhanbad Innovation Lab',
 };
 
 const isMockFirebase = (): boolean => {

@@ -1,5 +1,5 @@
 import { 
-  collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, where, serverTimestamp
+  collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp, getDoc, where
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
@@ -16,7 +16,8 @@ import type {
   Proposal,
   PrototypeUpdate,
 } from './workflowTypes';
-import { getStageForStatus } from './workflowLifecycle';
+import { getStageForStatus, formatStageName } from './workflowLifecycle';
+import { rankUniversitiesForChallenge } from './heiMatchingEngine';
 
 // Helper: Upload photo/video file to Firebase Storage
 export const uploadEvidenceImage = async (file: File): Promise<string> => {
@@ -341,13 +342,14 @@ export interface ChallengeDoc {
   deploymentDetails?: DeploymentDetails;
   govtValidatedBy?: string;
   govtValidatedAt?: string;
+  clusterId?: string;
   createdAt?: any;
 }
 
 export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'>) => {
   // 1. Add to workflowStore as primary source of truth
   const legacyChallenge: ChallengeDoc = { ...challenge };
-  const result = workflowStore.addChallenge(toWorkflowChallenge(legacyChallenge));
+  const result = await workflowStore.addChallenge(toWorkflowChallenge(legacyChallenge));
   const newId = result.created?.id || result.existing?.id || `CH-${Date.now()}`;
 
   // 2. Attempt Firestore write as optional secondary persistence.
@@ -407,15 +409,17 @@ export interface FeedPostDoc {
   upvotes: number;
   category: string;
   status: string;
+  comments?: FeedCommentDoc[];
   createdAt?: any;
 }
 
 export interface FeedCommentDoc {
   id?: string;
-  postId: string;
+  postId?: string;
   author: string;
   role: 'Citizen' | 'Government Admin' | 'University Student';
   text: string;
+  timestamp?: string;
   isVerifiedGovt?: boolean;
   beforeImg?: string;
   afterImg?: string;
@@ -439,24 +443,52 @@ export const submitFeedPostToFirestore = async (post: Omit<FeedPostDoc, 'id'>) =
 };
 
 export const subscribeToFeedPosts = (callback: (posts: FeedPostDoc[]) => void) => {
+  let unsubscribeFirestore = () => {};
+  
+  const notifyLocal = () => {
+    try {
+      callback(JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]'));
+    } catch {
+      callback([]);
+    }
+  };
+
   try {
     const q = query(collection(db, 'community_posts'), orderBy('createdAt', 'desc'));
-    return onSnapshot(q, (snapshot) => {
-      const docs: FeedPostDoc[] = snapshot.docs.map(docSnap => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      })) as FeedPostDoc[];
-      callback(docs);
-    }, (error) => {
-      console.warn('[Firestore] Using local storage listener for feed posts:', error);
-      const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
-      callback(existing);
+    unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+      const posts: FeedPostDoc[] = [];
+      snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() } as FeedPostDoc));
+      
+      // Merge with local storage for offline support
+      const local = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
+      const localMap = new Map(local.map((p: any) => [p.id, p]));
+      posts.forEach(p => localMap.set(p.id, p));
+      
+      const merged = Array.from(localMap.values()).sort((a: any, b: any) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return timeB - timeA;
+      });
+      callback(merged as FeedPostDoc[]);
+    }, (err) => {
+      console.warn('[Firestore] Feed subscription failed, using local storage:', err);
+      notifyLocal();
     });
   } catch (error) {
-    const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
-    callback(existing);
-    return () => {};
+    console.warn('[Firestore] Initialization failed, using local storage:', error);
+    notifyLocal();
   }
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('nivaaran-storage-changed', notifyLocal);
+  }
+
+  return () => {
+    unsubscribeFirestore();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('nivaaran-storage-changed', notifyLocal);
+    }
+  };
 };
 
 export const upvotePostInFirestore = async (postId: string, currentUpvotes: number) => {
@@ -464,13 +496,47 @@ export const upvotePostInFirestore = async (postId: string, currentUpvotes: numb
     if (!postId.startsWith('LOCAL-')) {
       const postRef = doc(db, 'community_posts', postId);
       await updateDoc(postRef, { upvotes: currentUpvotes + 1 });
-    } else {
-      const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
-      const updated = existing.map((p: any) => p.id === postId ? { ...p, upvotes: p.upvotes + 1 } : p);
-      localStorage.setItem('nivaaran_feed_posts', JSON.stringify(updated));
     }
   } catch (error) {
     console.warn('[Firestore] Local upvote fallback:', error);
+  }
+  
+  // Local storage fallback
+  const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
+  const updated = existing.map((p: any) => p.id === postId ? { ...p, upvotes: p.upvotes + 1 } : p);
+  localStorage.setItem('nivaaran_feed_posts', JSON.stringify(updated));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('nivaaran-storage-changed'));
+  }
+};
+
+export const addCommentToFeedPost = async (postId: string, comment: Omit<FeedCommentDoc, 'id'>) => {
+  const newComment = { ...comment, id: `C-${Date.now()}` };
+  try {
+    if (!postId.startsWith('LOCAL-')) {
+      const postRef = doc(db, 'community_posts', postId);
+      const postSnap = await getDoc(postRef);
+      if (postSnap.exists()) {
+        const postData = postSnap.data() as FeedPostDoc;
+        const existingComments = postData.comments || [];
+        await updateDoc(postRef, { comments: [...existingComments, newComment] });
+      }
+    }
+  } catch (error) {
+    console.warn('[Firestore] Local comment fallback:', error);
+  }
+  
+  // Local storage fallback
+  const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
+  const updated = existing.map((p: any) => {
+    if (p.id === postId) {
+      return { ...p, comments: [...(p.comments || []), newComment] };
+    }
+    return p;
+  });
+  localStorage.setItem('nivaaran_feed_posts', JSON.stringify(updated));
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('nivaaran-storage-changed'));
   }
 };
 
@@ -511,51 +577,63 @@ export const sendChatMessageToFirestore = async (msg: Omit<ChatMessageDoc, 'id'>
 };
 
 export const subscribeToDistrictChat = (district: string, callback: (messages: ChatMessageDoc[]) => void) => {
+  let unsubscribeFirestore = () => {};
+  const key = `nivaaran_chat_${district}`;
+
   const loadLocalMessages = (): ChatMessageDoc[] => {
     try {
-      const key = `nivaaran_chat_${district}`;
-      const saved = JSON.parse(localStorage.getItem(key) || '[]');
-      return saved;
+      return JSON.parse(localStorage.getItem(key) || '[]');
     } catch {
       return [];
     }
   };
 
-  // Immediate callback with local storage messages
-  callback(loadLocalMessages());
-
   try {
-    const q = query(
-      collection(db, 'district_chats'),
-      where('district', '==', district)
-    );
-    return onSnapshot(q, (snapshot) => {
-      if (snapshot.docs.length > 0) {
-        const firestoreDocs: ChatMessageDoc[] = snapshot.docs.map(docSnap => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        })) as ChatMessageDoc[];
-        
-        // Merge firestore docs with local storage docs without duplicates
-        const localDocs = loadLocalMessages();
-        const combined = [...localDocs];
-        firestoreDocs.forEach(fDoc => {
-          if (!combined.some(c => c.id === fDoc.id || c.text === fDoc.text)) {
-            combined.push(fDoc);
-          }
-        });
-        callback(combined);
-      } else {
-        callback(loadLocalMessages());
-      }
-    }, (error) => {
-      console.warn('[Firestore] Using local storage listener for chat:', error);
+    // Wait for the firebase query to return something
+    // Because we use firestore we do an actual query for chat
+    // Ensure you fetch district specific chats
+    const q = query(collection(db, 'district_chats'), orderBy('createdAt', 'asc'));
+    unsubscribeFirestore = onSnapshot(q, (snapshot) => {
+      const msgs: ChatMessageDoc[] = [];
+      snapshot.forEach(doc => {
+        const data = doc.data() as ChatMessageDoc;
+        if (data.district === district) {
+          msgs.push({ id: doc.id, ...data });
+        }
+      });
+      
+      const local = loadLocalMessages();
+      const localMap = new Map(local.map((m: any) => [m.id, m]));
+      msgs.forEach(m => localMap.set(m.id, m));
+      
+      callback(Array.from(localMap.values()).sort((a: any, b: any) => {
+        const timeA = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+        const timeB = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+        return timeA - timeB;
+      }));
+    }, (err) => {
+      console.warn('[Firestore] Chat subscription failed:', err);
       callback(loadLocalMessages());
     });
-  } catch (error) {
+  } catch (err) {
+    console.warn('[Firestore] Chat init failed:', err);
     callback(loadLocalMessages());
-    return () => {};
   }
+
+  const handleStorageChange = () => {
+    callback(loadLocalMessages());
+  };
+
+  if (typeof window !== 'undefined') {
+    window.addEventListener('nivaaran-storage-changed', handleStorageChange);
+  }
+
+  return () => {
+    unsubscribeFirestore();
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('nivaaran-storage-changed', handleStorageChange);
+    }
+  };
 };
 
 // 4. University Projects & Multidisciplinary Teams Persistence
@@ -600,7 +678,7 @@ export interface ProjectDoc {
   updatedAt?: any;
 }
 
-export const saveProjectTeamToStore = (project: ProjectDoc) => {
+export const saveProjectTeamToStore = async (project: ProjectDoc) => {
   try {
     const workflowProj = toWorkflowProject(project);
 
@@ -623,7 +701,7 @@ export const saveProjectTeamToStore = (project: ProjectDoc) => {
       const targetStage = getStageForStatus(target)?.stageNumber;
       if (currentStage === undefined || targetStage === undefined) return false;
       if (currentStage < targetStage) {
-        const transition = workflowStore.transitionChallenge(
+        const transition = await workflowStore.transitionChallenge(
           linkedChallenge.id,
           target,
           workflowProj.facultyMentorName || workflowProj.universityName,
@@ -639,7 +717,7 @@ export const saveProjectTeamToStore = (project: ProjectDoc) => {
     if (existing) {
       workflowStore.updateProject(existing.id, { ...workflowProj, id: existing.id });
     } else {
-      workflowStore.createProject(workflowProj);
+      await workflowStore.createProject(workflowProj);
     }
     return true;
   } catch (err) {
@@ -653,28 +731,28 @@ const getProjectForPhase3 = (projectId: string): { project: ReturnType<typeof wo
   challenge: workflowStore.getChallenge(workflowStore.getProject(projectId)?.challengeId || ''),
 });
 
-const advanceChallengeIfNeeded = (
+const advanceChallengeIfNeeded = async (
   challengeId: string,
   targetStatus: ChallengeStatus,
   actor: string,
   actorRole: string,
   note: string
-): boolean => {
+): Promise<boolean> => {
   const challenge = workflowStore.getChallenge(challengeId);
   const currentStage = challenge ? getStageForStatus(challenge.status)?.stageNumber : undefined;
   const targetStage = getStageForStatus(targetStatus)?.stageNumber;
   if (!challenge || currentStage === undefined || targetStage === undefined) return false;
   if (currentStage >= targetStage) return true;
-  return workflowStore.transitionChallenge(challenge.id, targetStatus, actor, actorRole, note).success;
+  return (await workflowStore.transitionChallenge(challenge.id, targetStatus, actor, actorRole, note)).success;
 };
 
-const updateProjectForPhase3 = (
+const updateProjectForPhase3 = async (
   projectId: string,
   updates: Partial<ReturnType<typeof toWorkflowProject>>,
   actor: string,
   actorRole: string,
   description: string
-): boolean => {
+): Promise<boolean> => {
   const updated = workflowStore.updateProject(projectId, updates);
   if (!updated) return false;
   workflowStore.addTimelineEvent({
@@ -690,10 +768,10 @@ const updateProjectForPhase3 = (
   return true;
 };
 
-export const submitCollaborationOffer = (
+export const submitCollaborationOffer = async (
   projectId: string,
   offer: Omit<CollaborationOffer, 'id' | 'projectId' | 'status' | 'submittedAt'>
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
@@ -720,7 +798,7 @@ export const submitCollaborationOffer = (
   }, offer.partnerName, 'Industry / CSR Partner', `${offer.supportType} collaboration offer submitted.`);
 };
 
-export const requestCollaborationDetails = (projectId: string, partnerName: string): boolean => {
+export const requestCollaborationDetails = async (projectId: string, partnerName: string): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
   const newOffer: CollaborationOffer = {
@@ -738,10 +816,10 @@ export const requestCollaborationDetails = (projectId: string, partnerName: stri
   }, partnerName, 'Industry / CSR Partner', 'Technical details requested from university project team.');
 };
 
-export const submitPrototypeUpdate = (
+export const submitPrototypeUpdate = async (
   projectId: string,
   update: Omit<PrototypeUpdate, 'submittedAt'>
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
@@ -753,10 +831,10 @@ export const submitPrototypeUpdate = (
   }, update.submittedBy, 'University / Project Team', 'Prototype documentation and telemetry submitted.');
 };
 
-export const submitPilotReport = (
+export const submitPilotReport = async (
   projectId: string,
   report: Omit<PilotReport, 'submittedAt'>
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
@@ -768,10 +846,10 @@ export const submitPilotReport = (
   }, report.submittedBy, 'University / Project Team', 'Pilot report and field observations submitted.');
 };
 
-export const submitOutcomeAudit = (
+export const submitOutcomeAudit = async (
   projectId: string,
   audit: OutcomeAudit
-): boolean => {
+): Promise<boolean> => {
   const { project, challenge } = getProjectForPhase3(projectId);
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
@@ -798,7 +876,7 @@ export const subscribeToProjects = (callback: (projects: ProjectDoc[]) => void) 
   return () => window.removeEventListener(STORE_EVENT, notify);
 };
 
-export const updateChallengeUniversityAcceptance = (
+export const updateChallengeUniversityAcceptance = async (
   challengeId: string, 
   heiName: string, 
   deptName: string
@@ -815,7 +893,7 @@ export const updateChallengeUniversityAcceptance = (
       const currentStage = current ? getStageForStatus(current.status)?.stageNumber : undefined;
       const bridgeStage = getStageForStatus(bridgeStatus)?.stageNumber;
       if (currentStage !== undefined && bridgeStage !== undefined && currentStage < bridgeStage) {
-        const bridgeResult = workflowStore.transitionChallenge(
+        const bridgeResult = await workflowStore.transitionChallenge(
           challengeId,
           bridgeStatus,
           'Nivaaran Matching Engine',
@@ -827,7 +905,7 @@ export const updateChallengeUniversityAcceptance = (
     }
 
     const note = `Accepted by ${heiName} (${deptName}). Multidisciplinary R&D team assigned.`;
-    const transitioned = workflowStore.transitionChallenge(
+    const transitioned = await workflowStore.transitionChallenge(
       challengeId,
       'University Accepted',
       heiName,
@@ -836,7 +914,7 @@ export const updateChallengeUniversityAcceptance = (
     );
     if (!transitioned.success) return false;
 
-    return Boolean(workflowStore.updateChallenge(challengeId, {
+    return Boolean(await workflowStore.updateChallenge(challengeId, {
       assignedHEI: heiName,
       assignedDept: deptName,
     }));
@@ -846,8 +924,122 @@ export const updateChallengeUniversityAcceptance = (
   }
 };
 
+// ── Government Proposal Review (Sprint 2 · Feature 2) ─────────────────────────
+// Government officers review university-submitted technical proposals (Stage 9).
+//   Approve          → challenge advances to Prototype Active (Stage 11)
+//   Request Revision → challenge stays at Proposal Submitted (Stage 9)
+//   Reject           → challenge reverts to In Progress (Stage 8) so the team
+//                      can refine and resubmit.
+export const govApproveProposal = async (
+  projectId: string,
+  proposalId: string,
+  officerNote: string,
+  officerName: string
+): Promise<boolean> => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+
+  const proposals = (project.proposals || []).map(p => p.id === proposalId
+    ? { ...p, status: 'Approved' as const, reviewNote: officerNote }
+    : p);
+
+  const note = officerNote || `Proposal approved by Government Officer (${officerName}). Solution work initiated.`;
+  const advanced = advanceChallengeIfNeeded(
+    challenge.id,
+    'Prototype Active',
+    officerName,
+    'Government Department',
+    note
+  );
+  if (!advanced) return false;
+
+  return updateProjectForPhase3(
+    project.id,
+    {
+      status: 'Prototype Active',
+      budgetApproved: project.budgetEstimated ?? project.budgetApproved,
+      proposals,
+    },
+    officerName,
+    'Government Department',
+    `Proposal ${proposalId} approved — advancing to prototype phase.`
+  );
+};
+
+export const govRequestProposalRevision = async (
+  projectId: string,
+  proposalId: string,
+  officerNote: string,
+  officerName: string
+): Promise<boolean> => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+
+  const proposals = (project.proposals || []).map(p => p.id === proposalId
+    ? { ...p, status: 'Revision Requested' as const, reviewNote: officerNote }
+    : p);
+
+  const note = officerNote || `Revision requested by Government Officer (${officerName}). Please refine the technical proposal.`;
+  // Challenge remains at Proposal Submitted (Stage 9).
+  await workflowStore.updateChallenge(challenge.id, { govtOfficerNote: note });
+
+  return updateProjectForPhase3(
+    project.id,
+    { status: 'Proposal Submitted', proposals },
+    officerName,
+    'Government Department',
+    `Revision requested on proposal ${proposalId}.`
+  );
+};
+
+export const govRejectProposal = async (
+  projectId: string,
+  proposalId: string,
+  officerNote: string,
+  officerName: string
+): Promise<boolean> => {
+  const { project, challenge } = getProjectForPhase3(projectId);
+  if (!project || !challenge) return false;
+
+  const proposals = (project.proposals || []).map(p => p.id === proposalId
+    ? { ...p, status: 'Rejected' as const, reviewNote: officerNote }
+    : p);
+
+  const note = officerNote || `Proposal rejected by Government Officer (${officerName}).`;
+  // Revert challenge to In Progress (Stage 8) so the team can refine & resubmit.
+  const reverted = await workflowStore.updateChallenge(challenge.id, {
+    status: 'In Progress',
+    stageNumber: 8,
+    stageName: formatStageName(8),
+    govtOfficerNote: note,
+  });
+  if (!reverted) return false;
+
+  workflowStore.addTimelineEvent({
+    id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    entityType: 'challenge',
+    entityId: challenge.id,
+    action: 'status_changed',
+    actor: officerName,
+    actorRole: 'Government Department',
+    description: note,
+    previousValue: 'Proposal Submitted',
+    newValue: 'In Progress',
+    timestamp: new Date().toISOString(),
+  });
+
+  return updateProjectForPhase3(
+    project.id,
+    { status: 'Team Formed', proposals },
+    officerName,
+    'Government Department',
+    `Proposal ${proposalId} rejected — reverting to team formation.`
+  );
+};
+
 // ── Government Validation Action ──────────────────────────────────────────────
-// Sets status to 'Government Validated', stage 3. Visible immediately to citizen.
+// Sets status to 'Government Validated', stage 3. Then auto-runs HEI matching
+// to advance through Prioritized (stage 5) → HEI Matched (stage 6).
 export const govValidateChallenge = async (
   challengeId: string,
   officerNote: string,
@@ -861,15 +1053,138 @@ export const govValidateChallenge = async (
 
   // 1. Update workflowStore (primary)
   try {
-    const transitioned = workflowStore.transitionChallenge(challengeId, 'Government Validated', officerName, 'Government Department', officerNote);
+    const transitioned = await workflowStore.transitionChallenge(challengeId, 'Government Validated', officerName, 'Government Department', officerNote);
     if (!transitioned.success) return false;
-    workflowStore.updateChallenge(challengeId, {
+    await workflowStore.updateChallenge(challengeId, {
       needsHumanVerification: false,
       govtValidatedBy: officerName,
       govtValidatedAt: new Date().toISOString(),
     });
   } catch (err) {
     console.warn('[WorkflowStore] Failed to transition challenge:', err);
+    return false;
+  }
+
+  // 2. Auto-run HEI matching (stages 5 → 6) after a brief delay for UX
+  setTimeout(async () => {
+    try {
+      const challenge = workflowStore.getChallenge(challengeId);
+      if (!challenge) return;
+
+      // Build a ChallengeDoc from workflowStore data for the matching engine
+      const challengeDoc: ChallengeDoc = {
+        reportId: challenge.reportId,
+        title: challenge.title,
+        district: challenge.district,
+        block: challenge.block,
+        village: challenge.village,
+        category: challenge.category,
+        status: challenge.status,
+        summary: challenge.description,
+        priorityScore: challenge.priorityScore,
+        riskLevel: challenge.riskLevel,
+      };
+
+      const rankings = rankUniversitiesForChallenge(challengeDoc);
+      if (rankings.length === 0) return;
+
+      const bestMatch = rankings[0];
+      const now = new Date().toISOString();
+      const stageHEIMatched = 6;
+
+      // Advance through Prioritized (5) → HEI Matched (6)
+      await workflowStore.updateChallenge(challengeId, {
+        status: 'HEI Matched',
+        stageNumber: stageHEIMatched,
+        stageName: formatStageName(stageHEIMatched),
+        assignedHEI: bestMatch.university.name,
+        assignedDept: bestMatch.recommendedDepartment?.name || bestMatch.university.departments[0]?.name,
+        updatedAt: now,
+      });
+
+      // Timeline: Prioritized
+      workflowStore.addTimelineEvent({
+        id: `TL-${Date.now()}-prioritized`,
+        entityType: 'challenge',
+        entityId: challengeId,
+        action: 'status_changed',
+        actor: 'AI Prioritization Engine',
+        actorRole: 'AI System',
+        description: `Challenge prioritized. Priority score: ${challenge.priorityScore ?? 'N/A'}/100. Risk level: ${challenge.riskLevel ?? 'STANDARD'}. Queued for institution matching.`,
+        previousValue: 'Government Validated',
+        newValue: 'Prioritized',
+        timestamp: new Date(Date.now() + 1).toISOString(),
+      });
+
+      // Timeline: HEI Matched
+      workflowStore.addTimelineEvent({
+        id: `TL-${Date.now()}-hei-matched`,
+        entityType: 'challenge',
+        entityId: challengeId,
+        action: 'status_changed',
+        actor: 'AI HEI Matching Engine',
+        actorRole: 'AI System',
+        description: `Matched to ${bestMatch.university.name} (${bestMatch.university.shortName}) — ${bestMatch.matchScore}% compatibility. Department: ${bestMatch.recommendedDepartment?.name || 'General'}. ${bestMatch.matchingReasons[0] || ''}`,
+        previousValue: 'Prioritized',
+        newValue: 'HEI Matched',
+        timestamp: new Date(Date.now() + 2).toISOString(),
+      });
+    } catch (err) {
+      console.warn('[HEI AutoMatch] Failed:', err);
+    }
+  }, 800); // 800ms delay so the gov validated status renders first
+
+  // 3. Update Firestore (if available)
+  try {
+    if (challengeId && !challengeId.startsWith('LOCAL-') && !challengeId.startsWith('CH-')) {
+      await updateDoc(doc(db, 'challenges', challengeId), updates);
+    }
+    return true;
+  } catch (err) {
+    console.warn('[Firestore] Govt validate failed:', err);
+    return true;
+  }
+};
+
+// ── Reject Challenge Action ───────────────────────────────────────────────────
+// Sets status to 'Rejected', removing it from the active queue. Visible to citizen.
+export const govRejectChallenge = async (
+  challengeId: string,
+  officerNote: string,
+  officerName: string
+): Promise<boolean> => {
+  const updates: Partial<ChallengeDoc> = {
+    status: 'Rejected',
+    govtOfficerNote: officerNote || `Rejected by Government Officer (${officerName}). Challenge does not meet submission criteria.`,
+    needsHumanVerification: false,
+  };
+
+  // 1. Update workflowStore (primary)
+  try {
+    await workflowStore.updateChallenge(challengeId, {
+      status: 'Rejected',
+      stageNumber: 2,
+      stageName: 'Rejected',
+      govtOfficerNote: updates.govtOfficerNote,
+      needsHumanVerification: false,
+      govtValidatedBy: officerName,
+      govtValidatedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+    workflowStore.addTimelineEvent({
+      id: `TL-${Date.now()}-reject`,
+      entityType: 'challenge',
+      entityId: challengeId,
+      action: 'status_changed',
+      actor: officerName,
+      actorRole: 'Government Department',
+      description: officerNote || `Challenge rejected by ${officerName}.`,
+      previousValue: 'Under Review',
+      newValue: 'Rejected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.warn('[WorkflowStore] Failed to reject challenge:', err);
     return false;
   }
 
@@ -880,7 +1195,7 @@ export const govValidateChallenge = async (
     }
     return true;
   } catch (err) {
-    console.warn('[Firestore] Govt validate failed:', err);
+    console.warn('[Firestore] Reject failed:', err);
     return true;
   }
 };
@@ -900,9 +1215,9 @@ export const govRequestEvidence = async (
 
   // 1. Update workflowStore (primary)
   try {
-    const transitioned = workflowStore.transitionChallenge(challengeId, 'Evidence Requested', officerName, 'Government Department', officerNote);
+    const transitioned = await workflowStore.transitionChallenge(challengeId, 'Evidence Requested', officerName, 'Government Department', officerNote);
     if (!transitioned.success) return false;
-    workflowStore.updateChallenge(challengeId, {
+    await workflowStore.updateChallenge(challengeId, {
       needsHumanVerification: true,
     });
   } catch (err) {

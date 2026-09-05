@@ -6,7 +6,6 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
-  Sparkles,
   MapPin,
   Compass,
   Layers,
@@ -94,7 +93,7 @@ export const IndiaDiscoveryMap: React.FC<IndiaDiscoveryMapProps> = ({
   
   const [selectedLandmark, setSelectedLandmark] = useState<LandmarkPOI | null>(null);
   const [selectedState, setSelectedState] = useState<StateRegionData | null>(null);
-  const [selectedDistrict, setSelectedDistrict] = useState<DistrictInfo | null>(null);
+  const [_selectedDistrict, setSelectedDistrict] = useState<DistrictInfo | null>(null);
   
   const mapRef = useRef<L.Map | null>(null);
   
@@ -469,9 +468,4 @@ export const IndiaDiscoveryMap: React.FC<IndiaDiscoveryMapProps> = ({
     </div>
   );
 };
-
-          className="map-tiles"
-        />
-        
-        <MapViewController center={mapCenter} zoom={mapZoom} />
 

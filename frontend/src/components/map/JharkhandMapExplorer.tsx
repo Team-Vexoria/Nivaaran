@@ -67,7 +67,7 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
               className="flex items-center gap-1.5 text-[11px] font-bold text-[#4A433B] hover:text-[#201C18] bg-[#EAE4D8] hover:bg-[#DFD8CA] border border-[#E4DDD1] px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{t.common.back}</span>
+              <span>{t.map.back || t.common.back}</span>
             </button>
           )}
           <div className="flex items-center gap-2">
@@ -76,10 +76,10 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
             </div>
             <div>
               <h1 className="text-sm font-black text-[#201C18] leading-none">
-                {t.map.explorerTitle}
+                {t.map.title || t.map.explorerTitle}
               </h1>
               <p className="text-[10px] text-[#6A6155]">
-                {t.map.explorerSubtitle}
+                {t.map.subtitle || t.map.explorerSubtitle}
               </p>
             </div>
           </div>
@@ -89,29 +89,29 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
         <div className="hidden md:flex items-center gap-4 text-center">
           <div>
             <p className="text-base font-black text-[#201C18]">{totalCount}</p>
-            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statReports}</p>
+            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statsTotal || t.map.statReports}</p>
           </div>
           <div className="h-6 w-px bg-[#E4DDD1]" />
           <div>
             <p className="text-base font-black text-[#B3261E]">{criticalCount}</p>
-            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statCritical}</p>
+            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statsCritical || t.map.statCritical}</p>
           </div>
           <div className="h-6 w-px bg-[#E4DDD1]" />
           <div>
             <p className="text-base font-black text-[#2C6E49]">{validatedCount}</p>
-            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statValidated}</p>
+            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statsValidated || t.map.statValidated}</p>
           </div>
           <div className="h-6 w-px bg-[#E4DDD1]" />
           <div>
             <p className="text-base font-black text-[#6A6155]">{resolvedCount}</p>
-            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statResolved}</p>
+            <p className="text-[9px] text-[#8A7F72] uppercase font-semibold">{t.map.statsResolved || t.map.statResolved}</p>
           </div>
         </div>
 
         {loading && (
           <div className="flex items-center gap-1.5 text-[11px] text-[#8A7F72]">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            <span>{t.common.loading}</span>
+            <span>{t.map.loading || t.common.loading}</span>
           </div>
         )}
       </div>
@@ -120,7 +120,7 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
       {!loading && totalCount === 0 && (
         <div className="shrink-0 bg-[#FFF8F0] border-b border-[#E4DDD1] px-4 py-2 flex items-center gap-2 text-[11px] text-[#B45309]">
           <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-          <span>{t.map.noReportsNotice}</span>
+          <span>{t.map.noDataTitle || t.map.noReportsNotice}</span>
         </div>
       )}
 

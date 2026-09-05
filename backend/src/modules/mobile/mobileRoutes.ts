@@ -1,0 +1,1 @@
+export const mobileRoutes = [ { path: '/mobile/challenges/nearby', method: 'GET', desc: 'Nearby challenges by geo' }, { path: '/mobile/submit', method: 'POST', desc: 'Quick citizen report' }, { path: '/mobile/evidence', method: 'POST', desc: 'Photo upload with vision' } ];

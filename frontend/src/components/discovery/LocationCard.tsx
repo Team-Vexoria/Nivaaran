@@ -1,9 +1,7 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Place } from '../../lib/placesData';
 import { Badge } from '../ui/Badge';
 import { ExternalLink, IndianRupee } from 'lucide-react';
-import { cardHover } from '../../utils/animations';
 
 interface LocationCardProps {
   place: Place;
@@ -22,9 +20,8 @@ export const LocationCard: React.FC<LocationCardProps> = ({ place, onExplore }) 
   };
 
   return (
-    <motion.div
-      className="relative group cursor-pointer"
-      whileHover={cardHover}
+    <div
+      className="relative group cursor-pointer transition-transform hover:-translate-y-1"
       onClick={() => onExplore(place)}
     >
       <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl overflow-hidden border border-white/10 shadow-xl">
@@ -71,6 +68,6 @@ export const LocationCard: React.FC<LocationCardProps> = ({ place, onExplore }) 
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

@@ -13,6 +13,7 @@ import type {
   ChallengeStatus,
 } from './workflowTypes';
 import { formatStageName, getStageForStatus, isValidStageTransition } from './workflowLifecycle';
+import { apiClient } from '../api/client';
 
 const STORE_KEY = 'nivaaran_workflow_state';
 export const STORE_EVENT = 'nivaaran-store-updated';
@@ -29,6 +30,30 @@ class WorkflowStore {
         m.migrateLegacyProjects();
       }).catch(e => console.error("Migration import failed", e));
     }, 0);
+
+    // Cross-tab sync: when localStorage changes in another tab, reload state.
+    // The `storage` event fires in all tabs *except* the one that made the change,
+    // so the `CustomEvent(STORE_EVENT)` in `persist()` handles same-tab updates.
+    if (typeof window !== 'undefined') {
+      window.addEventListener('storage', (e: StorageEvent) => {
+        if (!e.key || !e.key.startsWith('nivaaran_')) return;
+        try {
+          if (e.key === STORE_KEY && e.newValue) {
+            const parsed: unknown = JSON.parse(e.newValue);
+            if (this.isWorkflowState(parsed)) {
+              this.state = parsed;
+            }
+          }
+          // Dispatch a generic event so all nivaaran_* subscribers
+          // (feed posts, chat, etc.) can re-read their own localStorage.
+          window.dispatchEvent(new CustomEvent('nivaaran-storage-changed', {
+            detail: { key: e.key }
+          }));
+        } catch {
+          // Ignore malformed cross-tab payload
+        }
+      });
+    }
   }
 
   // ── Persistence ─────────────────────────────────────────────────────────────
@@ -108,10 +133,18 @@ class WorkflowStore {
     return this.state.challenges.find((c) => c.id === idOrReportId || c.reportId === idOrReportId);
   }
 
-  public addChallenge(challenge: Challenge): { created?: Challenge, duplicate?: boolean, existing?: Challenge } {
+  public async addChallenge(challenge: Challenge): Promise<{ created?: Challenge, duplicate?: boolean, existing?: Challenge }> {
     const existing = this.findChallengeByIdOrReportId(challenge.id) || this.findChallengeByIdOrReportId(challenge.reportId);
     if (existing) {
       return { duplicate: true, existing };
+    }
+
+    const apiRes = await apiClient.createChallenge(challenge as Omit<Challenge, 'id' | 'createdAt' | 'updatedAt'>);
+    if (apiRes.ok && apiRes.data) {
+      const serverChallenge = apiRes.data as Challenge;
+      const challenges = [serverChallenge, ...this.state.challenges];
+      this.persist({ ...this.state, challenges });
+      return { created: serverChallenge };
     }
 
     const now = new Date().toISOString();
@@ -127,7 +160,7 @@ class WorkflowStore {
     return { created: newChallenge };
   }
 
-  public updateChallenge(id: string, updates: Partial<Challenge>): Challenge | undefined {
+  public async updateChallenge(id: string, updates: Partial<Challenge>): Promise<Challenge | undefined> {
     const challenge = this.findChallengeByIdOrReportId(id);
     if (!challenge) return undefined;
     
@@ -143,13 +176,13 @@ class WorkflowStore {
     return updatedChallenge;
   }
 
-  public transitionChallenge(
+  public async transitionChallenge(
     id: string,
     newStatus: ChallengeStatus,
     actor: string,
     actorRole: string,
     note?: string
-  ): { success: boolean; reason?: string } {
+  ): Promise<{ success: boolean; reason?: string }> {
     const challenge = this.findChallengeByIdOrReportId(id);
     if (!challenge) return { success: false, reason: 'Challenge not found' };
 
@@ -165,28 +198,28 @@ class WorkflowStore {
       return { success: false, reason: `Invalid transition from stage ${currentStage.stageNumber} to ${nextStage.stageNumber}` };
     }
 
-    const updated = this.updateChallenge(challenge.id, {
+    const apiRes = await apiClient.transitionChallenge(challenge.id, 'statusChange', { newStatus, note, actor, actorRole });
+    if (apiRes.ok) {
+      const updated = await this.updateChallenge(challenge.id, {
+        status: newStatus,
+        stageNumber: nextStage.stageNumber,
+        stageName: formatStageName(nextStage.stageNumber),
+        ...(note && { govtOfficerNote: note }),
+      });
+      if (updated) {
+        this.addTimelineEvent({ id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, entityType: 'challenge', entityId: challenge.id, action: 'status_changed', actor, actorRole, description: note || `Status changed from ${previousStatus} to ${newStatus}`, previousValue: previousStatus, newValue: newStatus, timestamp: new Date().toISOString() });
+      }
+      return { success: true };
+    }
+    const updated = await this.updateChallenge(challenge.id, {
       status: newStatus,
       stageNumber: nextStage.stageNumber,
       stageName: formatStageName(nextStage.stageNumber),
       ...(note && { govtOfficerNote: note }),
     });
-
     if (!updated) return { success: false, reason: 'Update failed' };
 
-    this.addTimelineEvent({
-      id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-      entityType: 'challenge',
-      entityId: challenge.id,
-      action: 'status_changed',
-      actor,
-      actorRole,
-      description: note || `Status changed from ${previousStatus} to ${newStatus}`,
-      previousValue: previousStatus,
-      newValue: newStatus,
-      timestamp: new Date().toISOString(),
-    });
-    
+    // Timeline event already handled above
     return { success: true };
   }
 
@@ -204,13 +237,15 @@ class WorkflowStore {
     return this.state.projects.find((p) => p.challengeId === challengeId);
   }
 
-  public createProject(project: Project): Project | { duplicate: true, existing: Project } {
+  public async createProject(project: Project): Promise<Project | { duplicate: true, existing: Project }> {
     const existing = this.getProject(project.id) || this.getProjectByChallengeId(project.challengeId);
     if (existing) {
       return { duplicate: true, existing };
     }
     
-    const projects = [...this.state.projects, project];
+    const apiRes = await apiClient.createProject(project as Omit<Project, 'id' | 'createdAt' | 'updatedAt'>);
+    const serverProject = apiRes.ok && apiRes.data ? (apiRes.data as Project) : project;
+    const projects = [...this.state.projects, serverProject];
     this.persist({ ...this.state, projects });
 
     this.addTimelineEvent({

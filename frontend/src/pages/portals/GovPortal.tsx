@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
-import { 
-  ShieldCheck, 
-  CheckCircle2, 
-  Map, 
-  ListFilter, 
-  BarChart3, 
-  LogOut, 
-  AlertCircle, 
-  Building2, 
-  Clock, 
-  X, 
-  MessageSquare, 
+import React, { useState, useMemo } from 'react';
+import {
+  CheckCircle2,
+  Map as MapIcon,
+  ListFilter,
+  LogOut,
+  AlertCircle,
+  Building2,
+  Clock,
+  X,
+  MessageSquare,
   AlertTriangle,
   LayoutDashboard,
   ArrowRight,
@@ -23,15 +21,31 @@ import {
   User,
   FileText,
   Download,
-  Check
+  Check,
+  Pencil,
+  Rocket,
+  Archive,
+  TrendingUp,
+  CheckCheck,
+  ShieldCheck,
+  Award
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
 import { useMapData, getSeverityBg, getStatusPillClass } from '../../services/mapDataService';
-import { govValidateChallenge, govRequestEvidence, govVerifyAndDeployChallenge, ChallengeDoc } from '../../services/firebaseService';
+import { govValidateChallenge, govRequestEvidence, govVerifyAndDeployChallenge, govRejectChallenge, ChallengeDoc } from '../../services/firebaseService';
 import { CertificateModal } from '../../components/CertificateModal';
+import { ProposalReviewTab } from '../../components/gov/ProposalReviewTab';
+import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
+import { getStageForStatus } from '../../services/workflowLifecycle';
+import { JHARKHAND_UNIVERSITIES } from '../../services/universityData';
+import { ClusterReviewTab } from '../../components/gov/ClusterReviewTab';
+import { DeploymentApprovalTab } from '../../components/gov/DeploymentApprovalTab';
+import { ClosureTab } from '../../components/gov/ClosureTab';
+import { PortalLoadingState, PortalEmptyState } from '../../components/PortalUIStates';
 
-type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'reports';
+
+type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports' | 'deployment' | 'closure' | 'clusters';
 
 interface HEIData {
   id: string;
@@ -48,98 +62,11 @@ interface HEIData {
   district: string;
 }
 
-const HEI_LIST: HEIData[] = [
-  {
-    id: 'bit-mesra',
-    name: 'BIT Mesra, Ranchi',
-    role: 'Centre of Excellence in Flood Telemetry & Sensor Systems',
-    domain: 'Water Logging, IoT Sensors, Early Warning Hardware',
-    assigned: 4,
-    teams: 8,
-    lead: 'Dr. S. K. Verma (Dept of ECE)',
-    email: 'verma.sk@bitmesra.ac.in',
-    phone: '+91 651 227 5444',
-    facilities: 'IoT Fabrication Lab, Ultrasonic Water Sensors, LoRa Mesh Gateways',
-    badge: 'Lead Nodal Centre',
-    district: 'Ranchi'
-  },
-  {
-    id: 'iit-dhanbad',
-    name: 'IIT (ISM) Dhanbad',
-    role: 'Geotechnical & Mine Safety Innovation Wing',
-    domain: 'Landslides, Subsidence, Open-Cast Pit Flooding',
-    assigned: 3,
-    teams: 6,
-    lead: 'Prof. R. Banerjee (Dept of Mining)',
-    email: 'rbanerjee@iitism.ac.in',
-    phone: '+91 326 223 5000',
-    facilities: 'Ground Radar, Displacement Telemetry, Pit Monitoring Drones',
-    badge: 'Premier R&D Lab',
-    district: 'Dhanbad'
-  },
-  {
-    id: 'nit-jamshedpur',
-    name: 'NIT Jamshedpur',
-    role: 'Hydraulic Modeling & Spatial River Basin Lab',
-    domain: 'River Overflow, Culvert Blockage, GIS Spatial Flow',
-    assigned: 3,
-    teams: 5,
-    lead: 'Dr. A. K. Choudhary (Civil Engg)',
-    email: 'akchoudhary.ce@nitjsr.ac.in',
-    phone: '+91 657 237 3407',
-    facilities: 'Hydraulic Basin Simulator, Drone GIS, Catchment Stream Sensors',
-    badge: 'Spatial GIS Node',
-    district: 'East Singhbhum'
-  },
-  {
-    id: 'bau-ranchi',
-    name: 'Birsa Agricultural University',
-    role: 'Agro-Water & Drought Mitigation Research Unit',
-    domain: 'Groundwater Depletion, Check-Dam Telemetry',
-    assigned: 2,
-    teams: 4,
-    lead: 'Dr. M. Soren (Soil & Water Engg)',
-    email: 'm.soren@bauranchi.org',
-    phone: '+91 651 245 0850',
-    facilities: 'Soil Moisture Testbed, Rainwater Loggers, Solar Well Telemetry',
-    badge: 'Agritech Centre',
-    district: 'Ranchi'
-  },
-  {
-    id: 'iiit-ranchi',
-    name: 'IIIT Ranchi',
-    role: 'Low-Cost Edge AI & Embedded Telemetry Cell',
-    domain: 'Edge AI Camera Triage, Low-Bandwidth LoRa Mesh',
-    assigned: 2,
-    teams: 4,
-    lead: 'Dr. P. Roy (Computer Science)',
-    email: 'proy@iiitranchi.ac.in',
-    phone: '+91 651 226 0005',
-    facilities: 'Embedded AI Kits, LoRaWAN Gateway, Acoustic Triage Hardware',
-    badge: 'Edge AI Node',
-    district: 'Ranchi'
-  },
-  {
-    id: 'ranchi-univ',
-    name: 'Ranchi University',
-    role: 'Civic Field Surveys & Ground Impact Cell',
-    domain: 'Socio-Economic Audit, Citizen Verification',
-    assigned: 2,
-    teams: 3,
-    lead: 'Dr. K. Kumari (Social Science)',
-    email: 'kkumari@ranchiuniversity.ac.in',
-    phone: '+91 651 220 8553',
-    facilities: 'Field Survey Kit, Multilingual Audit App, Civic Voucher Ledger',
-    badge: 'Impact Audit Cell',
-    district: 'Ranchi'
-  }
-];
-
 // ─── Challenge Inspection & Action Modal ──────────────────────────────────────
 interface ChallengeDetailModalProps {
   challenge: ChallengeDoc;
   officerName: string;
-  onConfirmAction: (type: 'validate' | 'evidence' | 'deploy', note: string) => void;
+  onConfirmAction: (type: 'validate' | 'evidence' | 'deploy' | 'reject', note: string) => void;
   onClose: () => void;
 }
 
@@ -149,7 +76,7 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
   onConfirmAction,
   onClose,
 }) => {
-  const [selectedAction, setSelectedAction] = useState<'validate' | 'evidence' | 'deploy'>('validate');
+  const [selectedAction, setSelectedAction] = useState<'validate' | 'evidence' | 'deploy' | 'reject'>('validate');
   const [officerNote, setOfficerNote] = useState('');
 
   const isPending = challenge.status === 'Under Review';
@@ -158,10 +85,12 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
   const defaultValidateNote = `Validated by ${officerName}. Ground report & evidence verified. Matched for academic lab assignment.`;
   const defaultEvidenceNote = `Evidence requested by ${officerName}. Citizen requested to provide updated clear photo/video proof with timestamp.`;
   const defaultDeployNote = `Pilot verified by ${officerName}. Field telemetry & Panchayat trial confirmed. Authorized for statewide line department rollout.`;
+  const defaultRejectNote = `Rejected by ${officerName}. Does not meet government priority criteria or duplicate report.`;
 
   const getNotePlaceholder = () => {
     if (selectedAction === 'deploy') return defaultDeployNote;
     if (selectedAction === 'evidence') return defaultEvidenceNote;
+    if (selectedAction === 'reject') return defaultRejectNote;
     return defaultValidateNote;
   };
 
@@ -485,26 +414,77 @@ export const GovPortal: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<GovTab>('overview');
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warning' } | null>(null);
-  
   // Modals state
   const [inspectModalChallenge, setInspectModalChallenge] = useState<ChallengeDoc | null>(null);
   const [selectedHEIModal, setSelectedHEIModal] = useState<HEIData | null>(null);
-
   const [certificateModal, setCertificateModal] = useState<{ isOpen: boolean; challenge: ChallengeDoc | null }>({
     isOpen: false,
     challenge: null,
   });
 
+  // Priority override editor state
+  const [editingPriorityId, setEditingPriorityId] = useState<string | null>(null);
+  const [priorityEditValue, setPriorityEditValue] = useState<string>('');
+
   const { challenges, totalCount, criticalCount, validatedCount, resolvedCount, loading } = useMapData();
 
+  // Live workflow store data for Impact KPIs tab
+  const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());
+
+  React.useEffect(() => {
+    const handler = () => setWfChallenges(workflowStore.getChallenges());
+    window.addEventListener(STORE_EVENT, handler);
+    return () => window.removeEventListener(STORE_EVENT, handler);
+  }, []);
+
   const officerName = currentUser?.displayName || 'Government Officer';
+
+  // ── Live computed stats from workflowStore ──────────────────────────────────────
+  const districtStats = useMemo(() => {
+    const wf = workflowStore.getChallenges();
+    const byDistrict = new Map<string, { total: number; risks: string[]; hei: string }>();
+    wf.forEach(c => {
+      const d = c.district || 'Unknown';
+      const existing = byDistrict.get(d) || { total: 0, risks: [], hei: '' };
+      existing.total += 1;
+      if (c.riskLevel) existing.risks.push(c.riskLevel);
+      if (c.assignedHEI && !existing.hei) existing.hei = c.assignedHEI;
+      byDistrict.set(d, existing);
+    });
+    return Array.from(byDistrict.entries())
+      .map(([district, data]) => ({
+        district,
+        total: data.total,
+        maxRisk: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].find(r => data.risks.includes(r)) || 'STD',
+        hei: data.hei || '',
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [wfChallenges]);
+
+  const hazardBreakdown = useMemo(() => {
+    const wf = workflowStore.getChallenges();
+    const total = wf.length || 1;
+    const byCategory = new Map<string, number>();
+    wf.forEach(c => {
+      const cat = c.category || 'Other';
+      byCategory.set(cat, (byCategory.get(cat) || 0) + 1);
+    });
+    return Array.from(byCategory.entries())
+      .map(([domain, count]) => ({
+        domain,
+        count: `${Math.round((count / total) * 100)}%`,
+        value: count / total,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  }, [wfChallenges]);
 
   const showToast = (text: string, type: 'success' | 'warning' = 'success') => {
     setToastMessage({ text, type });
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const handleConfirmInspectionAction = async (type: 'validate' | 'evidence' | 'deploy', note: string) => {
+  const handleConfirmInspectionAction = async (type: 'validate' | 'evidence' | 'deploy' | 'reject', note: string) => {
     if (!inspectModalChallenge) return;
     const ch = inspectModalChallenge;
     const id = ch.id || ch.reportId;
@@ -526,6 +506,14 @@ export const GovPortal: React.FC = () => {
           : `Unable to validate "${ch.title}".`,
         succeeded ? 'success' : 'warning'
       );
+    } else if (type === 'reject') {
+      const succeeded = await govRejectChallenge(id, note, officerName);
+      showToast(
+        succeeded
+          ? `✗ "${ch.title}" rejected and removed from queue.`
+          : `Unable to reject "${ch.title}". Please try again.`,
+        succeeded ? 'warning' : 'warning'
+      );
     } else {
       const succeeded = await govRequestEvidence(id, note, officerName);
       showToast(
@@ -543,10 +531,14 @@ export const GovPortal: React.FC = () => {
 
   const tabs: { id: GovTab; label: string; icon: React.ReactNode }[] = [
     { id: 'overview',     label: 'Overview',              icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
-    { id: 'map',          label: 'State Map',             icon: <Map className="w-3.5 h-3.5" /> },
+    { id: 'map',          label: 'State Map',             icon: <MapIcon className="w-3.5 h-3.5" /> },
     { id: 'queue',        label: 'Challenge Queue',       icon: <ListFilter className="w-3.5 h-3.5" /> },
+    { id: 'clusters',     label: 'Cluster Review',        icon: <Layers className="w-3.5 h-3.5" /> },
     { id: 'universities', label: 'HEI Allocations',       icon: <Building2 className="w-3.5 h-3.5" /> },
-    { id: 'reports',      label: 'Reports & Analytics',   icon: <BarChart3 className="w-3.5 h-3.5" /> },
+    { id: 'proposals',    label: 'Proposal Review',       icon: <FileCheck className="w-3.5 h-3.5" /> },
+    { id: 'deployment',   label: 'Deployment Approval',   icon: <Rocket className="w-3.5 h-3.5" /> },
+    { id: 'reports',      label: 'Impact KPIs',           icon: <TrendingUp className="w-3.5 h-3.5" /> },
+    { id: 'closure',      label: 'Closure',               icon: <Archive className="w-3.5 h-3.5" /> },
   ];
 
   const pendingCount = challenges.filter(c => c.status === 'Under Review').length;
@@ -785,6 +777,12 @@ export const GovPortal: React.FC = () => {
                               >
                                 <Eye className="w-3.5 h-3.5" /> Inspect & Validate
                               </button>
+                              <button
+                                onClick={() => setInspectModalChallenge(ch)}
+                                className="text-[11px] font-extrabold text-[#B91C1C] bg-[#FEF2F2] hover:bg-[#FEE2E2] border border-[#FECACA] px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
+                              >
+                                Reject
+                              </button>
                             </div>
                           </div>
                         );
@@ -819,31 +817,36 @@ export const GovPortal: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#F0EBE0] text-[#4A433B]">
-                        {[
-                          { name: 'Ranchi', reports: 142, risk: 'CRITICAL', hei: 'BIT Mesra' },
-                          { name: 'Dhanbad', reports: 98, risk: 'CRITICAL', hei: 'IIT (ISM) Dhanbad' },
-                          { name: 'East Singhbhum', reports: 86, risk: 'HIGH', hei: 'NIT Jamshedpur' },
-                          { name: 'Palamu', reports: 114, risk: 'HIGH', hei: 'Birsa Agri Univ' },
-                          { name: 'Hazaribagh', reports: 65, risk: 'MEDIUM', hei: 'VBU Hazaribagh' },
-                        ].map((d, i) => (
-                          <tr 
-                            key={i} 
-                            onClick={() => setActiveTab('map')}
-                            className="hover:bg-[#FAF8F4] transition-colors cursor-pointer"
-                          >
-                            <td className="py-2.5 px-3 font-bold text-[#201C18] flex items-center gap-1.5">
-                              <MapPin className="w-3 h-3 text-[#C98A2C]" />
-                              <span>{d.name}</span>
+                        {districtStats.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="p-0">
+                              <PortalEmptyState
+                                title="No district data available yet"
+                                description="Once challenges are submitted, they will appear here."
+                              />
                             </td>
-                            <td className="py-2.5 px-3 font-bold">{d.reports}</td>
-                            <td className="py-2.5 px-3">
-                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getSeverityBg(d.risk)} text-white`}>
-                                {d.risk}
-                              </span>
-                            </td>
-                            <td className="py-2.5 px-3 font-semibold text-[#2C6E49]">{d.hei}</td>
                           </tr>
-                        ))}
+                        ) : (
+                          districtStats.map((d) => (
+                            <tr 
+                              key={d.district} 
+                              onClick={() => setActiveTab('map')}
+                              className="hover:bg-[#FAF8F4] transition-colors cursor-pointer"
+                            >
+                              <td className="py-2.5 px-3 font-bold text-[#201C18] flex items-center gap-1.5">
+                                <MapPin className="w-3 h-3 text-[#C98A2C]" />
+                                <span>{d.district}</span>
+                              </td>
+                              <td className="py-2.5 px-3 font-bold">{d.total}</td>
+                              <td className="py-2.5 px-3">
+                                <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${getSeverityBg(d.maxRisk)} text-white`}>
+                                  {d.maxRisk || 'STD'}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-3 font-semibold text-[#2C6E49]">{d.hei || '—'}</td>
+                            </tr>
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -854,33 +857,45 @@ export const GovPortal: React.FC = () => {
               {/* Right Column */}
               <div className="lg:col-span-5 space-y-6">
 
-                {/* Domain Breakdown */}
+                {/* 1. Category & Hazard Domain Breakdown (live from workflowStore) */}
                 <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4">
                   <div className="flex items-center justify-between border-b border-[#F0EBE0] pb-3">
                     <div className="flex items-center space-x-2">
                       <Layers className="w-4 h-4 text-[#2C6E49]" />
                       <h3 className="text-sm font-extrabold text-[#201C18]">Hazard Domain Breakdown</h3>
                     </div>
+                    <span className="text-[11px] font-mono text-[#8A7F72]">
+                      {hazardBreakdown.length} Active Domains
+                    </span>
                   </div>
 
                   <div className="space-y-3">
-                    {[
-                      { domain: 'Flood, Water Logging & Drainage', count: '42%', color: 'bg-[#2C6E49]' },
-                      { domain: 'Mining, Subsidence & Landslides', count: '24%', color: 'bg-[#B45309]' },
-                      { domain: 'Rural Roads & Infrastructure', count: '18%', color: 'bg-[#C98A2C]' },
-                      { domain: 'Agro-Drought & Groundwater', count: '11%', color: 'bg-[#B5502D]' },
-                      { domain: 'School Safety & Hazards', count: '5%', color: 'bg-[#5A5247]' },
-                    ].map((item, idx) => (
-                      <div key={idx} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-[#201C18] text-[11px] truncate">{item.domain}</span>
-                          <span className="font-mono font-extrabold text-[#201C18]">{item.count}</span>
+                    {hazardBreakdown.length === 0 ? (
+                      <PortalEmptyState
+                        title="No category data yet"
+                        description="Challenges will populate this when submitted."
+                      />
+                    ) : (
+                      hazardBreakdown.map((item, idx) => (
+                        <div key={`${item.domain}-${idx}`} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="font-bold text-[#201C18] text-[11px] truncate">{item.domain}</span>
+                            <span className="font-mono font-extrabold text-[#8A7F72]">{item.count}</span>
+                          </div>
+                          <div className="w-full bg-[#FAF8F4] border border-[#E4DDD1] h-2 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                idx === 0 ? 'bg-[#2C6E49]' :
+                                idx === 1 ? 'bg-[#C98A2C]' :
+                                idx === 2 ? 'bg-[#B5502D]' :
+                                idx === 3 ? 'bg-blue-600' : 'bg-purple-600'
+                              }`}
+                              style={{ width: `${item.value * 100}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="w-full bg-[#FAF8F4] border border-[#E4DDD1] h-2 rounded-full overflow-hidden">
-                          <div className={`h-full ${item.color} rounded-full`} style={{ width: item.count }} />
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -890,7 +905,7 @@ export const GovPortal: React.FC = () => {
                     onClick={() => setActiveTab('map')}
                     className="p-4 bg-white border border-[#E4DDD1] hover:border-[#2C6E49] rounded-xl text-left transition-all group cursor-pointer shadow-2xs space-y-1.5"
                   >
-                    <Map className="w-5 h-5 text-[#2C6E49]" />
+                    <MapIcon className="w-5 h-5 text-[#2C6E49]" />
                     <p className="text-xs font-black text-[#201C18] group-hover:text-[#2C6E49]">GIS Map</p>
                     <p className="text-[10px] text-[#8A7F72]">24 Districts Hotspots</p>
                   </button>
@@ -913,7 +928,10 @@ export const GovPortal: React.FC = () => {
         )}
 
         {/* HEI ALLOCATIONS TAB */}
-        {activeTab === 'universities' && (
+        {activeTab === 'universities' && (() => {
+          const liveUniCount = JHARKHAND_UNIVERSITIES.length;
+          const liveDeptCount = JHARKHAND_UNIVERSITIES.reduce((sum, u) => sum + (u.departments?.length ?? 0), 0);
+          return (
           <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs">
               <div>
@@ -931,62 +949,86 @@ export const GovPortal: React.FC = () => {
               <div className="flex items-center gap-3 shrink-0">
                 <div className="bg-[#FAF8F4] border border-[#E4DDD1] px-3.5 py-2 rounded-xl text-right">
                   <p className="text-[10px] font-bold text-[#8A7F72] uppercase">Partner HEIs</p>
-                  <p className="text-sm font-extrabold text-[#201C18]">6 Institutions</p>
+                  <p className="text-sm font-extrabold text-[#201C18]">{liveUniCount} Institutions</p>
                 </div>
                 <div className="bg-[#FAF8F4] border border-[#E4DDD1] px-3.5 py-2 rounded-xl text-right">
                   <p className="text-[10px] font-bold text-[#8A7F72] uppercase">R&D Labs</p>
-                  <p className="text-sm font-extrabold text-[#2C6E49]">48+ Connected</p>
+                  <p className="text-sm font-extrabold text-[#2C6E49]">{liveDeptCount}+ Connected</p>
                 </div>
               </div>
             </div>
 
-            {/* Interactive HEI Cards Grid */}
+            {/* University Cards Grid — driven by JHARKHAND_UNIVERSITIES + live project counts */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {HEI_LIST.map((hei) => (
-                <div
-                  key={hei.id}
-                  onClick={() => setSelectedHEIModal(hei)}
-                  className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#2C6E49] hover:shadow-md transition-all cursor-pointer group"
-                >
-                  <div className="flex items-start justify-between gap-2 border-b border-[#FAF8F4] pb-3">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2 py-0.5 rounded-full">
-                        {hei.badge}
-                      </span>
-                      <h3 className="text-base font-extrabold text-[#201C18] font-heading mt-1 group-hover:text-[#2C6E49] transition-colors">{hei.name}</h3>
-                      <p className="text-[11px] text-[#8A7F72]">{hei.role}</p>
-                    </div>
-                    <Building2 className="w-5 h-5 text-[#2C6E49] shrink-0 mt-1" />
-                  </div>
+              {JHARKHAND_UNIVERSITIES.slice(0, 6).map((uni) => {
+                const uniProjects = workflowStore.getProjects().filter(
+                  p => p.universityId === uni.id
+                );
+                const activeProjects = uniProjects.filter(p =>
+                  !['Completed', 'Cancelled'].includes(p.status || '')
+                ).length;
+                const teamCount = uni.departments?.length ?? 0;
+                const primaryDept = uni.departments?.[0] ?? 'R&D';
+                const role = `${primaryDept} Research & Innovation Centre`;
+                const badge = uni.type === 'Central University' ? 'Premier R&D Lab'
+                  : uni.type === 'National Institute' || uni.type === 'Institute of National Importance' ? 'Technical Node'
+                  : uni.type === 'State University' ? 'State R&D Cell'
+                  : 'HEI Partner';
 
-                  <div className="space-y-2 text-xs">
-                    <div>
-                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Specialization:</span>
-                      <p className="text-[#201C18] font-semibold">{hei.domain}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Faculty Lead:</span>
-                      <p className="text-[#4A433B]">{hei.lead}</p>
-                    </div>
-                    <div>
-                      <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Lab Facilities:</span>
-                      <p className="text-[#6A6155] text-[11px] line-clamp-1">{hei.facilities}</p>
-                    </div>
-                  </div>
+                const heiItem: HEIData = {
+                  id: uni.id,
+                  name: uni.name,
+                  role,
+                  domain: uni.departments?.slice(0, 3).join(', ') ?? 'R&D',
+                  assigned: activeProjects,
+                  teams: teamCount,
+                  lead: 'Dr. Nodal Officer',
+                  email: `contact@${uni.id}.ac.in`,
+                  phone: '+91 651 220 0000',
+                  facilities: 'IoT Lab, Ground Telemetry, Testing Beds',
+                  badge,
+                  district: uni.district
+                };
 
-                  <div className="pt-2 border-t border-[#F0EBE0] flex items-center justify-between text-xs">
-                    <span className="font-bold text-[#2C6E49] flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> {hei.assigned} Active Projects
-                    </span>
-                    <span className="text-[#8A7F72] font-mono group-hover:text-[#201C18] font-bold">
-                      View Details →
-                    </span>
+                return (
+                  <div 
+                    key={uni.id} 
+                    onClick={() => setSelectedHEIModal(heiItem)}
+                    className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4 hover:border-[#2C6E49] hover:shadow-md transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-start justify-between gap-2 border-b border-[#FAF8F4] pb-3">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2 py-0.5 rounded-full">
+                          {badge}
+                        </span>
+                        <h3 className="text-base font-extrabold text-[#201C18] font-heading mt-1 group-hover:text-[#2C6E49] transition-colors">{uni.name}</h3>
+                        <p className="text-[11px] text-[#8A7F72]">{role}</p>
+                      </div>
+                      <Building2 className="w-5 h-5 text-[#2C6E49] shrink-0 mt-1" />
+                    </div>
+
+                    <div className="space-y-2 text-xs">
+                      <div>
+                        <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Departments:</span>
+                        <p className="text-[#201C18] font-semibold">{uni.departments?.slice(0, 3).join(', ') ?? '—'}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">District:</span>
+                        <p className="text-[#4A433B]">{uni.district}, Jharkhand</p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-[#F0EBE0] flex items-center justify-between text-xs">
+                      <span className="font-bold text-[#2C6E49]">{activeProjects} Active Projects</span>
+                      <span className="text-[#8A7F72] font-mono group-hover:text-[#201C18] font-bold">View Details →</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* MAP TAB */}
         {activeTab === 'map' && (
@@ -1022,16 +1064,18 @@ export const GovPortal: React.FC = () => {
             </div>
 
             {loading ? (
-              <div className="text-center py-16 text-[#8A7F72] text-sm">Loading live challenge data…</div>
+              <PortalLoadingState />
             ) : challenges.length === 0 ? (
-              <div className="bg-white border border-[#E4DDD1] rounded-xl p-12 text-center">
-                <AlertCircle className="w-8 h-8 text-[#C98A2C] mx-auto mb-3" />
-                <p className="text-sm font-bold text-[#4A433B]">No challenge reports yet.</p>
-              </div>
+              <PortalEmptyState
+                title="No challenge reports yet"
+                description="Reports submitted via the Citizen Portal appear here in real-time."
+              />
             ) : (
               <div className="space-y-3">
                 {challenges.map(ch => {
                   const isPending = ch.status === 'Under Review';
+                  const id = ch.id || ch.reportId;
+                  const needsEvidence = ch.status === 'Evidence Requested';
 
                   return (
                     <div
@@ -1050,13 +1094,127 @@ export const GovPortal: React.FC = () => {
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getStatusPillClass(ch.status)}`}>
                               {ch.status}
                             </span>
+                            {needsEvidence && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#FFF8EC] text-[#C98A2C] border border-[#F0D99A]">
+                                Evidence Requested
+                              </span>
+                            )}
+                            {ch.clusterId && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
+                                <Layers className="w-2.5 h-2.5" />
+                                Clustered
+                              </span>
+                            )}
                           </div>
                           <h3 className="text-sm font-bold text-[#201C18] leading-tight">{ch.title}</h3>
                           <p className="text-xs text-[#6A6155] mt-0.5">
                             {[ch.village, ch.block, ch.district].filter(Boolean).join(', ')}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right shrink-0">
+                          {editingPriorityId === id ? (
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                step={0.1}
+                                min={0}
+                                max={10}
+                                value={priorityEditValue}
+                                onChange={(e) => setPriorityEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    const val = parseFloat(priorityEditValue);
+                                    if (!isNaN(val) && val >= 0 && val <= 10) {
+                                      workflowStore.updateChallenge(id, { priorityScore: val });
+                                      workflowStore.addTimelineEvent({
+                                        id: `TL-${Date.now()}-prio-${id}`,
+                                        entityType: 'challenge',
+                                        entityId: id,
+                                        action: 'priority_overridden',
+                                        actor: officerName,
+                                        actorRole: 'Government Department',
+                                        description: `Priority overridden from ${ch.priorityScore?.toFixed(1) ?? '—'} to ${val.toFixed(1)}`,
+                                        previousValue: ch.priorityScore?.toFixed(1),
+                                        newValue: val.toFixed(1),
+                                        timestamp: new Date().toISOString(),
+                                      });
+                                      showToast(`Priority updated to ${val.toFixed(1)}/10 for "${ch.title}"`);
+                                    }
+                                    setEditingPriorityId(null);
+                                  }
+                                  if (e.key === 'Escape') setEditingPriorityId(null);
+                                }}
+                                onBlur={() => setEditingPriorityId(null)}
+                                autoFocus
+                                className="w-16 px-1.5 py-1 text-sm font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#C98A2C] rounded-lg text-right focus:outline-none"
+                              />
+                              <span className="text-[9px] text-[#8A7F72]">/10</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => {
+                                setEditingPriorityId(id);
+                                setPriorityEditValue(ch.priorityScore !== undefined ? String(ch.priorityScore) : '');
+                              }}
+                              className="group flex items-center gap-1 cursor-pointer"
+                              title="Click to override AI priority score"
+                            >
+                              <p className="text-sm font-extrabold text-[#C98A2C]">
+                                {ch.priorityScore !== undefined ? `${ch.priorityScore.toFixed(1)}/10` : '—'}
+                              </p>
+                              <Pencil className="w-3 h-3 text-[#C98A2C]/40 group-hover:text-[#C98A2C] transition-colors" />
+                            </button>
+                          )}
+                          <p className="text-[9px] text-[#8A7F72]">AI Priority Score</p>
+                        </div>
+                      </div>
+
+                      {/* AI Reasoning */}
+                      {ch.aiReasoning && (
+                        <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-lg px-3 py-2 text-[11px] text-[#5A5247] leading-relaxed">
+                          <span className="font-bold text-[#8A7F72] uppercase text-[9px] tracking-wider">AI Reasoning: </span>
+                          {ch.aiReasoning}
+                        </div>
+                      )}
+
+                      {/* Stage + HEI */}
+                      <div className="flex items-center justify-between flex-wrap gap-2 text-[11px]">
+                        <div className="flex items-center gap-4">
+                          {ch.stageName && (
+                            <div className="flex items-center gap-1 text-[#8A7F72]">
+                              <Clock className="w-3 h-3" />
+                              <span>{ch.stageName}</span>
+                            </div>
+                          )}
+                          {ch.assignedHEI && (
+                            <div className="flex items-center gap-1 text-[#2C6E49]">
+                              <Building2 className="w-3 h-3" />
+                              <span className="font-semibold">{ch.assignedHEI}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Certificate generation button for verified/resolved challenges */}
+                        <button
+                          onClick={() => setCertificateModal({ isOpen: true, challenge: ch })}
+                          className="flex items-center gap-1 text-[11px] font-bold text-[#2C6E49] hover:text-[#23583a] bg-[#F0FAF4] hover:bg-[#E3F6EC] border border-[#C3E6D0] px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Award className="w-3.5 h-3.5" />
+                          <span>Generate Official Certificate</span>
+                        </button>
+                      </div>
+
+                      {/* Govt officer note */}
+                      {ch.govtOfficerNote && (
+                        <div className="flex items-start gap-1.5 text-[11px] text-[#4A433B] bg-[#EAE4D8] border border-[#E4DDD1] rounded-lg px-3 py-2">
+                          <MessageSquare className="w-3 h-3 mt-0.5 shrink-0 text-[#C98A2C]" />
+                          <span>{ch.govtOfficerNote}</span>
+                        </div>
+                      )}
+
+                      {/* Action buttons — only for Under Review */}
+                      {isPending && (
+                        <div className="flex gap-2 pt-1">
                           <button
                             onClick={() => setInspectModalChallenge(ch)}
                             className="text-xs font-extrabold text-white bg-[#2C6E49] hover:bg-[#23583a] px-3.5 py-2 rounded-xl transition-colors cursor-pointer shadow-2xs flex items-center gap-1.5"
@@ -1064,8 +1222,15 @@ export const GovPortal: React.FC = () => {
                             <Eye className="w-4 h-4" />
                             <span>{isPending ? 'Inspect & Decide' : 'View Inspection File'}</span>
                           </button>
+                          <button
+                            onClick={() => setInspectModalChallenge(ch)}
+                            className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-extrabold py-2 px-4 rounded-lg border border-red-200 transition-colors cursor-pointer"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            Reject
+                          </button>
                         </div>
-                      </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1074,8 +1239,36 @@ export const GovPortal: React.FC = () => {
           </div>
         )}
 
-        {/* REPORTS & ANALYTICS TAB */}
-        {activeTab === 'reports' && (
+        {/* PROPOSAL REVIEW TAB */}
+        {activeTab === 'proposals' && (
+          <ProposalReviewTab officerName={officerName} />
+        )}
+
+        {/* CLUSTER REVIEW TAB */}
+        {activeTab === 'clusters' && (
+          <ClusterReviewTab officerName={officerName} showToast={showToast} />
+        )}
+
+        {/* DEPLOYMENT APPROVAL TAB */}
+        {activeTab === 'deployment' && (
+          <DeploymentApprovalTab officerName={officerName} showToast={showToast} />
+        )}
+
+        {/* CLOSURE TAB */}
+        {activeTab === 'closure' && (
+          <ClosureTab officerName={officerName} showToast={showToast} />
+        )}
+
+        {/* REPORTS & IMPACT KPIs TAB */}
+        {activeTab === 'reports' && (() => {
+          const wf = wfChallenges;
+          const resolvedCount2 = wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').length;
+          const deploymentCount = wf.filter(c => c.status === 'Outcome Audit').length;
+          const prototypeCount = wf.filter(c => {
+            const s = getStageForStatus(c.status)?.stageNumber || 0;
+            return s >= 11;
+          }).length;
+          return (
           <div className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
             <div className="flex items-center justify-between">
               <div>
@@ -1090,14 +1283,15 @@ export const GovPortal: React.FC = () => {
                 <span>Export State Report (PDF)</span>
               </button>
             </div>
-            
+
+            {/* Top KPIs */}
             <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
               {[
                 { label: 'Total Challenges', value: totalCount, color: 'text-[#201C18]', bg: '' },
                 { label: 'Pending Review', value: pendingCount, color: 'text-[#C98A2C]', bg: 'bg-[#FFF8EC]' },
-                { label: 'Critical Alerts', value: criticalCount, color: 'text-[#B3261E]', bg: 'bg-[#FFF0EE]' },
-                { label: 'Govt. Validated', value: validatedCount, color: 'text-[#2C6E49]', bg: 'bg-[#F0FAF4]' },
-                { label: 'Resolved', value: resolvedCount, color: 'text-[#6A6155]', bg: '' },
+                { label: 'Deployments', value: deploymentCount, color: 'text-[#2C6E49]', bg: 'bg-[#F0FAF4]' },
+                { label: 'Resolved / Closed', value: resolvedCount2, color: 'text-[#B3261E]', bg: 'bg-[#FFF0EE]' },
+                { label: 'At Stage 11+', value: prototypeCount, color: 'text-[#6A6155]', bg: '' },
               ].map(kpi => (
                 <div key={kpi.label} className={`${kpi.bg || 'bg-white'} border border-[#E4DDD1] rounded-xl p-5 shadow-2xs`}>
                   <p className="text-xs text-[#6A6155] font-semibold mb-1">{kpi.label}</p>
@@ -1127,24 +1321,78 @@ export const GovPortal: React.FC = () => {
               </div>
             </div>
 
+            {/* Lifecycle funnel */}
+            <div className="bg-white border border-[#E4DDD1] rounded-xl p-6 space-y-4 shadow-2xs">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[#2C6E49]" />
+                <p className="text-sm font-bold text-[#201C18]">Lifecycle Funnel</p>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                {[
+                  { label: 'Submitted', match: (s: string) => s === 'Submitted' || s === 'Under Review', color: 'text-[#C98A2C]' },
+                  { label: 'Validated', match: (s: string) => s === 'Government Validated' || s === 'Clustered' || s === 'Prioritized', color: 'text-[#4A433B]' },
+                  { label: 'HEI Matched → Accepted', match: (s: string) => ['HEI Matched','University Accepted','In Progress','Proposal Submitted','Industry Collaboration'].includes(s), color: 'text-[#2C6E49]' },
+                  { label: 'Resolved / Closed', match: (s: string) => s === 'Resolved' || s === 'Closed', color: 'text-[#B3261E]' },
+                ].map(f => {
+                  const count = wf.filter(c => f.match(c.status)).length;
+                  return (
+                    <div key={f.label} className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4">
+                      <p className={`text-2xl font-black ${f.color}`}>{count}</p>
+                      <p className="text-[10px] text-[#6A6155] font-semibold mt-0.5">{f.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Impact records for resolved/closed */}
             <div className="bg-white border border-[#E4DDD1] rounded-xl p-6 space-y-3 shadow-2xs">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-[#2C6E49]" />
-                <p className="text-sm font-bold text-[#201C18]">Executive Summary</p>
+                <CheckCheck className="w-4 h-4 text-[#2C6E49]" />
+                <p className="text-sm font-bold text-[#201C18]">Verified Impact Records</p>
               </div>
-              <p className="text-xs text-[#6A6155] leading-relaxed">
-                The NIVAARAN platform currently tracks <strong className="text-[#201C18]">{totalCount}</strong> citizen-reported 
-                societal challenges across 24 Jharkhand districts. 
-                <strong className="text-[#B3261E]"> {criticalCount}</strong> are flagged as Critical severity by the AI triage engine, 
-                requiring immediate government attention.{' '}
-                <strong className="text-[#C98A2C]">{pendingCount}</strong> are pending government officer review.{' '}
-                <strong className="text-[#2C6E49]"> {validatedCount}</strong> challenges have been government-validated and are 
-                visible to matched university R&D labs for acceptance.{' '}
-                <strong className="text-[#6A6155]">{resolvedCount}</strong> have been resolved with verified community impact.
-              </p>
+              {wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').length === 0 ? (
+                <PortalEmptyState
+                  title="No impact records yet"
+                  description="Approve deployments in the Deployment Approval tab to record impact."
+                />
+              ) : (
+                <div className="space-y-3">
+                  {wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').map(c => {
+                    const proj = workflowStore.getProjects().find(p => p.challengeId === c.id || p.challengeId === c.reportId);
+                    const metrics = proj?.outcomeAudit?.metrics || {};
+                    const metricEntries = Object.entries(metrics);
+                    return (
+                      <div key={c.id} className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4 space-y-2">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <p className="text-sm font-bold text-[#201C18]">{c.title}</p>
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${c.status === 'Closed' ? 'bg-[#2C6E49] text-white' : 'bg-[#B3261E] text-white'}`}>
+                            {c.status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#6A6155]">{c.district} · {c.assignedHEI || 'University R&D'}</p>
+                        {proj?.outcomeAudit?.summary && (
+                          <p className="text-xs text-[#4A433B] bg-white border border-[#E4DDD1] rounded-lg px-3 py-2 italic">“{proj.outcomeAudit.summary}”</p>
+                        )}
+                        {metricEntries.length > 0 && (
+                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {metricEntries.map(([k, v]) => (
+                              <div key={k} className="bg-white border border-[#E4DDD1] rounded-lg px-3 py-2 text-center">
+                                <p className="text-lg font-black text-[#C98A2C]">{String(v)}</p>
+                                <p className="text-[9px] text-[#6A6155] font-semibold uppercase tracking-wider">{k}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
-        )}
+          );
+        })()}
       </main>
 
       {/* Toast */}

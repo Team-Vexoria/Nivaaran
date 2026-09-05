@@ -11,6 +11,7 @@ import {
 } from '../../services/mapDataService';
 import { ChallengePopupCard } from './ChallengePopupCard';
 import ReactDOM from 'react-dom/client';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Fix default Leaflet icon broken by bundlers
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -71,6 +72,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
   onValidate,
   onRequestEvidence,
 }) => {
+  const { t } = useLanguage();
   const mapRef = useRef<L.Map | null>(null);
   const mapDivRef = useRef<HTMLDivElement>(null);
   const geoJsonLayerRef = useRef<L.GeoJSON | null>(null);
@@ -164,8 +166,11 @@ export const MapViewport: React.FC<MapViewportProps> = ({
 
         layer.on('mouseover', (e) => {
           (e.target as L.Path).setStyle({ weight: 2, color: '#2C6E49' });
+          const tooltipText = (t.map.districtTooltip || '{distName}: {count} reports')
+            .replace('{distName}', distName)
+            .replace('{count}', String(stat?.total ?? 0));
           const tooltip = L.tooltip({ permanent: false, direction: 'center', className: 'nivaaran-district-tooltip' })
-            .setContent(`<strong>${distName}</strong><br/>${stat?.total ?? 0} reports`)
+            .setContent(`<strong>${distName}</strong><br/>${tooltipText}`)
             .setLatLng((layer as L.Polygon).getBounds().getCenter());
           map.openTooltip(tooltip);
         });
@@ -225,7 +230,10 @@ export const MapViewport: React.FC<MapViewportProps> = ({
 
       const icon = createCentroidIcon();
       const marker = L.marker([centroid.lat, centroid.lng], { icon });
-      marker.bindTooltip(`${dist}: ${stat.total} reports (no GPS coords)`, { direction: 'top' });
+      const markerTooltip = (t.map.noGpsCoords || '{count} reports in {distName}')
+        .replace('{distName}', dist)
+        .replace('{count}', String(stat.total));
+      marker.bindTooltip(markerTooltip, { direction: 'top' });
       marker.addTo(centroidLayer);
     }
   }, [challenges, districtStats, govtMode, onValidate, onRequestEvidence]);

@@ -1,6 +1,9 @@
-﻿import { useState, useEffect } from 'react';
-import { subscribeToChallenges, ChallengeDoc } from './firebaseService';
+import { useState, useEffect } from 'react';
+import { apiClient } from '../api/client';
+import { ChallengeDoc } from './firebaseService';
 import { getStageForStatus } from './workflowLifecycle';
+import { toLegacyChallengeDoc, toWorkflowChallengeFromApi } from './workflowAdapters';
+import { workflowStore } from './workflowStore';
 
 export const JHARKHAND_DISTRICT_CENTROIDS: Record<string, { lat: number; lng: number }> = {
   'Ranchi':               { lat: 23.3441, lng: 85.3096 },
@@ -89,11 +92,24 @@ export interface DistrictStat {
   latestChallenge?: ChallengeDoc;
 }
 
-function buildDistrictStats(challenges: ChallengeDoc[]): Record<string, DistrictStat> {
+function buildDistrictStats(
+  challenges: ChallengeDoc[],
+  heatmapDistricts?: Array<{ districtName?: string; districtCode?: string; totalChallenges?: number; avgPriorityScore?: number | null }>
+): Record<string, DistrictStat> {
   const stats: Record<string, DistrictStat> = {};
 
   for (const district of Object.keys(JHARKHAND_DISTRICT_CENTROIDS)) {
     stats[district] = { district, total: 0, critical: 0, high: 0, medium: 0, standard: 0, topCategory: 'None' };
+  }
+
+  // Overlay real server-side aggregated metrics if available
+  if (Array.isArray(heatmapDistricts)) {
+    for (const hd of heatmapDistricts) {
+      const dName = hd.districtName || hd.districtCode;
+      if (dName && stats[dName]) {
+        stats[dName].total = hd.totalChallenges || stats[dName].total;
+      }
+    }
   }
 
   const categoryCount: Record<string, Record<string, number>> = {};
@@ -131,6 +147,8 @@ function buildDistrictStats(challenges: ChallengeDoc[]): Record<string, District
 export interface MapData {
   challenges: ChallengeDoc[];
   districtStats: Record<string, DistrictStat>;
+  heatmapData: Record<string, unknown> | null;
+  districts: unknown[];
   totalCount: number;
   criticalCount: number;
   validatedCount: number;
@@ -140,21 +158,57 @@ export interface MapData {
 
 export function useMapData(): MapData {
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
+  const [heatmapData, setHeatmapData] = useState<Record<string, unknown> | null>(null);
+  const [districts, setDistricts] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsub = subscribeToChallenges((docs) => {
-      setChallenges(docs);
+    let cancelled = false;
+    // Phase 4.3: fetch real aggregates from API with graceful store fallback
+    Promise.all([
+      apiClient.getDistrictHeatmap().catch(() => ({ ok: false, data: null })),
+      apiClient.getDistricts().catch(() => ({ ok: false, data: null })),
+      apiClient.getChallenges().catch(() => ({ ok: false, data: null })),
+    ]).then(([heatRes, distRes, chalRes]) => {
+      if (cancelled) return;
+      if (heatRes && heatRes.ok && heatRes.data) {
+        setHeatmapData(heatRes.data as Record<string, unknown>);
+      }
+      if (distRes && distRes.ok && distRes.data) {
+        const arr = Array.isArray(distRes.data) ? distRes.data : ((distRes.data as any).districts || []);
+        setDistricts(arr);
+      }
+      let loadedChallenges: ChallengeDoc[] = [];
+      if (chalRes && chalRes.ok && chalRes.data && Array.isArray(chalRes.data) && chalRes.data.length > 0) {
+        loadedChallenges = chalRes.data.map((c: any) => {
+          const wf = toWorkflowChallengeFromApi(c);
+          return toLegacyChallengeDoc(wf);
+        });
+      }
+      // If API returned no challenges or failed, use workflowStore
+      if (loadedChallenges.length === 0) {
+        loadedChallenges = workflowStore.getChallenges().map(toLegacyChallengeDoc);
+      }
+      setChallenges(loadedChallenges);
       setLoading(false);
+    }).catch(() => {
+      if (!cancelled) {
+        setChallenges(workflowStore.getChallenges().map(toLegacyChallengeDoc));
+        setLoading(false);
+      }
     });
-    return () => { if (typeof unsub === 'function') unsub(); };
+    return () => { cancelled = true; };
   }, []);
 
-  const districtStats = buildDistrictStats(challenges);
+  const heatmapDistrictsList = heatmapData && Array.isArray((heatmapData as any).districts)
+    ? (heatmapData as any).districts
+    : undefined;
 
   return {
     challenges,
-    districtStats,
+    districtStats: buildDistrictStats(challenges, heatmapDistrictsList),
+    heatmapData,
+    districts,
     totalCount: challenges.length,
     criticalCount: challenges.filter(c => c.riskLevel === 'CRITICAL').length,
     validatedCount: challenges.filter(c => {

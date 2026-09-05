@@ -41,6 +41,22 @@ const ROLE_CONFIGS: Record<UserRole, RoleEmailConfig> = {
     placeholder: 'admin@nivaaran.in',
     hint: 'Official Super Admin Account: admin@nivaaran.in (Pass: admin@123)',
   },
+  'Community / NGO': {
+    placeholder: 'ngo@nivaaran.in',
+    hint: 'Official NGO Account: ngo@nivaaran.in (Pass: ngo@123)',
+  },
+  'PRI (Panchayat)': {
+    placeholder: 'pri@nivaaran.in',
+    hint: 'Official PRI Account: pri@nivaaran.in (Pass: pri@123)',
+  },
+  'ULB (Urban Local Body)': {
+    placeholder: 'ulb@nivaaran.in',
+    hint: 'Official ULB Account: ulb@nivaaran.in (Pass: ulb@123)',
+  },
+  'Research Lab / Industry Lab': {
+    placeholder: 'lab@nivaaran.in',
+    hint: 'Official Lab Account: lab@nivaaran.in (Pass: lab@123)',
+  },
 };
 
 export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome }) => {
@@ -132,6 +148,10 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
               <option value="Industry / MSME">6. Industry / MSME / Startup</option>
               <option value="CSR Organization">7. CSR Organization</option>
               <option value="Platform Super Admin">8. Platform Super Admin</option>
+              <option value="Community / NGO">9. Community / NGO</option>
+              <option value="PRI (Panchayat)">10. PRI (Panchayat)</option>
+              <option value="ULB (Urban Local Body)">11. ULB (Urban Local Body)</option>
+              <option value="Research Lab / Industry Lab">12. Research Lab / Industry Lab</option>
             </select>
           </div>
 

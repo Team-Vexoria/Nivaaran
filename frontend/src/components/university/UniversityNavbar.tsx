@@ -111,7 +111,11 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
               <span>Admin</span>
             </button>
             <button
-              onClick={() => onRoleChange('faculty')}
+              onClick={() => {
+                onRoleChange('faculty');
+                // Faculty: keep current tab unless on student-workspace, jump to intake
+                if (activeTab === 'student-workspace') onTabChange('intake-queue');
+              }}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${
                 userRole === 'faculty' ? 'bg-[#2C6E49] text-white shadow-2xs' : 'text-[#4A433B] hover:text-[#201C18]'
               }`}
@@ -140,42 +144,52 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
       {/* Sub-Tab Navigation Bar */}
       <div className="max-w-7xl mx-auto flex items-center justify-between border-t border-[#E4DDD1] pt-2 mt-2 overflow-x-auto gap-2 text-xs">
         <nav className="flex items-center space-x-1">
-          <button
-            onClick={() => onTabChange('intake-queue')}
-            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
-              activeTab === 'intake-queue'
-                ? 'bg-[#2C6E49] text-white shadow-2xs'
-                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>1. Matched Intake Queue</span>
-          </button>
+          {/* Admin + Faculty: Intake Queue */}
+          {userRole !== 'student' && (
+            <button
+              onClick={() => onTabChange('intake-queue')}
+              className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+                activeTab === 'intake-queue'
+                  ? 'bg-[#2C6E49] text-white shadow-2xs'
+                  : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>1. Matched Intake Queue</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => onTabChange('team-builder')}
-            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
-              activeTab === 'team-builder'
-                ? 'bg-[#2C6E49] text-white shadow-2xs'
-                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>2. Multidisciplinary Team Builder</span>
-          </button>
+          {/* Admin + Faculty: Team Builder */}
+          {userRole !== 'student' && (
+            <button
+              onClick={() => onTabChange('team-builder')}
+              className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+                activeTab === 'team-builder'
+                  ? 'bg-[#2C6E49] text-white shadow-2xs'
+                  : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>2. Multidisciplinary Team Builder</span>
+            </button>
+          )}
 
-          <button
-            onClick={() => onTabChange('proposals')}
-            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
-              activeTab === 'proposals'
-                ? 'bg-[#2C6E49] text-white shadow-2xs'
-                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>3. Technical Proposals & Milestones</span>
-          </button>
+          {/* Admin + Faculty: Proposals */}
+          {userRole !== 'student' && (
+            <button
+              onClick={() => onTabChange('proposals')}
+              className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+                activeTab === 'proposals'
+                  ? 'bg-[#2C6E49] text-white shadow-2xs'
+                  : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>3. Technical Proposals & Milestones</span>
+            </button>
+          )}
 
+          {/* All roles: Student Workspace */}
           <button
             onClick={() => onTabChange('student-workspace')}
             className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
@@ -185,7 +199,7 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
             }`}
           >
             <Award className="w-3.5 h-3.5 text-[#C98A2C]" />
-            <span>4. Student R&D Workspace</span>
+            <span>{userRole === 'student' ? 'My R&D Workspace' : '4. Student R&D Workspace'}</span>
           </button>
 
           <button

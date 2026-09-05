@@ -1,8 +1,9 @@
-﻿import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Trophy, Award, Sprout, Medal, Gift } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
+import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 
 interface CitizenGuardian {
   rank: number;
@@ -19,61 +20,55 @@ interface CitizenLeaderboardTabProps {
   currentLang?: SupportedLanguage;
 }
 
+function getBadge(verified: number): string {
+  if (verified >= 12) return 'Eco Guardian Supreme';
+  if (verified >= 9) return 'Flood & Mine Safety Alert';
+  if (verified >= 6) return 'Panchayat Civic Guard';
+  if (verified >= 3) return 'Community Champion';
+  return 'Active Reporter';
+}
+
 export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ currentLang = 'en' }) => {
   const { t } = useLanguage();
+  const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());
 
-  const topGuardians: CitizenGuardian[] = [
-    {
-      rank: 1,
-      name: 'Sunil Kumar Mahto',
-      district: 'Ranchi (Kanke Block)',
-      reportsSubmitted: 14,
-      verifiedCount: 12,
-      points: 1280,
-      badge: tr('Eco Guardian Supreme', currentLang),
-      plantsEarned: 4,
-    },
-    {
-      rank: 2,
-      name: 'Pooja Rani',
-      district: 'Dhanbad (Jharia)',
-      reportsSubmitted: 11,
-      verifiedCount: 10,
-      points: 990,
-      badge: tr('Flood & Mine Safety Alert', currentLang),
-      plantsEarned: 3,
-    },
-    {
-      rank: 3,
-      name: 'Rameshwar Oraon',
-      district: 'Palamu (Daltonganj)',
-      reportsSubmitted: 9,
-      verifiedCount: 8,
-      points: 820,
-      badge: tr('Panchayat Civic Guard', currentLang),
-      plantsEarned: 2,
-    },
-    {
-      rank: 4,
-      name: 'Anita Hansda',
-      district: 'East Singhbhum',
-      reportsSubmitted: 7,
-      verifiedCount: 7,
-      points: 710,
-      badge: tr('Community Champion', currentLang),
-      plantsEarned: 2,
-    },
-    {
-      rank: 5,
-      name: 'Vikas Singh',
-      district: 'Hazaribagh',
-      reportsSubmitted: 6,
-      verifiedCount: 5,
-      points: 540,
-      badge: tr('Active Reporter', currentLang),
-      plantsEarned: 1,
-    },
-  ];
+  useEffect(() => {
+    const handler = () => setWfChallenges(workflowStore.getChallenges());
+    window.addEventListener(STORE_EVENT, handler);
+    return () => window.removeEventListener(STORE_EVENT, handler);
+  }, []);
+
+  // Build a live leaderboard from workflowStore submissions
+  const liveMap = new Map<string, { district: string; submitted: number; verified: number }>();
+  wfChallenges.forEach(c => {
+    const name = c.submittedBy;
+    if (!name) return;
+    const existing = liveMap.get(name) || { district: c.district || '', submitted: 0, verified: 0 };
+    existing.submitted += 1;
+    const isVerified = ['Government Validated','Clustered','Prioritized','HEI Matched',
+      'University Accepted','In Progress','Proposal Submitted','Industry Collaboration',
+      'Prototype Active','Pilot Active','Outcome Audit','Resolved','Closed'].includes(c.status);
+    if (isVerified) existing.verified += 1;
+    liveMap.set(name, existing);
+  });
+
+  const merged = new Map<string, Omit<CitizenGuardian, 'rank'>>();
+  liveMap.forEach((data, name) => {
+    merged.set(name, {
+      name,
+      district: data.district,
+      reportsSubmitted: data.submitted,
+      verifiedCount: data.verified,
+      points: data.verified * 90 + data.submitted * 20,
+      badge: getBadge(data.verified),
+      plantsEarned: Math.floor(data.verified / 3),
+    });
+  });
+
+  const topGuardians: CitizenGuardian[] = Array.from(merged.values())
+    .sort((a, b) => b.points - a.points)
+    .slice(0, 5)
+    .map((g, i) => ({ ...g, rank: i + 1, badge: tr(g.badge, currentLang) }));
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
@@ -138,49 +133,57 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
         </div>
 
         <div className="divide-y divide-slate-100">
-          {topGuardians.map((guardian) => (
-            <div 
-              key={guardian.rank} 
-              className={`p-4 sm:p-5 flex items-center justify-between gap-4 transition-colors hover:bg-slate-50 ${
-                guardian.rank === 1 ? 'bg-amber-50/40' : ''
-              }`}
-            >
-              <div className="flex items-center space-x-4">
-                <span className={`w-8 h-8 rounded-full font-black text-sm flex items-center justify-center ${
-                  guardian.rank === 1 
-                    ? 'bg-amber-500 text-white shadow-xs' 
-                    : guardian.rank === 2 
-                    ? 'bg-slate-300 text-slate-800' 
-                    : guardian.rank === 3 
-                    ? 'bg-amber-700 text-white' 
-                    : 'bg-slate-100 text-slate-600'
-                }`}>
-                  {guardian.rank}
-                </span>
-
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900">{guardian.name}</h4>
-                  <p className="text-xs text-slate-500">{guardian.district}</p>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-4 text-right">
-                <div className="hidden sm:block">
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    {guardian.badge}
+          {topGuardians.length > 0 ? (
+            topGuardians.map((guardian) => (
+              <div 
+                key={guardian.rank} 
+                className={`p-4 sm:p-5 flex items-center justify-between gap-4 transition-colors hover:bg-slate-50 ${
+                  guardian.rank === 1 ? 'bg-amber-50/40' : ''
+                }`}
+              >
+                <div className="flex items-center space-x-4">
+                  <span className={`w-8 h-8 rounded-full font-black text-sm flex items-center justify-center ${
+                    guardian.rank === 1 
+                      ? 'bg-amber-500 text-white shadow-xs' 
+                      : guardian.rank === 2 
+                      ? 'bg-slate-300 text-slate-800' 
+                      : guardian.rank === 3 
+                      ? 'bg-amber-700 text-white' 
+                      : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {guardian.rank}
                   </span>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    {guardian.verifiedCount} {tr('Solved Issues', currentLang)}
-                  </p>
+
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900">{guardian.name}</h4>
+                    <p className="text-xs text-slate-500">{guardian.district}</p>
+                  </div>
                 </div>
 
-                <div className="bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-center shrink-0">
-                  <span className="text-xs font-black block">{guardian.points}</span>
-                  <span className="text-[9px] text-slate-300 uppercase tracking-wider font-semibold">{tr('pts', currentLang)}</span>
+                <div className="flex items-center space-x-4 text-right">
+                  <div className="hidden sm:block">
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      {guardian.badge}
+                    </span>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {guardian.verifiedCount} {tr('Solved Issues', currentLang)}
+                    </p>
+                  </div>
+
+                  <div className="bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-center shrink-0">
+                    <span className="text-xs font-black block">{guardian.points}</span>
+                    <span className="text-[9px] text-slate-300 uppercase tracking-wider font-semibold">{tr('pts', currentLang)}</span>
+                  </div>
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="p-8 text-center text-slate-500">
+              <Sprout className="w-8 h-8 mx-auto mb-3 text-emerald-400 opacity-50" />
+              <p className="text-sm font-medium">{tr('No citizen guardians yet.', currentLang)}</p>
+              <p className="text-xs mt-1">{tr('Submit and verify community issues to climb the leaderboard!', currentLang)}</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
 

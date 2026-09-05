@@ -6,6 +6,8 @@ import { submitChallengeToFirestore, submitFeedPostToFirestore } from '../servic
 import { runAITriageEngineAsync } from '../services/aiTriageEngine';
 import { useLanguage } from '../context/LanguageContext';
 import { formatStageName, getStageForStatus } from '../services/workflowLifecycle';
+import { workflowStore } from '../services/workflowStore';
+import { findSimilarChallenges } from '../services/deduplicationService';
 
 interface QuickReportModalProps {
   isOpen: boolean;
@@ -21,7 +23,7 @@ const JHARKHAND_DISTRICTS = [
   'Chatra', 'Koderma', 'Lohardaga'
 ];
 
-export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose }) => {
+export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { t } = useLanguage();
   const [step, setStep] = useState<'form' | 'submitting' | 'success'>('form');
   const [title, setTitle] = useState('');
@@ -190,6 +192,8 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     const aiResult = await runAITriageEngineAsync(title, description, 1, filePreviews[0] || '');
     const initialStage = getStageForStatus('Under Review');
 
+    const now = new Date().toISOString();
+
     try {
       await submitChallengeToFirestore({
         reportId: generatedId,
@@ -228,8 +232,92 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
       console.warn('Error saving to Firestore:', err);
     }
 
+    // ── Semantic deduplication check before adding to workflowStore ──
+    const dedupeResult = findSimilarChallenges({
+      title: title || 'Local Community Issue',
+      description,
+      district,
+      block: blockVillage || 'Central Block',
+      village: blockVillage || 'Panchayat Area',
+      category: aiResult.category,
+      createdAt: now,
+    });
+
+    // ── Also add to the local workflowStore so the citizen portal tracks it ──
+    await workflowStore.addChallenge({
+      id: generatedId,
+      reportId: generatedId,
+      title: title || 'Local Community Issue',
+      description,
+      district,
+      block: blockVillage || 'Central Block',
+      village: blockVillage || 'Panchayat Area',
+      locationCoords: coords,
+      formattedAddress: finalAddress,
+      status: 'Under Review',
+      stageNumber: initialStage?.stageNumber || 2,
+      stageName: formatStageName(initialStage?.stageNumber || 2),
+      category: aiResult.category,
+      // Attach cluster info if a similar challenge was found
+      clusterId: dedupeResult.clusterId ?? undefined,
+      aiAnalysis: {
+        category: aiResult.category,
+        categoryCode: aiResult.categoryCode,
+        matchedProblem: aiResult.matchedProblem,
+        confidenceScore: aiResult.confidenceScore,
+        priorityScore: aiResult.priorityScore,
+        riskLevel: aiResult.riskLevel,
+        factors: aiResult.factors,
+        reasoning: aiResult.reasoning,
+        needsHumanVerification: aiResult.needsHumanVerification,
+        recommendedUniversityDepts: aiResult.recommendedUniversityDepts,
+      },
+      priorityScore: aiResult.priorityScore,
+      confidenceScore: aiResult.confidenceScore,
+      riskLevel: aiResult.riskLevel,
+      needsHumanVerification: aiResult.needsHumanVerification,
+      govtOfficerNote: aiResult.reasoning,
+      evidenceUrls: filePreviews,
+      submittedBy: 'citizen',
+      submittedByRole: 'Citizen',
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    // Add a submission timeline event
+    workflowStore.addTimelineEvent({
+      id: `TL-${Date.now()}-submit`,
+      entityType: 'challenge',
+      entityId: generatedId,
+      action: 'submitted',
+      actor: 'Citizen',
+      actorRole: 'Citizen',
+      description: `Challenge submitted. AI classified as "${aiResult.category}" with ${aiResult.confidenceScore}% confidence. Priority: ${aiResult.priorityScore}/100 [${aiResult.riskLevel}].`,
+      newValue: 'Under Review',
+      timestamp: now,
+    });
+
+    // If similar challenges were found, add a deduplication timeline event
+    if (dedupeResult.clusterId && dedupeResult.primaryChallenge) {
+      const simPct = Math.round(dedupeResult.similarityScore * 100);
+      workflowStore.addTimelineEvent({
+        id: `TL-${Date.now()}-dedup`,
+        entityType: 'challenge',
+        entityId: generatedId,
+        action: 'clustered',
+        actor: 'AI Deduplication Engine',
+        actorRole: 'AI System',
+        description: `${simPct}% similarity detected with "${dedupeResult.primaryChallenge.title}" (${dedupeResult.primaryChallenge.reportId}) in ${dedupeResult.primaryChallenge.district}. Grouped into cluster ${dedupeResult.clusterId}.`,
+        newValue: dedupeResult.isDuplicate ? 'Probable Duplicate' : 'Clustered',
+        timestamp: new Date(Date.now() + 1).toISOString(),
+      });
+    }
+
     setSubmittedId(generatedId);
     setStep('success');
+    if (onSuccess) {
+      onSuccess(generatedId);
+    }
   };
 
   const resetAndClose = () => {

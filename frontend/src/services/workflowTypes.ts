@@ -10,6 +10,7 @@ export type ChallengeStatus =
   | 'Submitted'               // Stage 1: Citizen submits
   | 'Under Review'            // Stage 2: AI triage complete, awaiting govt review
   | 'Evidence Requested'      // Stage 2b: Govt officer requests more evidence
+  | 'Rejected'                // Terminal: Govt officer rejects (does not meet criteria / duplicate)
   | 'Government Validated'    // Stage 3: Govt validates & prioritizes
   | 'Clustered'               // Stage 4: Similar challenges grouped
   | 'Prioritized'             // Stage 5: Transparent priority assigned
@@ -88,6 +89,9 @@ export interface Challenge {
   assignedDept?: string;
   assignedProjectId?: string;
 
+  // Deduplication / Clustering
+  clusterId?: string;           // Set when AI groups this with similar challenges
+
   // CSR / Industry
   csrSponsor?: string;
 
@@ -144,6 +148,9 @@ export type CollaborationPartnerType = 'Industry' | 'CSR' | 'MSME' | 'Research L
 export type CollaborationSupportType = 'Funding' | 'Hardware' | 'Mentorship' | 'Testing' | 'Deployment';
 export type CollaborationOfferStatus = 'Proposed' | 'Details Requested' | 'Accepted' | 'Declined';
 
+export const PARTNER_OPTIONS: CollaborationPartnerType[] = ['Industry', 'CSR', 'MSME', 'Research Lab'];
+export const SUPPORT_OPTIONS: CollaborationSupportType[] = ['Funding', 'Hardware', 'Mentorship', 'Testing', 'Deployment'];
+
 export interface CollaborationOffer {
   id: string;
   projectId: string;
@@ -181,6 +188,9 @@ export interface OutcomeAudit {
   metrics: Record<string, string | number>;
   evidenceUrls: string[];
   verifiedAt: string;
+  auditNotes?: string;
+  communityFeedback?: string;
+  isSuccessful?: boolean;
 }
 
 // ── Project ───────────────────────────────────────────────────────────────────
@@ -198,6 +208,7 @@ export interface Project {
   id: string;
   challengeId: string;
   challengeTitle: string;
+  challenge?: any;
   category: string;
   district: string;
 
@@ -277,3 +288,5 @@ export interface ProjectFilters {
   universityId?: string;
   challengeId?: string;
 }
+
+export type Phase3Project = Project;

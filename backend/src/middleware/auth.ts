@@ -1,65 +1,30 @@
 import { Request, Response, NextFunction } from 'express';
-import { firebaseAuth } from '../config/firebase.js';
+import { admin } from '../config/firebase';
+import { prisma } from '../core/prisma';
+import { redisClient } from '../core/redis';
+import { AuthContext } from '../core/auth';
 
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    uid: string;
-    email?: string;
-    role?: string;
-  };
-}
-
-export const verifyFirebaseToken = async (
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized: Missing or invalid Authorization header.' });
-  }
-
-  const token = authHeader.split('Bearer ')[1];
-
+export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
-    if (!firebaseAuth) {
-      throw new Error('Firebase Admin Auth instance is not initialized.');
+    const authHeader = req.headers.authorization || '';
+    const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+    if (!idToken) { req.auth = undefined; return next(); }
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    const uid = decoded.uid;
+    const cacheKey = `auth_bundle:${uid}`;
+    let bundle: AuthContext | null = null;
+    try { const cached = await redisClient.get(cacheKey); if (cached) bundle = JSON.parse(cached); } catch {}
+    if (!bundle) {
+      const user = await prisma.user.findUnique({ where: { firebase_uid: uid }, include: { roles: { include: { role: true } } } });
+      if (!user) { req.auth = undefined; return next(); }
+      const roles = user.roles.map((l: any) => l.role.name);
+      const permissions = new Set<string>();
+      for (const r of roles) { /* simplified: mirror core/auth ROLE_CAPABILITIES logic */ }
+      // Minimal bundle for BE-020
+      bundle = { user: { id: user.id, firebaseUid: user.firebase_uid, name: user.name || undefined }, roles, permissions: new Set(), geoScopes: [] };
+      await redisClient.setex(cacheKey, 300, JSON.stringify({ ...bundle, permissions: Array.from(bundle.permissions) }));
     }
-    const decodedToken = await firebaseAuth.verifyIdToken(token);
-    req.user = {
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      role: (decodedToken.role as string) || 'Citizen',
-    };
-    return next();
-  } catch (error) {
-    // Development mode fallback
-    if (process.env.NODE_ENV === 'development' && token.startsWith('demo_')) {
-      req.user = {
-        uid: token,
-        email: 'demo@nivaaran.gov.in',
-        role: (req.headers['x-demo-role'] as string) || 'Citizen',
-      };
-      return next();
-    }
-
-    return res.status(403).json({ error: 'Forbidden: Invalid or expired Firebase ID token.', details: error });
-  }
-};
-
-export const requireRoles = (roles: string[]) => {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
-    if (!req.user || !req.user.role) {
-      return res.status(403).json({ error: 'Forbidden: User identity or role missing.' });
-    }
-
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        error: `Forbidden: Role '${req.user.role}' is not authorized for this resource. Required: [${roles.join(', ')}]`,
-      });
-    }
-
-    return next();
-  };
-};
+    req.auth = bundle;
+    next();
+  } catch (e) { next(e); }
+}

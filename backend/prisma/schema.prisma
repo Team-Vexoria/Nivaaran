@@ -1,0 +1,851 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions", "fullTextSearch", "multiSchema"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [uuidOssp(map: "pgcrypto", schema: "public")]
+}
+
+// ── Identity & roles (BACKEND_ARCHITECTURE.md §8; Actors_and_roles.md) ──────────
+
+enum UserRole {
+  CITIZEN
+  COMMUNITY_NGO
+  PRI // Panchayati Raj Institution
+  ULB // Urban Local Body
+  GOV_VALIDATOR
+  GOV_DEPARTMENT
+  UNIVERSITY // university-level admin / VC office
+  FACULTY
+  STUDENT
+  INDUSTRY
+  CSR
+  LAB
+  SUPER_ADMIN
+}
+
+// 12 roles = 12 actor types. GOV_VALIDATOR + GOV_DEPARTMENT split the
+// "Government" actor so validation powers are not fungible across departments.
+
+enum OrgType {
+  UNIVERSITY
+  GOVT_DEPARTMENT
+  GOVT_BODY // PRI / ULB / district admin
+  COMPANY
+  CSR
+  LAB
+  NGO
+  INDIVIDUAL
+}
+
+// ── Geographic scope (Actors_and_roles.md §19) ───────────────────────────────
+
+enum GeoScopeType {
+  STATE
+  DISTRICT
+  BLOCK
+  PANCHAYAT
+}
+
+// ── Workflow (BACKEND_ARCHITECTURE.md §6.2) ──────────────────────────────────
+
+enum ChallengeStatus {
+  SUBMITTED
+  AI_UNDERSTANDING
+  CLARIFICATION_REQUESTED
+  VALIDATION_PENDING
+  VALIDATED
+  DEFERRED // gov deferred; re-enterable later (non-linear branching)
+  REJECTED // terminal for a rejected challenge
+  CLUSTERED
+  PRIORITY_RANKED
+  MATCHING
+  UNIVERSITY_ACCEPTED
+  UNIVERSITY_DECLINED
+  TEAM_FORMING
+  PROPOSAL_REVIEW
+  COLLABORATION
+  PROTOTYPE
+  PROJECT_ACTIVE
+  PILOT
+  PROJECT_VALIDATION
+  DEPLOYMENT_APPROVED
+  IMPACT_MEASUREMENT
+  CLOSED // terminal
+  FAILED // terminal unless workflow:resolve
+  STALLED // re-enterable via workflow:resolve
+}
+
+enum ProjectStatus {
+  PROPOSAL_REVIEW
+  TEAM_FORMING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  FAILED
+}
+
+// ── Domain sub-enums ─────────────────────────────────────────────────────────
+
+enum EvidenceType {
+  PHOTO
+  VIDEO
+  AUDIO
+  DOCUMENT
+  TELEMETRY // sensor reading blobs / CSV
+  GEOTAG
+}
+
+enum ValidationDecision {
+  VALID
+  NEEDS_CLARIFICATION
+  INVALID
+  DEFER
+}
+
+enum ClusterProcessState {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum AiKind {
+  UNDERSTAND
+  SIMILARITY
+  PRIORITIZE
+  MATCH
+  VISION // evidence image analysis
+}
+
+enum AiStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  RETRYABLE
+}
+
+enum ProposalStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  REVISION_REQUESTED
+  APPROVED
+  REJECTED
+}
+
+enum OfferStatus {
+  OPEN
+  ACCEPTED
+  DECLINED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  BLOCKED
+  DONE
+  OVERDUE
+}
+
+enum AuditAction {
+  SUBMIT
+  AI_UNDERSTAND
+  REQUEST_CLARIFICATION
+  SUPPLY_CLARIFICATION
+  VALIDATE
+  INVALIDATE
+  DEFER
+  RECLUSTER
+  PRIORITIZE
+  MATCH
+  ACCEPT
+  DECLINE
+  FORM_TEAM
+  SUBMIT_PROPOSAL
+  APPROVE_PROPOSAL
+  REQUEST_REVISION
+  START_COLLABORATION
+  START_PROTOTYPE
+  START_PILOT
+  VERIFY_VALIDATION
+  APPROVE_DEPLOYMENT
+  RECORD_IMPACT
+  CLOSE
+  ESCALATE // → FAILED/STALLED entry
+  RESOLVE // FAILED/STALLED exit
+  UNAUTHORIZED_ATTEMPT // attempted but denied transition
+}
+
+enum NotificationType {
+  CHALLENGE_SUBMITTED
+  AI_COMPLETED
+  CLARIFICATION_REQUESTED
+  VALIDATED
+  PRIORITY_CHANGED
+  UNIVERSITY_MATCHED
+  UNIVERSITY_ACCEPTED
+  UNIVERSITY_DECLINED
+  TEAM_FORMED
+  PROPOSAL_SUBMITTED
+  COLLABORATION_REQUESTED
+  COLLABORATION_ACCEPTED
+  MILESTONE_APPROACHING
+  MILESTONE_OVERDUE
+  PILOT_STARTED
+  PILOT_COMPLETED
+  VALIDATION_COMPLETED
+  DEPLOYMENT_APPROVED
+  IMPACT_VERIFIED
+  CLOSED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+}
+
+enum NotificationDeliveryState {
+  PENDING
+  QUEUED
+  DELIVERED
+  FAILED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  firebase_uid  String    @unique
+  name          String
+  phone         String? // PII, protected (Actors §20)
+  email         String? // PII, protected
+  avatar_url    String?
+  language_pref String    @default("en")
+  is_active     Boolean   @default(true)
+  last_login_at DateTime?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+
+  // ── authorization scope anchors ──
+  organization_id String?
+  organization    Organization?          @relation(fields: [organization_id], references: [id])
+  roles           UserRoleLink[]
+  geo_scopes      UserGeoScope[]
+  memberships     TeamMember[]
+  submissions     Challenge[]            @relation("submitterSubmissions")
+  proposals       Proposal[]             @relation("proposalSubmitter")
+  impact_records  ImpactRecord[]
+  notifications   AppNotification[]
+  comments        ChallengeComment[]
+  refresh_tokens  RefreshToken[]
+  audited_actions AuditEvent[]
+  acceptances     UniversityAcceptance[]
+
+  @@index([is_active])
+  @@index([created_at])
+  @@index([organization_id])
+}
+
+model Organization {
+  id            String   @id @default(uuid())
+  name          String
+  type          OrgType
+  short_code    String? // e.g. BITM, RANCHI_ULB
+  verified      Boolean  @default(false)
+  contact_email String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  members                User[]
+  university             University?
+  departments            Department[]
+  challenges             Challenge[] // orgs submitting on behalf (PRI, ULB, dept)
+  collaborations_offered Collaboration[] @relation("offeringOrg")
+
+  @@index([type])
+}
+
+model University {
+  id               String   @id @default(uuid())
+  organization_id  String   @unique // 1:1 → Organization(type=UNIVERSITY)
+  name             String
+  code             String   @unique // e.g. "BITM"
+  district         String
+  city             String
+  address          String?
+  website          String?
+  established_year Int?
+  naac_grade       String?
+  accreditation    String?
+  capacity         Int      @default(1) // concurrent challenge handling capacity
+  description      String?
+  facilities       Json[]   @default([]) // [{kind, name, note}] — facilities & innovation centres
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  organization Organization @relation(fields: [organization_id], references: [id])
+  departments  Department[]
+  projects     Project[]
+  pilots       Pilot[] // (none today; reserved: pilots list uni sites)
+}
+
+model Department {
+  id              String  @id @default(uuid())
+  organization_id String // org of the university — set explicitly, no random default
+  university_id   String
+  name            String
+  focus_area      String?
+
+  university   University   @relation(fields: [university_id], references: [id])
+  organization Organization @relation(fields: [organization_id], references: [id])
+
+  @@index([university_id])
+}
+
+model Challenge {
+  id      String @id @default(uuid())
+  version Int    @default(1) // optimistic concurrency §6.5
+
+  // ── Identity & location ──
+  title          String
+  description    String
+  category       String // taxonomy, validated at creation
+  sub_category   String?
+  district_code  String
+  block_code     String?
+  location       Unsupported("geometry(Point,4326)")? // PostGIS pin (detail/GPS)
+  area_panchayat String?
+
+  // ── Workflow state (last line of defense — real control is the engine) ──
+  status           ChallengeStatus @default(SUBMITTED)
+  priority_score   Decimal?        @db.Decimal(4, 2) // 0.00–9.99
+  priority_factors Json? // {urgency, severity, scale, publicGood} → reasons
+
+  // AI understanding (denormalized snapshot of the latest UNDERSTAND rec; full
+  // history lives in ai_recommendations — AI output never overwrites a human decision)
+  ai_summary    String?
+  ai_domain     String?
+  ai_sub_domain String?
+  ai_tags       String[] @default([]) // Postgres text[]
+  ai_severity   String?
+  ai_urgency    String?
+  ai_confidence Decimal? @db.Decimal(4, 2)
+
+  // Clarification (sub-state of CLARIFICATION_REQUESTED)
+  clarification_request  Json?
+  clarification_response Json?
+
+  // ── Ownership & scoping ──
+  submitter_id    String // FK → never NULL (origin invariant)
+  submitter_type  UserRole // snapshot role at submit
+  assigned_org_id String? // validating/owning gov org
+  reviewer_id     String?
+
+  // soft-delete — challenges soft-delete, never hard (§12)
+  deleted_at      DateTime?
+  submitted_at    DateTime  @default(now())
+  transitioned_at DateTime? // last state change (SLA/reports)
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  // ── relations ──
+  submitter          User                   @relation("submitterSubmissions", fields: [submitter_id], references: [id])
+  assigned_org       Organization?          @relation(fields: [assigned_org_id], references: [id])
+  submission         Submission?
+  evidence           ChallengeEvidence[]
+  validations        Validation[]
+  ai_recommendations AiRecommendation[]
+  cluster_members    ClusterMember[]
+  acceptances        UniversityAcceptance[]
+  project            Project?
+  comments           ChallengeComment[]
+
+  @@index([status])
+  @@index([district_code, status]) // "what's out there" listings
+  @@index([submitter_id, submitted_at]) // citizen timeline
+  @@index([block_code])
+  @@index([category])
+  @@index([assigned_org_id])
+}
+
+// CHECK constraints — raw SQL migration, Prisma can't inline them:
+//   ALTER TABLE challenges ADD CONSTRAINT chk_priority_range
+//     CHECK (priority_score IS NULL OR (priority_score >= 0 AND priority_score <= 9.99));
+
+model Submission {
+  id                  String   @id @default(uuid())
+  challenge_id        String   @unique // 1:1 — a submission begets one challenge
+  channel             String   @default("web") // web | sms | field_app
+  raw_payload         Json // original form payload, immutable
+  attachments         Json? // [{ref, type, size}] pointers
+  submitted_via_agent Boolean  @default(false) // outreach/field agent assisted
+  submitted_at        DateTime @default(now())
+
+  challenge Challenge @relation(fields: [challenge_id], references: [id])
+}
+
+model ChallengeEvidence {
+  id           String       @id @default(uuid())
+  challenge_id String
+  type         EvidenceType
+  storage_ref  String // gs://bucket/... or minio bucket key
+  mime_type    String?
+  size_bytes   Int?
+  meta         Json? // {capturedAt, gps, device}
+  is_private   Boolean      @default(false) // signed URL only when private (§12)
+  uploader_id  String
+  deleted_at   DateTime? // soft-delete only — immutability §12
+  created_at   DateTime     @default(now())
+
+  challenge Challenge @relation(fields: [challenge_id], references: [id])
+
+  @@index([challenge_id])
+  @@index([is_private])
+}
+
+model AiRecommendation {
+  id           String   @id @default(uuid())
+  challenge_id String
+  kind         AiKind // UNDERSTAND | SIMILARITY | PRIORITIZE | MATCH | VISION
+  status       AiStatus @default(PENDING)
+
+  result        Json? // per-kind payload (§7 mapping) — AI output, never a decision
+  confidence    Decimal? @db.Decimal(4, 2)
+  reasons       Json? // human-readable reasons list
+  model_version String // pinned model+version for auditability
+
+  superseded_by_id String?   @unique // re-run supersedes prior; self-ref trace
+  // (the human decision that used this rec is linked via Validation.ai_recommendation_id)
+  error_message    String?
+  attempt_count    Int       @default(0)
+  completed_at     DateTime?
+  created_at       DateTime  @default(now())
+
+  challenge    Challenge    @relation(fields: [challenge_id], references: [id])
+  validation   Validation?
+  audit_events AuditEvent[]
+
+  @@index([challenge_id, kind, created_at])
+  @@index([status])
+}
+
+model Validation {
+  id                      String             @id @default(uuid())
+  challenge_id            String
+  reviewer_id             String
+  decision                ValidationDecision
+  reason                  String?
+  supporting_note         String?
+  ai_recommendation_id    String?            @unique // which rec informed this decision (≤1 per decision)
+  clarification_requested Json? // structured questions when NEEDS_CLARIFICATION
+  decided_at              DateTime           @default(now())
+
+  challenge         Challenge         @relation(fields: [challenge_id], references: [id])
+  ai_recommendation AiRecommendation? @relation(fields: [ai_recommendation_id], references: [id])
+
+  @@index([challenge_id, decided_at])
+  @@index([reviewer_id])
+}
+
+model Cluster {
+  id         String              @id @default(uuid())
+  label      String              @unique // human tag, e.g. "Ranchi monsoon drainage"
+  state      ClusterProcessState @default(QUEUED)
+  created_at DateTime            @default(now())
+
+  members ClusterMember[]
+}
+
+model ClusterMember {
+  id           String   @id @default(uuid())
+  cluster_id   String
+  challenge_id String
+  similarity   Decimal? @db.Decimal(5, 4) // 0.0000..1.0000 vs cluster centroid
+  is_primary   Boolean  @default(false) // canonical challenge of the cluster
+  added_at     DateTime @default(now())
+
+  cluster   Cluster   @relation(fields: [cluster_id], references: [id])
+  challenge Challenge @relation(fields: [challenge_id], references: [id])
+
+  @@unique([cluster_id, challenge_id]) // no double membership
+  @@index([challenge_id])
+}
+
+model UniversityAcceptance {
+  id            String   @id @default(uuid())
+  challenge_id  String
+  university_id String
+  decision      String // "ACCEPTED" | "DECLINED"
+  reason        String?
+  decided_by    String? // acting user id
+  decided_at    DateTime @default(now())
+
+  challenge Challenge @relation(fields: [challenge_id], references: [id])
+  user      User?     @relation(fields: [decided_by], references: [id])
+
+  @@unique([challenge_id, university_id])
+  @@index([university_id])
+}
+
+model Project {
+  id            String        @id @default(uuid())
+  challenge_id  String        @unique // 1 challenge → at most 1 live project
+  university_id String // accepting institution
+  status        ProjectStatus @default(PROPOSAL_REVIEW)
+  team_lead_id  String?
+
+  proposal_title    String?
+  proposal_abstract String?
+  proposal_doc_ref  String? // file pointer
+
+  courses_credits Json? // [{code, name, credits, semester}]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  challenge      Challenge       @relation(fields: [challenge_id], references: [id])
+  university     University      @relation(fields: [university_id], references: [id])
+  team           Team?
+  proposal       Proposal?
+  milestones     Milestone[]
+  impact_records ImpactRecord[]
+  collaborations Collaboration[]
+  pilots         Pilot[]
+  deployments    Deployment[]
+
+  @@index([university_id, status])
+}
+
+model Team {
+  id         String   @id @default(uuid())
+  project_id String   @unique // one team per project
+  name       String?
+  created_at DateTime @default(now())
+
+  members TeamMember[]
+  project Project      @relation(fields: [project_id], references: [id])
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  team_id   String
+  user_id   String
+  role      String // lead | member | mentor
+  skills    String[] @default([]) // ["civil", "iot", "data"]
+  is_mentor Boolean  @default(false)
+  joined_at DateTime @default(now())
+
+  team Team @relation(fields: [team_id], references: [id])
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([team_id, user_id])
+  @@index([user_id])
+}
+
+model Proposal {
+  id               String         @id @default(uuid())
+  project_id       String         @unique
+  submitter_id     String
+  doc_ref          String? // full proposal document (storage)
+  title            String
+  content_md       String?
+  status           ProposalStatus @default(SUBMITTED)
+  reviewer_id      String?
+  review_notes     Json? // structured rubric feedback
+  revision_request Json? // what to fix when REVISION_REQUESTED
+  submitted_at     DateTime       @default(now())
+  reviewed_at      DateTime?
+
+  project   Project @relation(fields: [project_id], references: [id])
+  submitter User    @relation("proposalSubmitter", fields: [submitter_id], references: [id])
+
+  @@index([status])
+  @@index([reviewer_id])
+}
+
+model Milestone {
+  id           String          @id @default(uuid())
+  project_id   String
+  title        String
+  deliverable  String?
+  due_at       DateTime
+  status       MilestoneStatus @default(NOT_STARTED)
+  progress     Int             @default(0) // 0..100
+  evidence_ref String?
+  created_at   DateTime        @default(now())
+  updated_at   DateTime        @updatedAt
+
+  project Project @relation(fields: [project_id], references: [id])
+
+  @@index([project_id, due_at])
+  @@index([status])
+}
+
+model Collaboration {
+  id                String      @id @default(uuid())
+  project_id        String
+  offering_org_id   String // industry / CSR / lab / dept org
+  need              String // what the project needs
+  form              String // funding | resource | expertise
+  acceptance_needed Boolean     @default(false)
+  status            OfferStatus @default(OPEN)
+  created_at        DateTime    @default(now())
+  accepted_at       DateTime?
+
+  project      Project      @relation(fields: [project_id], references: [id])
+  offering_org Organization @relation("offeringOrg", fields: [offering_org_id], references: [id])
+  offers       Offer[]
+
+  @@index([project_id, status])
+  @@index([offering_org_id])
+}
+
+model Offer {
+  id               String      @id @default(uuid())
+  collaboration_id String
+  offered_by_org   String
+  amount           Decimal?    @db.Decimal(12, 2)
+  in_kind          Json? // {equipment, people, facilities}
+  terms            String?
+  status           OfferStatus @default(OPEN)
+  accepted_at      DateTime?
+  created_at       DateTime    @default(now())
+
+  collaboration Collaboration @relation(fields: [collaboration_id], references: [id])
+
+  @@index([collaboration_id])
+}
+
+model Pilot {
+  id            String    @id @default(uuid())
+  project_id    String
+  university_id String?
+  location      String // human-readable site
+  district_code String
+  scope         String? // "1 panchayat block" etc.
+  metrics       Json? // baseline metrics captured
+  evidence_ref  String?
+  is_success    Boolean? // null until verdict
+  started_at    DateTime  @default(now())
+  ended_at      DateTime?
+  created_at    DateTime  @default(now())
+
+  project    Project     @relation(fields: [project_id], references: [id])
+  university University? @relation(fields: [university_id], references: [id])
+
+  @@index([project_id])
+}
+
+model Deployment {
+  id            String   @id @default(uuid())
+  project_id    String
+  approved_by   String
+  approval_ref  String? // approval doc / letter
+  district_code String
+  status        String   @default("ACTIVE") // ACTIVE | PAUSED | RETIRED
+  started_at    DateTime @default(now())
+  created_at    DateTime @default(now())
+
+  project Project @relation(fields: [project_id], references: [id])
+
+  @@index([project_id])
+}
+
+model ImpactRecord {
+  id            String    @id @default(uuid())
+  project_id    String
+  metric_name   String // "students reaching school", "waterlogging days"
+  metric_group  String? // outcome | output | sdg
+  before_value  Decimal?  @db.Decimal(14, 2)
+  after_value   Decimal?  @db.Decimal(14, 2)
+  units         String?
+  beneficiaries Int?
+  evidence_ref  String? // proof (survey, telemetry, photo)
+  recorded_by   String
+  is_verified   Boolean   @default(false)
+  verified_at   DateTime?
+  created_at    DateTime  @default(now())
+
+  project Project @relation(fields: [project_id], references: [id])
+  user    User    @relation(fields: [recorded_by], references: [id])
+
+  @@index([project_id, metric_name])
+  @@index([is_verified])
+}
+
+model AuditEvent {
+  id                   String      @id @default(uuid())
+  actor_id             String
+  actor_role           UserRole?
+  actor_org_id         String?
+  action               AuditAction
+  resource_type        String // "challenge" | "project" | "user" | ...
+  resource_id          String // polymorphic id — no FK by design
+  from_state           String? // prior ChallengeStatus / ProjectStatus
+  to_state             String?
+  payload_snapshot     Json?
+  human_reason         String?
+  ai_recommendation_id String?
+  request_trace_id     String?
+  created_at           DateTime    @default(now())
+
+  actor             User              @relation(fields: [actor_id], references: [id])
+  ai_recommendation AiRecommendation? @relation(fields: [ai_recommendation_id], references: [id])
+
+  // Composite index steering "reconstruct one entity's history":
+  @@index([resource_type, resource_id, created_at])
+  @@index([actor_id, created_at])
+  @@index([action])
+  @@index([created_at])
+}
+
+model OutboxEvent {
+  id                String    @id @default(uuid())
+  event_type        String // "challenge.validated" — String, not enum: grows
+  payload           Json // full domain payload for consumers
+  aggregate_type    String // "challenge" | "project"
+  aggregate_id      String
+  status            String    @default("PENDING") // PENDING | DISPATCHED | FAILED
+  attempts          Int       @default(0)
+  last_error        String?
+  dispatch_trace_id String? // pub/sub / redis delivery id (dedup)
+  created_at        DateTime  @default(now())
+  dispatched_at     DateTime?
+
+  @@index([status, created_at])
+  @@index([aggregate_type, aggregate_id])
+}
+
+model AppNotification {
+  id             String                    @id @default(uuid())
+  recipient_id   String
+  type           NotificationType
+  channel        NotificationChannel       @default(IN_APP)
+  delivery_state NotificationDeliveryState @default(PENDING)
+  title          String
+  body           String
+  payload        Json? // {resource_type, resource_id, deepLink}
+  audit_event_id String?
+  read_at        DateTime?
+  delivered_at   DateTime?
+  created_at     DateTime                  @default(now())
+
+  recipient User @relation(fields: [recipient_id], references: [id])
+
+  @@index([recipient_id, read_at])
+  @@index([delivery_state])
+  @@index([audit_event_id])
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        UserRole @unique
+  description String?
+  priority    Int      @default(100) // order in which overlapping-role conflicts resolve
+  created_at  DateTime @default(now())
+
+  user_links       UserRoleLink[]
+  permission_links RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  capability  String   @unique // e.g. "challenge:validate", "project:deploy"
+  description String?
+  created_at  DateTime @default(now())
+
+  role_links RolePermission[]
+}
+
+model RolePermission {
+  id            String   @id @default(uuid())
+  role_name     UserRole
+  permission_id String
+  created_at    DateTime @default(now())
+
+  role       Role       @relation(fields: [role_name], references: [name])
+  permission Permission @relation(fields: [permission_id], references: [id])
+
+  @@unique([role_name, permission_id])
+}
+
+model UserRoleLink {
+  id         String   @id @default(uuid())
+  user_id    String
+  role_name  UserRole
+  granted_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+  role Role @relation(fields: [role_name], references: [name])
+
+  @@unique([user_id, role_name])
+  @@index([role_name])
+}
+
+model UserGeoScope {
+  id            String       @id @default(uuid())
+  user_id       String
+  scope_type    GeoScopeType
+  district_code String? // "RANCHI"
+  block_code    String? // "KANKE"
+  created_at    DateTime     @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, scope_type, district_code])
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  user_id    String
+  token_hash String    @unique // never store the raw token
+  expires_at DateTime
+  revoked_at DateTime?
+  created_at DateTime  @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, revoked_at])
+}
+
+model ChallengeComment {
+  id           String   @id @default(uuid())
+  challenge_id String
+  author_id    String
+  body         String
+  parent_id    String? // threaded replies
+  created_at   DateTime @default(now())
+
+  challenge Challenge @relation(fields: [challenge_id], references: [id])
+  author    User      @relation(fields: [author_id], references: [id])
+
+  @@index([challenge_id, created_at])
+}
+
+model AppConfig {
+  key        String   @id
+  value      Json
+  updated_at DateTime @updatedAt
+}
+
+model District {
+  code         String                                      @id // "RANCHI"
+  name         String
+  state_code   String                                      @default("JH")
+  boundary     Unsupported("geometry(MultiPolygon,4326)")?
+  centroid     Unsupported("geometry(Point,4326)")?
+  risk_profile Json? // {floodRisk, droughtRisk} summaries
+}
+
+model Block {
+  code          String                                      @id
+  district_code String
+  name          String
+  boundary      Unsupported("geometry(MultiPolygon,4326)")?
+  updated_at    DateTime                                    @updatedAt
+
+  @@index([district_code])
+}
