@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../core/prisma.js';
-import { DISTRICTS } from '../../constants/regions.js';
+import { DISTRICTS } from '../../constants/districts.js';
 
 export async function districtHeatmap(req: Request, res: Response, next: NextFunction) {
   try {

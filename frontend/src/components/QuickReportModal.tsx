@@ -24,7 +24,7 @@ const JHARKHAND_DISTRICTS = [
 ];
 
 export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose, onSuccess }) => {
-  const { t } = useLanguage();
+  const { t, currentLang } = useLanguage();
   const [step, setStep] = useState<'form' | 'submitting' | 'success'>('form');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -194,6 +194,19 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
     const now = new Date().toISOString();
 
+    // Build translations object: store title/summary in current language + English fallback
+    const translations: Record<string, { title: string; summary: string }> = {};
+    const langCode: string = currentLang || 'en';
+    translations[langCode] = {
+      title: title || 'Local Community Issue',
+      summary: description || 'Reported by citizen with geotagged photo evidence.',
+    };
+    // Also store English fallback so it's always readable
+    translations['en'] = {
+      title: title || 'Local Community Issue',
+      summary: description || 'Reported by citizen with geotagged photo evidence.',
+    };
+
     try {
       await submitChallengeToFirestore({
         reportId: generatedId,
@@ -216,6 +229,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         stageNumber: initialStage?.stageNumber || 2,
         stageName: formatStageName(initialStage?.stageNumber || 2),
         govtOfficerNote: aiResult.reasoning,
+        translations,  // NEW: store multilingual strings
       });
 
       await submitFeedPostToFirestore({
@@ -227,6 +241,16 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         upvotes: 1,
         category: aiResult.category,
         status: 'Under Review',
+        translations: {
+          [langCode]: {
+            title: title || 'Local Community Report',
+            content: `${description} [Location: ${finalAddress}]`,
+          },
+          en: {
+            title: title || 'Local Community Report',
+            content: `${description} [Location: ${finalAddress}]`,
+          },
+        },  // NEW: store multilingual strings
       });
     } catch (err) {
       console.warn('Error saving to Firestore:', err);
