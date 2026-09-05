@@ -5,6 +5,7 @@ import {
 } from '../../services/firebaseService';
 import { useLanguage } from '../../context/LanguageContext';
 import { tr } from '../../i18n/translationEngine';
+import { useTranslation } from '../../i18n/useTranslation';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 import { getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 
