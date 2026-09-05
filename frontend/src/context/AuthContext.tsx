@@ -97,8 +97,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (!isMockFirebase()) {
       try {
-        const unsubscribe = onAuthStateChanged(auth, (fbUser: FirebaseUser | null) => {
+        const unsubscribe = onAuthStateChanged(auth, async (fbUser: FirebaseUser | null) => {
           if (fbUser) {
+            try {
+              const token = await fbUser.getIdToken();
+              const res = await fetch(`${import.meta.env?.VITE_API_URL || ''}/api/v1/auth/sync`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ email: fbUser.email, name: fbUser.displayName || fbUser.email })
+              });
+              if (!res.ok) console.warn('[AuthSync] sync failed');
+            } catch (e) { console.warn('[AuthSync] error:', e); }
             const userEmail = fbUser.email?.toLowerCase() || '';
             const mappedOfficialRole = OFFICIAL_ROLE_MAP[userEmail];
             const savedRole = mappedOfficialRole || (localStorage.getItem(`nivaaran_role_${fbUser.uid}`) as UserRole) || 'Citizen';
@@ -315,6 +322,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginDemoUser = (role: UserRole, name: string, uid?: string) => {
+    if (import.meta.env?.MODE !== 'development' && process.env?.NODE_ENV !== 'development') {
+      throw new Error('Demo login only available in development');
+    }
     const demoUser: UserProfile = {
       uid: uid || 'demo_' + role.toLowerCase().replace(/\s+/g, '_'),
       email: `${role.toLowerCase().replace(/\s+/g, '_')}@nivaaran.gov.in`,

@@ -7,6 +7,7 @@ loadConfig();
 import { logger } from './core/logger';
 import { requestId } from './middleware/requestId';
 import { authenticate } from './core/auth';
+import authRoutes from './modules/auth/routes';
 import { prisma } from './core/prisma';
 import { zodToValidationError } from './core/errors';
 
@@ -70,6 +71,7 @@ challengeRoutes.get('/:id/transitions', (req,res,next)=>require('./modules/chall
 challengeRoutes.post('/:id/transition', (req,res,next)=>require('./modules/challenge/controller.js').transition(req,res,next));
 app.use('/api/v1/identity', identityRoutes);
 app.use('/api/v1/challenges', challengeRoutes);
+app.use('/api/v1/auth', authRoutes);
 projectRoutes.get('/', (req,res,next)=>require('./modules/project/controller.js').list(req,res,next));
 projectRoutes.post('/', (req,res,next)=>require('./modules/project/controller.js').create(req,res,next));
 app.use('/api/v1/projects', projectRoutes);
