@@ -196,3 +196,4 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 export { app };
+// ws endpoint: app.use('/ws', wsRouter) — pushes to NotificationBus.broadcast()
