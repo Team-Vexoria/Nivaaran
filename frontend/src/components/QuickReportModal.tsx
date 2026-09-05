@@ -3,6 +3,7 @@ import {
   Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import { submitChallengeToFirestore, submitFeedPostToFirestore } from '../services/firebaseService';
+import { uploadEvidenceS3 } from '../services/evidenceUpload';
 import { runAITriageEngineAsync } from '../services/aiTriageEngine';
 import { useLanguage } from '../context/LanguageContext';
 import { formatStageName, getStageForStatus } from '../services/workflowLifecycle';
@@ -144,7 +145,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
   };
 
   // Take Snapshot from Live Camera Stream
-  const takeCameraSnapshot = () => {
+  const takeCameraSnapshot = async () => {
     if (!videoRef.current) return;
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth || 640;
@@ -152,18 +153,22 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-      const snapshotDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      setFilePreviews(prev => [...prev, snapshotDataUrl]);
+      const blob = await new Promise<Blob>((resolve) => canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.85));
+      const file = new File([blob], `snap-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const { storageRef } = await uploadEvidenceS3(file);
+      setFilePreviews(prev => [...prev, storageRef]);
       stopCamera();
       if (!locationCoords) handleGetLocation();
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
-      const newPreviews = filesArray.map((file) => URL.createObjectURL(file));
-      setFilePreviews((prev) => [...prev, ...newPreviews]);
+      for (const file of filesArray) {
+        const { storageRef } = await uploadEvidenceS3(file);
+        setFilePreviews((prev) => [...prev, storageRef]);
+      }
       if (!locationCoords) handleGetLocation();
     }
   };
@@ -217,7 +222,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         category: aiResult.category,
         status: 'Under Review',
         summary: description || 'Reported by citizen with geotagged photo evidence.',
-        evidenceUrl: filePreviews[0] || '',
+        evidenceUrl: filePreviews[0] || '', // S3 storage_ref (not blob URL)
         locationCoords: coords,
         formattedAddress: finalAddress,
         priorityScore: aiResult.priorityScore,
