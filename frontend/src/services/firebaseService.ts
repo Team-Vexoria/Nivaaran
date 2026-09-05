@@ -792,74 +792,7 @@ try {
     return false;
   }
 
-  // 2. Auto-run HEI matching (stages 5 → 6) after a brief delay for UX
-  setTimeout(async () => {
-    try {
-      const challenge = workflowStore.getChallenge(challengeId);
-      if (!challenge) return;
 
-      // Build a ChallengeDoc from workflowStore data for the matching engine
-      const challengeDoc: ChallengeDoc = {
-        reportId: challenge.reportId,
-        title: challenge.title,
-        district: challenge.district,
-        block: challenge.block,
-        village: challenge.village,
-        category: challenge.category,
-        status: challenge.status,
-        summary: challenge.description,
-        priorityScore: challenge.priorityScore,
-        riskLevel: challenge.riskLevel,
-      };
-
-      const rankings = rankUniversitiesForChallenge(challengeDoc);
-      if (rankings.length === 0) return;
-
-      const bestMatch = rankings[0];
-      const now = new Date().toISOString();
-      const stageHEIMatched = 6;
-
-      // Advance through Prioritized (5) → HEI Matched (6)
-      await workflowStore.updateChallenge(challengeId, {
-        status: 'HEI Matched',
-        stageNumber: stageHEIMatched,
-        stageName: formatStageName(stageHEIMatched),
-        assignedHEI: bestMatch.university.name,
-        assignedDept: bestMatch.recommendedDepartment?.name || bestMatch.university.departments[0]?.name,
-        updatedAt: now,
-      });
-
-      // Timeline: Prioritized
-      workflowStore.addTimelineEvent({
-        id: `TL-${Date.now()}-prioritized`,
-        entityType: 'challenge',
-        entityId: challengeId,
-        action: 'status_changed',
-        actor: 'AI Prioritization Engine',
-        actorRole: 'AI System',
-        description: `Challenge prioritized. Priority score: ${challenge.priorityScore ?? 'N/A'}/100. Risk level: ${challenge.riskLevel ?? 'STANDARD'}. Queued for institution matching.`,
-        previousValue: 'Government Validated',
-        newValue: 'Prioritized',
-        timestamp: new Date(Date.now() + 1).toISOString(),
-      });
-
-      // Timeline: HEI Matched
-      workflowStore.addTimelineEvent({
-        id: `TL-${Date.now()}-hei-matched`,
-        entityType: 'challenge',
-        entityId: challengeId,
-        action: 'status_changed',
-        actor: 'AI HEI Matching Engine',
-        actorRole: 'AI System',
-        description: `Matched to ${bestMatch.university.name} (${bestMatch.university.shortName}) — ${bestMatch.matchScore}% compatibility. Department: ${bestMatch.recommendedDepartment?.name || 'General'}. ${bestMatch.matchingReasons[0] || ''}`,
-        previousValue: 'Prioritized',
-        newValue: 'HEI Matched',
-        timestamp: new Date(Date.now() + 2).toISOString(),
-      });
-    } catch (err) {
-      console.warn('[HEI AutoMatch] Failed:', err);
-    }
-  }, 800); // 800ms delay so the gov validated status renders first
 
   return true;
 };

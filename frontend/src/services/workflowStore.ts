@@ -146,8 +146,9 @@ class WorkflowStore {
       this.persist({ ...this.state, challenges });
       return { created: serverChallenge };
     }
-
-    const now = new Date().toISOString();
+    // API failure — do NOT write locally; throw for UI toast
+    const errMsg = (apiRes.error?.message || 'API error') + ' [code=' + (apiRes.error?.code || 'UNKNOWN') + ']';
+    throw new Error(errMsg);
     const newChallenge = {
       ...challenge,
       id: challenge.id || `CH-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -199,6 +200,10 @@ class WorkflowStore {
     }
 
     const apiRes = await apiClient.transitionChallenge(challenge.id, 'statusChange', { newStatus, note, actor, actorRole });
+    if (!apiRes.ok) {
+      const errMsg = (apiRes.error?.message || 'Transition failed') + ' [code=' + (apiRes.error?.code || 'UNKNOWN') + ']';
+      throw new Error(errMsg);
+    }
     if (apiRes.ok) {
       const updated = await this.updateChallenge(challenge.id, {
         status: newStatus,
@@ -244,7 +249,11 @@ class WorkflowStore {
     }
     
     const apiRes = await apiClient.createProject(project as Omit<Project, 'id' | 'createdAt' | 'updatedAt'>);
-    const serverProject = apiRes.ok && apiRes.data ? (apiRes.data as Project) : project;
+    if (!apiRes.ok) {
+      const errMsg = (apiRes.error?.message || 'Project creation failed') + ' [code=' + (apiRes.error?.code || 'UNKNOWN') + ']';
+      throw new Error(errMsg);
+    }
+    const serverProject = apiRes.data as Project;
     const projects = [...this.state.projects, serverProject];
     this.persist({ ...this.state, projects });
 
