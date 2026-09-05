@@ -164,11 +164,18 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const filesArray = Array.from(e.target.files);
-      for (const file of filesArray) {
-        const { storageRef } = await uploadEvidenceS3(file);
-        setFilePreviews((prev) => [...prev, storageRef]);
+    const input = e.target;
+    if (input.files && input.files.length > 0) {
+      try {
+        const filesArray = Array.from(input.files);
+        for (const file of filesArray) {
+          const { storageRef } = await uploadEvidenceS3(file);
+          setFilePreviews((prev) => [...prev, storageRef]);
+        }
+      } catch (err) {
+        console.error('Evidence upload failed:', err);
+      } finally {
+        input.value = ''; // allow re-selecting same file
       }
       if (!locationCoords) handleGetLocation();
     }
@@ -481,7 +488,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                   </div>
 
                   {/* Option 2: File Upload (Testing Mode) */}
-                  <div className="border-2 border-dashed border-[#DCD6C6] bg-white hover:bg-[#F3F0E8]/50 rounded-xl p-4 text-center transition-colors">
+                  <div onClick={() => document.getElementById("evidence-upload-input")?.click()} className="border-2 border-dashed border-[#DCD6C6] bg-white hover:bg-[#F3F0E8]/50 rounded-xl p-4 text-center transition-colors cursor-pointer">
                     <input
                       type="file"
                       id="evidence-upload-input"
