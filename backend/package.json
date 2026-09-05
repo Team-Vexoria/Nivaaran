@@ -10,7 +10,7 @@
     "test": "tsx --test test/*.spec.ts",
     "seed": "tsx prisma/seeds/demo.ts",
     "seed:rbac": "tsx prisma/seeds/rbac.ts",
-    "seed:regions": "tsx prisma/seeds/regions.ts",
+    "seed:regions": "tsx prisma/seeds/districts.ts",
     "postinstall": "prisma generate || exit 0"
   },
   "dependencies": {

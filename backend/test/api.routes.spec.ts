@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { app } from '../src/app.js';
-import { DISTRICTS } from '../src/constants/regions.js';
+import { DISTRICTS } from '../src/constants/districts.js';
 import { encryptPII, decryptPII } from '../src/security/encryption.js';
 import { scorePriority, scoreHEIMatch, AIProvider } from '../src/modules/ai/AIProvider.js';
 

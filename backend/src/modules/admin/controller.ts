@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../core/prisma.js';
-import { DISTRICTS, BLOCKS } from '../../constants/regions.js';
+import { DISTRICTS, BLOCKS } from '../../constants/districts.js';
 
 // Admin config + user/role management
 

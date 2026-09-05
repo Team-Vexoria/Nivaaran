@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Home, FileText, MessageSquare, MessagesSquare, Trophy, 
-  User, LogOut 
+  User, LogOut, Globe, ChevronDown 
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { SupportedLanguage } from '../../i18n/translations';
+import { SupportedLanguage, JHARKHAND_LANGUAGES } from '../../i18n/translations';
 
 export type CitizenTab = 'home' | 'my-reports' | 'community-feed' | 'region-chat' | 'leaderboard' | 'profile';
 
@@ -24,9 +24,19 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
   activeTab,
   onTabChange,
   onOpenAuth,
+  onOpenUniversityPortal,
+  currentLang,
+  onLangChange,
   userDisplayName = '',
 }) => {
   const { t } = useLanguage();
+  const [fontSize, setFontSize] = useState<'normal' | 'large' | 'small'>('normal');
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
+
+  const currentLangMeta = JHARKHAND_LANGUAGES.find(l => l.code === currentLang) || JHARKHAND_LANGUAGES[0];
 
   const navItems: { id: CitizenTab; label: string; icon: React.ReactNode }[] = [
     { id: 'home', label: t.nav.home, icon: <Home className="w-4 h-4" /> },
@@ -74,6 +84,40 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
 
         {/* Right Actions & Buttons */}
         <div className="flex items-center space-x-2 shrink-0">
+          {/* Language Switcher Dropdown */}
+          <div className="relative" ref={langDropdownRef}>
+            <button
+              onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+              className="flex items-center bg-[#EAE4D8] px-1.5 py-0.5 rounded border border-[#D5CDBF] cursor-pointer hover:bg-[#E4DDD1] transition-colors"
+            >
+              <Globe className="w-3 h-3 text-[#2C6E49] mr-1 shrink-0" />
+              <span className="text-[10px] font-bold text-[#201C18]">{currentLangMeta?.nativeName || 'English'}</span>
+              <ChevronDown className={`w-3 h-3 ml-0.5 text-[#6A6155] transition-transform ${isLangDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isLangDropdownOpen && (
+              <div className="absolute right-0 mt-1.5 w-56 bg-white border border-[#E4DDD1] rounded-xl shadow-xl py-1.5 z-[120] max-h-72 overflow-y-auto">
+                {JHARKHAND_LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => {
+                      if (onLangChange) onLangChange(lang.code);
+                      setIsLangDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-[11px] font-medium transition-colors flex items-center justify-between cursor-pointer ${
+                      currentLang === lang.code 
+                        ? 'bg-[#2C6E49]/10 text-[#2C6E49] font-bold' 
+                        : 'text-[#201C18] hover:bg-[#FAF8F4] hover:text-[#2C6E49]'
+                    }`}
+                  >
+                    <span>{lang.nativeName}</span>
+                    <span className="text-[9px] text-[#9A9084]">{lang.region}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Login or User Profile Button */}
           {userDisplayName && userDisplayName !== 'Guest' && userDisplayName !== '' ? (
             <div className="flex items-center space-x-1.5">

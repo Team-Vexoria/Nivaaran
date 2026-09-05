@@ -117,9 +117,12 @@ export const CitizenCommunityFeedTab: React.FC = () => {
   // Live subscription to workflowStore challenges so gov-validated
   // reports surface as community progress updates in the feed.
   useEffect(() => {
-    const handler = () => setChallenges(workflowStore.getChallenges());
-    window.addEventListener(STORE_EVENT, handler);
-    return () => window.removeEventListener(STORE_EVENT, handler);
+    const handleLanguageChange = () => {
+      setChallenges(workflowStore.getChallenges());
+    };
+    const langHandler = () => setChallenges(workflowStore.getChallenges());
+    window.addEventListener(STORE_EVENT, langHandler);
+    return () => window.removeEventListener(STORE_EVENT, langHandler);
   }, []);
 
   // Auto-generate an official progress post for every challenge that has
@@ -146,7 +149,7 @@ export const CitizenCommunityFeedTab: React.FC = () => {
   }, [challenges]);
 
   // Verified institutional progress first, then citizen + Firebase reports.
-  const allPosts = useMemo<FeedPostUI[]>(() => [...progressPosts, ...posts], [progressPosts, posts]);
+  const allPosts = useMemo<FeedPostUI[]>(() => [...progressPosts, ...posts], [progressPosts, posts, currentLang]);
 
   const handleUpvote = async (postId: string) => {
     const target = posts.find(p => p.id === postId);
@@ -287,8 +290,16 @@ export const CitizenCommunityFeedTab: React.FC = () => {
 
             {/* Title & Body */}
             <div className="space-y-1.5">
-              <h3 className="font-bold text-base text-slate-900 leading-snug">{tr(post.title, currentLang)}</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">{tr(post.content, currentLang)}</p>
+              <h3 className="font-bold text-base text-slate-900 leading-snug">
+                {post.translations?.[currentLang]?.title 
+                  ? post.translations[currentLang].title 
+                  : tr(post.title, currentLang)}
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {post.translations?.[currentLang]?.content 
+                  ? post.translations[currentLang].content 
+                  : tr(post.content, currentLang)}
+              </p>
             </div>
 
             {post.isProgress && (

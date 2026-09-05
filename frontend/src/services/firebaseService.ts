@@ -62,6 +62,7 @@ export interface ChallengeDoc {
   govtValidatedAt?: string;
   clusterId?: string;
   createdAt?: any;
+  translations?: Record<string, { title: string; summary: string }>;
 }
 
 export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'>) => {
@@ -78,6 +79,7 @@ export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, '
         ...challenge,
         id: newId,
         createdAt: serverTimestamp(),
+        translations: challenge.translations || {},
       });
     } catch (error) {
       console.warn('[Firestore] Falling back to workflowStore only:', error);
@@ -129,6 +131,7 @@ export interface FeedPostDoc {
   status: string;
   comments?: FeedCommentDoc[];
   createdAt?: any;
+  translations?: Record<string, { title: string; content: string }>;
 }
 
 export interface FeedCommentDoc {
@@ -149,6 +152,7 @@ export const submitFeedPostToFirestore = async (post: Omit<FeedPostDoc, 'id'>) =
     const docRef = await addDoc(collection(db, 'community_posts'), {
       ...post,
       createdAt: serverTimestamp(),
+      translations: post.translations || {},
     });
     return docRef.id;
   } catch (error) {

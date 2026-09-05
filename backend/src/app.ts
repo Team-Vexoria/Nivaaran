@@ -154,10 +154,10 @@ districtRoutes.get('/', async (_req, res, next) => {
     if (districts && districts.length > 0) {
       return res.json({ ok: true, data: districts });
     }
-    const { DISTRICTS } = await import('./constants/regions.js');
+    const { DISTRICTS } = await import('./constants/districts.js');
     return res.json({ ok: true, data: DISTRICTS });
   } catch {
-    const { DISTRICTS } = await import('./constants/regions.js');
+    const { DISTRICTS } = await import('./constants/districts.js');
     return res.json({ ok: true, data: DISTRICTS });
   }
 });
