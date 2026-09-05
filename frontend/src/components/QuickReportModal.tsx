@@ -510,7 +510,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                 <div className="grid sm:grid-cols-2 gap-3">
                   
                   {/* Option 1: Live Camera Viewfinder Launcher */}
-                  <div className="border-2 border-dashed border-[#1E3A5F]/50 bg-emerald-50/70 hover:bg-emerald-100/50 rounded-xl p-4 text-center transition-all">
+                  <div className="relative border-2 border-dashed border-[#1E3A5F]/50 bg-emerald-50/70 hover:bg-emerald-100/50 rounded-xl p-4 text-center transition-all">
                     <button
                       type="button"
                       onClick={startCamera}
@@ -527,14 +527,14 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                   </div>
 
                   {/* Option 2: File Upload (Testing Mode) */}
-                  <div onClick={() => document.getElementById("evidence-upload-input")?.click()} className="border-2 border-dashed border-[#DCD6C6] bg-white hover:bg-[#F3F0E8]/50 rounded-xl p-4 text-center transition-colors cursor-pointer">
+                  <div className="relative border-2 border-dashed border-[#DCD6C6] bg-white hover:bg-[#F3F0E8]/50 rounded-xl p-4 text-center transition-colors cursor-pointer">
                     <input
                       type="file"
                       id="evidence-upload-input"
                       multiple
                       accept="image/*,video/*,.pdf"
                       onChange={handleFileChange}
-                      className="hidden"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     />
                     <label 
                       htmlFor="evidence-upload-input"
