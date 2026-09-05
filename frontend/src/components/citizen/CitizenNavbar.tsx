@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Home, FileText, MessageSquare, MessagesSquare, Trophy, 
   User, LogOut, Globe, ChevronDown 
@@ -24,16 +24,15 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
   activeTab,
   onTabChange,
   onOpenAuth,
-  onOpenUniversityPortal,
+  onOpenUniversityPortal: _onOpenUniversityPortal,
   currentLang,
   onLangChange,
   userDisplayName = '',
 }) => {
   const { t } = useLanguage();
-  const [fontSize, setFontSize] = useState<'normal' | 'large' | 'small'>('normal');
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [_fontSize, _setFontSize] = useState<'normal' | 'large' | 'small'>('normal');
+  const [_isDropdownOpen, _setIsDropdownOpen] = useState<boolean>(false);
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState<boolean>(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const langDropdownRef = useRef<HTMLDivElement>(null);
 
   const currentLangMeta = JHARKHAND_LANGUAGES.find(l => l.code === currentLang) || JHARKHAND_LANGUAGES[0];

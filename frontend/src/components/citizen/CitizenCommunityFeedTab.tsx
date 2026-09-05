@@ -116,9 +116,6 @@ export const CitizenCommunityFeedTab: React.FC = () => {
   // Live subscription to workflowStore challenges so gov-validated
   // reports surface as community progress updates in the feed.
   useEffect(() => {
-    const handleLanguageChange = () => {
-      setChallenges(workflowStore.getChallenges());
-    };
     const langHandler = () => setChallenges(workflowStore.getChallenges());
     window.addEventListener(STORE_EVENT, langHandler);
     return () => window.removeEventListener(STORE_EVENT, langHandler);
