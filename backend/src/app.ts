@@ -146,6 +146,12 @@ evidenceRoutes.post('/confirm', (req,res,next)=>require('./modules/evidence/cont
 app.use('/api/v1/evidence', evidenceRoutes);
 const analyticsRoutes = express.Router();
 analyticsRoutes.get('/district-heatmap', (req,res,next)=>require('./modules/analytics/controller.js').districtHeatmap(req,res,next));
+analyticsRoutes.get('/status-distribution', (req,res,next)=>require('./modules/analytics/controller.js').statusDistribution(req,res,next));
+analyticsRoutes.get('/priority-distribution', (req,res,next)=>require('./modules/analytics/controller.js').priorityDistribution(req,res,next));
+analyticsRoutes.get('/daily-trend', (req,res,next)=>require('./modules/analytics/controller.js').dailyTrend(req,res,next));
+analyticsRoutes.get('/domain-breakdown', (req,res,next)=>require('./modules/analytics/controller.js').domainBreakdown(req,res,next));
+analyticsRoutes.get('/ai-performance', (req,res,next)=>require('./modules/analytics/controller.js').aiPerformance(req,res,next));
+analyticsRoutes.get('/impact-metrics', (req,res,next)=>require('./modules/analytics/controller.js').impactMetrics(req,res,next));
 app.use('/api/v1/analytics', analyticsRoutes);
 
 const districtRoutes = express.Router();

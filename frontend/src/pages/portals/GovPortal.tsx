@@ -38,6 +38,14 @@ import { govValidateChallenge, govRequestEvidence, govVerifyAndDeployChallenge, 
 import { extractIncidentMetadata } from '../../services/dataExtractionService';
 import { CertificateModal } from '../../components/CertificateModal';
 import { ProposalReviewTab } from '../../components/gov/ProposalReviewTab';
+import { ChartKpiCard } from '../../components/charts/ChartKpiCard';
+import { StatusDonutChart } from '../../components/charts/StatusDonutChart';
+import { PriorityHistogram } from '../../components/charts/PriorityHistogram';
+import { DailyTrendLine } from '../../components/charts/DailyTrendLine';
+import { DomainBarChart } from '../../components/charts/DomainBarChart';
+import { DistrictPriorityMap } from '../../components/charts/DistrictPriorityMap';
+import { AIPerformanceCard } from '../../components/charts/AIPerformanceCard';
+import { useAnalytics } from '../../hooks/useAnalytics';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 import { getStageForStatus } from '../../services/workflowLifecycle';
 import { JHARKHAND_UNIVERSITIES } from '../../services/universityData';
@@ -519,6 +527,7 @@ export const GovPortal: React.FC = () => {
   const [priorityEditValue, setPriorityEditValue] = useState<string>('');
 
   const { challenges, totalCount, criticalCount, validatedCount, resolvedCount, loading } = useMapData();
+  const { data: analyticsData, loading: analyticsLoading } = useAnalytics();
 
   // Live workflow store data for Impact KPIs tab
   const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());
@@ -1358,13 +1367,11 @@ export const GovPortal: React.FC = () => {
 
         {/* REPORTS & IMPACT KPIs TAB */}
         {activeTab === 'reports' && (() => {
-          const wf = wfChallenges;
-          const resolvedCount2 = wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').length;
-          const deploymentCount = wf.filter(c => c.status === 'Outcome Audit').length;
-          const prototypeCount = wf.filter(c => {
-            const s = getStageForStatus(c.status)?.stageNumber || 0;
-            return s >= 11;
-          }).length;
+          const statusDist = analyticsData?.statusDistribution || {};
+          const submitted = (statusDist['Submitted'] || 0) + (statusDist['Under Review'] || 0);
+          const validated = (statusDist['Government Validated'] || 0) + (statusDist['Clustered'] || 0) + (statusDist['Prioritized'] || 0);
+          const heiMatched = (statusDist['HEI Matched'] || 0) + (statusDist['University Accepted'] || 0) + (statusDist['In Progress'] || 0) + (statusDist['Proposal Submitted'] || 0) + (statusDist['Industry Collaboration'] || 0);
+          const resolvedClosed = (statusDist['Resolved'] || 0) + (statusDist['Closed'] || 0);
           return (
           <div className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full space-y-6">
             <div className="flex items-center justify-between">
@@ -1381,20 +1388,45 @@ export const GovPortal: React.FC = () => {
               </button>
             </div>
 
-            {/* Top KPIs */}
+            {/* Top KPIs — driven by analytics API */}
             <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {[
-                { label: 'Total Challenges', value: totalCount, color: 'text-[#201C18]', bg: '' },
-                { label: 'Pending Review', value: pendingCount, color: 'text-[#C98A2C]', bg: 'bg-[#FFF8EC]' },
-                { label: 'Deployments', value: deploymentCount, color: 'text-[#2C6E49]', bg: 'bg-[#F0FAF4]' },
-                { label: 'Resolved / Closed', value: resolvedCount2, color: 'text-[#B3261E]', bg: 'bg-[#FFF0EE]' },
-                { label: 'At Stage 11+', value: prototypeCount, color: 'text-[#6A6155]', bg: '' },
-              ].map(kpi => (
-                <div key={kpi.label} className={`${kpi.bg || 'bg-white'} border border-[#E4DDD1] rounded-xl p-5 shadow-2xs`}>
-                  <p className="text-xs text-[#6A6155] font-semibold mb-1">{kpi.label}</p>
-                  <p className={`text-3xl font-black ${kpi.color}`}>{loading ? '…' : kpi.value}</p>
-                </div>
-              ))}
+              <ChartKpiCard label="Total Challenges" value={Object.values(statusDist).reduce((a,b)=>a+(b||0),0)} color="text-[#201C18]" bg="bg-white" subLabel="All reported challenges" />
+              <ChartKpiCard label="Pending Review" value={statusDist['Under Review'] || 0} color="text-[#C98A2C]" bg="bg-[#FFF8EC]" subLabel="Awaiting triage" />
+              <ChartKpiCard label="Deployments" value={analyticsData?.impactMetrics?.totalDeployments || 0} color="text-[#2C6E49]" bg="bg-[#F0FAF4]" subLabel="University / industry" />
+              <ChartKpiCard label="Resolved / Closed" value={resolvedClosed} color="text-[#B3261E]" bg="bg-[#FFF0EE]" subLabel="Verified closure" />
+              <ChartKpiCard label="Avg AI Confidence" value={`${analyticsData?.aiPerformance?.avgConfidence ? Math.round(analyticsData.aiPerformance.avgConfidence * 100) : 0}%`} color="text-[#6A6155]" bg="bg-white" subLabel="Gemini 1.5 Flash" />
+            </div>
+
+            {/* Real-time Analytics Charts (Tasks 10-16) */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 shadow-2xs">
+                <p className="text-xs font-black text-[#201C18] mb-2">Challenge Status</p>
+                <StatusDonutChart data={analyticsData?.statusDistribution || {}} />
+              </div>
+              <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 shadow-2xs">
+                <p className="text-xs font-black text-[#201C18] mb-2">Priority Distribution</p>
+                <PriorityHistogram data={analyticsData?.priorityDistribution || []} />
+              </div>
+              <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 shadow-2xs">
+                <p className="text-xs font-black text-[#201C18] mb-2">Daily Submissions (30d)</p>
+                <DailyTrendLine data={analyticsData?.dailyTrend || []} />
+              </div>
+              <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 shadow-2xs lg:col-span-2">
+                <p className="text-xs font-black text-[#201C18] mb-2">Top Domains</p>
+                <DomainBarChart data={analyticsData?.domainBreakdown || []} />
+              </div>
+              <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 shadow-2xs">
+                <AIPerformanceCard data={analyticsData?.aiPerformance || { avgConfidence: 0, totalAnalyzed: 0, avgPriorityScore: 0 }} />
+              </div>
+            </div>
+
+            {/* District Heatmap */}
+            <div className="bg-white border border-[#E4DDD1] rounded-xl p-6 shadow-2xs space-y-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#C98A2C]" />
+                <p className="text-sm font-bold text-[#201C18]">District Priority Map — 24 Jharkhand Districts</p>
+              </div>
+              <DistrictPriorityMap data={(analyticsData?.districtHeatmap as any)?.districts || (analyticsData?.districtHeatmap as any) || []} />
             </div>
 
             {/* SLA Metrics */}
@@ -1431,7 +1463,11 @@ export const GovPortal: React.FC = () => {
                   { label: 'HEI Matched → Accepted', match: (s: string) => ['HEI Matched','University Accepted','In Progress','Proposal Submitted','Industry Collaboration'].includes(s), color: 'text-[#2C6E49]' },
                   { label: 'Resolved / Closed', match: (s: string) => s === 'Resolved' || s === 'Closed', color: 'text-[#B3261E]' },
                 ].map(f => {
-                  const count = wf.filter(c => f.match(c.status)).length;
+                  let count = 0;
+                  if (f.label === 'Submitted') count = submitted;
+                  else if (f.label === 'Validated') count = validated;
+                  else if (f.label === 'HEI Matched → Accepted') count = heiMatched;
+                  else if (f.label === 'Resolved / Closed') count = resolvedClosed;
                   return (
                     <div key={f.label} className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4">
                       <p className={`text-2xl font-black ${f.color}`}>{count}</p>
@@ -1448,42 +1484,16 @@ export const GovPortal: React.FC = () => {
                 <CheckCheck className="w-4 h-4 text-[#2C6E49]" />
                 <p className="text-sm font-bold text-[#201C18]">Verified Impact Records</p>
               </div>
-              {wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').length === 0 ? (
+              {resolvedClosed === 0 ? (
                 <PortalEmptyState
                   title="No impact records yet"
                   description="Approve deployments in the Deployment Approval tab to record impact."
                 />
               ) : (
-                <div className="space-y-3">
-                  {wf.filter(c => c.status === 'Resolved' || c.status === 'Closed').map(c => {
-                    const proj = workflowStore.getProjects().find(p => p.challengeId === c.id || p.challengeId === c.reportId);
-                    const metrics = proj?.outcomeAudit?.metrics || {};
-                    const metricEntries = Object.entries(metrics);
-                    return (
-                      <div key={c.id} className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4 space-y-2">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <p className="text-sm font-bold text-[#201C18]">{c.title}</p>
-                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${c.status === 'Closed' ? 'bg-[#2C6E49] text-white' : 'bg-[#B3261E] text-white'}`}>
-                            {c.status}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-[#6A6155]">{c.district} · {c.assignedHEI || 'University R&D'}</p>
-                        {proj?.outcomeAudit?.summary && (
-                          <p className="text-xs text-[#4A433B] bg-white border border-[#E4DDD1] rounded-lg px-3 py-2 italic">“{proj.outcomeAudit.summary}”</p>
-                        )}
-                        {metricEntries.length > 0 && (
-                          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {metricEntries.map(([k, v]) => (
-                              <div key={k} className="bg-white border border-[#E4DDD1] rounded-lg px-3 py-2 text-center">
-                                <p className="text-lg font-black text-[#C98A2C]">{String(v)}</p>
-                                <p className="text-[9px] text-[#6A6155] font-semibold uppercase tracking-wider">{k}</p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4 text-xs text-[#6A6155] font-semibold">
+                  <p>Verified impact records load from API deployment data.</p>
+                  <p className="mt-1">Total resolved / closed challenges: <span className="text-[#2C6E49] font-black">{resolvedClosed}</span></p>
+                  <p className="mt-1">Projects with outcome audit metrics are shown in the Deployment Approval tab.</p>
                 </div>
               )}
             </div>

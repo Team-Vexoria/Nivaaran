@@ -1,0 +1,30 @@
+import React from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { ChartNoData } from './ChartNoData';
+
+interface PriorityHistogramProps {
+  data: { bucket: string; count: number }[];
+}
+
+export const PriorityHistogram: React.FC<PriorityHistogramProps> = ({ data }) => {
+  if (!data || data.length === 0) return <ChartNoData message="No priority data" />;
+  return (
+    <div className="w-full h-64">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#E4DDD1" />
+          <XAxis dataKey="bucket" tick={{ fontSize: 12, fill: '#6A6155' }} stroke="#8A7F72" />
+          <YAxis tick={{ fontSize: 12, fill: '#6A6155' }} stroke="#8A7F72" allowDecimals={false} />
+          <Tooltip
+            contentStyle={{ borderRadius: '12px', border: '1px solid #E4DDD1', fontSize: '12px' }}
+          />
+          <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+            {data.map((_, i) => (
+              <Cell key={i} fill={i % 2 === 0 ? '#2C6E49' : '#C98A2C'} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};

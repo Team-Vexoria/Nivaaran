@@ -281,6 +281,25 @@ export const apiClient = {
     return apiRequest('/analytics/district-heatmap');
   },
 
+  async getAnalyticsStatus(): Promise<ApiResponse<Record<string, number>>> {
+    return apiRequest('/analytics/status-distribution');
+  },
+  async getAnalyticsPriority(): Promise<ApiResponse<{ bucket: string; count: number }[]>> {
+    return apiRequest('/analytics/priority-distribution');
+  },
+  async getAnalyticsTrend(days = 30): Promise<ApiResponse<{ date: string; count: number; avgPriority: number }[]>> {
+    return apiRequest(`/analytics/daily-trend?days=${days}`);
+  },
+  async getAnalyticsDomains(): Promise<ApiResponse<{ domain: string; category: string; count: number }[]>> {
+    return apiRequest('/analytics/domain-breakdown');
+  },
+  async getAnalyticsAIPerformance(): Promise<ApiResponse<{ avgConfidence: number; totalAnalyzed: number; avgPriorityScore: number }>> {
+    return apiRequest('/analytics/ai-performance');
+  },
+  async getAnalyticsImpact(): Promise<ApiResponse<{ totalProjects: number; totalBeneficiaries: number; totalDeployments: number }>> {
+    return apiRequest('/analytics/impact-metrics');
+  },
+
   // ── Identity ────────────────────────────────────────────────────────
 
   /** GET /api/v1/identity/me — current profile */
