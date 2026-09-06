@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import { 
-  Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert
+  Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert, Layers, TrendingUp, Users
 } from 'lucide-react';
 import { submitChallengeToFirestore, submitFeedPostToFirestore } from '../services/firebaseService';
 import { uploadEvidenceS3 } from '../services/evidenceUpload';
@@ -9,7 +9,7 @@ import { runAITriageEngineAsync } from '../services/aiTriageEngine';
 import { useLanguage } from '../context/LanguageContext';
 import { formatStageName, getStageForStatus } from '../services/workflowLifecycle';
 import { workflowStore } from '../services/workflowStore';
-import { findSimilarChallenges } from '../services/deduplicationService';
+import { findSimilarChallenges, mergeWithPrimaryChallenge } from '../services/deduplicationService';
 
 interface QuickReportModalProps {
   isOpen: boolean;
@@ -27,8 +27,16 @@ const JHARKHAND_DISTRICTS = [
 
 export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { t, currentLang } = useLanguage();
-  const [step, setStep] = useState<'form' | 'submitting' | 'success' | 'forensic_rejected'>('form');
+  const [step, setStep] = useState<'form' | 'submitting' | 'success' | 'forensic_rejected' | 'dedup_merged'>('form');
   const [forensicRejectionReason, setForensicRejectionReason] = useState<string>('');
+  const [dedupInfo, setDedupInfo] = useState<{
+    primaryId: string;
+    primaryTitle: string;
+    district: string;
+    category: string;
+    totalReports: number;
+    boostedPriority: number;
+  } | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [district, setDistrict] = useState('Ranchi');
@@ -259,6 +267,47 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
       summary: description || 'Reported by citizen with geotagged photo evidence.',
     };
 
+    // ── Semantic deduplication & auto-merge check ──
+    const dedupeResult = findSimilarChallenges({
+      title: title || 'Local Community Issue',
+      description,
+      district,
+      block: blockVillage || 'Central Block',
+      village: blockVillage || 'Panchayat Area',
+      locationCoords: coords,
+      category: aiResult.category,
+      createdAt: now,
+    });
+
+    // ── AUTO-DEDUPLICATION BRANCH: Merge with existing primary incident ──
+    if (dedupeResult.isDuplicate && dedupeResult.primaryChallenge) {
+      const mergeRes = await mergeWithPrimaryChallenge(dedupeResult.primaryChallenge.id, {
+        title: title || 'Citizen Follow-up Report',
+        description,
+        evidenceUrls: filePreviews,
+        locationCoords: coords,
+        formattedAddress: finalAddress,
+        village: blockVillage,
+        block: blockVillage,
+        district,
+      });
+
+      setDedupInfo({
+        primaryId: dedupeResult.primaryChallenge.reportId || dedupeResult.primaryChallenge.id,
+        primaryTitle: dedupeResult.primaryChallenge.title,
+        district: dedupeResult.primaryChallenge.district,
+        category: dedupeResult.primaryChallenge.category,
+        totalReports: mergeRes.newReportCount,
+        boostedPriority: mergeRes.newPriorityScore,
+      });
+
+      setStep('dedup_merged');
+      if (onSuccess) {
+        onSuccess(dedupeResult.primaryChallenge.reportId || dedupeResult.primaryChallenge.id);
+      }
+      return;
+    }
+
     try {
       await submitChallengeToFirestore({
         reportId: generatedId,
@@ -269,7 +318,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         category: aiResult.category,
         status: 'Under Review',
         summary: description || 'Reported by citizen with geotagged photo evidence.',
-        evidenceUrl: filePreviews[0] || '', // S3 storage_ref (not blob URL)
+        evidenceUrl: filePreviews[0] || '', // S3 storage_ref / data URL
         locationCoords: coords,
         formattedAddress: finalAddress,
         priorityScore: aiResult.priorityScore,
@@ -281,10 +330,11 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         stageNumber: initialStage?.stageNumber || 2,
         stageName: formatStageName(initialStage?.stageNumber || 2),
         govtOfficerNote: aiResult.reasoning,
-        translations,  // NEW: store multilingual strings
+        clusterId: dedupeResult.clusterId ?? undefined,
+        translations,  // Multilingual strings
       });
 
-      await submitFeedPostToFirestore({
+      submitFeedPostToFirestore({
         author: 'Citizen Resident',
         district,
         block: blockVillage || 'Local Block',
@@ -302,63 +352,11 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
             title: title || 'Local Community Report',
             content: `${description} [Location: ${finalAddress}]`,
           },
-        },  // NEW: store multilingual strings
+        },
       });
     } catch (err) {
-      console.warn('Error saving to Firestore:', err);
+      console.warn('Error saving challenge:', err);
     }
-
-    // ── Semantic deduplication check before adding to workflowStore ──
-    const dedupeResult = findSimilarChallenges({
-      title: title || 'Local Community Issue',
-      description,
-      district,
-      block: blockVillage || 'Central Block',
-      village: blockVillage || 'Panchayat Area',
-      category: aiResult.category,
-      createdAt: now,
-    });
-
-    // ── Also add to the local workflowStore so the citizen portal tracks it ──
-    await workflowStore.addChallenge({
-      id: generatedId,
-      reportId: generatedId,
-      title: title || 'Local Community Issue',
-      description,
-      district,
-      block: blockVillage || 'Central Block',
-      village: blockVillage || 'Panchayat Area',
-      locationCoords: coords,
-      formattedAddress: finalAddress,
-      status: 'Under Review',
-      stageNumber: initialStage?.stageNumber || 2,
-      stageName: formatStageName(initialStage?.stageNumber || 2),
-      category: aiResult.category,
-      // Attach cluster info if a similar challenge was found
-      clusterId: dedupeResult.clusterId ?? undefined,
-      aiAnalysis: {
-        category: aiResult.category,
-        categoryCode: aiResult.categoryCode,
-        matchedProblem: aiResult.matchedProblem,
-        confidenceScore: aiResult.confidenceScore,
-        priorityScore: aiResult.priorityScore,
-        riskLevel: aiResult.riskLevel,
-        factors: aiResult.factors,
-        reasoning: aiResult.reasoning,
-        needsHumanVerification: aiResult.needsHumanVerification,
-        recommendedUniversityDepts: aiResult.recommendedUniversityDepts,
-      },
-      priorityScore: aiResult.priorityScore,
-      confidenceScore: aiResult.confidenceScore,
-      riskLevel: aiResult.riskLevel,
-      needsHumanVerification: aiResult.needsHumanVerification,
-      govtOfficerNote: aiResult.reasoning,
-      evidenceUrls: filePreviews,
-      submittedBy: 'citizen',
-      submittedByRole: 'Citizen',
-      createdAt: now,
-      updatedAt: now,
-    });
 
     // Add a submission timeline event
     workflowStore.addTimelineEvent({
@@ -721,6 +719,71 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
               className="w-full py-3 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-bold text-xs rounded-xl shadow transition-colors"
             >
               {t.reportModal.closeBtn}
+            </button>
+          </div>
+        )}
+
+        {/* Step 3b: Auto-Deduplication & Merge State */}
+        {step === 'dedup_merged' && dedupInfo && (
+          <div className="p-8 text-center space-y-5">
+            <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto ring-8 ring-amber-50">
+              <Layers className="w-9 h-9" />
+            </div>
+
+            <div className="space-y-1">
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                🛡️ Semantic Deduplication: Consolidated
+              </span>
+              <h3 className="text-xl font-black text-[#1E3A5F] pt-2">Report Linked to Existing Verified Incident!</h3>
+              <p className="text-xs text-[#5C574C]">
+                An active incident for this exact problem was already logged. Your photo and GPS coordinates have been merged into the primary ticket.
+              </p>
+            </div>
+
+            <div className="bg-[#FAF8F3] p-4 rounded-xl text-xs text-left space-y-3 border border-[#E3DCCE]">
+              <div className="flex items-start justify-between border-b border-[#E3DCCE]/60 pb-2">
+                <div>
+                  <span className="text-[10px] uppercase font-mono font-bold text-[#C2760C] block">Primary Incident ID</span>
+                  <span className="font-mono font-bold text-sm text-[#1E3A5F]">{dedupInfo.primaryId}</span>
+                </div>
+                <span className="text-[10px] font-bold bg-[#0F766E]/10 text-[#0F766E] px-2 py-0.5 rounded-full">
+                  {dedupInfo.category}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[10px] text-[#5C574C] block">Primary Issue Title:</span>
+                <p className="font-semibold text-slate-800 text-xs">{dedupInfo.primaryTitle}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="bg-white p-2.5 rounded-lg border border-amber-100 flex items-center space-x-2">
+                  <Users className="w-5 h-5 text-amber-600 shrink-0" />
+                  <div>
+                    <span className="text-[10px] text-slate-500 block font-medium">Citizen Reports</span>
+                    <span className="text-sm font-black text-amber-700">{dedupInfo.totalReports} Logged</span>
+                  </div>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-lg border border-emerald-100 flex items-center space-x-2">
+                  <TrendingUp className="w-5 h-5 text-emerald-600 shrink-0" />
+                  <div>
+                    <span className="text-[10px] text-slate-500 block font-medium">Priority Score</span>
+                    <span className="text-sm font-black text-emerald-700">{dedupInfo.boostedPriority}/100</span>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-slate-500 text-center italic pt-1">
+                ⚡ Government Officers & Universities see this consolidated ticket with higher urgency.
+              </p>
+            </div>
+
+            <button
+              onClick={resetAndClose}
+              className="w-full py-3 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-bold text-xs rounded-xl shadow transition-colors"
+            >
+              Done / View My Reports
             </button>
           </div>
         )}

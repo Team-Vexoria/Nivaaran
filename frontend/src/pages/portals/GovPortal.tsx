@@ -170,6 +170,20 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
             </p>
           </div>
 
+          {/* Consolidated Deduplication Callout */}
+          {(challenge as any).citizenReportCount && (challenge as any).citizenReportCount > 1 && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-base">🔥</span>
+                <div>
+                  <p className="text-xs font-black text-emerald-900">Consolidated Citizen Challenge ({(challenge as any).citizenReportCount} Reports Merged)</p>
+                  <p className="text-[10px] text-emerald-700">AI auto-merged identical geotag & problem reports to save administrative bandwidth.</p>
+                </div>
+              </div>
+              <span className="text-[10px] font-black bg-emerald-600 text-white px-2 py-1 rounded-lg">High Urgency</span>
+            </div>
+          )}
+
           {/* AI Triage & Reasoning */}
           {challenge.aiReasoning && (
             <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4 space-y-1.5">
@@ -1103,6 +1117,11 @@ export const GovPortal: React.FC = () => {
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1">
                                 <Layers className="w-2.5 h-2.5" />
                                 Clustered
+                              </span>
+                            )}
+                            {ch.citizenReportCount && ch.citizenReportCount > 1 && (
+                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                                🔥 {ch.citizenReportCount} Reports Merged
                               </span>
                             )}
                           </div>

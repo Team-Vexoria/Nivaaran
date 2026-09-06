@@ -343,40 +343,41 @@ export interface ChallengeDoc {
   govtValidatedBy?: string;
   govtValidatedAt?: string;
   clusterId?: string;
+  citizenReportCount?: number;
+  communityUpvotes?: number;
   translations?: Record<string, any>;
   createdAt?: any;
 }
 
 export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'>) => {
-  // 1. Primary: Save to local workflowStore so UI responds immediately
+  // 1. Primary: Save to local workflowStore immediately so UI responds in 0ms
   const legacyChallenge: ChallengeDoc = { ...challenge };
   const { workflowStore } = await import('./workflowStore');
   const result = await workflowStore.addChallenge(toWorkflowChallenge(legacyChallenge));
   const newId = result.created?.id || result.existing?.id || `CH-${Date.now()}`;
 
-  // 2. Secondary: Sync with backend API
-  try {
-    const { apiClient } = await import('../api/client');
-    const res = await apiClient.createChallenge({ ...challenge, id: newId } as any);
-    if (res.ok && res.data) {
-      return res.data.id || newId;
-    }
-  } catch (err) {
-    console.warn('[API] createChallenge sync failed, persisted in workflowStore:', err);
-  }
-
-  // 3. Optional Firestore write
-  if (result.created) {
+  // 2. Secondary: Background non-blocking sync to API and Firestore
+  (async () => {
     try {
-      await addDoc(collection(db, 'challenges'), {
-        ...challenge,
-        id: newId,
-        createdAt: serverTimestamp(),
-      });
-    } catch (error) {
-      console.warn('[Firestore] Falling back to workflowStore only:', error);
+      const { apiClient } = await import('../api/client');
+      await apiClient.createChallenge({ ...challenge, id: newId } as any);
+    } catch (err) {
+      console.warn('[API] Background challenge sync failed:', err);
     }
-  }
+
+    if (result.created) {
+      try {
+        await addDoc(collection(db, 'challenges'), {
+          ...challenge,
+          id: newId,
+          createdAt: serverTimestamp(),
+        });
+      } catch (error) {
+        console.warn('[Firestore] Background challenge write skipped:', error);
+      }
+    }
+  })();
+
   return newId;
 };
 
@@ -454,19 +455,29 @@ export interface FeedCommentDoc {
 }
 
 export const submitFeedPostToFirestore = async (post: Omit<FeedPostDoc, 'id'>) => {
+  const newId = `POST-${Date.now()}`;
   try {
-    const docRef = await addDoc(collection(db, 'community_posts'), {
-      ...post,
-      createdAt: serverTimestamp(),
-    });
-    return docRef.id;
-  } catch (error) {
-    console.warn('[Firestore] Falling back to local storage for feed posts:', error);
     const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
-    const newDoc = { ...post, id: `LOCAL-POST-${Date.now()}` };
+    const newDoc = { ...post, id: newId };
     localStorage.setItem('nivaaran_feed_posts', JSON.stringify([newDoc, ...existing]));
-    return newDoc.id;
+  } catch (e) {
+    console.warn('[Feed] Local storage save failed:', e);
   }
+
+  // Background non-blocking Firestore write
+  (async () => {
+    try {
+      await addDoc(collection(db, 'community_posts'), {
+        ...post,
+        id: newId,
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.warn('[Firestore] Background feed post write skipped:', error);
+    }
+  })();
+
+  return newId;
 };
 
 export const subscribeToFeedPosts = (callback: (posts: FeedPostDoc[]) => void) => {

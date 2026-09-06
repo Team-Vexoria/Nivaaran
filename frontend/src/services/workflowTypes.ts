@@ -89,8 +89,10 @@ export interface Challenge {
   assignedDept?: string;
   assignedProjectId?: string;
 
-  // Deduplication / Clustering
+  // Deduplication / Clustering & Report Velocity
   clusterId?: string;           // Set when AI groups this with similar challenges
+  citizenReportCount?: number;  // Total consolidated reports submitted for this issue
+  communityUpvotes?: number;    // Upvotes / citizen endorsements
 
   // CSR / Industry
   csrSponsor?: string;

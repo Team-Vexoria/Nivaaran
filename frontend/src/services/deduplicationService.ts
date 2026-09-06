@@ -1,18 +1,25 @@
 /**
- * NIVAARAN — Semantic Deduplication Engine (SIH 26043)
- * Stage 4: Challenge Clustering & Similarity Detection
+ * NIVAARAN — Semantic Deduplication & Auto-Merge Engine (SIH 26043)
+ * Stage 4: Challenge Clustering & Deduplication Gate
  *
- * Scores similarity between submitted challenges to identify duplicates/clusters:
- * - Keyword overlap (40%)
- * - District/village proximity (25%)
- * - Category match (25%)
- * - Recency bonus (10%)
+ * 1. Scores similarity between submitted challenges:
+ *    - Keyword & text overlap (35%)
+ *    - GPS Haversine distance & village/district proximity (30%)
+ *    - Category & problem domain match (25%)
+ *    - Recency bonus (10%)
  *
- * Threshold: >= 65% = clustered as potential duplicate
+ * 2. Auto-Merge Pipeline:
+ *    - When an identical/proximate issue is detected (score >= 0.70 or <1km same category),
+ *      it consolidates into the original primary post:
+ *      - Increments `citizenReportCount` on the primary challenge (+1 citizen report).
+ *      - Increments `communityUpvotes`.
+ *      - Appends new citizen photo evidence into `evidenceUrls`.
+ *      - Dynamically boosts the priority score due to higher citizen volume.
+ *      - Emits a timeline event logged for government officers & universities.
  */
 
 import { workflowStore } from './workflowStore';
-import type { Challenge } from './workflowTypes';
+import type { Challenge, RiskLevel } from './workflowTypes';
 
 export interface DeduplicationResult {
   isDuplicate: boolean;
@@ -20,6 +27,28 @@ export interface DeduplicationResult {
   similarChallenges: Challenge[];
   similarityScore: number;
   primaryChallenge: Challenge | null;
+  matchReason?: string;
+}
+
+export interface MergeReportInput {
+  title?: string;
+  description?: string;
+  evidenceUrls?: string[];
+  submittedBy?: string;
+  submittedByRole?: string;
+  locationCoords?: { lat: number; lng: number };
+  formattedAddress?: string;
+  village?: string;
+  block?: string;
+  district?: string;
+}
+
+export interface MergeResult {
+  success: boolean;
+  primaryChallenge?: Challenge;
+  newReportCount: number;
+  newPriorityScore: number;
+  newRiskLevel: RiskLevel;
 }
 
 // Cluster ID prefix for challenges in the same group
@@ -33,12 +62,12 @@ export function findSimilarChallenges(
 ): DeduplicationResult {
   const existingChallenges = workflowStore.getChallenges();
 
-  // Get the most recent challenges for comparison (skip very old ones to save computation)
-  const recentChallenges = existingChallenges
-    .filter(c => c.id !== newChallenge.id && c.id !== newChallenge.reportId)
-    .slice(0, 50); // Compare against last 50 for performance
+  // Get active challenges for comparison
+  const candidateChallenges = existingChallenges.filter(
+    c => c.id !== newChallenge.id && c.id !== newChallenge.reportId && c.status !== 'Rejected' && c.status !== 'Closed'
+  );
 
-  if (recentChallenges.length === 0) {
+  if (candidateChallenges.length === 0) {
     return {
       isDuplicate: false,
       clusterId: null,
@@ -48,7 +77,7 @@ export function findSimilarChallenges(
     };
   }
 
-  const scoredMatches = recentChallenges.map(existing => ({
+  const scoredMatches = candidateChallenges.map(existing => ({
     challenge: existing,
     score: calculateSimilarityScore(newChallenge, existing),
   }));
@@ -57,59 +86,156 @@ export function findSimilarChallenges(
   scoredMatches.sort((a, b) => b.score - a.score);
 
   const bestMatch = scoredMatches[0];
-  const threshold = 0.65; // 65% similarity threshold
-
-  if (bestMatch.score >= threshold) {
-    // Find or create a cluster
-    const existingClusterId = bestMatch.challenge.clusterId || `${CLUSTER_PREFIX}${bestMatch.challenge.id}`;
-
-    // Get all challenges in this cluster
-    const clusterMembers = existingChallenges.filter(
-      c => c.clusterId === existingClusterId || c.id === bestMatch.challenge.id
-    );
-
+  if (!bestMatch || bestMatch.score < 0.45) {
     return {
-      isDuplicate: bestMatch.score >= 0.80, // Very high similarity = likely exact duplicate
-      clusterId: existingClusterId,
-      similarChallenges: [bestMatch.challenge, ...clusterMembers.filter(c => c.id !== bestMatch.challenge.id)],
-      similarityScore: bestMatch.score,
-      primaryChallenge: bestMatch.challenge,
+      isDuplicate: false,
+      clusterId: null,
+      similarChallenges: [],
+      similarityScore: bestMatch?.score || 0,
+      primaryChallenge: null,
     };
   }
 
+  // Deduplication threshold: >= 0.70 is an exact duplicate/merge candidate
+  const isDuplicate = bestMatch.score >= 0.70;
+  const existingClusterId = bestMatch.challenge.clusterId || `${CLUSTER_PREFIX}${bestMatch.challenge.reportId || bestMatch.challenge.id}`;
+
+  const clusterMembers = candidateChallenges.filter(
+    c => c.clusterId === existingClusterId || c.id === bestMatch.challenge.id
+  );
+
+  const matchReason = isDuplicate
+    ? `Matches existing incident in ${bestMatch.challenge.district} (${Math.round(bestMatch.score * 100)}% similarity)`
+    : `Related incident in cluster ${existingClusterId}`;
+
   return {
-    isDuplicate: false,
-    clusterId: null,
-    similarChallenges: [],
+    isDuplicate,
+    clusterId: existingClusterId,
+    similarChallenges: [bestMatch.challenge, ...clusterMembers.filter(c => c.id !== bestMatch.challenge.id)],
     similarityScore: bestMatch.score,
-    primaryChallenge: null,
+    primaryChallenge: bestMatch.challenge,
+    matchReason,
   };
 }
 
 /**
- * Calculate similarity score between two challenges (0-1 range)
+ * Auto-Merge: Merges a duplicate citizen report into the original primary issue.
+ * Increments report count, appends photos, boosts priority score, and logs audit timeline.
+ */
+export async function mergeWithPrimaryChallenge(
+  primaryChallengeId: string,
+  newReport: MergeReportInput
+): Promise<MergeResult> {
+  const primary = workflowStore.getChallenge(primaryChallengeId);
+  if (!primary) {
+    return {
+      success: false,
+      newReportCount: 1,
+      newPriorityScore: 50,
+      newRiskLevel: 'MEDIUM',
+    };
+  }
+
+  const updatedReportCount = (primary.citizenReportCount || 1) + 1;
+  const updatedUpvotes = (primary.communityUpvotes || 0) + 1;
+
+  // Append new photo evidence (avoid duplicates)
+  const currentUrls = primary.evidenceUrls || [];
+  const newUrls = (newReport.evidenceUrls || []).filter(u => u && !currentUrls.includes(u));
+  const mergedEvidence = [...currentUrls, ...newUrls];
+
+  // Dynamic priority boost based on citizen volume (+3 pts per duplicate report, capped at 100)
+  const currentScore = primary.priorityScore || 60;
+  const boostedPriority = Math.min(100, currentScore + 3);
+
+  let newRiskLevel: RiskLevel = primary.riskLevel || 'MEDIUM';
+  if (boostedPriority >= 85) newRiskLevel = 'CRITICAL';
+  else if (boostedPriority >= 70) newRiskLevel = 'HIGH';
+  else if (boostedPriority >= 50) newRiskLevel = 'MEDIUM';
+
+  const clusterId = primary.clusterId || `${CLUSTER_PREFIX}${primary.reportId || primary.id}`;
+
+  const now = new Date().toISOString();
+  const citizenLoc = newReport.village || newReport.block || newReport.formattedAddress || 'Nearby citizen';
+
+  // 1. Update primary challenge in workflow store
+  const updatedChallenge = await workflowStore.updateChallenge(primary.id, {
+    citizenReportCount: updatedReportCount,
+    communityUpvotes: updatedUpvotes,
+    evidenceUrls: mergedEvidence,
+    priorityScore: boostedPriority,
+    riskLevel: newRiskLevel,
+    clusterId,
+    updatedAt: now,
+  });
+
+  // 2. Add an audit timeline event
+  workflowStore.addTimelineEvent({
+    id: `TL-${Date.now()}-merge`,
+    entityType: 'challenge',
+    entityId: primary.id,
+    action: 'report_boosted',
+    actor: 'Citizen Network',
+    actorRole: 'Citizen',
+    description: `Additional citizen report & photographic evidence submitted from ${citizenLoc}. Consolidated reports: ${updatedReportCount} citizens affected. Priority boosted to ${boostedPriority}/100 [${newRiskLevel}].`,
+    previousValue: `${currentScore}/100 (${updatedReportCount - 1} reports)`,
+    newValue: `${boostedPriority}/100 (${updatedReportCount} reports)`,
+    timestamp: now,
+  });
+
+  // 3. Background sync to backend / Firestore
+  (async () => {
+    try {
+      const { apiClient } = await import('../api/client');
+      await apiClient.transitionChallenge(primary.id, 'Citizen Report Boosted', {
+        citizenReportCount: updatedReportCount,
+        communityUpvotes: updatedUpvotes,
+        priorityScore: boostedPriority,
+        riskLevel: newRiskLevel,
+      });
+    } catch {
+      // Local state is already updated
+    }
+  })();
+
+  return {
+    success: true,
+    primaryChallenge: updatedChallenge || primary,
+    newReportCount: updatedReportCount,
+    newPriorityScore: boostedPriority,
+    newRiskLevel,
+  };
+}
+
+/**
+ * Calculate multi-dimensional similarity score (0 to 1 range)
  */
 export function calculateSimilarityScore(
   a: Partial<Challenge>,
   b: Challenge
 ): number {
-  // 1. Keyword overlap (40%)
+  // 1. Keyword & Title overlap (35%)
   const keywordScore = calculateKeywordScore(a, b);
 
-  // 2. District/village proximity (25%)
+  // 2. Geographic & GPS proximity (30%)
   const locationScore = calculateLocationScore(a, b);
 
-  // 3. Category match (25%)
+  // 3. Category & Problem Domain match (25%)
   const categoryScore = calculateCategoryScore(a, b);
 
   // 4. Recency bonus (10%)
   const recencyScore = calculateRecencyScore(a, b);
 
-  return (keywordScore * 0.4) + (locationScore * 0.25) + (categoryScore * 0.25) + (recencyScore * 0.1);
+  // Special immediate rule: Same exact category within <500 meters GPS = 95% duplicate match
+  if (categoryScore >= 0.9 && locationScore >= 0.95) {
+    return 0.95;
+  }
+
+  return (keywordScore * 0.35) + (locationScore * 0.30) + (categoryScore * 0.25) + (recencyScore * 0.10);
 }
 
 /**
- * Keyword overlap: compare title + description words
+ * Keyword overlap: compare title + description words with Jaccard coefficient
  */
 function calculateKeywordScore(a: Partial<Challenge>, b: Challenge): number {
   const textA = `${a.title || ''} ${a.description || ''}`.toLowerCase();
@@ -123,7 +249,6 @@ function calculateKeywordScore(a: Partial<Challenge>, b: Challenge): number {
   const intersection = [...wordsA].filter(w => wordsB.has(w));
   const union = new Set([...wordsA, ...wordsB]);
 
-  // Jaccard similarity
   return intersection.length / union.size;
 }
 
@@ -131,7 +256,6 @@ function calculateKeywordScore(a: Partial<Challenge>, b: Challenge): number {
  * Extract meaningful keywords from text
  */
 function extractKeywords(text: string): string[] {
-  // Stop words to exclude
   const stopWords = new Set([
     'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
     'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
@@ -153,9 +277,49 @@ function extractKeywords(text: string): string[] {
 }
 
 /**
- * Location proximity: same district = 1.0, same village = 1.0, different = 0
+ * Haversine formula: calculate distance in kilometers between two GPS coordinates
+ */
+function calculateHaversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+/**
+ * Location proximity: computes GPS distance if coordinates exist, otherwise district/block/village matching
  */
 function calculateLocationScore(a: Partial<Challenge>, b: Challenge): number {
+  // 1. Precise GPS calculation if both have coordinates
+  if (a.locationCoords && b.locationCoords && a.locationCoords.lat && b.locationCoords.lat) {
+    const distKm = calculateHaversineDistanceKm(
+      a.locationCoords.lat,
+      a.locationCoords.lng,
+      b.locationCoords.lat,
+      b.locationCoords.lng
+    );
+
+    if (distKm <= 0.3) return 1.0;     // Within 300m = same exact spot
+    if (distKm <= 1.0) return 0.90;    // Within 1km = same neighborhood / street
+    if (distKm <= 3.0) return 0.75;    // Within 3km = same village / ward
+    if (distKm <= 10.0) return 0.50;   // Within 10km = same block
+    if (distKm <= 25.0) return 0.25;   // Same sub-district
+    return 0.05;
+  }
+
+  // 2. Text-based hierarchy matching
   const districtA = (a.district || '').toLowerCase().trim();
   const districtB = (b.district || '').toLowerCase().trim();
   const villageA = (a.village || a.block || '').toLowerCase().trim();
@@ -163,38 +327,17 @@ function calculateLocationScore(a: Partial<Challenge>, b: Challenge): number {
 
   if (!districtA || !districtB) return 0;
 
-  // Same exact village/panchayat = highest
-  if (villageA && villageB && villageA === villageB) {
+  if (villageA && villageB && villageA === villageB && districtA === districtB) {
     return 1.0;
   }
 
-  // Same district
   if (districtA === districtB) {
-    // Bonus if also same block
     const blockA = (a.block || '').toLowerCase().trim();
     const blockB = (b.block || '').toLowerCase().trim();
     if (blockA && blockB && blockA === blockB) {
-      return 0.9;
+      return 0.85;
     }
-    return 0.75;
-  }
-
-  // Adjacent districts (Jharkhand districts that share borders)
-  const adjacentDistricts: Record<string, string[]> = {
-    'ranchi': ['khunti', 'gumla', 'lohardaga', 'ramgarh'],
-    'dhanbad': ['bokaro', 'giridih', 'koderma'],
-    'bokaro': ['dhanbad', 'giridih', 'ramgarh', 'ranchi'],
-    'palamu': ['garhwa', 'latehar', 'chatra'],
-    'hazaribagh': ['koderma', 'giridih', 'chatra', 'ramgarh'],
-    'deoghar': ['dumka', 'godda', 'jamtara'],
-    'giridih': ['dhanbad', 'bokaro', 'koderma', 'hazaribagh'],
-  };
-
-  const adjA = adjacentDistricts[districtA] || [];
-  const adjB = adjacentDistricts[districtB] || [];
-
-  if (adjA.includes(districtB) || adjB.includes(districtA)) {
-    return 0.4;
+    return 0.70;
   }
 
   return 0;
@@ -209,55 +352,26 @@ function calculateCategoryScore(a: Partial<Challenge>, b: Challenge): number {
 
   if (!catA || !catB) return 0;
 
-  // Exact match
   if (catA === catB) {
     return 1.0;
   }
 
-  // Check if they share significant keywords
   const wordsA = extractKeywords(catA);
   const wordsB = extractKeywords(catB);
   const overlap = wordsA.filter(w => wordsB.some(bw => bw.includes(w) || w.includes(bw)));
 
   if (overlap.length >= 2) {
-    return 0.6;
+    return 0.7;
   }
-
-  // Related domain check (keywords from domain taxonomy)
-  const relatedDomains = getRelatedDomains(catA);
-  if (relatedDomains.some(d => catB.includes(d))) {
-    return 0.5;
+  if (overlap.length >= 1) {
+    return 0.45;
   }
 
   return 0;
 }
 
 /**
- * Get related domain keywords for partial matching
- */
-function getRelatedDomains(category: string): string[] {
-  const domainMap: Record<string, string[]> = {
-    'water': ['water', 'drinking', 'irrigation', 'pipeline', 'groundwater', 'river'],
-    'road': ['road', 'transport', 'highway', 'bridge', 'traffic', 'pothole'],
-    'electricity': ['electric', 'power', 'voltage', 'load shedding', 'transformer'],
-    'health': ['hospital', 'clinic', 'doctor', 'medicine', 'disease', 'health'],
-    'education': ['school', 'college', 'student', 'teacher', 'education', 'classroom'],
-    'disaster': ['flood', 'drought', 'cyclone', 'earthquake', 'disaster', 'emergency'],
-    'agriculture': ['farm', 'crop', 'farmer', 'agriculture', 'soil', 'irrigation'],
-    'sanitation': ['toilet', 'sewage', 'drainage', 'garbage', 'waste', 'sanitation'],
-  };
-
-  const categoryLower = category.toLowerCase();
-  for (const [, keywords] of Object.entries(domainMap)) {
-    if (keywords.some(k => categoryLower.includes(k))) {
-      return keywords;
-    }
-  }
-  return [];
-}
-
-/**
- * Recency: more recent = higher score (challenges within 7 days get bonus)
+ * Recency: more recent = higher score (challenges within 7 days get highest bonus)
  */
 function calculateRecencyScore(a: Partial<Challenge>, b: Challenge): number {
   const dateA = a.createdAt ? new Date(a.createdAt).getTime() : Date.now();
@@ -274,7 +388,7 @@ function calculateRecencyScore(a: Partial<Challenge>, b: Challenge): number {
 }
 
 /**
- * Assign a challenge to a cluster (called after government validation)
+ * Assign a challenge to a cluster
  */
 export async function assignToCluster(
   challengeId: string,

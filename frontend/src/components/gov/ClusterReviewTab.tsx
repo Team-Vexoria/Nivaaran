@@ -129,6 +129,11 @@ export const ClusterReviewTab: React.FC<ClusterReviewTabProps> = ({ officerName,
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-[10px] font-extrabold text-[#8A7F72] font-mono bg-white px-1.5 py-0.5 rounded border border-[#E4DDD1]">{m.reportId}</span>
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-[#E4DDD1]">{m.status}</span>
+                              {m.citizenReportCount && m.citizenReportCount > 1 && (
+                                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                                  🔥 {m.citizenReportCount} Citizen Reports Merged
+                                </span>
+                              )}
                             </div>
                             <p className="text-xs font-bold text-[#201C18] mt-1">{m.title}</p>
                             <p className="text-[11px] text-[#6A6155] flex items-center gap-1 mt-0.5">
