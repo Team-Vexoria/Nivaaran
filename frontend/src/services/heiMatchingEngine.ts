@@ -14,10 +14,11 @@ export interface HEIMatchResult {
 /**
  * Deterministic capability matchmaker for NIVAARAN.
  * Evaluates a challenge against all registered HEIs using 4 weighted factors:
- * 1. Department Capability Fit (40%)
- * 2. Lab Equipment Fit (30%)
- * 3. District Proximity Fit (20%)
- * 4. Academic Track Record (10%)
+ * 1. Department Capability Fit (30%)
+ * 2. Field Expertise Depth (20%)
+ * 3. Lab Equipment Fit (20%)
+ * 4. Achievements / Research Track (10%)
+ * 5. District Proximity Fit (20%)
  */
 export const calculateHEIMatchScore = (
   challenge: ChallengeDoc,
@@ -35,7 +36,7 @@ export const calculateHEIMatchScore = (
   const challengeTitleLower = (challenge.title || '').toLowerCase();
   const challengeDistrictLower = (challenge.district || '').toLowerCase();
 
-  // 1. Department & Capability Match (40 Points Max)
+  // 1. Department & Capability Match (30 Points Max)
   university.departments.forEach((dept) => {
     let deptScore = 0;
     
