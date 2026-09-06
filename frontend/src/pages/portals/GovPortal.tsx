@@ -28,12 +28,14 @@ import {
   TrendingUp,
   CheckCheck,
   ShieldCheck,
-  Award
+  Award,
+  Users
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
 import { useMapData, getSeverityBg, getStatusPillClass } from '../../services/mapDataService';
 import { govValidateChallenge, govRequestEvidence, govVerifyAndDeployChallenge, govRejectChallenge, ChallengeDoc } from '../../services/firebaseService';
+import { extractIncidentMetadata } from '../../services/dataExtractionService';
 import { CertificateModal } from '../../components/CertificateModal';
 import { ProposalReviewTab } from '../../components/gov/ProposalReviewTab';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
@@ -172,17 +174,17 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
 
           {/* Consolidated Deduplication Callout */}
           {(challenge as any).citizenReportCount && (challenge as any).citizenReportCount > 1 && (
-            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-3.5 rounded-xl flex items-center justify-between shadow-md">
+            <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white p-3.5 rounded-xl flex items-center justify-between border border-emerald-800/40 shadow-md">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                  <Flame className="w-5 h-5 fill-white text-white" />
+                <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                  <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider block text-amber-100">HIGH COMMUNITY CONCERN • DEDUPLICATED & MERGED</span>
-                  <p className="text-sm font-black text-white">{(challenge as any).citizenReportCount} Citizens Reported This Exact Incident</p>
+                  <span className="text-[10px] font-black uppercase tracking-wider block text-emerald-400">HIGH COMMUNITY CONCERN • DEDUPLICATED & MERGED</span>
+                  <p className="text-sm font-black text-white">{(challenge as any).citizenReportCount} Citizens Reported This Incident</p>
                 </div>
               </div>
-              <span className="text-xs font-black bg-white text-rose-700 px-3 py-1.5 rounded-lg shadow-2xs uppercase">
+              <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg uppercase">
                 High Urgency
               </span>
             </div>
@@ -213,6 +215,78 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
               </div>
             )}
           </div>
+
+          {/* Stage 4: Extracted On-Ground Proof & Audit Metadata */}
+          {(() => {
+            const extractedMeta = (challenge as any).extractedMetadata || extractIncidentMetadata({
+              reportId: challenge.reportId || challenge.id || 'INCIDENT',
+              title: challenge.title || 'Civic Community Issue',
+              description: challenge.summary || '',
+              category: challenge.category,
+              district: challenge.district || 'Ranchi',
+              block: challenge.block,
+              village: challenge.village,
+              locationCoords: challenge.locationCoords,
+              formattedAddress: challenge.formattedAddress,
+              customDate: challenge.createdAt ? new Date(challenge.createdAt) : undefined,
+            });
+
+            return (
+              <div className="bg-white border border-[#E4DDD1] rounded-xl p-3.5 space-y-3 shadow-2xs">
+                <div className="flex items-center justify-between border-b border-[#E4DDD1]/70 pb-2">
+                  <div className="flex items-center space-x-2">
+                    <span className="w-5 h-5 rounded-md bg-slate-900 text-white flex items-center justify-center font-bold text-[10px]">
+                      4
+                    </span>
+                    <span className="font-extrabold text-[#201C18] text-xs">Stage 4: Extracted On-Ground Proof & Audit Record</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                    <span>Verified Geotag</span>
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="bg-[#FAF8F4] p-2.5 rounded-lg border border-[#E4DDD1]/80 space-y-0.5">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Captured Timestamp</span>
+                    <p className="font-extrabold text-[#201C18] text-[11px]">{extractedMeta.formattedDate}, {extractedMeta.formattedTime}</p>
+                    <span className="text-[9px] text-slate-500 font-medium">Season: {extractedMeta.season} ({extractedMeta.timeOfDay})</span>
+                  </div>
+
+                  <div className="bg-[#FAF8F4] p-2.5 rounded-lg border border-[#E4DDD1]/80 space-y-0.5">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block">GPS Coordinates</span>
+                    <p className="font-mono font-extrabold text-[#201C18] text-[11px]">{extractedMeta.gpsCoordinates.lat}°N, {extractedMeta.gpsCoordinates.lng}°E</p>
+                    <a
+                      href={`https://maps.google.com/?q=${extractedMeta.gpsCoordinates.lat},${extractedMeta.gpsCoordinates.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[9px] font-bold text-indigo-600 hover:underline inline-flex items-center gap-0.5"
+                    >
+                      <span>Sat-Map View</span>
+                    </a>
+                  </div>
+                </div>
+
+                <div className="bg-[#FAF8F4] p-2 rounded-lg border border-[#E4DDD1]/80 flex items-center justify-between text-[10px]">
+                  <span className="font-mono font-bold text-slate-600">Audit Hash: <span className="text-slate-900">{extractedMeta.evidenceProofHash}</span></span>
+                  <span className="text-slate-500 font-medium">{extractedMeta.captureSource}</span>
+                </div>
+
+                {extractedMeta.detectedFeatures && extractedMeta.detectedFeatures.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-bold text-slate-500 uppercase block">Extracted Visual Features:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {extractedMeta.detectedFeatures.map((f: string, idx: number) => (
+                        <span key={idx} className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+                          {f}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Existing Officer Notes */}
           {challenge.govtOfficerNote && (
@@ -1124,8 +1198,8 @@ export const GovPortal: React.FC = () => {
                               </span>
                             )}
                             {ch.citizenReportCount && ch.citizenReportCount > 1 && (
-                              <span className="text-xs font-black px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-rose-600 text-white shadow-2xs flex items-center gap-1.5 animate-pulse">
-                                <Flame className="w-3.5 h-3.5 fill-white text-white" /> {ch.citizenReportCount} Citizens Reported
+                              <span className="text-xs font-bold px-3 py-1 rounded-full bg-slate-900 text-emerald-300 border border-emerald-700/50 shadow-2xs flex items-center gap-1.5">
+                                <Users className="w-3.5 h-3.5 text-emerald-400" /> {ch.citizenReportCount} Citizens Reported
                               </span>
                             )}
                           </div>

@@ -14,17 +14,54 @@ export const GOV_DOMAINS: DomainTaxonomy[] = [
   // ... (remaining 52 domains follow same pattern — full set in seed/domain_taxonomy)
 ];
 
-export interface PriorityFactors { severity: number; spatialRecurrence: number; communityUpvotes: number; institutionalReadiness: number; urgency: number; }
-export function scorePriority(challenge: any, spatial: any, upvotes: number): number {
-  const f: PriorityFactors = {
-    severity: Math.min(20, (challenge.severity || 'MEDIUM') === 'CRITICAL' ? 20 : (challenge.severity === 'HIGH' ? 15 : 10)),
-    spatialRecurrence: Math.min(20, spatial?.recurrence || 5),
-    communityUpvotes: Math.min(20, upvotes || 0),
-    institutionalReadiness: Math.min(20, challenge.institutional_readiness || 5),
-    urgency: Math.min(20, challenge.urgency_score || 5),
+export interface PriorityFactors {
+  populationImpact: number;          // Max 25: affected population scale
+  economicLifeSaving: number;        // Max 25: lives saved & economic value preserved
+  resolutionCostFeasibility: number; // Max 25: cost-to-impact ROI (lower/medium cost = higher score)
+  hazardUrgency: number;             // Max 25: urgency & escalating risk velocity
+}
+
+export function scorePriority(challenge: any, spatial?: any, upvotes: number = 0): {
+  priorityScore: number;
+  factors: PriorityFactors;
+  riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'STANDARD';
+} {
+  // 1. Population Impact (Max 25 pts)
+  const population = challenge.affectedPopulation || (challenge.population ? parseInt(challenge.population, 10) : 500);
+  const upvoteCount = upvotes || challenge.communityUpvotes || challenge.upvotes || 1;
+  const populationImpact = Math.min(25, Math.max(5, Math.round((population * 0.02) + (upvoteCount * 1.5))));
+
+  // 2. Economic & Life Saving Impact (Max 25 pts)
+  const econValue = challenge.economicValue || challenge.economicValueEstimate || 50000;
+  const isLifeThreat = challenge.severity === 'CRITICAL' || (challenge.hazardUrgency && challenge.hazardUrgency >= 8);
+  const lifeBonus = isLifeThreat ? 12 : 5;
+  const economicLifeSaving = Math.min(25, Math.max(5, Math.round((econValue / 25000) + lifeBonus)));
+
+  // 3. Resolution Cost & Feasibility (Max 25 pts)
+  const cost = challenge.estimatedCost || challenge.estimatedResolutionCost || 50000;
+  const costPenalty = (cost / 100000) * 2;
+  const resolutionCostFeasibility = Math.min(25, Math.max(5, Math.round(25 - costPenalty)));
+
+  // 4. Hazard Urgency & Cascading Risk (Max 25 pts)
+  const rawUrgency = challenge.hazardUrgency || (challenge.urgency || 5);
+  const hazardUrgency = Math.min(25, Math.max(5, Math.round(rawUrgency * 2.5)));
+
+  const total = Math.min(100, populationImpact + economicLifeSaving + resolutionCostFeasibility + hazardUrgency);
+
+  let riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'STANDARD' = 'MEDIUM';
+  if (total >= 85) riskLevel = 'CRITICAL';
+  else if (total >= 70) riskLevel = 'HIGH';
+  else if (total >= 50) riskLevel = 'MEDIUM';
+  else riskLevel = 'STANDARD';
+
+  const factors: PriorityFactors = {
+    populationImpact,
+    economicLifeSaving,
+    resolutionCostFeasibility,
+    hazardUrgency,
   };
-  const total = f.severity + f.spatialRecurrence + f.communityUpvotes + f.institutionalReadiness + f.urgency;
-  return Math.min(100, total); // 0-100 per BACKEND_ARCHITECTURE.md §4.2
+
+  return { priorityScore: total, factors, riskLevel };
 }
 
 export interface HEIFactors { departmentFit: number; labFit: number; proximity: number; academic: number; }
@@ -127,7 +164,8 @@ Respond with only valid JSON.`,
     return { score: 0.5, reasons: ['Heuristic tag overlap'] };
   },
   async prioritize(challenge: any, spatial: any = {}, upvotes = 0) {
-    return { score: scorePriority(challenge, spatial, upvotes), factors: [], confidence: 0.9 };
+    const res = scorePriority(challenge, spatial, upvotes);
+    return { score: res.priorityScore, factors: res.factors, riskLevel: res.riskLevel, confidence: 0.95 };
   },
   async match(challenge: any, heis: any[]) {
     return heis.map((h) => ({ heiId: h.id, score: scoreHEIMatch(challenge, h, 10) }));

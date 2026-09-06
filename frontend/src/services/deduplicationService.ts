@@ -86,7 +86,7 @@ export function findSimilarChallenges(
   scoredMatches.sort((a, b) => b.score - a.score);
 
   const bestMatch = scoredMatches[0];
-  if (!bestMatch || bestMatch.score < 0.45) {
+  if (!bestMatch || bestMatch.score < 0.35) {
     return {
       isDuplicate: false,
       clusterId: null,
@@ -96,8 +96,8 @@ export function findSimilarChallenges(
     };
   }
 
-  // Deduplication threshold: >= 0.70 is an exact duplicate/merge candidate
-  const isDuplicate = bestMatch.score >= 0.70;
+  // Deduplication threshold: >= 0.55 is an exact duplicate/merge candidate
+  const isDuplicate = bestMatch.score >= 0.55;
   const existingClusterId = bestMatch.challenge.clusterId || `${CLUSTER_PREFIX}${bestMatch.challenge.reportId || bestMatch.challenge.id}`;
 
   const clusterMembers = candidateChallenges.filter(
@@ -214,42 +214,94 @@ export function calculateSimilarityScore(
   a: Partial<Challenge>,
   b: Challenge
 ): number {
-  // 1. Keyword & Title overlap (35%)
+  // 1. Keyword & Title overlap
   const keywordScore = calculateKeywordScore(a, b);
 
-  // 2. Geographic & GPS proximity (30%)
+  // 2. Geographic & GPS proximity
   const locationScore = calculateLocationScore(a, b);
 
-  // 3. Category & Problem Domain match (25%)
+  // 3. Category & Problem Domain match
   const categoryScore = calculateCategoryScore(a, b);
 
-  // 4. Recency bonus (10%)
+  // 4. Recency bonus
   const recencyScore = calculateRecencyScore(a, b);
 
-  // Special immediate rule: Same exact category within <500 meters GPS = 95% duplicate match
-  if (categoryScore >= 0.9 && locationScore >= 0.95) {
+  // ── TITLE-ONLY RULES (no location required) ──
+  // Rule 0: Exact title match anywhere → ALWAYS duplicate
+  const titleA = (a.title || '').toLowerCase().trim();
+  const titleB = (b.title || '').toLowerCase().trim();
+  if (titleA && titleB && titleA === titleB) return 1.0;
+
+  // Rule 0b: Title prefix match (4+ chars) → high duplicate confidence
+  if (titleA.length >= 4 && titleB.length >= 4) {
+    const minLen = Math.min(titleA.length, titleB.length, 8);
+    if (titleA.slice(0, minLen) === titleB.slice(0, minLen)) return 0.96;
+    if (titleA.slice(0, 4) === titleB.slice(0, 4)) return 0.92;
+  }
+
+  // Rule 0c: One title contains the other → duplicate
+  if ((titleA.includes(titleB) || titleB.includes(titleA)) && Math.min(titleA.length, titleB.length) >= 4) return 0.95;
+
+  // ── LOCATION + KEYWORD RULES ──
+  // Rule 1: Similar title/keywords in same location (same district/block or GPS <= 2km) -> Immediate duplicate (0.95)
+  if (locationScore >= 0.70 && keywordScore >= 0.50) {
     return 0.95;
   }
 
-  return (keywordScore * 0.35) + (locationScore * 0.30) + (categoryScore * 0.25) + (recencyScore * 0.10);
+  // Rule 2: Same location (GPS <= 1km or same village) + same category -> Immediate duplicate (0.95)
+  if (locationScore >= 0.85 && categoryScore >= 0.60) {
+    return 0.95;
+  }
+
+  // Rule 3: Exact or prefix title match anywhere in same district -> Immediate duplicate (0.92)
+  if (locationScore >= 0.65 && keywordScore >= 0.80) {
+    return 0.92;
+  }
+
+  // Rule 4: Close proximity (< 500m) with any similar context
+  if (locationScore >= 0.90) {
+    return Math.max(0.70, (keywordScore * 0.45) + (categoryScore * 0.35) + 0.20);
+  }
+
+  return (keywordScore * 0.40) + (locationScore * 0.30) + (categoryScore * 0.20) + (recencyScore * 0.10);
 }
 
 /**
- * Keyword overlap: compare title + description words with Jaccard coefficient
+ * Keyword overlap: compare title + description words with fuzzy and substring matching
  */
 function calculateKeywordScore(a: Partial<Challenge>, b: Challenge): number {
-  const textA = `${a.title || ''} ${a.description || ''}`.toLowerCase();
-  const textB = `${b.title || ''} ${b.description || ''}`.toLowerCase();
+  const textA = `${a.title || ''} ${a.description || ''}`.toLowerCase().trim();
+  const textB = `${b.title || ''} ${b.description || ''}`.toLowerCase().trim();
+  const titleA = (a.title || '').toLowerCase().trim();
+  const titleB = (b.title || '').toLowerCase().trim();
+
+  if (!titleA || !titleB) return 0;
+
+  // Exact or Substring match on titles
+  if (titleA === titleB) return 1.0;
+  if (titleA.includes(titleB) || titleB.includes(titleA)) return 0.95;
+
+  // Prefix match (e.g. "testing" vs "testing2" vs "testinq")
+  if (titleA.length >= 4 && titleB.length >= 4) {
+    const minLen = Math.min(titleA.length, titleB.length, 6);
+    if (titleA.slice(0, minLen) === titleB.slice(0, minLen)) return 0.90;
+    if (titleA.slice(0, 4) === titleB.slice(0, 4)) return 0.85;
+  }
+
+  // Cross text inclusion
+  if (textA.includes(titleB) || textB.includes(titleA)) return 0.90;
 
   const wordsA = new Set(extractKeywords(textA));
   const wordsB = new Set(extractKeywords(textB));
 
-  if (wordsA.size === 0 || wordsB.size === 0) return 0;
+  if (wordsA.size === 0 || wordsB.size === 0) {
+    return textA.includes(textB) || textB.includes(textA) ? 0.85 : 0;
+  }
 
-  const intersection = [...wordsA].filter(w => wordsB.has(w));
+  const intersection = [...wordsA].filter(w => wordsB.has(w) || [...wordsB].some(bw => bw.includes(w) || w.includes(bw)));
   const union = new Set([...wordsA, ...wordsB]);
 
-  return intersection.length / union.size;
+  return intersection.length / Math.max(1, union.size);
 }
 
 /**

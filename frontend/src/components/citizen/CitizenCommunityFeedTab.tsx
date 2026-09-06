@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon, Zap, Flame } from 'lucide-react';
+import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon, Zap, Users, Trash2 } from 'lucide-react';
 import {
-  subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc, addCommentToFeedPost
+  subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc, addCommentToFeedPost, deleteFeedPostFromFirestore
 } from '../../services/firebaseService';
 import { useLanguage } from '../../context/LanguageContext';
 import { tr } from '../../i18n/translationEngine';
@@ -172,6 +172,17 @@ export const CitizenCommunityFeedTab: React.FC = () => {
     }
   };
 
+  const handleDeletePost = async (postId: string, title: string) => {
+    if (window.confirm(`Are you sure you want to delete post "${title}"?`)) {
+      try {
+        await deleteFeedPostFromFirestore(postId);
+        setPosts(prev => prev.filter(p => p.id !== postId));
+      } catch (err) {
+        console.error('Failed to delete feed post:', err);
+      }
+    }
+  };
+
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPostTitle.trim() || !newPostContent.trim()) return;
@@ -268,18 +279,18 @@ export const CitizenCommunityFeedTab: React.FC = () => {
             
             {/* Prominently Highlighted Citizen Report Count Banner */}
             {post.citizenReportCount && post.citizenReportCount > 1 && (
-              <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-3.5 rounded-xl flex items-center justify-between shadow-md">
+              <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white p-3.5 rounded-xl flex items-center justify-between border border-emerald-800/40 shadow-xs">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                    <Flame className="w-5 h-5 fill-white text-white" />
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                    <Users className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider block text-amber-100">HIGH COMMUNITY PRIORITY</span>
-                    <span className="text-xs font-black tracking-tight">{post.citizenReportCount} Citizens Reported This Exact Incident</span>
+                    <span className="text-[9px] font-black uppercase tracking-wider block text-emerald-400">HIGH COMMUNITY PRIORITY</span>
+                    <span className="text-xs font-black tracking-tight">{post.citizenReportCount} Citizens Reported This Incident</span>
                   </div>
                 </div>
-                <span className="text-[10px] bg-white/25 px-2.5 py-1 rounded-lg font-black tracking-wider uppercase backdrop-blur-xs">
-                  Merged Post
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg font-bold tracking-wider uppercase">
+                  Consolidated
                 </span>
               </div>
             )}
@@ -297,16 +308,39 @@ export const CitizenCommunityFeedTab: React.FC = () => {
                 </div>
               </div>
 
-              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
-                post.isProgress
-                  ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-              }`}>
-                {post.isProgress ? (
-                  <span className="inline-flex items-center"><Zap className="w-3 h-3 mr-1" />{tr(post.status, currentLang)}</span>
-                ) : tr(post.status, currentLang)}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
+                  post.isProgress
+                    ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                }`}>
+                  {post.isProgress ? (
+                    <span className="inline-flex items-center"><Zap className="w-3 h-3 mr-1" />{tr(post.status, currentLang)}</span>
+                  ) : tr(post.status, currentLang)}
+                </span>
+                {post.id && !post.isProgress && (
+                  <button
+                    onClick={() => handleDeletePost(post.id!, post.title)}
+                    title="Delete post"
+                    className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Photo Preview if available */}
+            {((post as any).evidenceUrl || (post as any).img || (post as any).beforeImg || (post as any).evidenceUrls?.[0]) && (
+              <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 max-h-60 my-1">
+                <img
+                  src={(post as any).evidenceUrl || (post as any).img || (post as any).beforeImg || (post as any).evidenceUrls?.[0]}
+                  alt={post.title}
+                  className="w-full h-52 object-cover hover:scale-105 transition-transform duration-300"
+                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
 
             {/* Title & Body */}
             <div className="space-y-1.5">

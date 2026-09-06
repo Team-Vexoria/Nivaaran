@@ -10,10 +10,9 @@ import { GOV_DOMAINS, GovDomain } from './domainTaxonomy';
 
 export interface PriorityFactors {
   populationImpact: { score: number; max: 25; reason: string };
-  infraCriticality: { score: number; max: 25; reason: string };
+  economicLifeSaving: { score: number; max: 25; reason: string };
+  resolutionCostFeasibility: { score: number; max: 25; reason: string };
   hazardUrgency: { score: number; max: 25; reason: string };
-  communityUpvotes: { score: number; max: 15; reason: string };
-  spatialRecurrence: { score: number; max: 10; reason: string };
 }
 
 export interface AITriageResult {
@@ -145,7 +144,7 @@ const classifyCategoryNLP = (text: string, title: string): {
 };
 
 /**
- * Layer 2: Deterministic 5-Factor Weighted Priority Scoring Regressor
+ * Layer 2: Deterministic 4-Pillar (25% Each = 100% Total) Priority Scoring Engine
  */
 const calculatePriorityLayer2 = (
   title: string, 
@@ -156,7 +155,7 @@ const calculatePriorityLayer2 = (
 ) => {
   const fullText = `${title} ${description}`.toLowerCase();
 
-  // Factor 1: Population Impact Radius (Max 25 pts)
+  // Pillar 1: Population Impact Radius (Max 25 pts)
   let popScore = 16;
   let popReason = `Impact area identified for ${categoryLabel || 'reported challenge'}`;
   
@@ -176,26 +175,48 @@ const calculatePriorityLayer2 = (
     popScore = 23;
     popReason = 'VULNERABLE INSTITUTION: School students and patients impacted';
   }
-
-  // Factor 2: Infrastructure Criticality (Max 25 pts)
-  let infraScore = 15;
-  let infraReason = 'Local community infrastructure node';
-
-  if (categoryCode === 'environment_climate') {
-    infraScore = 22;
-    infraReason = 'INDUSTRIAL UTILITY: Major industrial manufacturing plant emission zone';
-  } else if (categoryCode === 'urban_infrastructure' || categoryCode === 'roads_bridges_civic') {
-    infraScore = 24;
-    infraReason = 'CRITICAL TRANSPORTATION: Essential arterial road / bridge asset';
-  } else if (categoryCode === 'energy_electricity') {
-    infraScore = 25;
-    infraReason = 'POWER GRID SAFETY: High-voltage transmission line grid hazard';
-  } else if (categoryCode === 'forestry_wildlife') {
-    infraScore = 23;
-    infraReason = 'FOREST CORRIDOR: Highway intersecting wildlife migration route';
+  // Upvote reinforcement bonus (up to +2 within max 25)
+  if (upvotesCount > 1) {
+    popScore = Math.min(25, popScore + Math.min(2, Math.floor(upvotesCount * 0.5)));
   }
 
-  // Factor 3: Hazard Urgency & Severity (Max 25 pts)
+  // Pillar 2: Economic & Life Saving Impact (Max 25 pts)
+  let econScore = 16;
+  let econReason = 'Economic asset preservation and public welfare continuity';
+
+  if (categoryCode === 'environment_climate') {
+    econScore = 22;
+    econReason = 'INDUSTRIAL UTILITY: Major industrial manufacturing plant emission zone';
+  } else if (categoryCode === 'urban_infrastructure' || categoryCode === 'roads_bridges_civic') {
+    econScore = 24;
+    econReason = 'CRITICAL TRANSPORTATION: Essential arterial road / bridge economic lifeline';
+  } else if (categoryCode === 'energy_electricity') {
+    econScore = 25;
+    econReason = 'POWER GRID SAFETY: High-voltage transmission line grid hazard prevention';
+  } else if (categoryCode === 'forestry_wildlife') {
+    econScore = 23;
+    econReason = 'AGRICULTURAL LIVELIHOOD: Prevention of crop raiding and livestock loss';
+  } else if (fullText.includes('hospital') || fullText.includes('medical') || fullText.includes('life')) {
+    econScore = 25;
+    econReason = 'DIRECT LIFE SAFETY: Emergency medical / healthcare continuity protected';
+  }
+
+  // Pillar 3: Resolution Cost & Feasibility ROI (Max 25 pts — lower/medium cost = higher score)
+  let feasibilityScore = 19;
+  let feasibilityReason = 'High feasibility: standard engineering and municipal intervention scope';
+
+  if (fullText.includes('megaproject') || fullText.includes('dam construction') || fullText.includes('bridge collapse')) {
+    feasibilityScore = 14;
+    feasibilityReason = 'High capital intensity: requires multi-crore structural civil works';
+  } else if (fullText.includes('drainage') || fullText.includes('chlorination') || fullText.includes('pothole') || fullText.includes('sensor')) {
+    feasibilityScore = 23;
+    feasibilityReason = 'Rapid low-cost deployment: HEI prototype / municipal intervention viable under ₹2.5L';
+  } else if (fullText.includes('solar') || fullText.includes('filtration') || fullText.includes('signage')) {
+    feasibilityScore = 21;
+    feasibilityReason = 'Moderate capital requirement with rapid turnkey ROI';
+  }
+
+  // Pillar 4: Hazard Urgency & Cascading Risk (Max 25 pts)
   let urgencyScore = 16;
   let urgencyReason = 'Moderate hazard progression velocity';
 
@@ -210,19 +231,7 @@ const calculatePriorityLayer2 = (
     urgencyReason = 'IMMEDIATE SANITATION HAZARD: Pathogenic risk / water contamination';
   }
 
-  // Factor 4: Community Upvote Velocity & Geotag Clustering (Max 15 pts)
-  const upvoteBonus = Math.min(15, 5 + Math.floor(upvotesCount * 0.5));
-  const upvoteReason = `${upvotesCount} community upvotes & geotag reports logged`;
-
-  // Factor 5: Historical GIS Recurrence Index (Max 10 pts)
-  let gisScore = 7;
-  let gisReason = 'Pattern logged in district GIS challenge layer';
-  if (categoryCode === 'environment_climate' || categoryCode === 'forestry_wildlife' || categoryCode === 'disaster_mgmt') {
-    gisScore = 9;
-    gisReason = 'HIGH RECURRENCE: Identified recurring hazard zone in district GIS layer';
-  }
-
-  const totalPriorityScore = Math.min(100, popScore + infraScore + urgencyScore + upvoteBonus + gisScore);
+  const totalPriorityScore = Math.min(100, popScore + econScore + feasibilityScore + urgencyScore);
 
   let riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'STANDARD' = 'MEDIUM';
   if (totalPriorityScore >= 85) riskLevel = 'CRITICAL';
@@ -232,10 +241,9 @@ const calculatePriorityLayer2 = (
 
   const factors: PriorityFactors = {
     populationImpact: { score: popScore, max: 25, reason: popReason },
-    infraCriticality: { score: infraScore, max: 25, reason: infraReason },
+    economicLifeSaving: { score: econScore, max: 25, reason: econReason },
+    resolutionCostFeasibility: { score: feasibilityScore, max: 25, reason: feasibilityReason },
     hazardUrgency: { score: urgencyScore, max: 25, reason: urgencyReason },
-    communityUpvotes: { score: upvoteBonus, max: 15, reason: upvoteReason },
-    spatialRecurrence: { score: gisScore, max: 10, reason: gisReason },
   };
 
   return { priorityScore: totalPriorityScore, riskLevel, factors };
@@ -363,10 +371,9 @@ Return ONLY valid JSON, no markdown, no explanation outside JSON:
   "recommendedUniversityDepts": ["Department 1", "Department 2"],
   "factors": {
     "populationImpact": { "score": 20, "max": 25, "reason": "reason" },
-    "infraCriticality": { "score": 18, "max": 25, "reason": "reason" },
-    "hazardUrgency": { "score": 20, "max": 25, "reason": "reason" },
-    "communityUpvotes": { "score": 5, "max": 15, "reason": "reason" },
-    "spatialRecurrence": { "score": 7, "max": 10, "reason": "reason" }
+    "economicLifeSaving": { "score": 18, "max": 25, "reason": "reason" },
+    "resolutionCostFeasibility": { "score": 19, "max": 25, "reason": "reason" },
+    "hazardUrgency": { "score": 22, "max": 25, "reason": "reason" }
   }
 }`;
 
@@ -428,10 +435,9 @@ Return ONLY valid JSON, no markdown, no explanation outside JSON:
             riskLevel: isReal ? (parsed.riskLevel || 'HIGH') : 'CRITICAL',
             factors: parsed.factors || {
               populationImpact: { score: 20, max: 25, reason: 'Visual evidence analyzed by Gemini Vision AI' },
-              infraCriticality: { score: 20, max: 25, reason: 'Corridor and public safety impact' },
+              economicLifeSaving: { score: 18, max: 25, reason: 'Economic and public safety preservation' },
+              resolutionCostFeasibility: { score: 19, max: 25, reason: 'High impact to deployment cost ratio' },
               hazardUrgency: { score: 22, max: 25, reason: 'Active field hazard detected' },
-              communityUpvotes: { score: 5, max: 15, reason: 'Geotagged verified photo' },
-              spatialRecurrence: { score: 8, max: 10, reason: 'District zone monitoring' },
             },
             reasoning: isReal
               ? (parsed.reasoning || `Gemini 1.5 Flash Vision AI identified ${parsed.matchedProblem || parsed.category} from authentic photo evidence.`)

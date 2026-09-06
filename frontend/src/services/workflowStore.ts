@@ -177,6 +177,14 @@ class WorkflowStore {
     return updatedChallenge;
   }
 
+  public deleteChallenge(id: string): boolean {
+    const challenge = this.findChallengeByIdOrReportId(id);
+    if (!challenge) return false;
+    const challenges = this.state.challenges.filter((ch) => ch.id !== challenge.id && ch.reportId !== challenge.reportId);
+    this.persist({ ...this.state, challenges });
+    return true;
+  }
+
   public async transitionChallenge(
     id: string,
     newStatus: ChallengeStatus,

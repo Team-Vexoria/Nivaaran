@@ -5,10 +5,9 @@ import { formatStageName, getStageForStatus, normalizeLegacyStatus } from './wor
 
 const DEFAULT_PRIORITY_FACTORS: PriorityFactors = {
   populationImpact: { score: 0, max: 25, reason: 'Not available' },
-  infraCriticality: { score: 0, max: 25, reason: 'Not available' },
+  economicLifeSaving: { score: 0, max: 25, reason: 'Not available' },
+  resolutionCostFeasibility: { score: 0, max: 25, reason: 'Not available' },
   hazardUrgency: { score: 0, max: 25, reason: 'Not available' },
-  communityUpvotes: { score: 0, max: 15, reason: 'Not available' },
-  spatialRecurrence: { score: 0, max: 10, reason: 'Not available' },
 };
 
 const toChallengeStatus = (value: string | undefined): ChallengeStatus => (
@@ -82,6 +81,9 @@ export function toWorkflowChallenge(doc: ChallengeDoc): Challenge {
     govtValidatedBy: doc.govtValidatedBy,
     govtValidatedAt: doc.govtValidatedAt,
     clusterId: doc.clusterId,
+    citizenReportCount: doc.citizenReportCount,
+    communityUpvotes: doc.communityUpvotes,
+    extractedMetadata: doc.extractedMetadata,
     assignedHEI: doc.assignedHEI,
     assignedDept: doc.assignedDept,
     csrSponsor: doc.csrSponsor,
@@ -124,6 +126,9 @@ export function toLegacyChallengeDoc(challenge: Challenge): ChallengeDoc {
     govtValidatedBy: challenge.govtValidatedBy,
     govtValidatedAt: challenge.govtValidatedAt,
     clusterId: challenge.clusterId,
+    citizenReportCount: challenge.citizenReportCount,
+    communityUpvotes: challenge.communityUpvotes,
+    extractedMetadata: challenge.extractedMetadata,
     createdAt: challenge.createdAt || new Date().toISOString(),
   };
 }

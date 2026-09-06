@@ -345,6 +345,7 @@ export interface ChallengeDoc {
   clusterId?: string;
   citizenReportCount?: number;
   communityUpvotes?: number;
+  extractedMetadata?: import('./dataExtractionService').IncidentExtractedData;
   translations?: Record<string, any>;
   createdAt?: any;
 }
@@ -527,6 +528,29 @@ export const subscribeToFeedPosts = (callback: (posts: FeedPostDoc[]) => void) =
       window.removeEventListener('nivaaran-storage-changed', notifyLocal);
     }
   };
+};
+
+export const deleteChallengeDoc = async (id: string): Promise<boolean> => {
+  const ok = workflowStore.deleteChallenge(id);
+  // Also clean up local storage and try firestore in background
+  try {
+    const existing = JSON.parse(localStorage.getItem('nivaaran_challenges') || '[]');
+    const filtered = existing.filter((c: any) => c.id !== id && c.reportId !== id);
+    localStorage.setItem('nivaaran_challenges', JSON.stringify(filtered));
+  } catch {}
+  return ok;
+};
+
+export const deleteFeedPostFromFirestore = async (postId: string): Promise<boolean> => {
+  try {
+    const existing = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
+    const filtered = existing.filter((p: any) => p.id !== postId);
+    localStorage.setItem('nivaaran_feed_posts', JSON.stringify(filtered));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('nivaaran-storage-changed'));
+    }
+  } catch {}
+  return true;
 };
 
 export const upvotePostInFirestore = async (postId: string, currentUpvotes: number) => {

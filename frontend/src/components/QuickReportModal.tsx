@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import { 
-  Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert, Layers, TrendingUp, Users, Flame
+  Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert, TrendingUp, Users
 } from 'lucide-react';
 import { submitChallengeToFirestore, submitFeedPostToFirestore } from '../services/firebaseService';
 import { uploadEvidenceS3 } from '../services/evidenceUpload';
@@ -10,6 +10,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { formatStageName, getStageForStatus } from '../services/workflowLifecycle';
 import { workflowStore } from '../services/workflowStore';
 import { findSimilarChallenges, mergeWithPrimaryChallenge } from '../services/deduplicationService';
+import { extractIncidentMetadata } from '../services/dataExtractionService';
 
 interface QuickReportModalProps {
   isOpen: boolean;
@@ -178,24 +179,27 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
       }
     } catch (err: any) {
       console.warn('Camera access error:', err);
-      setCameraError('Camera access denied or unavailable on this device. Use file picker below.');
+      setCameraError('Camera access denied or device not found.');
+      setIsCameraActive(false);
     }
   };
 
   // Take Snapshot from Live Camera Stream
-  const takeCameraSnapshot = async () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = 480;
-    canvas.height = 360;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.drawImage(videoRef.current, 0, 0, 480, 360);
-      const compressed = canvas.toDataURL('image/jpeg', 0.55);
-      setFilePreviews(prev => [...prev, compressed]);
-      triggerInstantPreTriage(compressed);
-      stopCamera();
-      if (!locationCoords) handleGetLocation();
+  const takeCameraSnapshot = () => {
+    if (videoRef.current) {
+      const video = videoRef.current;
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        setFilePreviews((prev) => [...prev, dataUrl]);
+        triggerInstantPreTriage(dataUrl);
+        stopCamera();
+        if (!locationCoords) handleGetLocation();
+      }
     }
   };
 
@@ -335,12 +339,25 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         boostedPriority: mergeRes.newPriorityScore,
       });
 
+      // ⚠️ Do NOT close the modal or call onSuccess yet —
+      // the user must see the dedup_merged screen first and click "Done" to dismiss.
       setStep('dedup_merged');
-      if (onSuccess) {
-        onSuccess(dedupeResult.primaryChallenge.reportId || dedupeResult.primaryChallenge.id);
-      }
       return;
     }
+
+    // ── STAGE 4: Automated Data & Evidence Extraction ──
+    const extractedData = extractIncidentMetadata({
+      reportId: generatedId,
+      title: title || 'Local Community Issue',
+      description,
+      category: aiResult.category,
+      district,
+      block: blockVillage || 'Central Block',
+      village: blockVillage || 'Panchayat Area',
+      locationCoords: coords,
+      formattedAddress: finalAddress,
+      captureSource: isCameraActive ? 'Geotagged Live WebCam' : 'Mobile Geotagged Upload',
+    });
 
     try {
       await submitChallengeToFirestore({
@@ -365,6 +382,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         stageName: formatStageName(initialStage?.stageNumber || 2),
         govtOfficerNote: aiResult.reasoning,
         clusterId: dedupeResult.clusterId ?? undefined,
+        extractedMetadata: extractedData,
         translations,  // Multilingual strings
       });
 
@@ -446,21 +464,24 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-hidden">
-      <div className="bg-[#FAF8F3] border border-[#DCD6C6] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden my-auto">
-        {/* Sticky Header */}
-        <div className="bg-[#1E3A5F] text-white px-5 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between shrink-0 border-b border-[#16293F]">
+      <div className="bg-white border border-slate-200/90 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden my-auto">
+        {/* Sticky Light Header */}
+        <div className="bg-slate-50/90 border-b border-slate-200/80 px-5 py-3.5 sm:px-6 sm:py-4 flex items-center justify-between shrink-0 backdrop-blur-xs">
           <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 bg-[#C2760C] rounded-xl flex items-center justify-center text-white shadow-xs">
-              <Camera className="w-4.5 h-4.5" />
+            <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center shadow-xs">
+              <Camera className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-white text-base sm:text-lg leading-tight">{t.reportModal.title}</h3>
-              <p className="text-[11px] text-amber-200 font-semibold">{t.reportModal.subtitle}</p>
+              <div className="flex items-center gap-2">
+                <h3 className="font-extrabold text-slate-900 text-base sm:text-lg leading-tight tracking-tight">{t.reportModal.title}</h3>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200/80 text-slate-700 border border-slate-300 uppercase tracking-wider hidden sm:inline-block">GovTech AI</span>
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium">{t.reportModal.subtitle}</p>
             </div>
           </div>
           <button 
             onClick={resetAndClose}
-            className="text-white hover:text-amber-200 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+            className="text-slate-400 hover:text-slate-800 p-2 rounded-xl hover:bg-slate-200/60 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -476,7 +497,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
             {/* Title & Description */}
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-[#1E3A5F] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
                   {t.reportModal.problemTitleLabel} <span className="text-red-600">*</span>
                 </label>
                 <input
@@ -484,13 +505,13 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                   placeholder={t.reportModal.problemTitlePlaceholder}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#DCD6C6] rounded-lg text-sm text-[#22201B] focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#1E3A5F] uppercase tracking-wider mb-1">
+                <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
                   {t.reportModal.descLabel} <span className="text-red-600">*</span>
                 </label>
                 <textarea
@@ -498,7 +519,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                   placeholder={t.reportModal.descPlaceholder}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-white border border-[#DCD6C6] rounded-lg text-sm text-[#22201B] focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900"
                   required
                 />
               </div>
@@ -687,7 +708,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
             </div>
 
             {/* Human-Readable Reverse Geocoded Address Card */}
-            <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-[#DCD6C6] shadow-2xs">
+            <div className="flex items-center justify-between bg-white p-3.5 rounded-xl border border-slate-200/90 shadow-2xs">
               <div className="flex items-center space-x-2 min-w-0 flex-1 pr-2">
                 <MapPin className={`w-5 h-5 shrink-0 ${formattedAddress ? 'text-emerald-600' : 'text-amber-500'}`} />
                 <div className="min-w-0 flex-1">
@@ -708,12 +729,37 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                 type="button"
                 onClick={handleGetLocation}
                 disabled={locating}
-                className="px-3 py-1.5 bg-[#1E3A5F] text-white text-xs font-semibold rounded-lg hover:bg-[#16293F] transition-colors flex items-center space-x-1 disabled:opacity-50 shrink-0"
+                className="px-3 py-1.5 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800 transition-colors flex items-center space-x-1 disabled:opacity-50 shrink-0 cursor-pointer"
               >
                 {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                 <span>{locating ? 'Locating...' : 'Refresh Address'}</span>
               </button>
             </div>
+
+            {/* Stage 4 Live Evidence & Spatial Extraction Indicator */}
+            {locationCoords && (
+              <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-3 text-xs space-y-1.5 shadow-2xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-1.5 text-slate-700 font-bold text-[11px]">
+                    <span className="w-4 h-4 rounded bg-slate-900 text-white flex items-center justify-center text-[9px] font-bold">4</span>
+                    <span>Stage 4: Automated Data & Evidence Extraction Active</span>
+                  </div>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Geotag Ready
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-600">
+                  <div>
+                    <span className="text-slate-400 block font-semibold uppercase text-[9px]">Extracted Time & Date:</span>
+                    <span className="font-bold text-slate-800">{new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}, {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} IST</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block font-semibold uppercase text-[9px]">Extracted Coordinates:</span>
+                    <span className="font-mono font-bold text-slate-800">{locationCoords.lat}°N, {locationCoords.lng}°E</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Form Validation Warning Notice */}
             {!isFormValid && (
@@ -734,7 +780,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
               <button
                 type="submit"
                 disabled={!isFormValid}
-                className="w-full py-3.5 bg-[#0F766E] disabled:bg-slate-300 disabled:cursor-not-allowed hover:bg-[#0D625B] text-white font-extrabold text-sm rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 active:scale-[0.99] cursor-pointer"
+                className="w-full py-3.5 bg-slate-900 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-xs transition-all flex items-center justify-center space-x-2 active:scale-[0.99] cursor-pointer"
               >
                 <span>{t.reportModal.submitButton}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -747,9 +793,9 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         {/* Step 2: Submitting state */}
         {step === 'submitting' && (
           <div className="p-8 text-center space-y-4">
-            <Loader2 className="w-10 h-10 text-[#0F766E] animate-spin mx-auto" />
-            <h4 className="text-base font-bold text-[#1E3A5F]">Processing Geotagged Evidence...</h4>
-            <p className="text-xs text-[#5C574C] max-w-sm mx-auto">
+            <Loader2 className="w-10 h-10 text-slate-900 animate-spin mx-auto" />
+            <h4 className="text-base font-bold text-slate-900">Processing Geotagged Evidence...</h4>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
               Running spatial deduplication and routing incident details to District Verification Cell...
             </p>
           </div>
@@ -758,26 +804,26 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         {/* Step 3: Success state */}
         {step === 'success' && (
           <div className="p-5 sm:p-6 text-center space-y-4">
-            <div className="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto shadow-xs">
+            <div className="w-14 h-14 bg-emerald-50 text-emerald-700 rounded-2xl flex items-center justify-center mx-auto border border-emerald-200 shadow-2xs">
               <CheckCircle className="w-8 h-8" />
             </div>
 
             <div className="space-y-1">
-              <span className="text-[10px] font-mono font-bold text-[#C2760C] uppercase tracking-wider">{t.reportModal.trackingIdLabel}</span>
-              <h3 className="text-2xl font-black font-mono text-[#1E3A5F]">{submittedId}</h3>
-              <p className="text-xs text-[#5C574C] pt-0.5">
+              <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">{t.reportModal.trackingIdLabel}</span>
+              <h3 className="text-2xl font-black font-mono text-slate-900">{submittedId}</h3>
+              <p className="text-xs text-slate-600 pt-0.5">
                 {t.reportModal.successDesc}
               </p>
             </div>
 
-            <div className="bg-[#F3F0E8] p-3.5 rounded-xl text-xs text-left space-y-2 border border-[#DCD6C6]">
+            <div className="bg-slate-50 p-3.5 rounded-xl text-xs text-left space-y-2 border border-slate-200">
               <div className="flex justify-between">
-                <span className="text-[#5C574C]">Status:</span>
-                <span className="font-bold text-[#0F766E]">Under Review (Stage 1)</span>
+                <span className="text-slate-500">Status:</span>
+                <span className="font-bold text-slate-900">Under Review (Stage 1)</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#5C574C]">Location:</span>
-                <span className="font-semibold text-[#22201B] truncate max-w-[260px] inline-block">
+                <span className="text-slate-500">Location:</span>
+                <span className="font-semibold text-slate-800 truncate max-w-[260px] inline-block">
                   {formattedAddress || `${blockVillage}, ${district}`}
                 </span>
               </div>
@@ -785,7 +831,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
             <button
               onClick={resetAndClose}
-              className="w-full py-3 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-bold text-xs rounded-xl shadow-md transition-colors cursor-pointer"
+              className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               {t.reportModal.closeBtn}
             </button>
@@ -795,84 +841,85 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         {/* Step 3b: Auto-Deduplication & Merge State */}
         {step === 'dedup_merged' && dedupInfo && (
           <div className="p-5 sm:p-6 text-center space-y-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md ring-6 ring-amber-100/80">
-              <Layers className="w-8 h-8" />
-            </div>
-
-            <div className="space-y-1">
-              <span className="text-[10px] font-black uppercase tracking-widest text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
-                <span>⚠️ DUPLICATE INCIDENT DETECTED</span>
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 bg-slate-100 border border-slate-200/90 px-3 py-1 rounded-full inline-flex items-center gap-1.5 shadow-2xs">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                <span>ACTIVE INCIDENT CONSOLIDATED</span>
               </span>
-              <h3 className="text-xl sm:text-2xl font-black text-slate-900 pt-0.5">
-                Same Problem Already Uploaded in this Location!
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 pt-1 tracking-tight">
+                Existing Incident Found & Verified in this Area
               </h3>
-              <p className="text-xs text-slate-600 max-w-md mx-auto">
-                An active incident for this exact problem is already in the government system. Instead of creating a duplicate ticket, your report and photos have been merged into the original post.
+              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                An active government ticket already exists for this community challenge. To prevent department backlog and accelerate resolution, your submission has been merged into the master incident file.
               </p>
             </div>
 
-            {/* Prominent High-Visibility Count Banner */}
-            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-4 sm:p-4.5 rounded-2xl shadow-md text-center space-y-1.5">
-              <div className="flex items-center justify-center gap-2 text-[10px] uppercase font-black tracking-widest text-amber-100">
-                <Flame className="w-3.5 h-3.5 fill-white" />
-                <span>TOTAL CITIZEN POSTS CONSOLIDATED</span>
-                <Flame className="w-3.5 h-3.5 fill-white" />
+            {/* High-Visibility Clean Light Consolidated Metric Card */}
+            <div className="bg-gradient-to-b from-slate-50 to-slate-100/60 p-5 rounded-2xl border border-slate-200/90 text-center space-y-2 shadow-2xs">
+              <div className="flex items-center justify-center gap-1.5 text-[10px] uppercase font-mono font-bold tracking-widest text-slate-500">
+                <Users className="w-3.5 h-3.5 text-slate-600" />
+                <span>NIVAARAN CITIZEN IMPACT GRID</span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black tracking-tight drop-shadow-xs">
-                🔥 {dedupInfo.totalReports} CITIZEN REPORTS LOGGED
+              <div className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+                {dedupInfo.totalReports} Citizens Reported
               </div>
-              <p className="text-[11px] font-semibold text-amber-100 max-w-md mx-auto">
-                Your report has been counted as <span className="underline font-black">Report #{dedupInfo.totalReports}</span> on the original post, multiplying the urgency for government officers!
+              <p className="text-xs font-medium text-slate-600 max-w-md mx-auto">
+                Consolidated into Primary Ticket <span className="font-mono font-bold text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded-md shadow-2xs">#{dedupInfo.primaryId}</span> · Urgency boosted to <span className="font-bold text-slate-900">{dedupInfo.boostedPriority}/100</span>
               </p>
             </div>
 
             {/* Original Post Summary Card */}
-            <div className="bg-[#FAF8F3] p-3.5 rounded-xl text-xs text-left space-y-2.5 border border-[#E3DCCE]">
-              <div className="flex items-start justify-between border-b border-[#E3DCCE]/60 pb-2">
+            <div className="bg-white p-4 rounded-xl text-xs text-left space-y-3 border border-slate-200/90 shadow-2xs">
+              <div className="flex items-start justify-between border-b border-slate-100 pb-2.5">
                 <div>
-                  <span className="text-[10px] uppercase font-mono font-bold text-[#C2760C] block">Original Post Tracking ID</span>
-                  <span className="font-mono font-black text-sm text-[#1E3A5F]">{dedupInfo.primaryId}</span>
+                  <span className="text-[10px] uppercase font-mono font-bold text-slate-400 block">Master Incident ID</span>
+                  <span className="font-mono font-black text-sm text-slate-900">{dedupInfo.primaryId}</span>
                 </div>
-                <span className="text-[10px] font-bold bg-[#0F766E]/10 text-[#0F766E] px-2.5 py-0.5 rounded-full border border-[#0F766E]/20">
+                <span className="text-[11px] font-bold bg-slate-100 text-slate-700 px-3 py-1 rounded-full border border-slate-200">
                   {dedupInfo.category}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] uppercase font-bold text-slate-500 block">Original Incident Title:</span>
-                <p className="font-bold text-slate-900 text-xs sm:text-sm mt-0.5">{dedupInfo.primaryTitle}</p>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block">Incident Title:</span>
+                <p className="font-bold text-slate-900 text-sm mt-0.5">{dedupInfo.primaryTitle}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-0.5">
-                <div className="bg-white p-2.5 rounded-xl border border-amber-200 flex items-center space-x-2 shadow-2xs">
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                    <Users className="w-4 h-4" />
+              <div className="grid grid-cols-2 gap-2.5 pt-0.5">
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-white text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
+                    <Users className="w-4 h-4 text-slate-700" />
                   </div>
                   <div>
-                    <span className="text-[9px] text-slate-500 block font-medium">Consolidated Reports</span>
-                    <span className="text-xs font-black text-amber-800">{dedupInfo.totalReports} Citizens</span>
+                    <span className="text-[10px] text-slate-500 block font-semibold">Total Citizens</span>
+                    <span className="text-sm font-black text-slate-900">{dedupInfo.totalReports} Reports</span>
                   </div>
                 </div>
 
-                <div className="bg-white p-2.5 rounded-xl border border-emerald-200 flex items-center space-x-2 shadow-2xs">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-4 h-4" />
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex items-center space-x-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-white text-slate-700 flex items-center justify-center shrink-0 border border-slate-200 shadow-2xs">
+                    <TrendingUp className="w-4 h-4 text-slate-700" />
                   </div>
                   <div>
-                    <span className="text-[9px] text-slate-500 block font-medium">Escalated Priority</span>
-                    <span className="text-xs font-black text-emerald-800">{dedupInfo.boostedPriority} / 100</span>
+                    <span className="text-[10px] text-slate-500 block font-semibold">Priority Level</span>
+                    <span className="text-sm font-black text-slate-900">{dedupInfo.boostedPriority} / 100</span>
                   </div>
                 </div>
               </div>
 
-              <p className="text-[10px] text-slate-600 bg-amber-50/80 border border-amber-200/60 rounded-lg p-2 text-center font-medium">
-                🏛️ <strong>Government Impact:</strong> Merging duplicate submissions prevents department backlog and fast-tracks high-urgency clusters directly to universities & field officers.
-              </p>
+              <div className="text-[11px] text-slate-600 bg-slate-50 border border-slate-200/80 rounded-xl p-2.5 text-center font-medium">
+                🏛️ <strong>Institutional Routing:</strong> Consolidated tickets are prioritized for University Lab allocation and District Officer on-ground execution.
+              </div>
             </div>
 
             <button
-              onClick={resetAndClose}
-              className="w-full py-3 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-black text-xs rounded-xl shadow-md transition-colors cursor-pointer"
+              onClick={() => {
+                if (onSuccess && dedupInfo) {
+                  onSuccess(dedupInfo.primaryId);
+                }
+                resetAndClose();
+              }}
+              className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 active:scale-[0.99] text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
             >
               Done / View Consolidated Incident
             </button>

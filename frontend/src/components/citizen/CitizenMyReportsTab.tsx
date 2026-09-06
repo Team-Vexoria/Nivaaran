@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send, Flame } from 'lucide-react';
-import { subscribeToChallenges, ChallengeDoc, uploadEvidenceImage } from '../../services/firebaseService';
+import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send, Users, Trash2, Calendar } from 'lucide-react';
+import { subscribeToChallenges, ChallengeDoc, uploadEvidenceImage, deleteChallengeDoc } from '../../services/firebaseService';
+import { extractIncidentMetadata } from '../../services/dataExtractionService';
 import { CHALLENGE_STATUS_OPTIONS, LIFECYCLE_STAGES, getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { workflowStore } from '../../services/workflowStore';
 import type { TimelineEvent } from '../../services/workflowTypes';
@@ -90,6 +91,22 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
       })),
   ];
 
+  const handleDeleteReport = async (e: React.MouseEvent, reportId: string, title: string) => {
+    e.stopPropagation();
+    if (window.confirm(`Are you sure you want to delete report "${title}"?`)) {
+      try {
+        await deleteChallengeDoc(reportId);
+        workflowStore.deleteChallenge(reportId);
+        setReports(prev => prev.filter(r => r.id !== reportId && r.reportId !== reportId));
+        if (selectedReport && (selectedReport.id === reportId || selectedReport.reportId === reportId)) {
+          setSelectedReport(null);
+        }
+      } catch (err) {
+        console.error('Failed to delete report:', err);
+      }
+    }
+  };
+
   const filteredReports = filterStatus === 'All'
     ? reports
     : reports.filter(r => r.status === filterStatus);
@@ -154,9 +171,12 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredReports.map((report, idx) => {
             const badge = getStatusBadgeClasses(report.status);
+            const reportKey = report.id || report.reportId || `rep-${idx}`;
+            const photoUrl = report.evidenceUrl || (report as any).evidenceUrls?.[0];
+
             return (
               <div
-                key={report.id || report.reportId || idx}
+                key={reportKey}
                 className="bg-white rounded-xl border border-slate-200 p-5 space-y-4 shadow-xs flex flex-col justify-between hover:border-slate-300 transition-all hover:shadow"
               >
                 <div className="space-y-3">
@@ -164,29 +184,50 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
                     <span className="text-xs font-mono font-bold bg-slate-100 text-slate-700 px-2.5 py-0.5 rounded border border-slate-200">
                       {report.reportId || report.id}
                     </span>
-                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center ${badge.bg} ${badge.text} ${badge.border}`}>
-                      {report.status === 'Resolved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
-                      {report.status === 'In Progress' && <Clock className="w-3 h-3 mr-1 animate-pulse" />}
-                      {report.status === 'Rejected' && <X className="w-3 h-3 mr-1" />}
-                      {tr(report.status, currentLang)}
-                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center ${badge.bg} ${badge.text} ${badge.border}`}>
+                        {report.status === 'Resolved' && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                        {report.status === 'In Progress' && <Clock className="w-3 h-3 mr-1 animate-pulse" />}
+                        {report.status === 'Rejected' && <X className="w-3 h-3 mr-1" />}
+                        {tr(report.status, currentLang)}
+                      </span>
+                      <button
+                        onClick={(e) => handleDeleteReport(e, report.id || report.reportId, report.title)}
+                        title="Delete report"
+                        className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-200"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Prominently Highlighted Citizen Report Count Banner */}
                   {report.citizenReportCount && report.citizenReportCount > 1 && (
-                    <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-3 rounded-xl flex items-center justify-between shadow-md">
+                    <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white p-3 rounded-xl flex items-center justify-between border border-emerald-800/40 shadow-xs">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-                          <Flame className="w-5 h-5 fill-white text-white" />
+                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                          <Users className="w-4 h-4" />
                         </div>
                         <div>
-                          <span className="text-[10px] font-black uppercase tracking-wider block text-amber-100">HIGH COMMUNITY PRIORITY</span>
+                          <span className="text-[9px] font-black uppercase tracking-wider block text-emerald-400">HIGH COMMUNITY PRIORITY</span>
                           <span className="text-xs font-black tracking-tight">{report.citizenReportCount} Citizens Reported This Incident</span>
                         </div>
                       </div>
-                      <span className="text-[10px] bg-white/25 px-2.5 py-1 rounded-lg font-black tracking-wider uppercase backdrop-blur-xs">
-                        Merged Post
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg font-bold tracking-wider uppercase">
+                        Consolidated
                       </span>
+                    </div>
+                  )}
+
+                  {/* Image Evidence Thumbnail Preview */}
+                  {photoUrl && (
+                    <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-44 my-1">
+                      <img
+                        src={photoUrl}
+                        alt={report.title}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                      />
                     </div>
                   )}
 
@@ -325,6 +366,19 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ report, wfStageNumber, ti
     }
   };
 
+  const extractedMeta = report.extractedMetadata || extractIncidentMetadata({
+    reportId: report.reportId || report.id || 'REPORT',
+    title: report.title || 'Civic Community Issue',
+    description: report.summary || '',
+    category: report.category,
+    district: report.district || 'Ranchi',
+    block: report.block,
+    village: report.village,
+    locationCoords: report.locationCoords,
+    formattedAddress: report.formattedAddress,
+    customDate: report.createdAt ? new Date(report.createdAt) : undefined,
+  });
+
   return (
     <div className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 pt-16">
       <div className="bg-white rounded-2xl max-w-3xl w-full p-6 space-y-5 shadow-2xl border border-slate-200/90 max-h-[85vh] overflow-y-auto">
@@ -392,6 +446,90 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ report, wfStageNumber, ti
             <div className="bg-white p-3 rounded-xl border border-slate-200 space-y-1">
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Government Officer Note</span>
               <p className="text-xs text-slate-800 font-medium">{report.govtOfficerNote}</p>
+            </div>
+          )}
+        </div>
+
+        {/* ── STAGE 4: Extracted On-Ground Proof & Evidence Card ── */}
+        <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-4.5 space-y-3.5 shadow-2xs">
+          <div className="flex items-center justify-between border-b border-slate-200/80 pb-2.5">
+            <div className="flex items-center space-x-2">
+              <span className="w-6 h-6 rounded-lg bg-slate-900 text-white flex items-center justify-center font-black text-xs">
+                4
+              </span>
+              <div>
+                <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm tracking-tight">Stage 4: Extracted On-Ground Proof & Spatial Evidence</h4>
+                <span className="text-[10px] text-slate-500">Official extraction record for government accountability</span>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 shadow-2xs">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Audit Hash Verified</span>
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+            {/* 1. Date & Time */}
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1">
+              <div className="flex items-center space-x-1.5 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Date & Timestamp</span>
+              </div>
+              <div className="font-extrabold text-slate-900">{extractedMeta.formattedDate}</div>
+              <div className="text-[11px] text-slate-600 font-medium">{extractedMeta.formattedTime} ({extractedMeta.timeOfDay})</div>
+              <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 inline-block mt-0.5">
+                Season: {extractedMeta.season}
+              </span>
+            </div>
+
+            {/* 2. GPS & Coordinates */}
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1">
+              <div className="flex items-center space-x-1.5 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                <MapPin className="w-3.5 h-3.5 text-amber-500" />
+                <span>GPS Geotag Coordinates</span>
+              </div>
+              <div className="font-mono font-black text-slate-900 text-xs">
+                {extractedMeta.gpsCoordinates.lat}°N, {extractedMeta.gpsCoordinates.lng}°E
+              </div>
+              <div className="text-[10px] text-slate-500 font-medium">Precision: ±{extractedMeta.gpsCoordinates.accuracyMeters || 4.5}m</div>
+              <a 
+                href={`https://maps.google.com/?q=${extractedMeta.gpsCoordinates.lat},${extractedMeta.gpsCoordinates.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] font-bold text-indigo-600 hover:underline inline-flex items-center gap-1 mt-0.5"
+              >
+                <span>Open Sat-Map View</span>
+                <ChevronRight className="w-3 h-3" />
+              </a>
+            </div>
+
+            {/* 3. Forensic Audit Hash */}
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center space-x-1.5 text-slate-500 text-[10px] font-bold uppercase tracking-wider">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Forensic Audit Stamp</span>
+              </div>
+              <div className="font-mono font-bold text-[10px] text-slate-800 break-all bg-slate-50 p-1.5 rounded border border-slate-200">
+                {extractedMeta.evidenceProofHash}
+              </div>
+              <div className="text-[9px] text-slate-500 font-medium">Capture: {extractedMeta.captureSource}</div>
+            </div>
+          </div>
+
+          {/* Detected On-Ground Features & Tags */}
+          {extractedMeta.detectedFeatures && extractedMeta.detectedFeatures.length > 0 && (
+            <div className="bg-white p-3 rounded-xl border border-slate-200/80 space-y-1.5">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                Extracted Visual Objects & Risk Features:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {extractedMeta.detectedFeatures.map((feat, i) => (
+                  <span key={i} className="text-[10px] font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                    {feat}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>

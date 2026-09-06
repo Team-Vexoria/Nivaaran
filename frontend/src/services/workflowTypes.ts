@@ -29,11 +29,10 @@ export type RiskLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'STANDARD';
 
 // ── AI Triage Analysis ────────────────────────────────────────────────────────
 export interface PriorityFactors {
-  populationImpact:    { score: number; max: number; reason: string };
-  infraCriticality:    { score: number; max: number; reason: string };
-  hazardUrgency:       { score: number; max: number; reason: string };
-  communityUpvotes:    { score: number; max: number; reason: string };
-  spatialRecurrence:   { score: number; max: number; reason: string };
+  populationImpact:          { score: number; max: number; reason: string };
+  economicLifeSaving:        { score: number; max: number; reason: string };
+  resolutionCostFeasibility: { score: number; max: number; reason: string };
+  hazardUrgency:             { score: number; max: number; reason: string };
 }
 
 export interface AIAnalysis {
@@ -96,6 +95,9 @@ export interface Challenge {
 
   // CSR / Industry
   csrSponsor?: string;
+
+  // Stage 4: Extracted On-Ground Proof & Audit Metadata
+  extractedMetadata?: import('./dataExtractionService').IncidentExtractedData;
 
   // Metadata
   submittedBy?: string;
