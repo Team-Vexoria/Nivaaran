@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import { 
-  Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert, Layers, TrendingUp, Users
+  Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert, Layers, TrendingUp, Users, Flame
 } from 'lucide-react';
 import { submitChallengeToFirestore, submitFeedPostToFirestore } from '../services/firebaseService';
 import { uploadEvidenceS3 } from '../services/evidenceUpload';
@@ -778,64 +778,86 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         {/* Step 3b: Auto-Deduplication & Merge State */}
         {step === 'dedup_merged' && dedupInfo && (
           <div className="p-8 text-center space-y-5">
-            <div className="w-16 h-16 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto ring-8 ring-amber-50">
+            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg ring-8 ring-amber-100/80">
               <Layers className="w-9 h-9" />
             </div>
 
-            <div className="space-y-1">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
-                🛡️ Semantic Deduplication: Consolidated
+            <div className="space-y-1.5">
+              <span className="text-xs font-black uppercase tracking-widest text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-full inline-flex items-center gap-1.5 shadow-2xs">
+                <span>⚠️ DUPLICATE INCIDENT DETECTED</span>
               </span>
-              <h3 className="text-xl font-black text-[#1E3A5F] pt-2">Report Linked to Existing Verified Incident!</h3>
-              <p className="text-xs text-[#5C574C]">
-                An active incident for this exact problem was already logged. Your photo and GPS coordinates have been merged into the primary ticket.
+              <h3 className="text-2xl font-black text-slate-900 pt-1">
+                Same Problem Already Uploaded in this Location!
+              </h3>
+              <p className="text-xs text-slate-600 max-w-md mx-auto">
+                An active incident for this exact problem is already in the government system. Instead of creating a duplicate ticket, your report and photos have been merged into the original post.
               </p>
             </div>
 
+            {/* Prominent High-Visibility Count Banner */}
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-5 rounded-2xl shadow-lg text-center space-y-2">
+              <div className="flex items-center justify-center gap-2 text-xs uppercase font-black tracking-widest text-amber-100">
+                <Flame className="w-4 h-4 fill-white" />
+                <span>TOTAL CITIZEN POSTS CONSOLIDATED</span>
+                <Flame className="w-4 h-4 fill-white" />
+              </div>
+              <div className="text-4xl font-black tracking-tight drop-shadow-xs">
+                🔥 {dedupInfo.totalReports} CITIZEN REPORTS LOGGED
+              </div>
+              <p className="text-xs font-semibold text-amber-100 max-w-md mx-auto">
+                Your report has been counted as <span className="underline font-black">Report #{dedupInfo.totalReports}</span>. This multiplies the urgency and escalates priority for government officers!
+              </p>
+            </div>
+
+            {/* Original Post Summary Card */}
             <div className="bg-[#FAF8F3] p-4 rounded-xl text-xs text-left space-y-3 border border-[#E3DCCE]">
               <div className="flex items-start justify-between border-b border-[#E3DCCE]/60 pb-2">
                 <div>
-                  <span className="text-[10px] uppercase font-mono font-bold text-[#C2760C] block">Primary Incident ID</span>
-                  <span className="font-mono font-bold text-sm text-[#1E3A5F]">{dedupInfo.primaryId}</span>
+                  <span className="text-[10px] uppercase font-mono font-bold text-[#C2760C] block">Original Post Tracking ID</span>
+                  <span className="font-mono font-black text-base text-[#1E3A5F]">{dedupInfo.primaryId}</span>
                 </div>
-                <span className="text-[10px] font-bold bg-[#0F766E]/10 text-[#0F766E] px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-bold bg-[#0F766E]/10 text-[#0F766E] px-2.5 py-1 rounded-full border border-[#0F766E]/20">
                   {dedupInfo.category}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-[#5C574C] block">Primary Issue Title:</span>
-                <p className="font-semibold text-slate-800 text-xs">{dedupInfo.primaryTitle}</p>
+                <span className="text-[10px] uppercase font-bold text-slate-500 block">Original Incident Title:</span>
+                <p className="font-bold text-slate-900 text-sm mt-0.5">{dedupInfo.primaryTitle}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="bg-white p-2.5 rounded-lg border border-amber-100 flex items-center space-x-2">
-                  <Users className="w-5 h-5 text-amber-600 shrink-0" />
+                <div className="bg-white p-3 rounded-xl border border-amber-200 flex items-center space-x-2.5 shadow-2xs">
+                  <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                    <Users className="w-5 h-5" />
+                  </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 block font-medium">Citizen Reports</span>
-                    <span className="text-sm font-black text-amber-700">{dedupInfo.totalReports} Logged</span>
+                    <span className="text-[10px] text-slate-500 block font-medium">Consolidated Reports</span>
+                    <span className="text-sm font-black text-amber-800">{dedupInfo.totalReports} Citizens</span>
                   </div>
                 </div>
 
-                <div className="bg-white p-2.5 rounded-lg border border-emerald-100 flex items-center space-x-2">
-                  <TrendingUp className="w-5 h-5 text-emerald-600 shrink-0" />
+                <div className="bg-white p-3 rounded-xl border border-emerald-200 flex items-center space-x-2.5 shadow-2xs">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-5 h-5" />
+                  </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 block font-medium">Priority Score</span>
-                    <span className="text-sm font-black text-emerald-700">{dedupInfo.boostedPriority}/100</span>
+                    <span className="text-[10px] text-slate-500 block font-medium">Escalated Priority</span>
+                    <span className="text-sm font-black text-emerald-800">{dedupInfo.boostedPriority} / 100</span>
                   </div>
                 </div>
               </div>
 
-              <p className="text-[10px] text-slate-500 text-center italic pt-1">
-                ⚡ Government Officers & Universities see this consolidated ticket with higher urgency.
+              <p className="text-[11px] text-slate-600 bg-amber-50/80 border border-amber-200/60 rounded-lg p-2.5 text-center font-medium">
+                🏛️ <strong>Government Impact:</strong> Merging duplicate submissions prevents department backlog and fast-tracks high-urgency clusters directly to universities & field officers.
               </p>
             </div>
 
             <button
               onClick={resetAndClose}
-              className="w-full py-3 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-bold text-xs rounded-xl shadow transition-colors"
+              className="w-full py-3.5 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-black text-xs rounded-xl shadow-md transition-colors cursor-pointer"
             >
-              Done / View My Reports
+              Done / View Consolidated Incident
             </button>
           </div>
         )}

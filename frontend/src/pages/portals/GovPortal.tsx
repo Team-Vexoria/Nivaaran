@@ -172,15 +172,19 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
 
           {/* Consolidated Deduplication Callout */}
           {(challenge as any).citizenReportCount && (challenge as any).citizenReportCount > 1 && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-base">🔥</span>
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-3.5 rounded-xl flex items-center justify-between shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                  <Flame className="w-5 h-5 fill-white text-white" />
+                </div>
                 <div>
-                  <p className="text-xs font-black text-emerald-900">Consolidated Citizen Challenge ({(challenge as any).citizenReportCount} Reports Merged)</p>
-                  <p className="text-[10px] text-emerald-700">AI auto-merged identical geotag & problem reports to save administrative bandwidth.</p>
+                  <span className="text-[10px] font-black uppercase tracking-wider block text-amber-100">HIGH COMMUNITY CONCERN • DEDUPLICATED & MERGED</span>
+                  <p className="text-sm font-black text-white">{(challenge as any).citizenReportCount} Citizens Reported This Exact Incident</p>
                 </div>
               </div>
-              <span className="text-[10px] font-black bg-emerald-600 text-white px-2 py-1 rounded-lg">High Urgency</span>
+              <span className="text-xs font-black bg-white text-rose-700 px-3 py-1.5 rounded-lg shadow-2xs uppercase">
+                High Urgency
+              </span>
             </div>
           )}
 
@@ -1120,8 +1124,8 @@ export const GovPortal: React.FC = () => {
                               </span>
                             )}
                             {ch.citizenReportCount && ch.citizenReportCount > 1 && (
-                              <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                                🔥 {ch.citizenReportCount} Reports Merged
+                              <span className="text-xs font-black px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-rose-600 text-white shadow-2xs flex items-center gap-1.5 animate-pulse">
+                                <Flame className="w-3.5 h-3.5 fill-white text-white" /> {ch.citizenReportCount} Citizens Reported
                               </span>
                             )}
                           </div>

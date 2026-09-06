@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon, Zap } from 'lucide-react';
+import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon, Zap, Flame } from 'lucide-react';
 import {
   subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc, addCommentToFeedPost
 } from '../../services/firebaseService';
@@ -34,6 +34,7 @@ interface FeedPostUI extends FeedPostDoc {
   timestamp?: string;
   comments?: FeedComment[];
   isProgress?: boolean;
+  citizenReportCount?: number;
 }
 
 export const CitizenCommunityFeedTab: React.FC = () => {
@@ -141,6 +142,7 @@ export const CitizenCommunityFeedTab: React.FC = () => {
         category: c.category,
         status: getPublicStatusLabel(c.status),
         isProgress: true,
+        citizenReportCount: c.citizenReportCount || 1,
       }));
   }, [challenges]);
 
@@ -163,7 +165,11 @@ export const CitizenCommunityFeedTab: React.FC = () => {
       return p;
     }));
 
-    await upvotePostInFirestore(postId, target.upvotes);
+    try {
+      await upvotePostInFirestore(postId, target.upvotes);
+    } catch {
+      // Offline fallback
+    }
   };
 
   const handleCreatePost = async (e: React.FormEvent) => {
@@ -260,6 +266,24 @@ export const CitizenCommunityFeedTab: React.FC = () => {
         {allPosts.map((post, idx) => (
           <div key={post.id || idx} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
             
+            {/* Prominently Highlighted Citizen Report Count Banner */}
+            {post.citizenReportCount && post.citizenReportCount > 1 && (
+              <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-3.5 rounded-xl flex items-center justify-between shadow-md">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                    <Flame className="w-5 h-5 fill-white text-white" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider block text-amber-100">HIGH COMMUNITY PRIORITY</span>
+                    <span className="text-xs font-black tracking-tight">{post.citizenReportCount} Citizens Reported This Exact Incident</span>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-white/25 px-2.5 py-1 rounded-lg font-black tracking-wider uppercase backdrop-blur-xs">
+                  Merged Post
+                </span>
+              </div>
+            )}
+
             {/* Post Author & Location Header */}
             <div className="flex items-start justify-between">
               <div>

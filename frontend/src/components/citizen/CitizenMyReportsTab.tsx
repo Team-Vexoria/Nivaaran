@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send } from 'lucide-react';
+import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send, Flame } from 'lucide-react';
 import { subscribeToChallenges, ChallengeDoc, uploadEvidenceImage } from '../../services/firebaseService';
 import { CHALLENGE_STATUS_OPTIONS, LIFECYCLE_STAGES, getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { workflowStore } from '../../services/workflowStore';
@@ -171,6 +171,24 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
                       {tr(report.status, currentLang)}
                     </span>
                   </div>
+
+                  {/* Prominently Highlighted Citizen Report Count Banner */}
+                  {report.citizenReportCount && report.citizenReportCount > 1 && (
+                    <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-3 rounded-xl flex items-center justify-between shadow-md">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                          <Flame className="w-5 h-5 fill-white text-white" />
+                        </div>
+                        <div>
+                          <span className="text-[10px] font-black uppercase tracking-wider block text-amber-100">HIGH COMMUNITY PRIORITY</span>
+                          <span className="text-xs font-black tracking-tight">{report.citizenReportCount} Citizens Reported This Incident</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] bg-white/25 px-2.5 py-1 rounded-lg font-black tracking-wider uppercase backdrop-blur-xs">
+                        Merged Post
+                      </span>
+                    </div>
+                  )}
 
                   <h3 className="font-bold text-base text-slate-900 leading-snug">
                     {report.title}
