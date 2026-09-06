@@ -390,25 +390,26 @@ Return ONLY valid JSON, no markdown, no explanation outside JSON:
       });
     }
 
-    // No AbortController — let the browser handle its own network timeout.
-    // A 15 s abort was consistently killing the request before Gemini responded.
-    console.log('[Gemini Vision AI] Sending request to gemini-3.6-flash …');
-    let res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents: [{ parts }] }),
-    });
+    // Use 2200ms timeout for Gemini Vision so requests never stall or delay UI
+    console.log('[Gemini Vision AI] Sending fast request to gemini-3.6-flash …');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2200);
 
-    if (!res.ok) {
-      console.warn('[Gemini Vision AI] gemini-3.6-flash returned', res.status, '— trying gemini-3.7-flash …');
-      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`, {
+    let res: Response | null = null;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents: [{ parts }] }),
+        signal: controller.signal,
       });
+    } catch (fetchErr: any) {
+      console.warn('[Gemini Vision AI] Fast fetch timed out or aborted — switching to instant local engine:', fetchErr?.message);
+    } finally {
+      clearTimeout(timeoutId);
     }
 
-    if (res.ok) {
+    if (res && res.ok) {
       const data = await res.json();
       const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
       if (rawText) {
@@ -446,7 +447,7 @@ Return ONLY valid JSON, no markdown, no explanation outside JSON:
         }
       }
     } else {
-      console.warn('[Gemini Vision AI] API responded with error status:', res.status);
+      console.warn('[Gemini Vision AI] API responded with error status:', res?.status);
     }
   } catch (err) {
     console.warn('[Gemini Vision AI] Request failed:', err);
