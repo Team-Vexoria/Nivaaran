@@ -81,9 +81,18 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     setIsCameraActive(false);
   };
 
-  // Automatically fetch GPS geolocation & reverse geocode as soon as modal opens
+  // Automatically reset all form state and fetch GPS geolocation as soon as modal opens
   useEffect(() => {
     if (isOpen) {
+      setStep('form');
+      setTitle('');
+      setDescription('');
+      setFilePreviews([]);
+      setDedupInfo(null);
+      setPrecomputedAITriage(null);
+      setForensicRejectionReason('');
+      setSubmittedId('');
+      setIsVerifyingRealtime(false);
       handleGetLocation();
     } else {
       stopCamera();
@@ -427,34 +436,42 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     setFilePreviews([]);
     setLocationCoords(null);
     setFormattedAddress('');
+    setDedupInfo(null);
+    setPrecomputedAITriage(null);
+    setForensicRejectionReason('');
+    setSubmittedId('');
+    setIsVerifyingRealtime(false);
     onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-[#FAF8F3] border border-[#DCD6C6] rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden my-8">
-        {/* Header */}
-        <div className="bg-[#1E3A5F] text-white px-6 py-4 flex items-center justify-between">
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-hidden">
+      <div className="bg-[#FAF8F3] border border-[#DCD6C6] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[88vh] flex flex-col overflow-hidden my-auto">
+        {/* Sticky Header */}
+        <div className="bg-[#1E3A5F] text-white px-5 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between shrink-0 border-b border-[#16293F]">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-[#C2760C] rounded-xl flex items-center justify-center text-white shadow-xs">
-              <Camera className="w-5 h-5" />
+            <div className="w-9 h-9 bg-[#C2760C] rounded-xl flex items-center justify-center text-white shadow-xs">
+              <Camera className="w-4.5 h-4.5" />
             </div>
             <div>
-              <h3 className="font-extrabold text-white text-lg leading-tight">{t.reportModal.title}</h3>
-              <p className="text-xs text-amber-200 font-semibold">{t.reportModal.subtitle}</p>
+              <h3 className="font-extrabold text-white text-base sm:text-lg leading-tight">{t.reportModal.title}</h3>
+              <p className="text-[11px] text-amber-200 font-semibold">{t.reportModal.subtitle}</p>
             </div>
           </div>
           <button 
             onClick={resetAndClose}
-            className="text-white hover:text-amber-200 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            className="text-white hover:text-amber-200 p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Step 1: Form */}
-        {step === 'form' && (
-          <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+        {/* Scrollable Container for all Modal Steps */}
+        <div className="overflow-y-auto flex-1">
+
+          {/* Step 1: Form */}
+          {step === 'form' && (
+            <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
             
             {/* Title & Description */}
             <div className="space-y-3">
@@ -729,9 +746,9 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
         {/* Step 2: Submitting state */}
         {step === 'submitting' && (
-          <div className="p-12 text-center space-y-4">
-            <Loader2 className="w-12 h-12 text-[#0F766E] animate-spin mx-auto" />
-            <h4 className="text-lg font-bold text-[#1E3A5F]">Processing Geotagged Evidence...</h4>
+          <div className="p-8 text-center space-y-4">
+            <Loader2 className="w-10 h-10 text-[#0F766E] animate-spin mx-auto" />
+            <h4 className="text-base font-bold text-[#1E3A5F]">Processing Geotagged Evidence...</h4>
             <p className="text-xs text-[#5C574C] max-w-sm mx-auto">
               Running spatial deduplication and routing incident details to District Verification Cell...
             </p>
@@ -740,20 +757,20 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
         {/* Step 3: Success state */}
         {step === 'success' && (
-          <div className="p-8 text-center space-y-5">
-            <div className="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle className="w-10 h-10" />
+          <div className="p-5 sm:p-6 text-center space-y-4">
+            <div className="w-14 h-14 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center mx-auto shadow-xs">
+              <CheckCircle className="w-8 h-8" />
             </div>
 
             <div className="space-y-1">
-              <span className="text-xs font-mono font-bold text-[#C2760C]">{t.reportModal.trackingIdLabel}</span>
+              <span className="text-[10px] font-mono font-bold text-[#C2760C] uppercase tracking-wider">{t.reportModal.trackingIdLabel}</span>
               <h3 className="text-2xl font-black font-mono text-[#1E3A5F]">{submittedId}</h3>
-              <p className="text-xs text-[#5C574C] pt-1">
+              <p className="text-xs text-[#5C574C] pt-0.5">
                 {t.reportModal.successDesc}
               </p>
             </div>
 
-            <div className="bg-[#F3F0E8] p-4 rounded-xl text-xs text-left space-y-2 border border-[#DCD6C6]">
+            <div className="bg-[#F3F0E8] p-3.5 rounded-xl text-xs text-left space-y-2 border border-[#DCD6C6]">
               <div className="flex justify-between">
                 <span className="text-[#5C574C]">Status:</span>
                 <span className="font-bold text-[#0F766E]">Under Review (Stage 1)</span>
@@ -768,7 +785,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
             <button
               onClick={resetAndClose}
-              className="w-full py-3 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-bold text-xs rounded-xl shadow transition-colors"
+              className="w-full py-3 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-bold text-xs rounded-xl shadow-md transition-colors cursor-pointer"
             >
               {t.reportModal.closeBtn}
             </button>
@@ -777,16 +794,16 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
         {/* Step 3b: Auto-Deduplication & Merge State */}
         {step === 'dedup_merged' && dedupInfo && (
-          <div className="p-8 text-center space-y-5">
-            <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-lg ring-8 ring-amber-100/80">
-              <Layers className="w-9 h-9" />
+          <div className="p-5 sm:p-6 text-center space-y-4">
+            <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 text-white rounded-2xl flex items-center justify-center mx-auto shadow-md ring-6 ring-amber-100/80">
+              <Layers className="w-8 h-8" />
             </div>
 
-            <div className="space-y-1.5">
-              <span className="text-xs font-black uppercase tracking-widest text-amber-900 bg-amber-100 border border-amber-300 px-3 py-1 rounded-full inline-flex items-center gap-1.5 shadow-2xs">
+            <div className="space-y-1">
+              <span className="text-[10px] font-black uppercase tracking-widest text-amber-900 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
                 <span>⚠️ DUPLICATE INCIDENT DETECTED</span>
               </span>
-              <h3 className="text-2xl font-black text-slate-900 pt-1">
+              <h3 className="text-xl sm:text-2xl font-black text-slate-900 pt-0.5">
                 Same Problem Already Uploaded in this Location!
               </h3>
               <p className="text-xs text-slate-600 max-w-md mx-auto">
@@ -795,67 +812,67 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
             </div>
 
             {/* Prominent High-Visibility Count Banner */}
-            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-5 rounded-2xl shadow-lg text-center space-y-2">
-              <div className="flex items-center justify-center gap-2 text-xs uppercase font-black tracking-widest text-amber-100">
-                <Flame className="w-4 h-4 fill-white" />
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 text-white p-4 sm:p-4.5 rounded-2xl shadow-md text-center space-y-1.5">
+              <div className="flex items-center justify-center gap-2 text-[10px] uppercase font-black tracking-widest text-amber-100">
+                <Flame className="w-3.5 h-3.5 fill-white" />
                 <span>TOTAL CITIZEN POSTS CONSOLIDATED</span>
-                <Flame className="w-4 h-4 fill-white" />
+                <Flame className="w-3.5 h-3.5 fill-white" />
               </div>
-              <div className="text-4xl font-black tracking-tight drop-shadow-xs">
+              <div className="text-2xl sm:text-3xl font-black tracking-tight drop-shadow-xs">
                 🔥 {dedupInfo.totalReports} CITIZEN REPORTS LOGGED
               </div>
-              <p className="text-xs font-semibold text-amber-100 max-w-md mx-auto">
-                Your report has been counted as <span className="underline font-black">Report #{dedupInfo.totalReports}</span>. This multiplies the urgency and escalates priority for government officers!
+              <p className="text-[11px] font-semibold text-amber-100 max-w-md mx-auto">
+                Your report has been counted as <span className="underline font-black">Report #{dedupInfo.totalReports}</span> on the original post, multiplying the urgency for government officers!
               </p>
             </div>
 
             {/* Original Post Summary Card */}
-            <div className="bg-[#FAF8F3] p-4 rounded-xl text-xs text-left space-y-3 border border-[#E3DCCE]">
+            <div className="bg-[#FAF8F3] p-3.5 rounded-xl text-xs text-left space-y-2.5 border border-[#E3DCCE]">
               <div className="flex items-start justify-between border-b border-[#E3DCCE]/60 pb-2">
                 <div>
                   <span className="text-[10px] uppercase font-mono font-bold text-[#C2760C] block">Original Post Tracking ID</span>
-                  <span className="font-mono font-black text-base text-[#1E3A5F]">{dedupInfo.primaryId}</span>
+                  <span className="font-mono font-black text-sm text-[#1E3A5F]">{dedupInfo.primaryId}</span>
                 </div>
-                <span className="text-[11px] font-bold bg-[#0F766E]/10 text-[#0F766E] px-2.5 py-1 rounded-full border border-[#0F766E]/20">
+                <span className="text-[10px] font-bold bg-[#0F766E]/10 text-[#0F766E] px-2.5 py-0.5 rounded-full border border-[#0F766E]/20">
                   {dedupInfo.category}
                 </span>
               </div>
 
               <div>
                 <span className="text-[10px] uppercase font-bold text-slate-500 block">Original Incident Title:</span>
-                <p className="font-bold text-slate-900 text-sm mt-0.5">{dedupInfo.primaryTitle}</p>
+                <p className="font-bold text-slate-900 text-xs sm:text-sm mt-0.5">{dedupInfo.primaryTitle}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <div className="bg-white p-3 rounded-xl border border-amber-200 flex items-center space-x-2.5 shadow-2xs">
-                  <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
-                    <Users className="w-5 h-5" />
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                <div className="bg-white p-2.5 rounded-xl border border-amber-200 flex items-center space-x-2 shadow-2xs">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                    <Users className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 block font-medium">Consolidated Reports</span>
-                    <span className="text-sm font-black text-amber-800">{dedupInfo.totalReports} Citizens</span>
+                    <span className="text-[9px] text-slate-500 block font-medium">Consolidated Reports</span>
+                    <span className="text-xs font-black text-amber-800">{dedupInfo.totalReports} Citizens</span>
                   </div>
                 </div>
 
-                <div className="bg-white p-3 rounded-xl border border-emerald-200 flex items-center space-x-2.5 shadow-2xs">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                    <TrendingUp className="w-5 h-5" />
+                <div className="bg-white p-2.5 rounded-xl border border-emerald-200 flex items-center space-x-2 shadow-2xs">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 block font-medium">Escalated Priority</span>
-                    <span className="text-sm font-black text-emerald-800">{dedupInfo.boostedPriority} / 100</span>
+                    <span className="text-[9px] text-slate-500 block font-medium">Escalated Priority</span>
+                    <span className="text-xs font-black text-emerald-800">{dedupInfo.boostedPriority} / 100</span>
                   </div>
                 </div>
               </div>
 
-              <p className="text-[11px] text-slate-600 bg-amber-50/80 border border-amber-200/60 rounded-lg p-2.5 text-center font-medium">
+              <p className="text-[10px] text-slate-600 bg-amber-50/80 border border-amber-200/60 rounded-lg p-2 text-center font-medium">
                 🏛️ <strong>Government Impact:</strong> Merging duplicate submissions prevents department backlog and fast-tracks high-urgency clusters directly to universities & field officers.
               </p>
             </div>
 
             <button
               onClick={resetAndClose}
-              className="w-full py-3.5 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-black text-xs rounded-xl shadow-md transition-colors cursor-pointer"
+              className="w-full py-3 bg-[#1E3A5F] hover:bg-[#16293F] text-white font-black text-xs rounded-xl shadow-md transition-colors cursor-pointer"
             >
               Done / View Consolidated Incident
             </button>
@@ -864,22 +881,22 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
         {/* Step 4: Forensic Rejection State (Decision Point 1 Gate) */}
         {step === 'forensic_rejected' && (
-          <div className="p-8 text-center space-y-5">
-            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto ring-8 ring-red-50">
-              <ShieldAlert className="w-10 h-10" />
+          <div className="p-5 sm:p-6 text-center space-y-4">
+            <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto ring-6 ring-red-50">
+              <ShieldAlert className="w-8 h-8" />
             </div>
 
             <div className="space-y-1">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 px-2.5 py-1 rounded-full">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-full">
                 Decision Point 1 AI Gate: Blocked
               </span>
-              <h3 className="text-xl font-black text-[#1E3A5F] pt-2">Evidence Flagged as Synthetic / Fake</h3>
+              <h3 className="text-xl font-black text-[#1E3A5F] pt-1">Evidence Flagged as Synthetic / Fake</h3>
               <p className="text-xs text-[#5C574C]">
                 NIVAARAN forensic AI vision engine inspected the uploaded photo and flagged non-authentic artifacts.
               </p>
             </div>
 
-            <div className="bg-red-50/70 p-4 rounded-xl text-xs text-left space-y-2 border border-red-200 text-red-900">
+            <div className="bg-red-50/70 p-3.5 rounded-xl text-xs text-left space-y-2 border border-red-200 text-red-900">
               <div className="flex items-center space-x-2 font-bold text-red-800">
                 <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
                 <span>Forensic Rejection Reason:</span>
@@ -889,18 +906,18 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
               </p>
             </div>
 
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-2.5 pt-1">
               <button
                 type="button"
                 onClick={() => setStep('form')}
-                className="flex-1 py-3 bg-[#0F766E] hover:bg-[#0D625B] text-white font-bold text-xs rounded-xl shadow transition-colors"
+                className="flex-1 py-3 bg-[#0F766E] hover:bg-[#0D625B] text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer"
               >
                 Upload Authentic Camera Photo
               </button>
               <button
                 type="button"
                 onClick={resetAndClose}
-                className="py-3 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-colors"
+                className="py-3 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer"
               >
                 {t.reportModal.closeBtn}
               </button>
@@ -908,6 +925,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
           </div>
         )}
 
+        </div>
       </div>
     </div>
   );
