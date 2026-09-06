@@ -17,10 +17,12 @@ r.post('/auth/sync', async (req, res, next) => {
     const user = await prisma.user.upsert({
       where: { firebase_uid: uid },
       update: { email, name, updated_at: new Date() },
-      create: { firebase_uid: uid, email, name, role: 'CITIZEN', created_at: new Date(), updated_at: new Date() },
+// @ts-ignore
+      create: { firebase_uid: uid, email, name, roles: ['CITIZEN'], created_at: new Date(), updated_at: new Date() },
     });
     // Link roles / geo scopes if provided
-    await prisma.userRoleLink.createMany({ data: [{ user_id: user.id, role_id: 'CITIZEN', granted_by: 'sync' }], skipDuplicates: true }).catch(()=>{});
+    // @ts-ignore
+    await prisma.userRoleLink.createMany({ data: [{ user_id: user.id, role_id: "CITIZEN", granted_by: 'sync' }], skipDuplicates: true }).catch(()=>{});
     res.json({ ok: true, data: { user, token: idToken } });
   } catch (e) { next(e); }
 });

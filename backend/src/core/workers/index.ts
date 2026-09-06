@@ -31,5 +31,8 @@ export class SimpleQueue<T = any> {
   }
 }
 
+// In-memory result store — solves retrieval gap for match allocations (reasoningChain preserved)
+export const matchResultsStore = new Map<string, any>();
+
 export const aiQueue = new SimpleQueue('ai.understand');
 export const matchQueue = new SimpleQueue('challenge.match');

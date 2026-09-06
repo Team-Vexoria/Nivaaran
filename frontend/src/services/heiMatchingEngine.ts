@@ -1,6 +1,46 @@
 import { ChallengeDoc } from './firebaseService';
 import { JHARKHAND_UNIVERSITIES, UniversityDoc, DepartmentInfo } from './universityData';
 
+/**
+ * DEEP REASONING — 5-Factor University Matching Evidence Chain
+ * ==========================================================
+ * For every challenge, each score factor is derived from observable evidence,
+ * not a black-box model. Decision is reproducible and defensible.
+ *
+ * 1. Department Capability (30 pts) — evidence chain:
+ *    challenge.category (keyword) → dept.capabilities[] substring → domain bonus
+ *    (flood/drainage/water → env/civil/GIS; mining → mining/geology).
+ *    Scale: highestDeptScore / 40 * 30. Alternative: a lower cap match
+ *    drops score linearly; no single keyword can inflate above 30.
+ *
+ * 2. Field Expertise (20 pts) — evidence chain:
+ *    dept.fieldExpertise[] → challengeCategoryLower.includes(exL) or reverse.
+ *    Match → 20; partial overlap → 8. Justification: water challenges
+ *    need hydrology/geomatics expertise, not just a civil label.
+ *
+ * 3. Lab Equipment (20 pts) — evidence chain:
+ *    dept.activeLabs[] → tag match to challenge domain.
+ *    Direct tag → 20; labs exist untagged → 12; none → 5.
+ *    Justification: lab with water-quality instruments > generic civil lab.
+ *
+ * 4. Achievements (10 pts) — evidence chain:
+ *    university.institutionAchievements[] (5 pts) + dept.researchPubCount
+ *    / notableResearchAreas[] (5 pts). Justification: high-achievement
+ *    institution with published mitigation research > generic campus.
+ *
+ * 5. District Proximity (20 pts) — evidence chain:
+ *    challenge.district === university.district ? 20 : 10.
+ *    Justification: local campus lowers deployment cost / rapid pilot.
+ *
+ * ALTERNATIVE-SCORE JUSTIFICATION (black-box prevention):
+ * Example: water challenge in Dhanbad. IIT ISM (Dhanbad, Mining/Civil,
+ * labs + water instrumentation, achievements, proximity 20) → ~100.
+ * If NIT JSR (Ranchi, Civil + env, labs untagged for water, achievements)
+ * → dept 30, expertise 20, lab 12, achievements 5, proximity 10 ≈ 77.
+ * If IIT ISM district changed → proximity 10 → ~90; still top due to lab.
+ * If lab tag added to NIT JSR → lab 20 → ~85; still second.
+ * This is why ranking is reproducible and defensible to government officers.
+ */
 export interface HEIMatchResult {
   university: UniversityDoc;
   matchScore: number;

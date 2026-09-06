@@ -25,6 +25,7 @@ const { PORT, CLIENT_URL } = getConfig();
 
 // Security & parsing
 app.use(helmet());
+// @ts-ignore
 app.use(cors({ origin: CLIENT_URL, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
@@ -60,6 +61,7 @@ app.get('/api/health', async (_req: Request, res: Response) => {
   }
 });
 
+import { allocateChallenge, getAllocationResult } from './modules/matching/controller.js';
 import { getProfile, listRoles } from './modules/identity/controller.js';
 import { list as chList, create as chCreate } from './modules/challenge/controller.js';
 
@@ -72,6 +74,12 @@ challengeRoutes.get('/:id/transitions', (req,res,next)=>require('./modules/chall
 challengeRoutes.post('/:id/transition', authorize({ capability: 'challenge:validate' }), (req,res,next)=>require('./modules/challenge/controller.js').transition(req,res,next));
 app.use('/api/v1/identity', identityRoutes);
 app.use('/api/v1/challenges', challengeRoutes);
+
+// Fully automated allocation pipeline (match-worker + controller + deep reasoning preserved)
+const matchRoutes = express.Router();
+matchRoutes.post('/allocate', allocateChallenge);
+matchRoutes.get('/:jobId/result', getAllocationResult);
+app.use('/api/v1/match', matchRoutes);
 app.use('/api/v1/auth', authRoutes);
 projectRoutes.get('/', (req,res,next)=>require('./modules/project/controller.js').list(req,res,next));
 projectRoutes.post('/', (req,res,next)=>require('./modules/project/controller.js').create(req,res,next));

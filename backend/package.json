@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "set PORT=3001&& node dist/index.js",
     "test": "tsx --test test/*.spec.ts",
     "seed": "tsx prisma/seeds/demo.ts",
     "seed:rbac": "tsx prisma/seeds/rbac.ts",

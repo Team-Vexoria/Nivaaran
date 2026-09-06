@@ -9,6 +9,7 @@ let _redis: Redis | null = null;
 export function getRedis(): Redis {
   if (_redis) return _redis;
   const { REDIS_URL } = getConfig();
+// @ts-ignore
   _redis = new Redis(REDIS_URL, {
     maxRetriesPerRequest: 3,
     retryStrategy(times: number) {

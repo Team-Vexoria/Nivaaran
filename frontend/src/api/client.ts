@@ -25,7 +25,7 @@ export async function getBearerToken(): Promise<string | null> {
 }
 
 // ── Base client ──────────────────────────────────────────────────────────
-const BASE = (import.meta.env?.VITE_API_URL || '') + '/api/v1';
+const BASE = (import.meta.env?.VITE_API_URL || 'http://localhost:3001') + '/api/v1';
 
 async function apiRequest<T>(
   path: string,
