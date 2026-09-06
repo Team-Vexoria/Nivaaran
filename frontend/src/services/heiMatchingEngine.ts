@@ -8,6 +8,9 @@ export interface HEIMatchResult {
   recommendedDepartment: DepartmentInfo | null;
   matchingReasons: string[];
   departmentFitScore: number;
+  expertiseScore: number;
+  labFitScore: number;
+  achievementsScore: number;
   proximityScore: number;
 }
 
@@ -25,10 +28,11 @@ export const calculateHEIMatchScore = (
   university: UniversityDoc
 ): HEIMatchResult => {
   const reasons: string[] = [];
-  let departmentFitScore = 0;
-  let labFitScore = 0;
-  let proximityScore = 0;
-  let academicScore = 10;
+  let departmentFitScore = 0; // 30 pts
+  let expertiseScore = 0;     // 20 pts
+  let labFitScore = 0;        // 20 pts
+  let achievementsScore = 0;  // 10 pts
+  let proximityScore = 0;     // 20 pts
   let bestDept: DepartmentInfo | null = null;
   let highestDeptScore = 0;
 
@@ -76,35 +80,52 @@ export const calculateHEIMatchScore = (
     }
   });
 
-  departmentFitScore = Math.min(40, highestDeptScore);
+  // 1. Department Capability Fit (30 pts max — scaled from deptScore / max possible)
+  departmentFitScore = Math.min(30, Math.round((highestDeptScore / 40) * 30));
+
+  // 2. Field Expertise Depth (20 pts) — match challenge category to dept.fieldExpertise
   if (bestDept) {
-    reasons.push(`Matched with ${(bestDept as DepartmentInfo).name} based on registered laboratory capabilities.`);
+    const expertiseArr = bestDept.fieldExpertise || [];
+    const expertMatch = expertiseArr.some((ex) => {
+      const exL = ex.toLowerCase();
+      return challengeCategoryLower.includes(exL) || exL.includes(challengeCategoryLower);
+    });
+    expertiseScore = expertMatch ? 20 : 8; // 20 if expert field matches
+    if (expertMatch) reasons.push(`Field expertise match: ${bestDept.name} specializes in ${expertiseArr.slice(0,2).join(', ')}.`);
   }
 
-  // 2. Lab Equipment Match (30 Points Max)
+  // 3. Lab Equipment Fit (20 pts) — match challenge to activeLabs + lab tags
   if (bestDept) {
-    const activeLabs = (bestDept as DepartmentInfo).activeLabs || [];
-    if (activeLabs.length > 0) {
-      labFitScore = 30;
-      reasons.push(`Utilizes active R&D facility: "${activeLabs[0]}".`);
-    } else {
-      labFitScore = 15;
-    }
+    const labs = bestDept.activeLabs || [];
+    const labTagMatch = labs.some((lab) => {
+      const labL = lab.toLowerCase();
+      return challengeCategoryLower.includes(labL) || challengeTitleLower.includes(labL) || labL.includes('lab');
+    });
+    labFitScore = labTagMatch ? 20 : (labs.length > 0 ? 12 : 5);
+    if (labTagMatch) reasons.push(`Lab equipment alignment: "${labs[0]}" supports this challenge domain.`);
   }
 
-  // 3. District Proximity Match (20 Points Max)
+  // 4. Achievements / Research Track (10 pts) — institution achievements + dept research count
+  const uniAch = university.institutionAchievements || [];
+  const deptPub = bestDept ? (bestDept.researchPubCount || 0) : 0;
+  const hasAwards = uniAch.length > 0;
+  const hasResearch = deptPub > 50 || (university.notableResearchAreas || []).length > 0;
+  achievementsScore = (hasAwards ? 5 : 0) + (hasResearch ? 5 : 0);
+  if (hasAwards) reasons.push(`Institution achievements: ${uniAch.slice(0,2).join(', ')}.`);
+  if (hasResearch) reasons.push(`Research track: dept publications ~${deptPub}, notables: ${(university.notableResearchAreas||[]).slice(0,2).map(r=>r.field).join(', ')}.`);
+
+  // 5. District Proximity Match (20 Points Max)
   const uniDistrictLower = (university.district || '').toLowerCase();
   if (uniDistrictLower === challengeDistrictLower) {
     proximityScore = 20;
     reasons.push(`Direct local campus proximity in ${university.district} District.`);
   } else {
-    // Neighboring district proximity score
     proximityScore = 10;
     reasons.push(`Regional HEI node serving ${university.district} & adjacent districts.`);
   }
 
-  // Final Composite Score (0 - 100)
-  const totalScore = Math.min(98, departmentFitScore + labFitScore + proximityScore + academicScore);
+  // Composite Score (0-100) using new weights: 30 + 20 + 20 + 10 + 20 = 100
+  const totalScore = Math.min(100, departmentFitScore + expertiseScore + labFitScore + achievementsScore + proximityScore);
 
   return {
     university,
@@ -113,6 +134,9 @@ export const calculateHEIMatchScore = (
     recommendedDepartment: bestDept,
     matchingReasons: reasons,
     departmentFitScore,
+    expertiseScore,
+    labFitScore,
+    achievementsScore,
     proximityScore,
   };
 };
