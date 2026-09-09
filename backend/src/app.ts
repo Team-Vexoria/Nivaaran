@@ -26,8 +26,7 @@ const { PORT, CLIENT_URL } = getConfig();
 
 // Security & parsing
 app.use(helmet());
-// @ts-ignore
-app.use(cors({ origin: CLIENT_URL, credentials: true }));
+app.use(cors({ origin: CLIENT_URL as string, credentials: true }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: false }));
 
@@ -137,10 +136,12 @@ app.use('/api/v1/prototypes', prototypeRoutes);
 const pilotRoutes = express.Router();
 pilotRoutes.get('/', (req,res,next)=>require('./modules/pilot/controller.js').list(req,res,next));
 pilotRoutes.post('/', (req,res,next)=>require('./modules/pilot/controller.js').create(req,res,next));
+pilotRoutes.post('/:id/complete', (req,res,next)=>require('./modules/pilot/controller.js').complete(req,res,next));
 app.use('/api/v1/pilots', pilotRoutes);
 
 const deploymentRoutes = express.Router();
 deploymentRoutes.get('/', (req,res,next)=>require('./modules/deployment/controller.js').list(req,res,next));
+deploymentRoutes.post('/', (req,res,next)=>require('./modules/deployment/controller.js').create(req,res,next));
 deploymentRoutes.post('/:id/approve', (req,res,next)=>require('./modules/deployment/controller.js').approve(req,res,next));
 app.use('/api/v1/deployments', deploymentRoutes);
 

@@ -1,2 +1,8 @@
-// @ts-nocheck
-export const mobileController = { nearby: async (req,res) => res.json({nearby:[]}), submit: async (req,res) => res.json({submitted:true}), evidence: async (req,res) => res.json({evidence:true}) };
+import { Request, Response } from 'express';
+
+export const mobileController = {
+  nearby: async (req: Request, res: Response) => res.json({ nearby: [] }),
+  submit: async (req: Request, res: Response) => res.json({ submitted: true }),
+  evidence: async (req: Request, res: Response) => res.json({ evidence: true })
+};
+

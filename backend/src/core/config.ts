@@ -19,23 +19,30 @@ const AppConfig = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });
 
-const FirebaseConfig = z.object({
+const FirebaseInputConfig = z.object({
   FIREBASE_SERVICE_ACCOUNT_JSON: z.string().min(10, 'FIREBASE_SERVICE_ACCOUNT_JSON must be a valid JSON string'),
-}).transform((data) => {
-// @ts-ignore
-  try { return { serviceAccount: JSON.parse(data.FIREBASE_SERVICE_ACCOUNT_JSON) }; } catch (e) { throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON parse failed: ' + e.message); }
 });
-// @ts-ignore
 
-const ConfigSchema = DatabaseConfig.merge(RedisConfig).merge(AppConfig).merge(FirebaseConfig);
+const ConfigSchema = DatabaseConfig.merge(RedisConfig).merge(AppConfig).merge(FirebaseInputConfig);
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type DatabaseConfigT = z.infer<typeof DatabaseConfig>;
 export type RedisConfigT = z.infer<typeof RedisConfig>;
 export type AppConfigT = z.infer<typeof AppConfig>;
-export type FirebaseConfigT = z.infer<typeof FirebaseConfig>;
-export type ConfigT = z.infer<typeof ConfigSchema>;
+
+export interface FirebaseConfig {
+  serviceAccount: Record<string, unknown>;
+}
+
+export interface ConfigT {
+  DATABASE_URL: string;
+  REDIS_URL: string;
+  PORT: number;
+  CLIENT_URL: string;
+  NODE_ENV: 'development' | 'test' | 'production';
+  serviceAccount: Record<string, unknown>;
+}
 
 // ── Frozen config singleton ──────────────────────────────────────────────────
 
@@ -48,7 +55,23 @@ export function loadConfig(): ConfigT {
     const details = result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
     throw new Error(`Config validation failed: ${details}`);
   }
-  _config = Object.freeze({ ...result.data });
+  
+  // Parse Firebase service account JSON
+  let serviceAccount: Record<string, unknown> = {};
+  try {
+    serviceAccount = JSON.parse(result.data.FIREBASE_SERVICE_ACCOUNT_JSON);
+  } catch (e) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON parse failed: ' + (e as Error).message);
+  }
+  
+  _config = Object.freeze({
+    DATABASE_URL: result.data.DATABASE_URL,
+    REDIS_URL: result.data.REDIS_URL,
+    PORT: result.data.PORT,
+    CLIENT_URL: result.data.CLIENT_URL,
+    NODE_ENV: result.data.NODE_ENV,
+    serviceAccount,
+  });
   return _config;
 }
 

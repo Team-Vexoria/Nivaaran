@@ -124,13 +124,13 @@ export function isRelevantWikidataEntity(entity: any, targetName: string, target
   if (cleanLabel === cleanTarget) return true;
 
   const stopWords = new Set(['the', 'and', 'for', 'with', 'from', 'near', 'inside', 'gate', 'road', 'street', 'hall']);
-  const targetWords = cleanTarget.split(/[^a-z0-9]+/i).filter((w) => w.length > 2 && !stopWords.has(w));
+  const targetWords = cleanTarget.split(/[^a-z0-9]+/i).filter((w: string) => w.length > 2 && !stopWords.has(w));
   
   if (targetWords.length === 0) return true;
 // @ts-ignore
 
-  const labelWords = cleanLabel.split(/[^a-z0-9]+/i).filter((w) => w.length > 2);
-  const matchedWords = targetWords.filter((w) => labelWords.some((lw) => lw.includes(w) || w.includes(lw)));
+  const labelWords = cleanLabel.split(/[^a-z0-9]+/i).filter((w: string) => w.length > 2);
+  const matchedWords = targetWords.filter((w: string) => labelWords.some((lw: string) => lw.includes(w) || w.includes(lw)));
 
   const overlapRatio = matchedWords.length / targetWords.length;
   if (overlapRatio >= 0.65) return true;

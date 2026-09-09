@@ -228,11 +228,21 @@ export const apiClient = {
     return apiRequest('/pilots', { method: 'POST', body: JSON.stringify(data) });
   },
 
+  /** POST /api/v1/pilots/:id/complete — complete pilot */
+  async completePilot(id: string, data?: Record<string, unknown>): Promise<ApiResponse<unknown>> {
+    return apiRequest(`/pilots/${id}/complete`, { method: 'POST', body: data ? JSON.stringify(data) : undefined });
+  },
+
   // ── Deployments ─────────────────────────────────────────────────────
 
   /** GET /api/v1/deployments — list deployments */
   async getDeployments(): Promise<ApiResponse<unknown[]>> {
     return apiRequest('/deployments');
+  },
+
+  /** POST /api/v1/deployments — create deployment */
+  async createDeployment(data: Record<string, unknown>): Promise<ApiResponse<unknown>> {
+    return apiRequest('/deployments', { method: 'POST', body: JSON.stringify(data) });
   },
 
   /** POST /api/v1/deployments/:id/approve — approve deployment */

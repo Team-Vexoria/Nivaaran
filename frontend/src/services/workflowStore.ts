@@ -1,14 +1,15 @@
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// NIVAARAN â€” Frontend Workflow Store (SIH 26043)
+// ─────────────────────────────────────────────────────────────────────────────
+// NIVAARAN — Frontend Workflow Store (SIH 26043)
 // A singleton data store using localStorage to simulate backend persistence
 // for the demo. It dispatches a CustomEvent on update so React can re-render.
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { createSeedData } from './workflowSeedData';
 import type {
   WorkflowState,
   Challenge,
   Project,
+  Proposal,
   TimelineEvent,
   ChallengeStatus,
 } from './workflowTypes';
@@ -32,8 +33,6 @@ class WorkflowStore {
     }, 0);
 
     // Cross-tab sync: when localStorage changes in another tab, reload state.
-    // The `storage` event fires in all tabs *except* the one that made the change,
-    // so the `CustomEvent(STORE_EVENT)` in `persist()` handles same-tab updates.
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', (e: StorageEvent) => {
         if (!e.key || !e.key.startsWith('nivaaran_')) return;
@@ -44,8 +43,6 @@ class WorkflowStore {
               this.state = parsed;
             }
           }
-          // Dispatch a generic event so all nivaaran_* subscribers
-          // (feed posts, chat, etc.) can re-read their own localStorage.
           window.dispatchEvent(new CustomEvent('nivaaran-storage-changed', {
             detail: { key: e.key }
           }));
@@ -56,7 +53,7 @@ class WorkflowStore {
     }
   }
 
-  // â”€â”€ Persistence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Persistence ──────────────────────────────────────────────────────────────
 
   private loadState(): WorkflowState {
     try {
@@ -64,14 +61,11 @@ class WorkflowStore {
       if (stored) {
         const parsed: unknown = JSON.parse(stored);
         if (this.isWorkflowState(parsed)) return parsed;
-
-        // Preserve malformed data for diagnosis instead of silently destroying it.
         localStorage.setItem(`${STORE_KEY}_corrupt_${Date.now()}`, stored);
       }
     } catch (e) {
       console.error('Failed to parse workflow state from localStorage:', e);
     }
-    // If empty or corrupt, seed with demo data
     const seed = createSeedData();
     this.persist(seed);
     return seed;
@@ -92,7 +86,6 @@ class WorkflowStore {
     this.state.lastUpdated = new Date().toISOString();
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(this.state));
-      // Notify React components to re-render
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(STORE_EVENT));
       }
@@ -101,7 +94,7 @@ class WorkflowStore {
     }
   }
 
-  // â”€â”€ General â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── General ──────────────────────────────────────────────────────────────────
 
   public getState(): WorkflowState {
     return this.state;
@@ -119,7 +112,20 @@ class WorkflowStore {
     return seed;
   }
 
-  // â”€â”€ Challenges â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  /**
+   * Bulk-load data from API response (Phase 2: API-first mode).
+   * Replaces localStorage data with server data without triggering API calls.
+   */
+  public loadFromApi(data: { challenges?: Challenge[]; projects?: Project[]; proposals?: Proposal[] }) {
+    this.persist({
+      ...this.state,
+      challenges: data.challenges ?? this.state.challenges,
+      projects: data.projects ?? this.state.projects,
+      proposals: data.proposals ?? this.state.proposals,
+    });
+  }
+
+  // ── Challenges ──────────────────────────────────────────────────────────────
 
   public getChallenges(): Challenge[] {
     return this.state.challenges || [];
@@ -139,15 +145,20 @@ class WorkflowStore {
       return { duplicate: true, existing };
     }
 
-    const apiRes = await apiClient.createChallenge(challenge as Omit<Challenge, 'id' | 'createdAt' | 'updatedAt'>);
-    if (apiRes.ok && apiRes.data) {
-      const serverChallenge = apiRes.data as Challenge;
-      const challenges = [serverChallenge, ...this.state.challenges];
-      this.persist({ ...this.state, challenges });
-      return { created: serverChallenge };
+    // Try API first, fall back to local
+    try {
+      const apiRes = await apiClient.createChallenge(challenge as Omit<Challenge, 'id' | 'createdAt' | 'updatedAt'>);
+      if (apiRes.ok && apiRes.data) {
+        const serverChallenge = apiRes.data as Challenge;
+        const challenges = [serverChallenge, ...this.state.challenges];
+        this.persist({ ...this.state, challenges });
+        return { created: serverChallenge };
+      }
+    } catch (e) {
+      console.warn('API createChallenge failed, using local fallback:', e);
     }
     
-    // Fallback to local persistence if API is unavailable
+    // Fallback to local persistence
     const now = new Date().toISOString();
     const newChallenge: Challenge = {
       ...challenge,
@@ -207,23 +218,38 @@ class WorkflowStore {
       return { success: false, reason: `Invalid transition from stage ${currentStage.stageNumber} to ${nextStage.stageNumber}` };
     }
 
-    const apiRes = await apiClient.transitionChallenge(challenge.id, 'statusChange', { newStatus, note, actor, actorRole });
-    if (!apiRes.ok) {
-      const errMsg = (apiRes.error?.message || 'Transition failed') + ' [code=' + (apiRes.error?.code || 'UNKNOWN') + ']';
-      throw new Error(errMsg);
-    }
-    if (apiRes.ok) {
-      const updated = await this.updateChallenge(challenge.id, {
-        status: newStatus,
-        stageNumber: nextStage.stageNumber,
-        stageName: formatStageName(nextStage.stageNumber),
-        ...(note && { govtOfficerNote: note }),
-      });
-      if (updated) {
-        this.addTimelineEvent({ id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`, entityType: 'challenge', entityId: challenge.id, action: 'status_changed', actor, actorRole, description: note || `Status changed from ${previousStatus} to ${newStatus}`, previousValue: previousStatus, newValue: newStatus, timestamp: new Date().toISOString() });
+    // Try API transition first
+    try {
+      const action = `challenge:${newStatus.toLowerCase().replace(/\s+/g, '_')}`;
+      const apiRes = await apiClient.transitionChallenge(challenge.id, action, { newStatus, note, actor, actorRole });
+      if (apiRes.ok) {
+        const updated = await this.updateChallenge(challenge.id, {
+          status: newStatus,
+          stageNumber: nextStage.stageNumber,
+          stageName: formatStageName(nextStage.stageNumber),
+          ...(note && { govtOfficerNote: note }),
+        });
+        if (updated) {
+          this.addTimelineEvent({
+            id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            entityType: 'challenge',
+            entityId: challenge.id,
+            action: 'status_changed',
+            actor,
+            actorRole,
+            description: note || `Status changed from ${previousStatus} to ${newStatus}`,
+            previousValue: previousStatus,
+            newValue: newStatus,
+            timestamp: new Date().toISOString()
+          });
+        }
+        return { success: true };
       }
-      return { success: true };
+    } catch (e) {
+      console.warn('API transition failed, using local fallback:', e);
     }
+
+    // Fallback to local update
     const updated = await this.updateChallenge(challenge.id, {
       status: newStatus,
       stageNumber: nextStage.stageNumber,
@@ -232,11 +258,10 @@ class WorkflowStore {
     });
     if (!updated) return { success: false, reason: 'Update failed' };
 
-    // Timeline event already handled above
     return { success: true };
   }
 
-  // â”€â”€ Projects â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Projects ────────────────────────────────────────────────────────────────
 
   public getProjects(): Project[] {
     return this.state.projects || [];
@@ -256,13 +281,33 @@ class WorkflowStore {
       return { duplicate: true, existing };
     }
     
-    const apiRes = await apiClient.createProject(project as Omit<Project, 'id' | 'createdAt' | 'updatedAt'>);
-    if (!apiRes.ok) {
-      const errMsg = (apiRes.error?.message || 'Project creation failed') + ' [code=' + (apiRes.error?.code || 'UNKNOWN') + ']';
-      throw new Error(errMsg);
+    // Try API first
+    try {
+      const apiRes = await apiClient.createProject(project as Omit<Project, 'id' | 'createdAt' | 'updatedAt'>);
+      if (apiRes.ok && apiRes.data) {
+        const serverProject = apiRes.data as Project;
+        const projects = [...this.state.projects, serverProject];
+        this.persist({ ...this.state, projects });
+
+        this.addTimelineEvent({
+          id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+          entityType: 'project',
+          entityId: project.id,
+          action: 'created',
+          actor: project.facultyMentorName,
+          actorRole: 'Faculty / Mentor',
+          description: 'Project created from accepted challenge',
+          timestamp: new Date().toISOString(),
+        });
+        
+        return serverProject;
+      }
+    } catch (e) {
+      console.warn('API createProject failed, using local fallback:', e);
     }
-    const serverProject = apiRes.data as Project;
-    const projects = [...this.state.projects, serverProject];
+
+    // Fallback to local
+    const projects = [...this.state.projects, project];
     this.persist({ ...this.state, projects });
 
     this.addTimelineEvent({
@@ -295,7 +340,7 @@ class WorkflowStore {
     return updatedProject;
   }
 
-  // â”€â”€ Timeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Timeline ────────────────────────────────────────────────────────────────
 
   public getTimelineEvents(entityId: string): TimelineEvent[] {
     return this.state.timelineEvents
