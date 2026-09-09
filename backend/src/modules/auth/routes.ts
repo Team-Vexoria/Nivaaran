@@ -16,6 +16,7 @@ r.post('/auth/sync', async (req, res, next) => {
 
     const user = await prisma.user.upsert({
       where: { firebase_uid: uid },
+      update: { email, name, updated_at: new Date() },
       create: { firebase_uid: uid, email, name, created_at: new Date(), updated_at: new Date() },
     });
     // Link roles / geo scopes if provided
