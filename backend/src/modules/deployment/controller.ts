@@ -16,6 +16,23 @@ export async function list(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+export async function create(req: Request, res: Response, next: NextFunction) {
+  try {
+    const d = await prisma.deployment.create({
+      data: {
+        project_id: req.body.project_id,
+        district_code: req.body.district_code || 'RANCHI',
+        status: req.body.status || 'ACTIVE',
+        approved_by: req.auth?.user?.id || 'system',
+        approval_ref: req.body.approval_ref || 'GOV-DEPLOY-AUTH',
+      },
+    });
+    res.status(201).json({ ok: true, data: d });
+  } catch (e) {
+    next(e);
+  }
+}
+
 export async function approve(req: Request, res: Response, next: NextFunction) {
   try {
     const d = await prisma.deployment.update({

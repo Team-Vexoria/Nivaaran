@@ -92,9 +92,18 @@ export interface DistrictStat {
   latestChallenge?: ChallengeDoc;
 }
 
+/** Backend heatmap API response item */
+interface HeatmapDistrict {
+  districtCode: string;
+  districtName: string;
+  totalChallenges: number;
+  activeChallenges: number;
+  avgPriorityScore: number | null;
+}
+
 function buildDistrictStats(
   challenges: ChallengeDoc[],
-  heatmapDistricts?: Array<{ districtName?: string; districtCode?: string; totalChallenges?: number; avgPriorityScore?: number | null }>
+  heatmapDistricts?: HeatmapDistrict[]
 ): Record<string, DistrictStat> {
   const stats: Record<string, DistrictStat> = {};
 
@@ -105,7 +114,7 @@ function buildDistrictStats(
   // Overlay real server-side aggregated metrics if available
   if (Array.isArray(heatmapDistricts)) {
     for (const hd of heatmapDistricts) {
-      const dName = hd.districtName || hd.districtCode;
+      const dName = hd.districtName;
       if (dName && stats[dName]) {
         stats[dName].total = hd.totalChallenges || stats[dName].total;
       }
@@ -147,7 +156,7 @@ function buildDistrictStats(
 export interface MapData {
   challenges: ChallengeDoc[];
   districtStats: Record<string, DistrictStat>;
-  heatmapData: Record<string, unknown> | null;
+  heatmapData: { districts: HeatmapDistrict[]; totalCount: number } | null;
   districts: unknown[];
   totalCount: number;
   criticalCount: number;
@@ -158,26 +167,34 @@ export interface MapData {
 
 export function useMapData(): MapData {
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
-  const [heatmapData, setHeatmapData] = useState<Record<string, unknown> | null>(null);
+  const [heatmapData, setHeatmapData] = useState<{ districts: HeatmapDistrict[]; totalCount: number } | null>(null);
   const [districts, setDistricts] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
-    // Phase 4.3: fetch real aggregates from API with graceful store fallback
+    
+    // Phase 2: API-first with graceful fallback
     Promise.all([
       apiClient.getDistrictHeatmap().catch(() => ({ ok: false, data: null })),
       apiClient.getDistricts().catch(() => ({ ok: false, data: null })),
       apiClient.getChallenges().catch(() => ({ ok: false, data: null })),
     ]).then(([heatRes, distRes, chalRes]) => {
       if (cancelled) return;
+      
+      // Process heatmap data from API
       if (heatRes && heatRes.ok && heatRes.data) {
-        setHeatmapData(heatRes.data as Record<string, unknown>);
+        const data = heatRes.data as { districts: HeatmapDistrict[]; totalCount: number };
+        setHeatmapData(data);
       }
+      
+      // Process districts from API
       if (distRes && distRes.ok && distRes.data) {
         const arr = Array.isArray(distRes.data) ? distRes.data : ((distRes.data as any).districts || []);
         setDistricts(arr);
       }
+      
+      // Process challenges from API
       let loadedChallenges: ChallengeDoc[] = [];
       if (chalRes && chalRes.ok && chalRes.data && Array.isArray(chalRes.data) && chalRes.data.length > 0) {
         loadedChallenges = chalRes.data.map((c: any) => {
@@ -185,10 +202,12 @@ export function useMapData(): MapData {
           return toLegacyChallengeDoc(wf);
         });
       }
-      // If API returned no challenges or failed, use workflowStore
+      
+      // If API returned no challenges, use workflowStore (localStorage fallback)
       if (loadedChallenges.length === 0) {
         loadedChallenges = workflowStore.getChallenges().map(toLegacyChallengeDoc);
       }
+      
       setChallenges(loadedChallenges);
       setLoading(false);
     }).catch(() => {
@@ -197,19 +216,16 @@ export function useMapData(): MapData {
         setLoading(false);
       }
     });
+    
     return () => { cancelled = true; };
   }, []);
 
-  const heatmapDistrictsList = heatmapData && Array.isArray((heatmapData as any).districts)
-    ? (heatmapData as any).districts
-    : undefined;
-
   return {
     challenges,
-    districtStats: buildDistrictStats(challenges, heatmapDistrictsList),
+    districtStats: buildDistrictStats(challenges, heatmapData?.districts),
     heatmapData,
     districts,
-    totalCount: challenges.length,
+    totalCount: heatmapData?.totalCount ?? challenges.length,
     criticalCount: challenges.filter(c => c.riskLevel === 'CRITICAL').length,
     validatedCount: challenges.filter(c => {
       const stageNumber = getStageForStatus(c.status)?.stageNumber || 0;

@@ -29,7 +29,7 @@ export async function transition(req: Request, res: Response, next: NextFunction
       ? parseInt(req.headers['if-match'] as string, 10)
       : undefined;
 
-    const schema = z.object({ action: z.string().min(1), payload: z.record(z.any()).optional(), ifMatch: z.number().optional() });
+    const schema = z.object({ action: z.string().min(1), payload: z.record(z.string(), z.any()).optional(), ifMatch: z.number().optional() });
     const parsed = schema.parse(req.body);
     // @ts-ignore
     // @ts-ignore
