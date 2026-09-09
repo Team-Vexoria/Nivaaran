@@ -11,6 +11,7 @@ import { formatStageName, getStageForStatus } from '../services/workflowLifecycl
 import { workflowStore } from '../services/workflowStore';
 import { findSimilarChallenges, mergeWithPrimaryChallenge } from '../services/deduplicationService';
 import { extractIncidentMetadata } from '../services/dataExtractionService';
+import type { PriorityFactors, ResearchResult, RiskLevel } from '../services/workflowTypes';
 
 interface QuickReportModalProps {
   isOpen: boolean;
@@ -29,6 +30,9 @@ const JHARKHAND_DISTRICTS = [
 export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { t, currentLang } = useLanguage();
   const [step, setStep] = useState<'form' | 'submitting' | 'success' | 'forensic_rejected' | 'dedup_merged'>('form');
+const [affectedPopulation, setAffectedPopulation] = useState<number | undefined>(undefined);
+const [economicValueEstimate, setEconomicValueEstimate] = useState<number | undefined>(undefined);
+const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | undefined>(undefined);
   const [forensicRejectionReason, setForensicRejectionReason] = useState<string>('');
   const [dedupInfo, setDedupInfo] = useState<{
     primaryId: string;
@@ -384,6 +388,9 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         clusterId: dedupeResult.clusterId ?? undefined,
         extractedMetadata: extractedData,
         translations,  // Multilingual strings
+        affectedPopulation,
+        economicValueEstimate,
+        estimatedResolutionCost,
       });
 
       submitFeedPostToFirestore({
@@ -444,6 +451,70 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     if (onSuccess) {
       onSuccess(generatedId);
     }
+
+    // ── Background: fire backend 5-stage AI pipeline for enrichment ─────
+    // Research + HEI matching runs server-side with real network calls.
+    // Fire-and-forget: enriches the local store when it returns (~2-8s).
+    (async () => {
+      try {
+        const { apiClient } = await import('../api/client');
+        const backendRes = await apiClient.runAIPipeline({
+          challenge: {
+            title: title || 'Local Community Issue',
+            description,
+            category: aiResult.category,
+            district,
+            block: blockVillage || 'Central Block',
+            village: blockVillage || 'Panchayat Area',
+            location: { lat: coords.lat, lng: coords.lng, district, block: blockVillage },
+            affectedPopulation,
+            economicValue: economicValueEstimate,
+            estimatedResolutionCost,
+          },
+          upvotes: 1,
+        });
+
+        if (backendRes.ok && backendRes.data) {
+          const pipeline = backendRes.data;
+          // Merge backend enrichment into the existing aiAnalysis (preserve prior fields)
+          const existing = workflowStore.getChallenge(generatedId);
+          const backendSummary = pipeline.understanding.summary || aiResult.reasoning;
+          // Update local workflowStore with backend-enriched data
+          workflowStore.updateChallenge(generatedId, {
+            research: pipeline.research as unknown as ResearchResult,
+            priorityScore: pipeline.priority.priorityScore,
+            riskLevel: pipeline.priority.riskLevel as RiskLevel,
+            confidenceScore: pipeline.confidence,
+            aiAnalysis: {
+              category: pipeline.category || existing?.aiAnalysis?.category || aiResult.category,
+              categoryCode: pipeline.domainCode || existing?.aiAnalysis?.categoryCode || '',
+              priorityScore: pipeline.priority.priorityScore,
+              riskLevel: pipeline.priority.riskLevel as RiskLevel,
+              factors: pipeline.priority.factors as unknown as PriorityFactors,
+              reasoning: backendSummary,
+              confidenceScore: pipeline.confidence * 100,
+              needsHumanVerification: existing?.aiAnalysis?.needsHumanVerification ?? aiResult.needsHumanVerification,
+              recommendedUniversityDepts: existing?.aiAnalysis?.recommendedUniversityDepts ?? aiResult.recommendedUniversityDepts,
+              research: pipeline.research as unknown as ResearchResult,
+            },
+          });
+          // Add enrichment timeline event
+          workflowStore.addTimelineEvent({
+            id: `TL-${Date.now()}-pipeline`,
+            entityType: 'challenge',
+            entityId: generatedId,
+            action: 'prioritized',
+            actor: 'NIVAARAN 5-Stage AI Pipeline',
+            actorRole: 'AI System',
+            description: `Backend AI pipeline completed [${pipeline.pipeline.join(' → ')}]. Research confidence: ${pipeline.research.confidence}. HEI matches: ${pipeline.matches.length}. Backend priority: ${pipeline.priority.priorityScore}/100 [${pipeline.priority.riskLevel}].`,
+            timestamp: new Date().toISOString(),
+          });
+          console.log('[NIVAARAN] Backend pipeline enrichment complete for', generatedId);
+        }
+      } catch (err) {
+        console.warn('[NIVAARAN] Backend pipeline enrichment failed (non-fatal):', err);
+      }
+    })();
   };
 
   const resetAndClose = () => {
@@ -459,6 +530,9 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     setForensicRejectionReason('');
     setSubmittedId('');
     setIsVerifyingRealtime(false);
+    setAffectedPopulation(undefined);
+    setEconomicValueEstimate(undefined);
+    setEstimatedResolutionCost(undefined);
     onClose();
   };
 
@@ -713,10 +787,10 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                 <MapPin className={`w-5 h-5 shrink-0 ${formattedAddress ? 'text-emerald-600' : 'text-amber-500'}`} />
                 <div className="min-w-0 flex-1">
                   <span className="text-xs font-extrabold text-slate-900 block truncate">
-                    {locating 
-                      ? 'Fetching exact street address...' 
-                      : formattedAddress 
-                      ? `📍 ${formattedAddress}` 
+                    {locating
+                      ? 'Fetching exact street address...'
+                      : formattedAddress
+                      ? `📍 ${formattedAddress}`
                       : 'Location Geotag Missing'}
                   </span>
                   <span className="text-[10px] text-slate-500 block truncate">
@@ -734,6 +808,43 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                 {locating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                 <span>{locating ? 'Locating...' : 'Refresh Address'}</span>
               </button>
+            </div>
+
+            {/* Optional Numeric Impact Inputs */}
+            <div className="space-y-3 pt-1">
+              <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">Impact Estimates (Optional)</div>
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Affected Population</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 1200"
+                    value={affectedPopulation ?? ''}
+                    onChange={(e) => setAffectedPopulation(e.target.value ? Number(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 bg-white border border-[#DCD6C6] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Estimated Economic Value (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 80000"
+                    value={economicValueEstimate ?? ''}
+                    onChange={(e) => setEconomicValueEstimate(e.target.value ? Number(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 bg-white border border-[#DCD6C6] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1">Estimated Resolution Cost (₹)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 50000"
+                    value={estimatedResolutionCost ?? ''}
+                    onChange={(e) => setEstimatedResolutionCost(e.target.value ? Number(e.target.value) : undefined)}
+                    className="w-full px-3 py-2 bg-white border border-[#DCD6C6] rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1E3A5F]"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Stage 4 Live Evidence & Spatial Extraction Indicator */}

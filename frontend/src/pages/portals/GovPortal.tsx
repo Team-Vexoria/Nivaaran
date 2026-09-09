@@ -47,11 +47,13 @@ import { DistrictPriorityMap } from '../../components/charts/DistrictPriorityMap
 import { AIPerformanceCard } from '../../components/charts/AIPerformanceCard';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
-import { getStageForStatus } from '../../services/workflowLifecycle';
 import { JHARKHAND_UNIVERSITIES } from '../../services/universityData';
 import { ClusterReviewTab } from '../../components/gov/ClusterReviewTab';
 import { DeploymentApprovalTab } from '../../components/gov/DeploymentApprovalTab';
 import { ClosureTab } from '../../components/gov/ClosureTab';
+import { LiveResearchBadge } from '../../components/gov/LiveResearchBadge';
+import { PriorityFactorsBreakdown } from '../../components/gov/PriorityFactorsBreakdown';
+import { RiskLevelBadge, ResearchVerificationNote } from '../../components/gov/RiskLevelBadge';
 import { PortalLoadingState, PortalEmptyState } from '../../components/PortalUIStates';
 
 
@@ -170,6 +172,47 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
               </p>
               <p className="text-[10px] text-[#8A7F72]">Automated NLP & GIS Impact Rating</p>
             </div>
+          </div>
+
+          {/* AI Priority Assessment (8C layout order):
+              Risk Badge → Priority Score → 4-Factor Breakdown → Live Research (8A)
+              → Confidence + Links (8B) → Verification Message (8C) */}
+          <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 space-y-3">
+            <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px]">AI Priority Assessment</h4>
+
+            {/* 1 · Risk level badge (+ live-data escalation indicator) */}
+            <RiskLevelBadge
+              riskLevel={challenge.riskLevel}
+              research={(challenge as any).research}
+              escalatedByWeather={(challenge as any).priority?.triageMetadata?.escalatedByWeather}
+              escalatedByRecurringHazard={(challenge as any).priority?.triageMetadata?.escalatedByRecurringHazard}
+            />
+
+            {/* 2 · Priority score */}
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black text-[#C98A2C] leading-none">
+                {challenge.priorityScore !== undefined ? challenge.priorityScore.toFixed(1) : '7.5'}
+              </span>
+              <span className="text-[11px] font-bold text-[#8A7F72]">/ 10 · Priority Score</span>
+            </div>
+
+            {/* 3 · 4-factor score breakdown */}
+            {(challenge as any).priorityFactors && (
+              <div className="border-t border-[#EAE4D8] pt-3">
+                <PriorityFactorsBreakdown factors={(challenge as any).priorityFactors} />
+              </div>
+            )}
+
+            {/* 4 + 5 · Live research badge (8A) + confidence meter & evidence links (8B) */}
+            {(challenge as any).research && (
+              <div className="border-t border-[#EAE4D8] pt-3 space-y-2">
+                <span className="text-[10px] font-bold text-[#8A7F72] uppercase tracking-wider">Live Research</span>
+                <LiveResearchBadge research={(challenge as any).research} />
+
+                {/* 6 · Verification message */}
+                <ResearchVerificationNote research={(challenge as any).research} />
+              </div>
+            )}
           </div>
 
           {/* Detailed Problem Description */}
@@ -527,7 +570,7 @@ export const GovPortal: React.FC = () => {
   const [priorityEditValue, setPriorityEditValue] = useState<string>('');
 
   const { challenges, totalCount, criticalCount, validatedCount, resolvedCount, loading } = useMapData();
-  const { data: analyticsData, loading: analyticsLoading } = useAnalytics();
+  const { data: analyticsData } = useAnalytics();
 
   // Live workflow store data for Impact KPIs tab
   const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());

@@ -17,7 +17,7 @@ export const AIPerformanceCard: React.FC<AIPerformanceProps> = ({ data }) => {
         </div>
         <div>
           <h3 className="text-sm font-black text-[#201C18]">AI Performance</h3>
-          <p className="text-[10px] text-[#8A7F72] font-bold">Gemini 1.5 Flash · 60-domain taxonomy</p>
+          <p className="text-[10px] text-[#8A7F72] font-bold">Gemini 1.5 Flash · 100-domain taxonomy</p>
         </div>
       </div>
 

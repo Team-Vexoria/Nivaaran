@@ -6,6 +6,7 @@ export interface AnalyticsData {
   priorityDistribution: { bucket: string; count: number }[];
   dailyTrend: { date: string; count: number; avgPriority: number }[];
   domainBreakdown: { domain: string; category: string; count: number }[];
+  districtHeatmap?: any;
   districtPriorityMap: any[];
   aiPerformance: { avgConfidence: number; totalAnalyzed: number; avgPriorityScore: number };
   impactMetrics: { totalProjects: number; totalBeneficiaries: number; totalDeployments: number };
@@ -28,20 +29,20 @@ export function useAnalytics() {
           apiClient.getAnalyticsPriority ? apiClient.getAnalyticsPriority() : Promise.resolve({ ok: true, data: [] }),
           apiClient.getAnalyticsTrend ? apiClient.getAnalyticsTrend() : Promise.resolve({ ok: true, data: [] }),
           apiClient.getAnalyticsDomains ? apiClient.getAnalyticsDomains() : Promise.resolve({ ok: true, data: [] }),
-          apiClient.getAnalyticsAIPerformance ? apiClient.getAnalyticsAIPerformance() : Promise.resolve({ ok: true, data: {} }),
-          apiClient.getAnalyticsImpact ? apiClient.getAnalyticsImpact() : Promise.resolve({ ok: true, data: {} }),
+          apiClient.getAnalyticsAIPerformance ? apiClient.getAnalyticsAIPerformance() : Promise.resolve({ ok: true, data: { avgConfidence: 0, totalAnalyzed: 0, avgPriorityScore: 0 } }),
+          apiClient.getAnalyticsImpact ? apiClient.getAnalyticsImpact() : Promise.resolve({ ok: true, data: { totalProjects: 0, totalBeneficiaries: 0, totalDeployments: 0 } }),
           apiClient.getDistrictHeatmap ? apiClient.getDistrictHeatmap() : Promise.resolve({ ok: true, data: [] }),
         ]);
         if (cancelled) return;
         setData({
-          statusDistribution: sRes.ok ? sRes.data?.distribution || {} : {},
-          priorityDistribution: pRes.ok ? pRes.data || [] : [],
-          dailyTrend: dRes.ok ? dRes.data || [] : [],
-          domainBreakdown: domRes.ok ? domRes.data || [] : [],
-          districtHeatmap: distRes.ok ? (distRes.data as any) || [] : [],
+          statusDistribution: (sRes.ok && sRes.data) ? ((sRes.data as any).distribution || (sRes.data as Record<string, number>)) : {},
+          priorityDistribution: (pRes.ok && pRes.data) ? pRes.data : [],
+          dailyTrend: (dRes.ok && dRes.data) ? dRes.data : [],
+          domainBreakdown: (domRes.ok && domRes.data) ? domRes.data : [],
+          districtHeatmap: (distRes.ok && distRes.data) ? (distRes.data as any) : [],
           districtPriorityMap: [],
-          aiPerformance: aiRes.ok ? aiRes.data || { avgConfidence: 0, totalAnalyzed: 0, avgPriorityScore: 0 } : { avgConfidence: 0, totalAnalyzed: 0, avgPriorityScore: 0 },
-          impactMetrics: impRes.ok ? impRes.data || { totalProjects: 0, totalBeneficiaries: 0, totalDeployments: 0 } : { totalProjects: 0, totalBeneficiaries: 0, totalDeployments: 0 },
+          aiPerformance: (aiRes.ok && aiRes.data) ? (aiRes.data as any) : { avgConfidence: 0, totalAnalyzed: 0, avgPriorityScore: 0 },
+          impactMetrics: (impRes.ok && impRes.data) ? (impRes.data as any) : { totalProjects: 0, totalBeneficiaries: 0, totalDeployments: 0 },
         });
         setError(null);
       } catch (e: any) {

@@ -316,6 +316,37 @@ export const apiClient = {
   async getDistricts(): Promise<ApiResponse<unknown>> {
     return apiRequest('/districts');
   },
+
+  // ── AI Pipeline (5-stage backend enrichment) ─────────────────────────────
+
+  /**
+   * POST /api/v1/ai/pipeline
+   * Runs the full 5-stage backend AI pipeline: verify → understand → research → prioritize → match
+   * Returns enrichment data: research context, university matches, dedup status, backend priority score.
+   * Uses the default 15s timeout (research stage has a 6.5s internal ceiling).
+   */
+  async runAIPipeline(payload: {
+    challenge: Record<string, unknown>;
+    upvotes?: number;
+    existingIds?: string[];
+    universities?: unknown[];
+  }): Promise<ApiResponse<{
+    pipeline: string[];
+    verification: { dedupStatus: string; domainCode: string; confidence: number };
+    understanding: { summary: string; domain: string; severity: string; confidence: number };
+    research: { confidence: number; activeAlert: boolean; governmentAdvisories: string[]; recentIncidents: unknown[]; sourceBreakdown: Record<string, string> };
+    priority: { priorityScore: number; riskLevel: string; confidence: number; factors: Record<string, { score: number; max: number; reason: string }> };
+    matches: { heiId: string; score: number }[];
+    category: string;
+    domainCode: string;
+    confidence: number;
+    modelVersion: string;
+  }>> {
+    return apiRequest('/ai/pipeline', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };
 
 // ── Typed helper: extract data or throw on error ─────────────────────────

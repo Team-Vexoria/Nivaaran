@@ -120,6 +120,7 @@ enum AiKind {
   PRIORITIZE
   MATCH
   VISION // evidence image analysis
+  RESEARCH // internet + govt + weather research pipeline
 }
 
 enum AiStatus {
@@ -339,6 +340,13 @@ model Challenge {
   // Clarification (sub-state of CLARIFICATION_REQUESTED)
   clarification_request  Json?
   clarification_response Json?
+
+  // ── AI pipeline persistence (per-stage JSON snapshots) ────────────────
+  vision_result    Json? // {hasHazard, confidence, description, isReal, modelVersion}
+  research_result  Json? // UnifiedResearchResult snapshot (sourceBreakdown, incidents, advisories)
+  dedup_status     String? // ORIGINAL | DUPLICATE | NEAR_DUPLICATE
+  duplicate_of     String? // id of the primary challenge when dedup_status != ORIGINAL
+  citizen_report_count Int @default(1) // how many duplicate/near-duplicate reports merged here
 
   // ── Ownership & scoping ──
   submitter_id    String // FK → never NULL (origin invariant)
@@ -824,6 +832,21 @@ model ChallengeComment {
   author    User      @relation(fields: [author_id], references: [id])
 
   @@index([challenge_id, created_at])
+}
+
+// ── AI Pipeline — Dedup persistence (T2.1) ──────────────────────────────────
+
+model DedupRecord {
+  id           String   @id @default(uuid())
+  hash         String   @unique // normalized dedup hash (verifyEngine.computeHash)
+  challenge_id String   // canonical challenge this hash maps to
+  district     String?  // denormalized for fast spatial pre-filter
+  lat          Float?   // optional PostGIS-free radius check
+  lng          Float?
+  created_at   DateTime @default(now())
+
+  @@index([hash])
+  @@index([district, created_at])
 }
 
 model AppConfig {

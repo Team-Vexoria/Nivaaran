@@ -35,6 +35,41 @@ export interface PriorityFactors {
   hazardUrgency:             { score: number; max: number; reason: string };
 }
 
+// ── Stage 4: Live Internet & Government Intelligence Research ──────────────────
+// Mirrors the backend UnifiedResearchResult (newsEngine.ts). Attached to a
+// challenge's AI analysis after the worker's research stage completes, so the
+// government portal can show exactly which real sources contributed to the score.
+export interface ResearchSourceBreakdown {
+  news?: string;      // 'GNews' | 'NewsAPI' | 'none'
+  weather?: string;   // 'disaster-live' | 'disaster-fallback'
+  govt?: string;      // 'live' | 'govt-live' | 'db' | 'govt-db' | 'none'
+}
+
+export interface ResearchIncident {
+  title: string;
+  source: string;
+  url?: string;
+  snippet?: string;
+  publishedAt?: string;
+  sourceTag?: 'news' | 'govt' | 'db';
+}
+
+export interface ResearchResult {
+  governmentAdvisories?: string[];
+  advisories?: string[];              // alias
+  recentIncidents?: ResearchIncident[];
+  incidents?: ResearchIncident[];     // alias
+  recurringHazard?: boolean;
+  recurringHazardIdentified?: boolean;
+  severityContext?: string;
+  confidence?: number;
+  queryUsed?: string;
+  activeAlert?: boolean;
+  corroborationCount?: number;
+  source?: string;                    // top-level source label when present
+  sourceBreakdown?: ResearchSourceBreakdown;
+}
+
 export interface AIAnalysis {
   category: string;
   categoryCode: string;
@@ -46,6 +81,7 @@ export interface AIAnalysis {
   reasoning: string;
   needsHumanVerification: boolean;
   recommendedUniversityDepts: string[];
+  research?: ResearchResult;    // live research evidence backing the score
 }
 
 // ── Challenge ─────────────────────────────────────────────────────────────────
@@ -73,6 +109,7 @@ export interface Challenge {
   priorityScore?: number;
   confidenceScore?: number;
   riskLevel?: RiskLevel;
+  research?: ResearchResult;     // live research evidence backing the score
 
   // Evidence
   evidenceUrls: string[];        // photo/video URLs
@@ -92,6 +129,11 @@ export interface Challenge {
   clusterId?: string;           // Set when AI groups this with similar challenges
   citizenReportCount?: number;  // Total consolidated reports submitted for this issue
   communityUpvotes?: number;    // Upvotes / citizen endorsements
+
+  // Numeric impact inputs (T5.1 — honest numerics, no manufactured defaults)
+  affectedPopulation?: number;
+  economicValueEstimate?: number;
+  estimatedResolutionCost?: number;
 
   // CSR / Industry
   csrSponsor?: string;

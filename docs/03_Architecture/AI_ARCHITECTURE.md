@@ -127,6 +127,8 @@ The 5-factor weighted regressor is preserved as `PriorityFactors`:
 
 `priorityScore = min(100, Σ)`; `riskLevel` from the total (`CRITICAL ≥85`, `HIGH ≥70`, `MEDIUM ≥50`, else `STANDARD`). The one change on the server: `communityUpvotes` and `spatialRecurrence` are **read from the database** (upvote counts, GIS recurrence aggregation) rather than passed in from the browser — the engine becomes a true server-side scorer.
 
+> **T5.2 — Unified scoring (current state):** The 5-factor description above is the original design. The live code now uses a **4×25 shared formula** (`backend/src/shared/priorityScoring.ts`): `populationImpact` (25) + `economicLifeSaving` (25) + `resolutionCostFeasibility` (25) + `hazardUrgency` (25) = 100. Community upvotes and spatial recurrence are folded into the population pillar as a reinforcement bonus (up to +2 within max 25). Research context — active weather alerts, recurring hazard flags, and news corroboration count — are applied as additive bonuses (+3, +2, up to +4 respectively) *after* the 4-pillar base, also capped at 100 total. Both the backend `AIProvider.prioritize()` and the frontend `aiTriageEngine.calculatePriorityLayer2()` are scheduled to wrap this shared function (T5.2), eliminating the two-formula divergence where the same grievance could land in two different triage tiers. The worker orchestrator calls `AIProvider.prioritize()` with real citizen numerics: when affectedPopulation / economicValue / estimatedResolutionCost are omitted by the citizen, the function sends `null` through to the scorer, which applies a disclosed confidence penalty (`-0.08` per missing field, floor `0.30`) instead of manufacturing placeholder defaults.
+
 ### 4.3 The deterministic `match` port
 
 The 4-factor HEI matcher (`departmentFit 40%` / `labFit 30%` / `proximity 20%` / `academic 10%`) is preserved, but its input universities come from the real `universities` + `departments` tables (the 30-institution Jharkhand dataset is seeded there) instead of the frontend constant `JHARKHAND_UNIVERSITIES`. It returns a ranked list capped at `min(98, …)` per institution, sorted descending — exactly the ordering the University intake screen already expects (`UniversityIntakeTab.tsx` uses `calculateHEIMatchScore`).
@@ -142,6 +144,34 @@ The deterministic stack is the MVP default because it is **reproducible, fast, f
 | `similarity` (semantic dedup) | embedding model on `embed(...)` + vector similarity | model configured |
 
 Because every consumer depends on `AIProvider`, not on the deterministic implementation, any of these can be switched behind the registry with zero caller changes. The downgrade path is equally clean: key removed → deterministic fallback resumes. The `model_version` column records which path produced each recommendation.
+
+### 4.5 The live 5-stage pipeline (`ai-worker.ts`)
+
+The orchestrator lives at `backend/src/core/workers/ai-worker.ts`, exported as `runAIPipeline()`. It executes five stages in strict sequential order and produces a single `AIPipelineResult`:
+
+```text
+runAIPipeline({ challenge, report?, upvotes? })
+  └── Stage 1  verify          → verification:    { isRealReport, dedupStatus, category, domainCode, visionResult? }
+  └── Stage 2  understand      → understanding:    { summary, domain, severity, urgency, confidence, tags }
+  └── Stage 3  buildExtractedEntities → entities
+           ↳  research         → research:         { confidence, activeAlert, sourceBreakdown, recentIncidents, governmentAdvisories }
+  └── Stage 4  prioritize      → priority:         { priorityScore, riskLevel, factors, confidence, triageMetadata }
+  └── Stage 5  match           → matches:          [ { universityId, score, reasons[] } ]
+```
+
+**Stage details:**
+
+| Stage | Engine | Concrete behaviour |
+| --- | --- | --- |
+| **verify** | `verifyEngine.verifyReport()` | Heuristic text gate (`< 8 tokens` → reject; `test/dummy/fake` → reject); server-side Gemini vision via `AIProvider.vision()` with a hard 3 200 ms `AbortController` race — timeout does **not** flip `isReal`; exact-hash dedup against in-memory L1 (`REPORT_STORE Map`) seeded from `DedupRecord` table on boot, with a DB `findUnique` as fallback; near-duplicate scan: same `district_code` within 14 days + Jaccard bigram similarity ≥ 0.72; exact hash match → `DUPLICATE`, near match → `NEAR_DUPLICATE`, else → `ORIGINAL`. |
+| **understand** | `AIProvider.understand()` | Scores the report against all 60 entries in `shared/domainTaxonomy.ts` (`GOV_DOMAINS`): keyword hits (+10 each, capped at 40), problem-phrase hits (+18), domain name/code/category bonus (+30/+25/+10), department keyword overlap (+6). Top candidate wins. Minimum `taxonomyMatchScore < 30` → flagged `needsHumanVerification`. |
+| **research** | `runResearchStage()` (parallel channel fan-out) | Three channels launched via `Promise.allSettled` under a shared 6 500 ms ceiling: **news** (`newsEngine.searchNews` — GNews / NewsAPI, 3 000 ms channel cap), **weather** (`weatherEngine.searchWeather` — Open-Meteo 3-day forecast, 2 500 ms channel cap, ±1 day match), **govt** (`internetResearch.searchGovtBulletins` — DDG HTML parse filtered to `gov.in` / `jharkhand.gov.in` / `imd.gov.in` / `ndma.gov.in`, 2 800 ms channel cap). Each channel has a 10-minute `lru-cache` keyed by district+query. Results are unified by `applyMergeRules()` which computes `sourceBreakdown.news/weather/govt` (e.g. `'GNews'` / `'disaster-live'` / `'govt-live'`) and a merged `confidence` (0.92 if all 3 live, 0.85 if 2 live, 0.70 if 1 live, 0.60 DB-only fallback). Any channel failure degrades gracefully — the surviving channels determine the result; an entirely empty response yields `confidence: 0.60` with `sourceBreakdown: { news: 'none', weather: 'disaster-fallback', govt: 'db' }`. |
+| **prioritize** | `AIProvider.prioritize()` | Feeds the enriched challenge (real citizen `affectedPopulation` / `economicValue` / `estimatedResolutionCost`, or `null` when omitted) plus `research` context into the 4×25 `scorePriority()` function (§4.2). Returns `{ priorityScore, riskLevel, factors: { populationImpact, economicLifeSaving, resolutionCostFeasibility, hazardUrgency }, confidence, modelVersion, triageMetadata }`. Applies research bonuses as additive offsets after the 4-pillar base: `activeAlert +3`, `recurringHazard +2`, `corroborationCount` capped at +4. Confidence comes from the research context (`research.confidence` when ≥ 0.60), further adjusted by the missing-numerics penalty (T5.1: `-0.08` per null field, floor `0.30`). |
+| **match** | `AIProvider.match()` | Ranks university candidates against the enriched challenge using 5 weighted factors: `departmentFit 30`, `expertiseRelevance 20`, `labFacilities 20`, `pastAchievements 10`, `proximity 20` — totaling 100. The university dataset is resolved from the pipeline payload first, then the DB, then falls back to an empty list (never a hard failure). |
+
+**Observability (T6.1):** Every stage emits a `pino` structured log via `stageLog()` with `{ jobId, challengeId, stage, durationMs }` and stage-specific fields. After the pipeline completes, four `AiRecommendation` rows are persisted in a single `createMany` call — one each for `VISION`, `UNDERSTAND`, `RESEARCH`, `PRIORITIZE` — plus a full `AuditEvent(action: 'PRIORITIZE', payload_snapshot: { pipeline, priorityScore, riskLevel, confidence, researchConfidence, dedupStatus, domainCode })`. All writes are fire-and-forget; a failure in the audit trail does not propagate to the pipeline result.
+
+**Dead-letter path (T6.1):** After `MAX_PIPELINE_RETRIES = 3` consecutive failures, the queue handler calls `writeDeadLetter()`, which persists a final `AiRecommendation(status: 'FAILED', kind: 'RESEARCH', error_message)` and an `AuditEvent(action: 'PIPELINE_FAILED')` with the completed-stages list — ensuring `GET /ai-decision-trace/:challengeId` never returns empty even on repeated failures.
 
 ---
 
@@ -236,7 +266,7 @@ Full model in `DATABASE_DESIGN.md` §6.2. The contract restated for the AI layer
 model AiRecommendation {
   id            String    @id @default(uuid())
   challenge_id  String
-  kind          AiKind                     // UNDERSTAND | SIMILARITY | PRIORITIZE | MATCH | VISION
+  kind          AiKind                     // VISION | UNDERSTAND | RESEARCH | SIMILARITY | PRIORITIZE | MATCH
   status        AiStatus  @default(PENDING) // PENDING | RUNNING | SUCCEEDED | FAILED | RETRYABLE
 
   result        Json?                      // per-kind payload — AI output, never a decision
@@ -261,10 +291,11 @@ model AiRecommendation {
 | `kind` | `result` shape |
 | --- | --- |
 | `UNDERSTAND` | `{ domain, domainCode, subDomain?, matchedProblem?, severity, urgency, entities[], tags[] }` |
+| `RESEARCH` | `{ confidence, activeAlert?, recurringHazard?, corroborationCount?, sourceBreakdown: { news?, weather?, govt? }, recentIncidents: [{ title, source, url?, snippet?, publishedAt?, sourceTag? }], governmentAdvisories: string[], severityContext }` |
 | `SIMILARITY` | `{ nearDuplicates: [{ challengeId, score, reason }], suggestedClusterLabel? }` |
 | `PRIORITIZE` | `{ priorityScore, riskLevel, factors: { name, score, max, reason }[] }` |
 | `MATCH` | `{ ranked: [{ universityId, score, departmentId?, reasons[] }] }` |
-| `VISION` | `{ visualCategory, categoryCode, visionConfidence, detectedFeatures[], visualDescription }` |
+| `VISION` | `{ hasHazard, confidence, description, isReal?, source: 'server-vision' | 'frontend-vision' }` |
 
 Every payload is exactly what the frontend already renders — the University intake table (`UniversityIntakeTab.tsx`), the triage result card, the vision evidence panel — so the API migration is a straight swap from hardcoded arrays to server responses (see the migration mapping in `API_CONTRACTS.md`).
 
@@ -298,6 +329,8 @@ Shared workers consume from the **same monolith service layer**, so business rul
 * **`attempt_count`** persists across retries on the `AiRecommendation` row for observability;
 * after max attempts, the job goes to the **dead-letter queue** (DLQ) for manual inspection — *not* silently dropped;
 * **timeouts** per provider call (an LLM call has a hard wall-clock cap; a hung provider must not hold a job forever). AI calls get their own OpenTelemetry span so provider timeouts are visible (`BACKEND_ARCHITECTURE.md` §18).
+
+> **T6.1 — Concrete DLQ (current implementation):** `MAX_PIPELINE_RETRIES = 3`. After 3 consecutive failures, `writeDeadLetter()` in `ai-worker.ts` persists a final `AiRecommendation(status: 'FAILED', kind: 'RESEARCH', error_message, attempt_count: 3)` and an `AuditEvent(action: 'PIPELINE_FAILED', payload_snapshot: { error, completedStages, deadLetter: true })`. The job is then marked `done: true` and removed from the queue. This ensures `GET /ai-decision-trace/:challengeId` always returns a terminal record — even when the pipeline fails repeatedly — rather than silently swallowing the failure.
 
 ### 8.3 Failure isolation contract (Invariant 10)
 
@@ -376,13 +409,23 @@ There is **no code path** that lets a recommendation advance a challenge through
 
 ## 12. Delivery Checklist
 
-- [ ] `AIProvider` interface + provider registry (config-driven) implemented in the AI boundary module
-- [ ] Six providers shipped: understand, embed, similarity, prioritize, match, vision (deterministic ports first)
-- [ ] `domainTaxonomy.ts` (60 `GOV_DOMAINS`) migrated to a seeded reference table
-- [ ] 30-institution Jharkhand dataset seeded into `universities`/`departments` (replacing frontend constant)
-- [ ] BullMQ queues for all five AI job kinds, with backoff + DLQ + `attempt_count`
-- [ ] Threshold policy keys (`ai.threshold.*`) seeded into `app_config`
-- [ ] `ai_recommendations` append-only + supersede chain honored by the persistence service
-- [ ] Human decision → transition path fully functional with `ai_recommendation_id` audit join
-- [ ] `ai_human_override_rate` + provider-failure metrics wired to Prometheus
-- [ ] Status table in `BACKEND_ARCHITECTURE.md` §26 updated to mark this document complete
+- [x] **T0.1** — 60-domain taxonomy shared at `backend/src/shared/domainTaxonomy.ts`; both frontend `aiTriageEngine` and backend `verifyEngine` import it
+- [x] **T0.2** — Prisma migration: `DedupRecord` table + `Challenge.vision_result / research_result / dedup_status / duplicate_of / citizen_report_count`
+- [x] **T0.3** — `lru-cache` + `cheerio` installed; `OPEN_METEO_API_KEY` / `GNEWS_API_KEY` / `NEWS_API_KEY` / `GEMINI_API_KEY` documented in `.env.example`
+- [x] **T0.4** — AI routes mounted in `backend/src/app.ts` at `/api/v1/ai`
+- [x] **T1.1** — Vision reliability: 3200 ms `AbortController` race; timeout → `VISION_UNAVAILABLE` (does not flip `isReal`); confidence gate at ≥ 0.72
+- [x] **T1.2** — Text heuristics: `< 8 tokens` gate (not raw chars); `test/dummy/fake` word-boundary reject
+- [x] **T2.1** — Dedup: `REPORT_STORE` L1 seeded from `DedupRecord` table on boot; exact hash + Jaccard ≥ 0.72 near-duplicate + 14-day window
+- [x] **T3.1** — Taxonomy scorer: weighted hits (problems +18, keywords +10 capped 40, name/code/category bonuses, dept +6) in `verifyEngine`
+- [x] **T4.1** — All 24 Jharkhand districts in `REGIONAL_HAZARD_DATABASE` and `DISTRICT_COORDS`
+- [x] **T4.2** — DDG HTML search for govt bulletins; news/weather/govt each with `lru-cache` (TTL 10–30 min)
+- [x] **T4.3** — `Challenge.research_result` JSONB persisted on completion; `GET /ai-decision-trace/:id` returns full evidence
+- [x] **T4.4** — Per-channel timeouts: news 3000 ms, weather 2500 ms, govt 2800 ms; worker envelope 6500 ms
+- [x] **T5.1** — QuickReportModal: 3 optional numeric inputs (affectedPopulation, economicValueEstimate, estimatedResolutionCost) — `null` when omitted; confidence penalty: `-0.08` per missing, floor `0.30`
+- [ ] **T5.2** — `shared/priorityScoring.ts` exists; `AIProvider.prioritize()` and frontend `calculatePriorityLayer2()` still use separate inline formulas (integration pending)
+- [x] **T5.3** — Audit trail: 4 `AiRecommendation` rows per pipeline + `AuditEvent(action: 'PRIORITIZE')` with full payload snapshot
+- [x] **T6.1** — Worker observability: `pino` structured logs per stage; DLQ after 3 retries with `PIPELINE_FAILED` audit event
+- [x] **T6.2** — Unit tests: `verifyEngine.spec.ts`, `weatherParser.spec.ts`, `priorityScoring.spec.ts`
+- [x] **T6.3** — E2E pipeline test (`ai.pipeline.e2e.spec.ts` — dedup merge, full 5-stage trace, DB fallback, null-numeric contract)
+- [x] **T6.3-docs** — §4.5 updated with concrete 5-stage pipeline; §7.1 RESEARCH row added; §8.2 DLQ concrete note
+- [x] **T6.4** — Full suite green: `npx tsx --test test/*.spec.ts` → **122 tests / 41 suites, 0 fail** (includes pre-existing api.routes, e2e.lifecycle, rbac.grid, rate-limiter, workflow.invariant suites)

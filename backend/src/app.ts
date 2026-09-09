@@ -9,6 +9,7 @@ import { requestId } from './middleware/requestId';
 import { authenticate } from './core/auth';
 import { authorize } from './security/authorize';
 import authRoutes from './modules/auth/routes';
+import aiRoutes from './modules/ai/routes';
 import { prisma } from './core/prisma';
 import { zodToValidationError } from './core/errors';
 
@@ -81,6 +82,7 @@ matchRoutes.post('/allocate', allocateChallenge);
 matchRoutes.get('/:jobId/result', getAllocationResult);
 app.use('/api/v1/match', matchRoutes);
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/ai', aiRoutes);
 projectRoutes.get('/', (req,res,next)=>require('./modules/project/controller.js').list(req,res,next));
 projectRoutes.post('/', (req,res,next)=>require('./modules/project/controller.js').create(req,res,next));
 app.use('/api/v1/projects', projectRoutes);

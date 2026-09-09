@@ -15,6 +15,7 @@ import type {
   ProjectStatus,
   Proposal,
   PrototypeUpdate,
+  ResearchResult,
 } from './workflowTypes';
 import { getStageForStatus, formatStageName } from './workflowLifecycle';
 import { rankUniversitiesForChallenge } from './heiMatchingEngine';
@@ -330,6 +331,7 @@ export interface ChallengeDoc {
   riskLevel?: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'STANDARD';
   aiReasoning?: string;
   priorityFactors?: PriorityFactors;
+  research?: ResearchResult;
   needsHumanVerification?: boolean;
   assignedHEI?: string;
   assignedDept?: string;
@@ -348,6 +350,9 @@ export interface ChallengeDoc {
   extractedMetadata?: import('./dataExtractionService').IncidentExtractedData;
   translations?: Record<string, any>;
   createdAt?: any;
+  affectedPopulation?: number;
+  economicValueEstimate?: number;
+  estimatedResolutionCost?: number;
 }
 
 export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'>) => {

@@ -1,5 +1,5 @@
 import { ChallengeDoc } from './firebaseService';
-import { JHARKHAND_UNIVERSITIES, UniversityDoc, DepartmentInfo } from './universityData';
+import { JHARKHAND_UNIVERSITIES, UniversityDoc, DepartmentInfo, NotableResearchArea } from './universityData';
 
 /**
  * DEEP REASONING — 5-Factor University Matching Evidence Chain
@@ -125,19 +125,21 @@ export const calculateHEIMatchScore = (
 
   // 2. Field Expertise Depth (20 pts) — match challenge category to dept.fieldExpertise
   if (bestDept) {
-    const expertiseArr = bestDept.fieldExpertise || [];
-    const expertMatch = expertiseArr.some((ex) => {
+    const currentDept = bestDept as DepartmentInfo;
+    const expertiseArr: string[] = currentDept.fieldExpertise || [];
+    const expertMatch = expertiseArr.some((ex: string) => {
       const exL = ex.toLowerCase();
       return challengeCategoryLower.includes(exL) || exL.includes(challengeCategoryLower);
     });
     expertiseScore = expertMatch ? 20 : 8; // 20 if expert field matches
-    if (expertMatch) reasons.push(`Field expertise match: ${bestDept.name} specializes in ${expertiseArr.slice(0,2).join(', ')}.`);
+    if (expertMatch) reasons.push(`Field expertise match: ${currentDept.name} specializes in ${expertiseArr.slice(0,2).join(', ')}.`);
   }
 
   // 3. Lab Equipment Fit (20 pts) — match challenge to activeLabs + lab tags
   if (bestDept) {
-    const labs = bestDept.activeLabs || [];
-    const labTagMatch = labs.some((lab) => {
+    const currentDept = bestDept as DepartmentInfo;
+    const labs: string[] = currentDept.activeLabs || [];
+    const labTagMatch = labs.some((lab: string) => {
       const labL = lab.toLowerCase();
       return challengeCategoryLower.includes(labL) || challengeTitleLower.includes(labL) || labL.includes('lab');
     });
@@ -146,13 +148,14 @@ export const calculateHEIMatchScore = (
   }
 
   // 4. Achievements / Research Track (10 pts) — institution achievements + dept research count
-  const uniAch = university.institutionAchievements || [];
-  const deptPub = bestDept ? (bestDept.researchPubCount || 0) : 0;
+  const uniAch: string[] = university.institutionAchievements || [];
+  const currentDept = bestDept ? (bestDept as DepartmentInfo) : null;
+  const deptPub = currentDept ? (currentDept.researchPubCount || 0) : 0;
   const hasAwards = uniAch.length > 0;
-  const hasResearch = deptPub > 50 || (university.notableResearchAreas || []).length > 0;
+  const hasResearch = deptPub > 50 || ((university.notableResearchAreas || []).length > 0);
   achievementsScore = (hasAwards ? 5 : 0) + (hasResearch ? 5 : 0);
   if (hasAwards) reasons.push(`Institution achievements: ${uniAch.slice(0,2).join(', ')}.`);
-  if (hasResearch) reasons.push(`Research track: dept publications ~${deptPub}, notables: ${(university.notableResearchAreas||[]).slice(0,2).map(r=>r.field).join(', ')}.`);
+  if (hasResearch) reasons.push(`Research track: dept publications ~${deptPub}, notables: ${(university.notableResearchAreas||[]).slice(0,2).map((r: NotableResearchArea)=>r.field).join(', ')}.`);
 
   // 5. District Proximity Match (20 Points Max)
   const uniDistrictLower = (university.district || '').toLowerCase();

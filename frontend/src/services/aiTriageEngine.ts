@@ -7,6 +7,7 @@
  */
 
 import { GOV_DOMAINS, GovDomain } from './domainTaxonomy';
+import { scorePriority as sharedScorePriority } from '@shared/priorityScoring';
 
 export interface PriorityFactors {
   populationImpact: { score: number; max: 25; reason: string };
@@ -145,108 +146,22 @@ const classifyCategoryNLP = (text: string, title: string): {
 
 /**
  * Layer 2: Deterministic 4-Pillar (25% Each = 100% Total) Priority Scoring Engine
+ * Thin wrapper over the canonical shared formula — see `backend/src/shared/priorityScoring.ts`.
  */
 const calculatePriorityLayer2 = (
-  title: string, 
-  description: string, 
-  upvotesCount: number = 1, 
+  title: string,
+  description: string,
+  upvotesCount: number = 1,
   categoryCode: string = 'custom_extracted',
-  categoryLabel: string = ''
+  _categoryLabel: string = ''
 ) => {
-  const fullText = `${title} ${description}`.toLowerCase();
-
-  // Pillar 1: Population Impact Radius (Max 25 pts)
-  let popScore = 16;
-  let popReason = `Impact area identified for ${categoryLabel || 'reported challenge'}`;
-  
-  if (categoryCode === 'environment_climate' || fullText.includes('pollution') || fullText.includes('industry')) {
-    popScore = 24;
-    popReason = 'HIGH POPULATION IMPACT: Atmospheric emissions affecting entire residential district zone';
-  } else if (categoryCode === 'forestry_wildlife' || fullText.includes('elephant') || fullText.includes('wildlife')) {
-    popScore = 25;
-    popReason = 'CRITICAL PUBLIC SAFETY: Wild animal encounter in populated commuter corridor';
-  } else if (categoryCode === 'water_resources' || fullText.includes('drinking water')) {
-    popScore = 24;
-    popReason = 'HIGH PUBLIC HEALTH THREAT: Contaminated drinking water supply line';
-  } else if (categoryCode === 'disaster_mgmt' || fullText.includes('flood')) {
-    popScore = 25;
-    popReason = 'CRITICAL DISASTER HAZARD: Active flood / inundation in village community';
-  } else if (fullText.includes('school') || fullText.includes('hospital')) {
-    popScore = 23;
-    popReason = 'VULNERABLE INSTITUTION: School students and patients impacted';
-  }
-  // Upvote reinforcement bonus (up to +2 within max 25)
-  if (upvotesCount > 1) {
-    popScore = Math.min(25, popScore + Math.min(2, Math.floor(upvotesCount * 0.5)));
-  }
-
-  // Pillar 2: Economic & Life Saving Impact (Max 25 pts)
-  let econScore = 16;
-  let econReason = 'Economic asset preservation and public welfare continuity';
-
-  if (categoryCode === 'environment_climate') {
-    econScore = 22;
-    econReason = 'INDUSTRIAL UTILITY: Major industrial manufacturing plant emission zone';
-  } else if (categoryCode === 'urban_infrastructure' || categoryCode === 'roads_bridges_civic') {
-    econScore = 24;
-    econReason = 'CRITICAL TRANSPORTATION: Essential arterial road / bridge economic lifeline';
-  } else if (categoryCode === 'energy_electricity') {
-    econScore = 25;
-    econReason = 'POWER GRID SAFETY: High-voltage transmission line grid hazard prevention';
-  } else if (categoryCode === 'forestry_wildlife') {
-    econScore = 23;
-    econReason = 'AGRICULTURAL LIVELIHOOD: Prevention of crop raiding and livestock loss';
-  } else if (fullText.includes('hospital') || fullText.includes('medical') || fullText.includes('life')) {
-    econScore = 25;
-    econReason = 'DIRECT LIFE SAFETY: Emergency medical / healthcare continuity protected';
-  }
-
-  // Pillar 3: Resolution Cost & Feasibility ROI (Max 25 pts — lower/medium cost = higher score)
-  let feasibilityScore = 19;
-  let feasibilityReason = 'High feasibility: standard engineering and municipal intervention scope';
-
-  if (fullText.includes('megaproject') || fullText.includes('dam construction') || fullText.includes('bridge collapse')) {
-    feasibilityScore = 14;
-    feasibilityReason = 'High capital intensity: requires multi-crore structural civil works';
-  } else if (fullText.includes('drainage') || fullText.includes('chlorination') || fullText.includes('pothole') || fullText.includes('sensor')) {
-    feasibilityScore = 23;
-    feasibilityReason = 'Rapid low-cost deployment: HEI prototype / municipal intervention viable under ₹2.5L';
-  } else if (fullText.includes('solar') || fullText.includes('filtration') || fullText.includes('signage')) {
-    feasibilityScore = 21;
-    feasibilityReason = 'Moderate capital requirement with rapid turnkey ROI';
-  }
-
-  // Pillar 4: Hazard Urgency & Cascading Risk (Max 25 pts)
-  let urgencyScore = 16;
-  let urgencyReason = 'Moderate hazard progression velocity';
-
-  if (categoryCode === 'environment_climate') {
-    urgencyScore = 23;
-    urgencyReason = 'ELEVATED HEALTH HAZARD: Toxic particulate matter (PM2.5 / PM10) accumulation';
-  } else if (categoryCode === 'forestry_wildlife' || categoryCode === 'disaster_mgmt' || categoryCode === 'energy_electricity') {
-    urgencyScore = 25;
-    urgencyReason = 'IMMEDIATE LIFE HAZARD: Active safety threat requiring instant response';
-  } else if (categoryCode === 'water_resources' || categoryCode === 'sanitation_hygiene') {
-    urgencyScore = 24;
-    urgencyReason = 'IMMEDIATE SANITATION HAZARD: Pathogenic risk / water contamination';
-  }
-
-  const totalPriorityScore = Math.min(100, popScore + econScore + feasibilityScore + urgencyScore);
-
-  let riskLevel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'STANDARD' = 'MEDIUM';
-  if (totalPriorityScore >= 85) riskLevel = 'CRITICAL';
-  else if (totalPriorityScore >= 70) riskLevel = 'HIGH';
-  else if (totalPriorityScore >= 50) riskLevel = 'MEDIUM';
-  else riskLevel = 'STANDARD';
-
-  const factors: PriorityFactors = {
-    populationImpact: { score: popScore, max: 25, reason: popReason },
-    economicLifeSaving: { score: econScore, max: 25, reason: econReason },
-    resolutionCostFeasibility: { score: feasibilityScore, max: 25, reason: feasibilityReason },
-    hazardUrgency: { score: urgencyScore, max: 25, reason: urgencyReason },
-  };
-
-  return { priorityScore: totalPriorityScore, riskLevel, factors };
+  const result = sharedScorePriority({
+    text: `${title} ${description}`,
+    categoryCode,
+    upvotes: upvotesCount,
+    // No numerics, no research — frontend-only text/category heuristics (identical to pre-T5.2)
+  });
+  return { priorityScore: result.totalScore, riskLevel: result.riskLevel, factors: result.factors };
 };
 
 /**
