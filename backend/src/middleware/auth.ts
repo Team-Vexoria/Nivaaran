@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { admin } from '../config/firebase';
+import { isFirebaseReady, admin } from '../config/firebase';
 import { prisma } from '../core/prisma';
 import { redisClient } from '../core/redis';
 import { AuthContext } from '../core/auth';
@@ -9,6 +9,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     const authHeader = req.headers.authorization || '';
     const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
     if (!idToken) { req.auth = undefined; return next(); }
+    if (!isFirebaseReady()) { req.auth = undefined; return next(); }
     const decoded = await admin.auth().verifyIdToken(idToken);
     const uid = decoded.uid;
     const cacheKey = `auth_bundle:${uid}`;

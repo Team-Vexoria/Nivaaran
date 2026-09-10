@@ -11,13 +11,18 @@
 --  manual `prisma db push` in local dev.
 
 -- ── AiKind.RESEARCH (added after init) ─────────────────────────────────────
+-- NOTE: the enum types are created mixed-case by Prisma ("AiKind",
+-- "ValidationDecision"). A bare `'AiKind'::regtype` cast lowercases the name to
+-- `aikind` (which does not exist), so the guard uses `to_regtype('"AiKind"')`
+-- with the identifier quoted to resolve the real type.
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_enum
-    WHERE enumlabel = 'RESEARCH'
-      AND enumtypid = 'AiKind'::regtype
-  ) THEN
+  IF to_regtype('"AiKind"') IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM pg_enum
+       WHERE enumlabel = 'RESEARCH'
+         AND enumtypid = to_regtype('"AiKind"')
+     ) THEN
     ALTER TYPE "AiKind" ADD VALUE 'RESEARCH';
   END IF;
 END $$;
@@ -25,11 +30,12 @@ END $$;
 -- ── ValidationDecision.FAKE_REJECTED (added after init) ────────────────────
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_enum
-    WHERE enumlabel = 'FAKE_REJECTED'
-      AND enumtypid = 'ValidationDecision'::regtype
-  ) THEN
+  IF to_regtype('"ValidationDecision"') IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM pg_enum
+       WHERE enumlabel = 'FAKE_REJECTED'
+         AND enumtypid = to_regtype('"ValidationDecision"')
+     ) THEN
     ALTER TYPE "ValidationDecision" ADD VALUE 'FAKE_REJECTED';
   END IF;
 END $$;

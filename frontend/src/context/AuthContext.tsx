@@ -8,6 +8,7 @@ import {
   signOut as firebaseSignOut
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
+import { demoAuthEnabled } from '../api/client';
 
 export type UserRole =
   | 'Citizen'
@@ -322,14 +323,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginDemoUser = (role: UserRole, name: string, uid?: string) => {
-    if (import.meta.env?.MODE !== 'development' && process.env?.NODE_ENV !== 'development') {
-      throw new Error('Demo login only available in development');
+    if (!demoAuthEnabled()) {
+      throw new Error('Demo login is disabled (enable it with VITE_DEMO_AUTH_ENABLED=true in the local SIH demo build)');
     }
-    const demoUser: UserProfile = {
-      uid: uid || 'demo_' + role.toLowerCase().replace(/\s+/g, '_'),
+    // Canonical `demo-*` token matching the backend's seeded user uids — the
+    // API client sends this exact token so the backend assigns the right role.
+    const DEMO_TOKEN_BY_ROLE: Record<string, string> = {
+      Citizen: 'demo-citizen',
+      'Government Department': 'demo-department',
+      'Government Validator': 'demo-validator',
+      'University Admin': 'demo-university',
+      'Faculty / Mentor': 'demo-faculty',
+      Student: 'demo-student1',
+      'Industry / MSME': 'demo-industry',
+      'CSR Organization': 'demo-industry',
+    };
+    const demoToken = DEMO_TOKEN_BY_ROLE[role] ?? `demo_${role.toLowerCase().replace(/\s+/g, '_')}`;
+    const demoUser: UserProfile & { demoToken?: string } = {
+      uid: uid || demoToken,
       email: `${role.toLowerCase().replace(/\s+/g, '_')}@nivaaran.gov.in`,
       displayName: name,
       role,
+      demoToken,
     };
     localStorage.setItem('nivaaran_demo_user', JSON.stringify(demoUser));
     setCurrentUser(demoUser);

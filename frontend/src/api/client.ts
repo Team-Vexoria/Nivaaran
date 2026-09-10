@@ -12,20 +12,77 @@ interface ErrEnvelope { ok: false; error: { code: string; message: string; detai
 export type ApiResponse<T> = OkEnvelope<T> | ErrEnvelope;
 
 // ── Auth token helper ────────────────────────────────────────────────────
-export async function getBearerToken(): Promise<string | null> {
+
+// Canonical demo bearer tokens for API requests. Each maps a demo user's
+// display role to the seeded backend uid (hyphenated `demo-*`), and MUST stay
+// in sync with the backend `DEMO_IDENTITIES` map in `backend/src/core/auth.ts`.
+// The token alone determines the backend role — no role header is involved.
+const DEMO_ROLE_TOKENS: Record<string, string> = {
+  Citizen: 'demo-citizen',
+  'Government Department': 'demo-department',
+  'Government Validator': 'demo-validator',
+  'University Admin': 'demo-university',
+  'Faculty / Mentor': 'demo-faculty',
+  Student: 'demo-student1',
+  'Industry / MSME': 'demo-industry',
+  'CSR Organization': 'demo-industry',
+};
+
+/**
+ * Whether the local demo-auth escape hatch is enabled.
+ *
+ * It is an EXPLICIT build-time opt-in, governed ONLY by `VITE_DEMO_AUTH_ENABLED`
+ * being exactly `'true'`. It is deliberately NOT tied to `import.meta.env.DEV`:
+ * the self-contained SIH demo stack ships a production Vite build behind Docker
+ * Nginx (`npm run build`), yet still needs demo auth enabled for rehearsals.
+ *
+ * The default (unset, or any value other than exactly `true`) is OFF, so a
+ * normal production deployment never exposes the bypass unless it was explicitly
+ * configured for this local demo stack. Mirrors the backend's `DEMO_AUTH_ENABLED`.
+ */
+export function demoAuthEnabled(): boolean {
+  return import.meta.env?.VITE_DEMO_AUTH_ENABLED === 'true';
+}
+
+/** Derive the matching `demo-*` token for a locally-stored demo user. */
+function demoTokenFromLocalUser(): string | null {
+  if (!demoAuthEnabled()) return null;
   try {
-    const firebaseAuth = getAuth();
-    const currentUser = firebaseAuth.currentUser;
-    if (!currentUser) return null;
-    // getIdToken() returns the Firebase ID token (JWT) suitable for Bearer auth
-    return await currentUser.getIdToken();
+    const raw = localStorage.getItem('nivaaran_demo_user');
+    if (!raw) return null;
+    const profile = JSON.parse(raw) as { role?: string; demoToken?: string };
+    if (!profile?.role) return null;
+    // Prefer an explicitly-stored canonical token, else derive by display role.
+    if (typeof profile.demoToken === 'string' && profile.demoToken.startsWith('demo-')) {
+      return profile.demoToken;
+    }
+    return DEMO_ROLE_TOKENS[profile.role] ?? null;
   } catch {
     return null;
   }
 }
 
+export async function getBearerToken(): Promise<string | null> {
+  // 1. Real Firebase session → use the Firebase ID token (JWT) for Bearer auth.
+  try {
+    const firebaseAuth = getAuth();
+    const currentUser = firebaseAuth.currentUser;
+    if (currentUser) {
+      return await currentUser.getIdToken();
+    }
+  } catch {
+    // Firebase unavailable — fall through to the demo escape hatch below.
+  }
+  // 2. Demo mode (no Firebase session): send the matching `demo-*` token so the
+  //    backend can assign the correct seeded role instead of rejecting the call.
+  return demoTokenFromLocalUser();
+}
+
 // ── Base client ──────────────────────────────────────────────────────────
-const BASE = (import.meta.env?.VITE_API_URL || 'http://localhost:3001') + '/api/v1';
+// Default: relative `/api/v1` — works through both Vite dev-proxy and Docker
+// Nginx without any host/port hardcoding. Set VITE_API_URL to an absolute URL
+// only when the API lives on a different origin (e.g. a remote staging server).
+const BASE = (import.meta.env?.VITE_API_URL || '') + '/api/v1';
 
 async function apiRequest<T>(
   path: string,

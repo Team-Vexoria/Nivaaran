@@ -2,8 +2,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { getConfig } from './core/config';
-import { loadConfig } from './core/config';
-loadConfig();
 import { logger } from './core/logger';
 import { requestId } from './middleware/requestId';
 import { authenticate } from './core/auth';
@@ -22,7 +20,10 @@ const notificationRoutes = express.Router();
 // ── Build app ─────────────────────────────────────────────
 
 const app = express();
-const { PORT, CLIENT_URL } = getConfig();
+// Config is loaded once at `config.ts` import (idempotent singleton) — no
+// explicit loadConfig() needed here. Read callbacks render lazily so changing
+// the config (e.g. in tests via resetConfig) is always reflected.
+const CLIENT_URL = getConfig().CLIENT_URL;
 
 // Security & parsing
 app.use(helmet());
@@ -142,7 +143,7 @@ app.use('/api/v1/pilots', pilotRoutes);
 const deploymentRoutes = express.Router();
 deploymentRoutes.get('/', (req,res,next)=>require('./modules/deployment/controller.js').list(req,res,next));
 deploymentRoutes.post('/', (req,res,next)=>require('./modules/deployment/controller.js').create(req,res,next));
-deploymentRoutes.post('/:id/approve', (req,res,next)=>require('./modules/deployment/controller.js').approve(req,res,next));
+deploymentRoutes.post('/:id/approve', authorize({ capability: 'deployment:approve' }), (req,res,next)=>require('./modules/deployment/controller.js').approve(req,res,next));
 app.use('/api/v1/deployments', deploymentRoutes);
 
 const impactRoutes = express.Router();

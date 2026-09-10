@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../../middleware/auth';
-import { admin } from '../../config/firebase';
+import { admin, isFirebaseReady } from '../../config/firebase';
 import { prisma } from '../../core/prisma';
 const r = Router();
 
@@ -9,6 +9,9 @@ r.post('/auth/sync', async (req, res, next) => {
     const authHeader = req.headers.authorization || '';
     const idToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : req.body.idToken;
     if (!idToken) return res.status(401).json({ ok: false, error: { code: 'AUTHENTICATION_FAILED', message: 'Missing token' } });
+    if (!isFirebaseReady()) {
+      return res.status(503).json({ ok: false, error: { code: 'SERVICE_UNAVAILABLE', message: 'Firebase Admin is not configured in this environment' } });
+    }
     const decoded = await admin.auth().verifyIdToken(idToken);
     const uid = decoded.uid;
     const email = decoded.email || req.body.email || 'demo@nivaaran.gov.in';
