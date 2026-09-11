@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send, Users, Trash2, Calendar, User } from 'lucide-react';
+import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send, Users, Trash2, Calendar, User, Volume2, Film } from 'lucide-react';
 import { subscribeToChallenges, ChallengeDoc, uploadEvidenceImage, deleteChallengeDoc } from '../../services/firebaseService';
 import { extractIncidentMetadata } from '../../services/dataExtractionService';
 import { CHALLENGE_STATUS_OPTIONS, LIFECYCLE_STAGES, getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
@@ -201,35 +201,48 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
                     </div>
                   </div>
 
-                  {/* Image Evidence Thumbnail Preview with Floating Priority Overlay */}
-                  {photoUrl && (
-                    <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-44 my-1 group">
-                      <img
-                        src={photoUrl}
-                        alt={report.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                      />
-                      {report.citizenReportCount && report.citizenReportCount > 1 ? (
-                        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-                          <div className="bg-amber-500/95 text-amber-950 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-md border border-amber-300/70">
-                            <Users className="w-3.5 h-3.5 text-amber-950 shrink-0" />
-                            <span className="text-[11px] font-black tracking-tight">{report.citizenReportCount} Citizens Reported</span>
+                  {/* Evidence Media Preview (Video / Photo) with Floating Priority Overlay */}
+                  {(photoUrl || report.videoUrl) && (() => {
+                    const mediaSrc = photoUrl || report.videoUrl;
+                    const isVideo = Boolean(report.videoUrl || (photoUrl && (photoUrl.startsWith('data:video') || photoUrl.endsWith('.mp4') || photoUrl.endsWith('.webm') || photoUrl.endsWith('.mov') || photoUrl.includes('/evidence_videos/'))));
+                    return (
+                      <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-900 h-44 my-1 group">
+                        {isVideo ? (
+                          <video
+                            src={mediaSrc}
+                            controls
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          <img
+                            src={mediaSrc}
+                            alt={report.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                          />
+                        )}
+                        {report.citizenReportCount && report.citizenReportCount > 1 ? (
+                          <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                            <div className="bg-amber-500/95 text-amber-950 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-md border border-amber-300/70">
+                              <Users className="w-3.5 h-3.5 text-amber-950 shrink-0" />
+                              <span className="text-[11px] font-black tracking-tight">{report.citizenReportCount} Citizens Reported</span>
+                            </div>
+                            <span className="text-[9px] bg-amber-950/90 text-amber-100 backdrop-blur-md border border-amber-400/40 px-2 py-0.5 rounded-md font-black uppercase tracking-wider shadow-sm">
+                              Consolidated
+                            </span>
                           </div>
-                          <span className="text-[9px] bg-amber-950/90 text-amber-100 backdrop-blur-md border border-amber-400/40 px-2 py-0.5 rounded-md font-black uppercase tracking-wider shadow-sm">
-                            Consolidated
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="absolute top-2.5 left-2.5 pointer-events-none">
-                          <div className="bg-slate-900/75 text-white backdrop-blur-md px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm border border-white/20">
-                            <User className="w-2.5 h-2.5 text-slate-300 shrink-0" />
-                            <span className="text-[10px] font-semibold">1 Citizen Report</span>
+                        ) : (
+                          <div className="absolute top-2.5 left-2.5 pointer-events-none">
+                            <div className="bg-slate-900/75 text-white backdrop-blur-md px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm border border-white/20">
+                              {isVideo ? <Film className="w-2.5 h-2.5 text-slate-300 shrink-0" /> : <User className="w-2.5 h-2.5 text-slate-300 shrink-0" />}
+                              <span className="text-[10px] font-semibold">{isVideo ? 'Video Evidence' : '1 Citizen Report'}</span>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* Category, Domain & Date Metadata Row */}
                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
@@ -258,6 +271,17 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
                   <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 min-h-[2rem]">
                     {report.summary || report.aiReasoning || 'Community reported incident logged under active review.'}
                   </p>
+
+                  {/* Citizen Voice Note Audio Player */}
+                  {(report as any).audioUrl && (
+                    <div className="bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200 rounded-xl p-2 flex items-center justify-between gap-2 shadow-2xs">
+                      <div className="flex items-center gap-1.5 text-amber-900 font-bold shrink-0 text-[11px]">
+                        <Volume2 className="w-3.5 h-3.5 text-amber-700" />
+                        <span>🎙️ Voice Note {(report as any).voiceLanguage ? `(${(report as any).voiceLanguage === 'hi-IN' ? 'हिन्दी' : (report as any).voiceLanguage === 'bn-IN' ? 'বাংলা' : (report as any).voiceLanguage === 'sa-IN' ? 'संथाली' : 'English'})` : ''}</span>
+                      </div>
+                      <audio src={(report as any).audioUrl} controls className="h-6.5 max-w-[170px]" />
+                    </div>
+                  )}
 
                   {report.needsHumanVerification && (
                     <div className="bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1">
@@ -553,6 +577,60 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ report, wfStageNumber, ti
             </div>
           )}
         </div>
+
+        {/* ── Ground Media & Citizen Voice Evidence Card ── */}
+        {((report.evidenceUrls && report.evidenceUrls.length > 0) || report.evidenceUrl || report.videoUrl || (report as any).audioUrl) && (
+          <div className="bg-white border border-slate-200/90 rounded-2xl p-4.5 space-y-3 shadow-2xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <span className="text-xs font-bold font-heading text-slate-900 uppercase tracking-wider flex items-center">
+                <Film className="w-4 h-4 text-emerald-600 mr-1.5 shrink-0" />
+                Citizen Ground Evidence & Voice Note
+              </span>
+              {(report as any).evidenceType && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 uppercase">
+                  {(report as any).evidenceType}
+                </span>
+              )}
+            </div>
+
+            {/* Voice Audio Player */}
+            {(report as any).audioUrl && (
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50/70 border border-amber-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0">
+                    <Volume2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-bold text-slate-900 block">Citizen Spoken Audio Note</span>
+                    <span className="text-[10px] text-amber-800">
+                      Language: {(report as any).voiceLanguage === 'hi-IN' ? 'हिन्दी (Hindi)' : (report as any).voiceLanguage === 'bn-IN' ? 'বাংলা (Bengali)' : (report as any).voiceLanguage === 'sa-IN' ? 'संथाली (Santhali)' : 'English'}
+                    </span>
+                  </div>
+                </div>
+                <audio src={(report as any).audioUrl} controls className="h-8 max-w-[240px]" />
+              </div>
+            )}
+
+            {/* Video & Image Gallery */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {((report.evidenceUrls && report.evidenceUrls.length > 0) ? report.evidenceUrls : (report.evidenceUrl ? [report.evidenceUrl] : (report.videoUrl ? [report.videoUrl] : []))).map((url, i) => {
+                const isVideo = Boolean(report.videoUrl === url || url.startsWith('data:video') || url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov') || url.includes('/evidence_videos/'));
+                return (
+                  <div key={i} className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-950 h-52">
+                    {isVideo ? (
+                      <video src={url} controls className="w-full h-full object-contain" />
+                    ) : (
+                      <img src={url} alt={`Evidence ${i + 1}`} className="w-full h-full object-cover" />
+                    )}
+                    <span className="absolute top-2 left-2 text-[9px] font-extrabold px-2 py-0.5 rounded-md bg-black/75 text-white backdrop-blur-xs">
+                      {isVideo ? '🎥 Live Video Evidence' : `📷 Field Photo ${i + 1}`}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* 16-Stage Visual Government Milestone Stepper */}
         <div className="bg-white border border-slate-200 rounded-2xl p-4.5 space-y-3 shadow-2xs">

@@ -20,7 +20,7 @@ import type {
 import { getStageForStatus, formatStageName } from './workflowLifecycle';
 import { rankUniversitiesForChallenge } from './heiMatchingEngine';
 
-// Helper: Upload photo/video file to Firebase Storage
+// Helper: Upload photo file to Firebase Storage
 export const uploadEvidenceImage = async (file: File): Promise<string> => {
   try {
     const storageRef = ref(storage, `evidence_photos/${Date.now()}_${file.name}`);
@@ -30,6 +30,32 @@ export const uploadEvidenceImage = async (file: File): Promise<string> => {
   } catch (error) {
     console.warn('[Firebase Storage] Image upload error, using object URL fallback:', error);
     return URL.createObjectURL(file);
+  }
+};
+
+// Helper: Upload video file to Firebase Storage
+export const uploadEvidenceVideo = async (file: File): Promise<string> => {
+  try {
+    const storageRef = ref(storage, `evidence_videos/${Date.now()}_${file.name}`);
+    const snapshot = await uploadBytes(storageRef, file);
+    const downloadUrl = await getDownloadURL(snapshot.ref);
+    return downloadUrl;
+  } catch (error) {
+    console.warn('[Firebase Storage] Video upload error, using object URL fallback:', error);
+    return URL.createObjectURL(file);
+  }
+};
+
+// Helper: Upload voice recording audio to Firebase Storage
+export const uploadEvidenceAudio = async (blob: Blob, filename = 'voice_report.webm'): Promise<string> => {
+  try {
+    const storageRef = ref(storage, `evidence_audio/${Date.now()}_${filename}`);
+    const snapshot = await uploadBytes(storageRef, blob);
+    const downloadUrl = await getDownloadURL(snapshot.ref);
+    return downloadUrl;
+  } catch (error) {
+    console.warn('[Firebase Storage] Audio upload error, using object URL fallback:', error);
+    return URL.createObjectURL(blob);
   }
 };
 
@@ -324,6 +350,12 @@ export interface ChallengeDoc {
   status: ChallengeStatus;
   summary: string;
   evidenceUrl?: string;
+  evidenceUrls?: string[];
+  videoUrl?: string;
+  videoUrls?: string[];
+  audioUrl?: string;
+  voiceLanguage?: string;
+  evidenceType?: 'image' | 'video' | 'mixed';
   locationCoords?: { lat: number; lng: number };
   formattedAddress?: string;
   priorityScore?: number;
@@ -442,6 +474,13 @@ export interface FeedPostDoc {
   upvotes: number;
   category: string;
   status: string;
+  evidenceUrl?: string;
+  evidenceUrls?: string[];
+  videoUrl?: string;
+  videoUrls?: string[];
+  audioUrl?: string;
+  voiceLanguage?: string;
+  evidenceType?: 'image' | 'video' | 'mixed';
   comments?: FeedCommentDoc[];
   translations?: Record<string, any>;
   createdAt?: any;

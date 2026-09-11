@@ -55,7 +55,7 @@ import { LiveResearchBadge } from '../../components/gov/LiveResearchBadge';
 import { PriorityFactorsBreakdown } from '../../components/gov/PriorityFactorsBreakdown';
 import { RiskLevelBadge, ResearchVerificationNote } from '../../components/gov/RiskLevelBadge';
 import { PortalLoadingState, PortalEmptyState } from '../../components/PortalUIStates';
-
+import { LiveEmergencyAlertBanner } from '../../components/LiveEmergencyAlertBanner';
 
 type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports' | 'deployment' | 'closure' | 'clusters';
 
@@ -690,6 +690,9 @@ export const GovPortal: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col font-sans">
+
+      {/* Real-time Emergency Disaster Alert Banner */}
+      <LiveEmergencyAlertBanner />
 
       {/* ── Inspection / Decision Modal ── */}
       {inspectModalChallenge && (

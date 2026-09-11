@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon, Zap, Users, Trash2, User } from 'lucide-react';
+import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon, Zap, Users, Trash2, User, Volume2, Film } from 'lucide-react';
 import {
   subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc, addCommentToFeedPost, deleteFeedPostFromFirestore
 } from '../../services/firebaseService';
@@ -314,50 +314,63 @@ export const CitizenCommunityFeedTab: React.FC = () => {
               </div>
             </div>
 
-            {/* Photo Preview with Floating Priority Overlay */}
-            {((post as any).evidenceUrl || (post as any).img || (post as any).beforeImg || (post as any).evidenceUrls?.[0]) ? (
-              <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 max-h-60 my-1 group">
-                <img
-                  src={(post as any).evidenceUrl || (post as any).img || (post as any).beforeImg || (post as any).evidenceUrls?.[0]}
-                  alt={post.title}
-                  className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"
-                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                />
-                {post.citizenReportCount && post.citizenReportCount > 1 ? (
-                  <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
-                    <div className="bg-amber-500/95 text-amber-950 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-md border border-amber-300/70">
-                      <Users className="w-3.5 h-3.5 text-amber-950 shrink-0" />
-                      <span className="text-[11px] font-black tracking-tight">{post.citizenReportCount} Citizens Reported</span>
+            {/* Media Preview (Video / Photo) with Floating Priority Overlay */}
+            {(() => {
+              const photoUrl = (post as any).evidenceUrl || (post as any).img || (post as any).beforeImg || (post as any).evidenceUrls?.[0] || (post as any).videoUrl;
+              const isVideo = Boolean((post as any).videoUrl || (photoUrl && (photoUrl.startsWith('data:video') || photoUrl.endsWith('.mp4') || photoUrl.endsWith('.webm') || photoUrl.endsWith('.mov') || photoUrl.includes('/evidence_videos/'))));
+              return photoUrl ? (
+                <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-900 max-h-60 my-1 group">
+                  {isVideo ? (
+                    <video
+                      src={photoUrl}
+                      controls
+                      className="w-full h-52 object-cover"
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    <img
+                      src={photoUrl}
+                      alt={post.title}
+                      className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    />
+                  )}
+                  {post.citizenReportCount && post.citizenReportCount > 1 ? (
+                    <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                      <div className="bg-amber-500/95 text-amber-950 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-md border border-amber-300/70">
+                        <Users className="w-3.5 h-3.5 text-amber-950 shrink-0" />
+                        <span className="text-[11px] font-black tracking-tight">{post.citizenReportCount} Citizens Reported</span>
+                      </div>
+                      <span className="text-[9px] bg-amber-950/90 text-amber-100 backdrop-blur-md border border-amber-400/40 px-2 py-0.5 rounded-md font-black uppercase tracking-wider shadow-sm">
+                        Consolidated
+                      </span>
                     </div>
-                    <span className="text-[9px] bg-amber-950/90 text-amber-100 backdrop-blur-md border border-amber-400/40 px-2 py-0.5 rounded-md font-black uppercase tracking-wider shadow-sm">
-                      Consolidated
-                    </span>
-                  </div>
-                ) : (
-                  <div className="absolute top-2.5 left-2.5 pointer-events-none">
-                    <div className="bg-slate-900/75 text-white backdrop-blur-md px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm border border-white/20">
-                      <User className="w-2.5 h-2.5 text-slate-300 shrink-0" />
-                      <span className="text-[10px] font-semibold">1 Citizen Report</span>
+                  ) : (
+                    <div className="absolute top-2.5 left-2.5 pointer-events-none">
+                      <div className="bg-slate-900/75 text-white backdrop-blur-md px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm border border-white/20">
+                        {isVideo ? <Film className="w-2.5 h-2.5 text-slate-300 shrink-0" /> : <User className="w-2.5 h-2.5 text-slate-300 shrink-0" />}
+                        <span className="text-[10px] font-semibold">{isVideo ? 'Video Evidence' : '1 Citizen Report'}</span>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ) : post.citizenReportCount && post.citizenReportCount > 1 ? (
-              <div className="bg-amber-50/90 border border-amber-300/80 text-amber-950 p-3 rounded-xl flex items-center justify-between shadow-xs">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-700 flex items-center justify-center shrink-0 border border-amber-500/25">
-                    <Users className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-[9px] font-black uppercase tracking-wider block text-amber-700">HIGH COMMUNITY PRIORITY</span>
-                    <span className="text-xs font-black tracking-tight text-amber-950">{post.citizenReportCount} Citizens Reported This Incident</span>
-                  </div>
+                  )}
                 </div>
-                <span className="text-[10px] bg-amber-500/15 text-amber-800 border border-amber-400/40 px-2.5 py-1 rounded-lg font-bold tracking-wider uppercase">
-                  Consolidated
-                </span>
-              </div>
-            ) : null}
+              ) : post.citizenReportCount && post.citizenReportCount > 1 ? (
+                <div className="bg-amber-50/90 border border-amber-300/80 text-amber-950 p-3 rounded-xl flex items-center justify-between shadow-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/15 text-amber-700 flex items-center justify-center shrink-0 border border-amber-500/25">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-wider block text-amber-700">HIGH COMMUNITY PRIORITY</span>
+                      <span className="text-xs font-black tracking-tight text-amber-950">{post.citizenReportCount} Citizens Reported This Incident</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-amber-500/15 text-amber-800 border border-amber-400/40 px-2.5 py-1 rounded-lg font-bold tracking-wider uppercase">
+                    Consolidated
+                  </span>
+                </div>
+              ) : null;
+            })()}
 
             {/* Title & Body */}
             <div className="space-y-1.5">
@@ -372,6 +385,17 @@ export const CitizenCommunityFeedTab: React.FC = () => {
                   : tr(post.content, currentLang)}
               </p>
             </div>
+
+            {/* Citizen Voice Note Audio Player */}
+            {(post as any).audioUrl && (
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200 rounded-xl p-2.5 flex items-center justify-between gap-2 shadow-2xs">
+                <div className="flex items-center gap-1.5 text-amber-900 font-bold shrink-0 text-xs">
+                  <Volume2 className="w-3.5 h-3.5 text-amber-700" />
+                  <span>🎙️ Voice Note {(post as any).voiceLanguage ? `(${(post as any).voiceLanguage === 'hi-IN' ? 'हिन्दी' : (post as any).voiceLanguage === 'bn-IN' ? 'বাংলা' : (post as any).voiceLanguage === 'sa-IN' ? 'संथाली' : 'English'})` : ''}</span>
+                </div>
+                <audio src={(post as any).audioUrl} controls className="h-7 max-w-[200px]" />
+              </div>
+            )}
 
             {post.isProgress && (
               <div className="flex items-center space-x-2 text-[11px] font-bold text-indigo-700 bg-indigo-50/70 border border-indigo-100 rounded-lg px-3 py-2">

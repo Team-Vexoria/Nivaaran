@@ -32,6 +32,201 @@ export const JHARKHAND_DISTRICT_CENTROIDS: Record<string, { lat: number; lng: nu
   'Lohardaga':            { lat: 23.4330, lng: 84.6922 },
 };
 
+// ── HEI University Research Hubs & Labs ──────────────────────────────────────
+export interface HEILabLocation {
+  id: string;
+  name: string;
+  university: string;
+  district: string;
+  lat: number;
+  lng: number;
+  specialization: string;
+  activeProjectsCount: number;
+  equipment: string[];
+  contactFaculty: string;
+}
+
+export const JHARKHAND_HEI_LABS: HEILabLocation[] = [
+  {
+    id: 'LAB-BIT-MESRA',
+    name: 'Advanced Water & IoT Environmental Lab',
+    university: 'Birla Institute of Technology (BIT), Mesra',
+    district: 'Ranchi',
+    lat: 23.4123,
+    lng: 85.4399,
+    specialization: 'IoT Remote Telemetry & Micro-Turbine Filtration',
+    activeProjectsCount: 6,
+    equipment: ['Turbidity Spectrophotometer', 'LoRaWAN Field Gateway', 'AAS Water Analyzer'],
+    contactFaculty: 'Dr. Anand Prakash (Prof. Environmental Eng.)',
+  },
+  {
+    id: 'LAB-IIT-ISM',
+    name: 'Disaster Prevention & Geotechnical Sensor Lab',
+    university: 'IIT (ISM) Dhanbad',
+    district: 'Dhanbad',
+    lat: 23.8143,
+    lng: 86.4412,
+    specialization: 'Mine Subsidence, Seismology & Dam Inundation',
+    activeProjectsCount: 8,
+    equipment: ['LiDAR Ground Scanner', 'InSAR Deformation Receiver', 'Borehole Extensometer'],
+    contactFaculty: 'Dr. S. K. Mahato (Mining & Earth Sciences)',
+  },
+  {
+    id: 'LAB-NIT-JSR',
+    name: 'Rural Infrastructure & Structural Lab',
+    university: 'National Institute of Technology (NIT) Jamshedpur',
+    district: 'East Singhbhum',
+    lat: 22.7758,
+    lng: 86.1436,
+    specialization: 'Bridge Scour Monitoring & Low-Cost Materials',
+    activeProjectsCount: 5,
+    equipment: ['Universal Testing Machine 1000kN', 'Acoustic Emission Sensor', 'Drone Hyperspectral Rig'],
+    contactFaculty: 'Dr. P. K. Soren (Civil Engineering)',
+  },
+  {
+    id: 'LAB-BAU-RNC',
+    name: 'Agri-Tech & Drought Resilience Center',
+    university: 'Birsa Agricultural University (BAU)',
+    district: 'Ranchi',
+    lat: 23.4475,
+    lng: 85.3218,
+    specialization: 'Soil Moisture Mapping & Micro-Drip Automation',
+    activeProjectsCount: 4,
+    equipment: ['Soil TDR Moisture Probes', 'Automated Weather Station (AWS)', 'Canopy Thermal Imager'],
+    contactFaculty: 'Dr. R. N. Tiwari (Agronomy)',
+  },
+  {
+    id: 'LAB-SKMU-DMK',
+    name: 'Santhal Pargana Water Security Hub',
+    university: 'Sido Kanhu Murmu University (SKMU)',
+    district: 'Dumka',
+    lat: 24.2750,
+    lng: 87.2600,
+    specialization: 'Arsenic & Fluoride Removal in Tribal Belts',
+    activeProjectsCount: 3,
+    equipment: ['UV-Vis Spectrophotometer', 'Heavy Metal Test Kit', 'Solar Membrane Filter Rig'],
+    contactFaculty: 'Dr. Hemant Murmu (Chemistry & Water)',
+  },
+  {
+    id: 'LAB-VBU-HZB',
+    name: 'Forest Hazard & Ecology Monitoring Lab',
+    university: 'Vinoba Bhave University (VBU)',
+    district: 'Hazaribagh',
+    lat: 23.9850,
+    lng: 85.3520,
+    specialization: 'Forest Fire Warning & Runoff Analysis',
+    activeProjectsCount: 3,
+    equipment: ['Thermal Drone Tracker', 'Satellite NDVI Ingest Terminal', 'Hydrological Current Meter'],
+    contactFaculty: 'Dr. Meenakshi Sinha (Forest Ecology)',
+  },
+];
+
+// ── High-Risk Disaster & Hazard Zones ─────────────────────────────────────────
+export interface DisasterZone {
+  id: string;
+  name: string;
+  hazardType: 'Flood Inundation' | 'Severe Drought' | 'Coalfire & Subsidence' | 'Flash Flood & Scour';
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM';
+  center: { lat: number; lng: number };
+  radiusMeters: number;
+  description: string;
+  vulnerablePopulation: string;
+  color: string;
+}
+
+export const JHARKHAND_DISASTER_ZONES: DisasterZone[] = [
+  {
+    id: 'ZONE-DAMODAR-FLOOD',
+    name: 'Damodar Basin Monsoonal Inundation Belt',
+    hazardType: 'Flood Inundation',
+    severity: 'CRITICAL',
+    center: { lat: 23.7200, lng: 86.2500 },
+    radiusMeters: 28000,
+    description: 'High inundation risk along low-lying riverbanks near Tenughat and Panchet reservoirs during heavy monsoon discharge.',
+    vulnerablePopulation: '320,000+ residents across 42 riverine villages',
+    color: '#DC2626',
+  },
+  {
+    id: 'ZONE-PALAMU-DROUGHT',
+    name: 'Palamu-Garhwa Rain-Shadow Arid Belt',
+    hazardType: 'Severe Drought',
+    severity: 'HIGH',
+    center: { lat: 24.0800, lng: 83.9200 },
+    radiusMeters: 35000,
+    description: 'Chronic sub-surface water table depletion (<35m depth) and consecutive dry-spell vulnerability.',
+    vulnerablePopulation: '580,000+ agrarian farmers',
+    color: '#D97706',
+  },
+  {
+    id: 'ZONE-JHARIA-SUBSIDENCE',
+    name: 'Jharia Coalfield Underground Fire & Subsidence Zone',
+    hazardType: 'Coalfire & Subsidence',
+    severity: 'CRITICAL',
+    center: { lat: 23.7500, lng: 86.4200 },
+    radiusMeters: 14000,
+    description: 'Centuries-old subterranean coal seam fires causing land subsidence and toxic carbon-monoxide venting.',
+    vulnerablePopulation: '180,000+ urban & mining township dwellers',
+    color: '#7F1D1D',
+  },
+  {
+    id: 'ZONE-SUBARNAREKHA-SCOUR',
+    name: 'Subarnarekha River Flash Flood Plain',
+    hazardType: 'Flash Flood & Scour',
+    severity: 'HIGH',
+    center: { lat: 22.7500, lng: 86.2200 },
+    radiusMeters: 22000,
+    description: 'Rapid catchment accumulation during depression storms in the Bay of Bengal affecting Jamshedpur and Ghatshila.',
+    vulnerablePopulation: '210,000+ peri-urban residents',
+    color: '#2563EB',
+  },
+  {
+    id: 'ZONE-GANGA-SAHIBGANJ',
+    name: 'Ganga Flood Inundation & Bank Erosion Belt',
+    hazardType: 'Flood Inundation',
+    severity: 'CRITICAL',
+    center: { lat: 25.2200, lng: 87.6200 },
+    radiusMeters: 26000,
+    description: 'Severe seasonal Ganga riverbank erosion and flood plain submergence impacting Sahibganj and Rajmahal.',
+    vulnerablePopulation: '145,000+ rural population',
+    color: '#DC2626',
+  },
+];
+
+// ── District Vulnerability & Disaster Risk Index ──────────────────────────────
+export interface DistrictRiskProfile {
+  floodScore: number;       // 0-100
+  droughtScore: number;     // 0-100
+  hazardLevel: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
+  monsoonRainfallAnomalyPct: number; // e.g. +24% or -35%
+  primaryThreat: string;
+}
+
+export const JHARKHAND_DISTRICT_RISK_INDEX: Record<string, DistrictRiskProfile> = {
+  'Sahibganj':           { floodScore: 92, droughtScore: 18, hazardLevel: 'CRITICAL', monsoonRainfallAnomalyPct: +38, primaryThreat: 'Ganga Riverbank Inundation & Erosion' },
+  'Pakur':               { floodScore: 84, droughtScore: 22, hazardLevel: 'HIGH',     monsoonRainfallAnomalyPct: +24, primaryThreat: 'Low-lying Flood Waterlogging' },
+  'Dhanbad':             { floodScore: 78, droughtScore: 35, hazardLevel: 'CRITICAL', monsoonRainfallAnomalyPct: +14, primaryThreat: 'Damodar Floods & Mining Subsidence' },
+  'East Singhbhum':      { floodScore: 82, droughtScore: 20, hazardLevel: 'HIGH',     monsoonRainfallAnomalyPct: +29, primaryThreat: 'Subarnarekha Flash Flood Runoff' },
+  'Bokaro':              { floodScore: 76, droughtScore: 30, hazardLevel: 'HIGH',     monsoonRainfallAnomalyPct: +12, primaryThreat: 'Konar & Damodar River Swell' },
+  'Palamu':              { floodScore: 15, droughtScore: 94, hazardLevel: 'CRITICAL', monsoonRainfallAnomalyPct: -42, primaryThreat: 'Severe Groundwater Drought & Crop Failure' },
+  'Garhwa':              { floodScore: 18, droughtScore: 91, hazardLevel: 'CRITICAL', monsoonRainfallAnomalyPct: -38, primaryThreat: 'Extreme Arid Spell & Water Scarcity' },
+  'Chatra':              { floodScore: 22, droughtScore: 82, hazardLevel: 'HIGH',     monsoonRainfallAnomalyPct: -28, primaryThreat: 'Agricultural Drought Stress' },
+  'Latehar':             { floodScore: 30, droughtScore: 79, hazardLevel: 'HIGH',     monsoonRainfallAnomalyPct: -25, primaryThreat: 'Forest Drought & Flash Streams' },
+  'Ranchi':              { floodScore: 58, droughtScore: 42, hazardLevel: 'MODERATE', monsoonRainfallAnomalyPct: +8,  primaryThreat: 'Urban Waterlogging & Road Sinkholes' },
+  'Hazaribagh':          { floodScore: 45, droughtScore: 55, hazardLevel: 'MODERATE', monsoonRainfallAnomalyPct: -5,  primaryThreat: 'Seasonal Catchment Runoff' },
+  'Giridih':             { floodScore: 62, droughtScore: 60, hazardLevel: 'HIGH',     monsoonRainfallAnomalyPct: +10, primaryThreat: 'Usri River Flood & Soil Erosion' },
+  'Deoghar':             { floodScore: 40, droughtScore: 64, hazardLevel: 'MODERATE', monsoonRainfallAnomalyPct: -12, primaryThreat: 'Drought & Groundwater Stress' },
+  'Dumka':               { floodScore: 68, droughtScore: 45, hazardLevel: 'MODERATE', monsoonRainfallAnomalyPct: +16, primaryThreat: 'Mayurakshi Catchment Swell' },
+  'Godda':               { floodScore: 72, droughtScore: 38, hazardLevel: 'HIGH',     monsoonRainfallAnomalyPct: +21, primaryThreat: 'Sundar Dam Catchment Flood' },
+  'Jamtara':             { floodScore: 60, droughtScore: 48, hazardLevel: 'MODERATE', monsoonRainfallAnomalyPct: +6,  primaryThreat: 'Localized Flash Inundation' },
+  'Koderma':             { floodScore: 35, droughtScore: 70, hazardLevel: 'HIGH',     monsoonRainfallAnomalyPct: -18, primaryThreat: 'Mining Runoff & Summer Water Deficit' },
+  'Lohardaga':           { floodScore: 42, droughtScore: 58, hazardLevel: 'MODERATE', monsoonRainfallAnomalyPct: -8,  primaryThreat: 'Bauxite Belt Stream Turbidity' },
+  'Gumla':               { floodScore: 50, droughtScore: 52, hazardLevel: 'MODERATE', monsoonRainfallAnomalyPct: +4,  primaryThreat: 'Riverine Soil Degradation' },
+  'Simdega':             { floodScore: 55, droughtScore: 40, hazardLevel: 'LOW',      monsoonRainfallAnomalyPct: +11, primaryThreat: 'Hill Stream Surges' },
+  'West Singhbhum':      { floodScore: 65, droughtScore: 38, hazardLevel: 'MODERATE', monsoonRainfallAnomalyPct: +18, primaryThreat: 'Baitarani & Karo River Swell' },
+  'Saraikela Kharsawan': { floodScore: 70, droughtScore: 32, hazardLevel: 'HIGH',     monsoonRainfallAnomalyPct: +22, primaryThreat: 'Kharkai River Inundation' },
+  'Khunti':              { floodScore: 48, droughtScore: 45, hazardLevel: 'LOW',      monsoonRainfallAnomalyPct: +2,  primaryThreat: 'Surface Runoff Velocity' },
+};
+
 export const JHARKHAND_BOUNDS: [[number, number], [number, number]] = [
   [21.9, 83.2],
   [25.4, 87.9],

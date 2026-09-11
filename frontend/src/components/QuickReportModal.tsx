@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import { 
-  Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert, TrendingUp, Users
+  Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert, TrendingUp, Users,
+  Mic, Square, Volume2, Film, RotateCcw, Languages
 } from 'lucide-react';
-import { submitChallengeToFirestore, submitFeedPostToFirestore } from '../services/firebaseService';
+import { submitChallengeToFirestore, submitFeedPostToFirestore, uploadEvidenceAudio } from '../services/firebaseService';
 import { uploadEvidenceS3 } from '../services/evidenceUpload';
 import { runAITriageEngineAsync, runAITriageEngine, AITriageResult } from '../services/aiTriageEngine';
 import { useLanguage } from '../context/LanguageContext';
@@ -55,8 +56,27 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
   const [isVerifyingRealtime, setIsVerifyingRealtime] = useState(false);
   const triagePromiseRef = useRef<Promise<AITriageResult> | null>(null);
 
+  // ── Multilingual Voice Recording & Speech-to-Text State ──
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [voiceLanguage, setVoiceLanguage] = useState<'hi-IN' | 'en-IN' | 'bn-IN' | 'sa-IN'>('hi-IN');
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const speechRecognitionRef = useRef<any>(null);
+  const recordingTimerRef = useRef<any>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
+
+  // Helper to identify video items
+  const isVideoUrl = (url: string) => {
+    return url.startsWith('data:video') || url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov') || url.includes('/evidence_videos/');
+  };
+
   const triggerInstantPreTriage = (compressedImage: string, currentTitle: string = title, currentDesc: string = description) => {
-    if (!compressedImage) return;
+    if (!compressedImage || isVideoUrl(compressedImage)) return;
     setIsVerifyingRealtime(true);
     const p = runAITriageEngineAsync(currentTitle, currentDesc, 1, compressedImage).then(res => {
       setPrecomputedAITriage(res);
@@ -69,6 +89,105 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
       return fallback;
     });
     triagePromiseRef.current = p;
+  };
+
+  // ── Voice Recording & Real-time Web Speech Transcription Handlers ──
+  const startVoiceRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        const url = URL.createObjectURL(blob);
+        setAudioUrl(url);
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.start(250);
+      setIsRecordingVoice(true);
+      setRecordingDuration(0);
+      setVoiceTranscript('');
+      
+      if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration(prev => prev + 1);
+      }, 1000);
+      
+      // Real-time Speech-to-Text via Web Speech API
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        speechRecognitionRef.current = recognition;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = voiceLanguage === 'sa-IN' ? 'hi-IN' : voiceLanguage;
+        
+        let finalTranscript = '';
+        recognition.onresult = (event: any) => {
+          let interimTranscript = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalTranscript += event.results[i][0].transcript + ' ';
+            } else {
+              interimTranscript += event.results[i][0].transcript;
+            }
+          }
+          const fullText = (finalTranscript + interimTranscript).trim();
+          if (fullText) {
+            setVoiceTranscript(fullText);
+            setDescription(prev => (!prev || prev === voiceTranscript ? fullText : prev));
+            setTitle(prev => {
+              if (!prev || prev.startsWith('Voice Report:')) {
+                const firstSentence = fullText.split(/[.?!।\n]/)[0].slice(0, 60);
+                return firstSentence || 'Voice Report: ' + fullText.slice(0, 40);
+              }
+              return prev;
+            });
+          }
+        };
+        
+        recognition.onerror = (event: any) => {
+          console.warn('Speech recognition warning:', event.error);
+        };
+        
+        recognition.start();
+      }
+    } catch (err) {
+      console.error('Microphone access denied:', err);
+      alert('Please allow microphone access to record audio reports.');
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+    }
+    if (speechRecognitionRef.current) {
+      try { speechRecognitionRef.current.stop(); } catch {}
+    }
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
+    setIsRecordingVoice(false);
+  };
+
+  const clearVoiceRecording = () => {
+    stopVoiceRecording();
+    setAudioBlob(null);
+    setAudioUrl(null);
+    setVoiceTranscript('');
+    setRecordingDuration(0);
   };
 
   // Live Camera WebCam Viewfinder State
@@ -98,9 +217,11 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
       setForensicRejectionReason('');
       setSubmittedId('');
       setIsVerifyingRealtime(false);
+      clearVoiceRecording();
       handleGetLocation();
     } else {
       stopCamera();
+      stopVoiceRecording();
     }
   }, [isOpen]);
 
@@ -212,35 +333,51 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
     if (input.files && input.files.length > 0) {
       const filesArray = Array.from(input.files);
       for (const file of filesArray) {
-        // High-speed compression to 480px wide, 55% JPEG quality (~20KB).
-        // Resolves canvas in <2ms and transmits in milliseconds.
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          if (typeof evt.target?.result !== 'string') return;
-          const img = new Image();
-          img.onload = () => {
-            const MAX_DIM = 480;
-            let { width, height } = img;
-            if (width > MAX_DIM || height > MAX_DIM) {
-              if (width > height) {
-                height = Math.round((height * MAX_DIM) / width);
-                width = MAX_DIM;
-              } else {
-                width = Math.round((width * MAX_DIM) / height);
-                height = MAX_DIM;
+        if (file.type.startsWith('video/')) {
+          // Video evidence: Read directly as Data URL without canvas image compression
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            if (typeof evt.target?.result === 'string') {
+              const videoDataUrl = evt.target.result;
+              setFilePreviews((prev) => [...prev, videoDataUrl]);
+              // Video files bypass image forensic gate as requested; trigger text-based triage
+              if (!precomputedAITriage) {
+                const textTriage = runAITriageEngine(title || 'Incident Video Report', description || 'Citizen uploaded video evidence', 1);
+                setPrecomputedAITriage(textTriage);
               }
             }
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
-            const compressed = canvas.toDataURL('image/jpeg', 0.55);
-            setFilePreviews((prev) => [...prev, compressed]);
-            triggerInstantPreTriage(compressed);
           };
-          img.src = evt.target.result as string;
-        };
-        reader.readAsDataURL(file);
+          reader.readAsDataURL(file);
+        } else {
+          // Photo evidence: High-speed compression to 480px wide, 55% JPEG quality (~20KB)
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            if (typeof evt.target?.result !== 'string') return;
+            const img = new Image();
+            img.onload = () => {
+              const MAX_DIM = 480;
+              let { width, height } = img;
+              if (width > MAX_DIM || height > MAX_DIM) {
+                if (width > height) {
+                  height = Math.round((height * MAX_DIM) / width);
+                  width = MAX_DIM;
+                } else {
+                  width = Math.round((width * MAX_DIM) / height);
+                  height = MAX_DIM;
+                }
+              }
+              const canvas = document.createElement('canvas');
+              canvas.width = width;
+              canvas.height = height;
+              canvas.getContext('2d')!.drawImage(img, 0, 0, width, height);
+              const compressed = canvas.toDataURL('image/jpeg', 0.55);
+              setFilePreviews((prev) => [...prev, compressed]);
+              triggerInstantPreTriage(compressed);
+            };
+            img.src = evt.target.result as string;
+          };
+          reader.readAsDataURL(file);
+        }
 
         // Background cloud backup if configured
         uploadEvidenceS3(file).catch(() => {});
@@ -255,8 +392,8 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
     setPrecomputedAITriage(null);
   };
 
-  // Strict Validation: Evidence photo/video AND GPS location are REQUIRED
-  const isEvidenceAttached = filePreviews.length > 0;
+  // Strict Validation: Evidence (photo/video/audio) AND GPS location are REQUIRED
+  const isEvidenceAttached = filePreviews.length > 0 || audioUrl !== null;
   const isGPSAttached = locationCoords !== null;
   const isFormValid = title.trim().length > 0 && description.trim().length > 0 && blockVillage.trim().length > 0 && isEvidenceAttached && isGPSAttached;
 
@@ -271,20 +408,24 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
     const coords = locationCoords || { lat: 23.3441, lng: 85.3096 };
     const finalAddress = formattedAddress || `${blockVillage}, District ${district}`;
 
+    const videoUrls = filePreviews.filter(isVideoUrl);
+    const imageUrls = filePreviews.filter(u => !isVideoUrl(u));
+    const isAllVideo = filePreviews.length > 0 && videoUrls.length === filePreviews.length;
+
     // 1. Instant Decision Point 1 Gate: Resolved in milliseconds from preloaded triage or fast engine
     let aiResult: AITriageResult;
     if (precomputedAITriage) {
       aiResult = precomputedAITriage;
     } else if (triagePromiseRef.current) {
       aiResult = await triagePromiseRef.current;
+    } else if (imageUrls.length > 0) {
+      aiResult = await runAITriageEngineAsync(title, description, 1, imageUrls[0]);
     } else {
-      aiResult = filePreviews[0]
-        ? await runAITriageEngineAsync(title, description, 1, filePreviews[0])
-        : runAITriageEngine(title, description, 1);
+      aiResult = runAITriageEngine(title, description, 1);
     }
 
-    // If fake image detected -> block submitChallengeToFirestore, show rejection warning
-    if (aiResult.isRealPhoto === false || aiResult.forensicStatus === 'REJECTED') {
+    // If fake image detected (only checked on static images, skipped on pure video submissions)
+    if (!isAllVideo && imageUrls.length > 0 && (aiResult.isRealPhoto === false || aiResult.forensicStatus === 'REJECTED')) {
       setStep('forensic_rejected');
       setForensicRejectionReason(
         aiResult.fakeReason || 'Image flagged as synthetic AI generation or digitally manipulated. Submission blocked by Decision Point 1 Forensic Gate.'
@@ -363,6 +504,18 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
       captureSource: isCameraActive ? 'Geotagged Live WebCam' : 'Mobile Geotagged Upload',
     });
 
+    let uploadedAudioUrl = audioUrl || undefined;
+    if (audioBlob) {
+      try {
+        uploadedAudioUrl = await uploadEvidenceAudio(audioBlob, `voice_${generatedId}.webm`);
+      } catch (e) {
+        console.warn('Audio upload warning:', e);
+      }
+    }
+
+    const primaryVideo = videoUrls[0] || undefined;
+    const evidenceType: 'image' | 'video' | 'mixed' = videoUrls.length > 0 && imageUrls.length > 0 ? 'mixed' : videoUrls.length > 0 ? 'video' : 'image';
+
     try {
       await submitChallengeToFirestore({
         reportId: generatedId,
@@ -374,6 +527,12 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
         status: 'Under Review',
         summary: description || 'Reported by citizen with geotagged photo evidence.',
         evidenceUrl: filePreviews[0] || '', // S3 storage_ref / data URL
+        evidenceUrls: filePreviews,
+        videoUrl: primaryVideo,
+        videoUrls: videoUrls,
+        audioUrl: uploadedAudioUrl,
+        voiceLanguage: audioUrl ? voiceLanguage : undefined,
+        evidenceType: evidenceType,
         locationCoords: coords,
         formattedAddress: finalAddress,
         priorityScore: aiResult.priorityScore,
@@ -402,6 +561,13 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
         upvotes: 1,
         category: aiResult.category,
         status: 'Under Review',
+        evidenceUrl: filePreviews[0] || '',
+        evidenceUrls: filePreviews,
+        videoUrl: primaryVideo,
+        videoUrls: videoUrls,
+        audioUrl: uploadedAudioUrl,
+        voiceLanguage: audioUrl ? voiceLanguage : undefined,
+        evidenceType: evidenceType,
         translations: {
           [langCode]: {
             title: title || 'Local Community Report',
@@ -568,6 +734,115 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
           {step === 'form' && (
             <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
             
+            {/* ── Multilingual Voice Reporting & Speech-to-Text Bar ── */}
+            <div className="bg-gradient-to-r from-amber-50 via-orange-50/60 to-emerald-50/50 border-2 border-amber-200/80 rounded-2xl p-3.5 space-y-2.5 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-xs transition-colors ${
+                    isRecordingVoice ? 'bg-rose-600 text-white animate-pulse' : 'bg-amber-500 text-white'
+                  }`}>
+                    <Mic className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="text-xs font-black text-slate-900 block flex items-center gap-1.5">
+                      🎙️ Speak in Your Language (बोलकर दर्ज करें)
+                      <span className="text-[9px] bg-amber-200/80 text-amber-950 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Live STT</span>
+                    </span>
+                    <span className="text-[10px] text-slate-500">Auto-fills title, description & translates speech into challenge</span>
+                  </div>
+                </div>
+
+                {/* Voice Language Selector */}
+                <div className="flex items-center gap-1 bg-white border border-amber-200 rounded-lg p-0.5 shadow-2xs">
+                  <Languages className="w-3.5 h-3.5 text-slate-400 ml-1.5" />
+                  <select
+                    value={voiceLanguage}
+                    onChange={(e) => setVoiceLanguage(e.target.value as any)}
+                    className="text-[11px] font-bold text-slate-800 bg-transparent border-none focus:outline-none cursor-pointer pr-1 py-0.5"
+                  >
+                    <option value="hi-IN">🇮🇳 हिन्दी (Hindi)</option>
+                    <option value="en-IN">🇬🇧 English</option>
+                    <option value="bn-IN">🇮🇳 বাংলা (Bengali)</option>
+                    <option value="sa-IN">🏹 संथाली / Regional</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Active Recording State vs Idle State vs Playback */}
+              {isRecordingVoice ? (
+                <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-600 animate-ping" />
+                      <span className="text-xs font-black text-rose-800">
+                        Recording... ({Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')})
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={stopVoiceRecording}
+                      className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold rounded-lg flex items-center gap-1 transition-all shadow-xs cursor-pointer"
+                    >
+                      <Square className="w-3 h-3" /> Stop & Transcribe
+                    </button>
+                  </div>
+
+                  {/* Animated Soundwave Visualizer */}
+                  <div className="flex items-center justify-center gap-1 h-8 py-1">
+                    {[40, 75, 100, 60, 85, 45, 95, 70, 30, 90, 65, 40, 80, 100, 50].map((h, i) => (
+                      <span
+                        key={i}
+                        className="w-1 bg-rose-500 rounded-full transition-all duration-150 animate-pulse"
+                        style={{
+                          height: `${Math.max(20, (h * ((recordingDuration % 3) + 1)) / 3)}%`,
+                          animationDelay: `${i * 60}ms`,
+                        }}
+                      />
+                    ))}
+                  </div>
+
+                  {voiceTranscript && (
+                    <p className="text-[11px] font-medium text-slate-800 bg-white/90 p-2 rounded-lg border border-rose-100 italic">
+                      "{voiceTranscript}"
+                    </p>
+                  )}
+                </div>
+              ) : audioUrl ? (
+                <div className="bg-white border border-emerald-200 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                      <Volume2 className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-800 block">Voice Note Recorded ({recordingDuration}s)</span>
+                      <span className="text-[9px] text-emerald-700 font-semibold">✓ Attached to report as audio evidence</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <audio ref={audioElementRef} src={audioUrl} controls className="h-7 max-w-[200px]" />
+                    <button
+                      type="button"
+                      onClick={clearVoiceRecording}
+                      title="Re-record / Delete voice note"
+                      className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startVoiceRecording}
+                  className="w-full py-2 px-3 bg-white hover:bg-amber-100/50 border border-amber-300 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-2xs hover:border-amber-400 cursor-pointer"
+                >
+                  <Mic className="w-4 h-4 text-amber-600" />
+                  <span>Tap to Speak in {voiceLanguage === 'hi-IN' ? 'हिन्दी (Hindi)' : voiceLanguage === 'bn-IN' ? 'বাংলা' : voiceLanguage === 'sa-IN' ? 'संथाली' : 'English'}</span>
+                </button>
+              )}
+            </div>
+
             {/* Title & Description */}
             <div className="space-y-3">
               <div>
@@ -704,19 +979,34 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
                     )}
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
-                    {filePreviews.map((preview, idx) => (
-                      <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-emerald-600 group shadow-xs">
-                        <img src={preview} alt="Evidence preview" className="w-full h-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveFile(idx)}
-                          className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full shadow-xs hover:bg-red-700 transition-colors"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
+                  <div className="flex flex-wrap gap-2.5">
+                    {filePreviews.map((preview, idx) => {
+                      const isVideo = isVideoUrl(preview);
+                      return (
+                        <div key={idx} className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-emerald-600 group shadow-xs bg-slate-900">
+                          {isVideo ? (
+                            <div className="w-full h-full relative flex items-center justify-center">
+                              <video src={preview} className="w-full h-full object-cover" muted />
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center pointer-events-none">
+                                <Film className="w-6 h-6 text-white drop-shadow-md" />
+                              </div>
+                              <span className="absolute bottom-1 left-1 text-[8px] bg-black/80 text-white px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                Video
+                              </span>
+                            </div>
+                          ) : (
+                            <img src={preview} alt="Evidence preview" className="w-full h-full object-cover" />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile(idx)}
+                            className="absolute top-1 right-1 bg-red-600 text-white p-1 rounded-full shadow-xs hover:bg-red-700 transition-colors z-10 cursor-pointer"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Real-time AI Verification & Triage Feedback Pill */}

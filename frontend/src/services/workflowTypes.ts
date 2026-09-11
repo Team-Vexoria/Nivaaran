@@ -113,6 +113,11 @@ export interface Challenge {
 
   // Evidence
   evidenceUrls: string[];        // photo/video URLs
+  videoUrl?: string;             // primary video URL
+  videoUrls?: string[];          // list of attached video URLs
+  audioUrl?: string;             // citizen voice recording URL
+  voiceLanguage?: string;        // speech-to-text source language (e.g. 'hi-IN', 'en-IN')
+  evidenceType?: 'image' | 'video' | 'mixed';
   
   // Government
   govtOfficerNote?: string;

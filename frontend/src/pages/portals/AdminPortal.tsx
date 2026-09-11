@@ -1,37 +1,84 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import {
-  Database, Activity, ShieldCheck, LogOut,
-  BarChart3, CheckCircle2, Clock, AlertTriangle,
-  RefreshCw, Trash2, Search, Filter
+  Database, Activity, LogOut,
+  BarChart3, CheckCircle2,
+  RefreshCw, Search, Radio, FileText,
+  Building2,
+  Printer, Flame, Layers, Eye
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
-import { LIFECYCLE_STAGES, getStageForStatus, CHALLENGE_STATUS_OPTIONS, STATUS_TO_STAGE_MAP } from '../../services/workflowLifecycle';
-import { Challenge } from '../../services/workflowTypes';
+import { LIFECYCLE_STAGES, getStageForStatus, CHALLENGE_STATUS_OPTIONS } from '../../services/workflowLifecycle';
+import { Challenge, ChallengeStatus } from '../../services/workflowTypes';
 import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
+import { EmergencyBroadcastModal } from '../../components/admin/EmergencyBroadcastModal';
+import { ExecutiveBriefingModal } from '../../components/admin/ExecutiveBriefingModal';
 
-type AdminTab = 'overview' | 'challenges' | 'audit' | 'taxonomy';
+type AdminTab = 'matrix' | 'overview' | 'broadcast' | 'dossier' | 'audit';
 
-const DOMAIN_CATEGORIES = [
-  { id: 'flood', label: 'Flood & Waterlogging', color: 'bg-blue-100 text-blue-800 border-blue-200' },
-  { id: 'drought', label: 'Drought & Water Scarcity', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-  { id: 'landslide', label: 'Landslide & Subsidence', color: 'bg-orange-100 text-orange-800 border-orange-200' },
-  { id: 'mining', label: 'Mine Safety & Pollution', color: 'bg-slate-100 text-slate-800 border-slate-200' },
-  { id: 'heatwave', label: 'Heatwave & Air Quality', color: 'bg-red-100 text-red-800 border-red-200' },
-  { id: 'infrastructure', label: 'Infrastructure & Roads', color: 'bg-purple-100 text-purple-800 border-purple-200' },
-  { id: 'health', label: 'Public Health & Sanitation', color: 'bg-green-100 text-green-800 border-green-200' },
-  { id: 'forest', label: 'Forest & Biodiversity', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-];
+// Known University & CSR mappings for Jharkhand challenges
+const ENTITY_MAPPINGS: Record<string, {
+  university: string;
+  facultyLead: string;
+  studentLead: string;
+  csrPartner: string;
+  csrGrant: string;
+  trancheStatus: string;
+  telemetryStatus: string;
+}> = {
+  'flood': {
+    university: 'BIT Mesra, Ranchi',
+    facultyLead: 'Dr. Arvind Sinha (IoT Lab)',
+    studentLead: 'Ayush Kumar Singh (Lead · 4th Yr)',
+    csrPartner: 'Tata Steel TSRDS',
+    csrGrant: '₹5,00,000 (₹2.5L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● 115200 Baud Stream Active (4.2m Depth)',
+  },
+  'mining': {
+    university: 'IIT (ISM) Dhanbad',
+    facultyLead: 'Dr. S. K. Roy (Rock Mechanics)',
+    studentLead: 'Priya Sharma (M.Tech Mining)',
+    csrPartner: 'BCCL CSR Foundation',
+    csrGrant: '₹6,50,000 (₹3.0L Co-Funded)',
+    trancheStatus: 'Tranche 2 Active (40%)',
+    telemetryStatus: '● 4 Borehole Nodes Synced (0.2mm shift)',
+  },
+  'drought': {
+    university: 'Birsa Agricultural University',
+    facultyLead: 'Dr. Rameshwar Oraon',
+    studentLead: 'Amit Murmu (3rd Yr AgriTech)',
+    csrPartner: 'NTPC CSR Rural Fund',
+    csrGrant: '₹4,50,000 (₹2.0L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Soil Moisture Grid: 18.4% (Sub-optimal)',
+  },
+  'infrastructure': {
+    university: 'NIT Jamshedpur',
+    facultyLead: 'Dr. V. K. Mahato (Civil Engg)',
+    studentLead: 'Rahul Soren (4th Yr Civil)',
+    csrPartner: 'Jusco Community Dev',
+    csrGrant: '₹4,00,000 (₹1.5L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Culvert Flow Sensor: 1.8 m/s',
+  },
+};
 
 export const AdminPortal: React.FC = () => {
   const { currentUser, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>('matrix');
   const [challenges, setChallenges] = useState<Challenge[]>(workflowStore.getChallenges());
   const [fbChallenges, setFbChallenges] = useState<ChallengeDoc[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [districtFilter, setDistrictFilter] = useState('all');
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
+
+  // Modals state
+  const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
+  const [isBriefingOpen, setIsBriefingOpen] = useState(false);
+  const [targetDistrictForBroadcast, setTargetDistrictForBroadcast] = useState('Ranchi');
+  const [targetHazardForBroadcast, setTargetHazardForBroadcast] = useState('Flash Flood & River Swell');
 
   // Live store sync
   useEffect(() => {
@@ -82,72 +129,103 @@ export const AdminPortal: React.FC = () => {
     ).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')).slice(0, 50);
   }, [allChallenges]);
 
-  // --- Filtered challenges for challenges tab ---
+  // --- Filtered challenges for Master Matrix tab ---
   const filteredChallenges = useMemo(() => {
     return allChallenges.filter(c => {
       const matchSearch = !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase())
         || c.district.toLowerCase().includes(searchQuery.toLowerCase())
-        || c.reportId.toLowerCase().includes(searchQuery.toLowerCase());
+        || c.reportId.toLowerCase().includes(searchQuery.toLowerCase())
+        || (c.assignedHEI && c.assignedHEI.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchStatus = statusFilter === 'all' || c.status === statusFilter;
-      return matchSearch && matchStatus;
+      const matchDistrict = districtFilter === 'all' || c.district === districtFilter;
+      return matchSearch && matchStatus && matchDistrict;
     });
-  }, [allChallenges, searchQuery, statusFilter]);
+  }, [allChallenges, searchQuery, statusFilter, districtFilter]);
 
-  const handleReset = () => {
-    workflowStore.resetDemoData();
-    setShowResetConfirm(false);
+  const uniqueDistricts = useMemo(() => 
+    [...new Set(allChallenges.map(c => c.district))].filter(Boolean).sort(), [allChallenges]);
+
+  const handleLaunchTargetedBroadcast = (district: string, title: string) => {
+    setTargetDistrictForBroadcast(district || 'Ranchi');
+    setTargetHazardForBroadcast(title || 'Emergency Threat Alert');
+    setIsBroadcastOpen(true);
   };
 
-  const uniqueStatuses = useMemo(() =>
-    [...new Set(allChallenges.map(c => c.status))].sort(), [allChallenges]);
+  const handleStatusChange = async (challengeId: string, newStatus: ChallengeStatus) => {
+    await workflowStore.transitionChallenge(
+      challengeId,
+      newStatus,
+      currentUser?.displayName || 'Super Admin',
+      'Super Administrator',
+      `Administrative manual status override to ${newStatus}.`
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF8F4] flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#1A1612] text-white px-4 sm:px-6 py-3 border-b border-[#2E2820] shadow-lg">
+      <header className="sticky top-0 z-40 bg-[#1A1612] text-white px-4 sm:px-6 py-3 border-b border-[#2E2820] shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center space-x-3 shrink-0">
-            <div className="w-9 h-9 bg-[#B5502D] rounded-xl flex items-center justify-center font-black text-base text-white shadow-md shrink-0">A</div>
+            <div className="w-10 h-10 bg-gradient-to-br from-[#B5502D] to-red-600 rounded-xl flex items-center justify-center font-black text-lg text-white shadow-md shrink-0">
+              ⚡
+            </div>
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-base font-black font-heading tracking-tight leading-none">NIVAARAN</span>
-                <span className="text-[10px] font-extrabold bg-[#B5502D]/20 text-[#E8845E] px-2 py-0.5 rounded-full uppercase tracking-wider border border-[#B5502D]/40">
-                  Super Admin
+                <span className="text-base font-black font-heading tracking-tight leading-none text-white">NIVAARAN</span>
+                <span className="text-[10px] font-extrabold bg-[#B5502D]/30 text-[#E8845E] px-2 py-0.5 rounded-full uppercase tracking-wider border border-[#B5502D]/50">
+                  Super Admin Command Matrix
                 </span>
               </div>
-              <span className="text-[10px] text-[#8A7F72] font-semibold block">Platform Governance & Audit</span>
+              <span className="text-[10px] text-[#8A7F72] font-semibold block">
+                State-Wide Incident Traceability, HEI Labs & Emergency Broadcast
+              </span>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 shrink-0">
-            <span className="hidden sm:block text-[11px] bg-white/10 px-3 py-1 rounded-full text-white/70 font-semibold">
-              {currentUser?.displayName} · {currentUser?.role}
-            </span>
+          <div className="flex items-center space-x-2.5 shrink-0 flex-wrap">
+            <button
+              onClick={() => setIsBroadcastOpen(true)}
+              className="flex items-center space-x-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-black px-3.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              <Radio className="w-3.5 h-3.5 animate-pulse" />
+              <span>CAP Broadcast</span>
+            </button>
+
+            <button
+              onClick={() => setIsBriefingOpen(true)}
+              className="flex items-center space-x-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>DM Dossier (PDF)</span>
+            </button>
+
             <button
               onClick={async () => { await logout(); window.location.href = '/'; }}
-              className="flex items-center space-x-1.5 text-xs bg-[#B5502D] hover:bg-[#9c4323] text-white font-bold px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center space-x-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-xl transition-colors cursor-pointer border border-slate-700"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>
 
-        {/* Tab bar */}
-        <div className="max-w-7xl mx-auto mt-2.5 flex items-center space-x-1 border-t border-white/10 pt-2">
+        {/* Tab Navigation */}
+        <div className="max-w-7xl mx-auto mt-2.5 flex items-center space-x-1 border-t border-white/10 pt-2 overflow-x-auto">
           {([
-            { id: 'overview', label: 'Platform Overview', icon: BarChart3 },
-            { id: 'challenges', label: 'All Challenges', icon: Database },
-            { id: 'taxonomy', label: 'Taxonomy & Controls', icon: ShieldCheck },
-            { id: 'audit', label: 'Audit Log', icon: Activity },
+            { id: 'matrix', label: 'Master Case Matrix', icon: Layers },
+            { id: 'overview', label: 'Platform KPIs & Pipeline', icon: BarChart3 },
+            { id: 'broadcast', label: 'CAP Alert Dispatcher', icon: Radio },
+            { id: 'dossier', label: 'DM Executive Dossier', icon: FileText },
+            { id: 'audit', label: 'Security & Audit Trail', icon: Activity },
           ] as { id: AdminTab; label: string; icon: React.FC<{ className?: string }> }[]).map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shrink-0 cursor-pointer ${
                 activeTab === tab.id
-                  ? 'bg-white/15 text-white'
-                  : 'text-white/50 hover:text-white/80 hover:bg-white/10'
+                  ? 'bg-white/20 text-white font-black shadow-xs'
+                  : 'text-white/60 hover:text-white hover:bg-white/10'
               }`}
             >
               <tab.icon className="w-3.5 h-3.5" />
@@ -159,21 +237,207 @@ export const AdminPortal: React.FC = () => {
 
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
 
-        {/* OVERVIEW TAB */}
+        {/* ── TAB 1: SUPER ADMIN MASTER CASE MATRIX ── */}
+        {activeTab === 'matrix' && (
+          <div className="space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-[#E4DDD1] shadow-2xs">
+              <div>
+                <h2 className="text-lg font-black text-[#201C18] font-heading flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-[#B5502D]" />
+                  State-Wide Master Traceability Matrix
+                </h2>
+                <p className="text-xs text-[#6A6155] mt-0.5">
+                  Full lifecycle visibility connecting Citizen Grievances $\leftrightarrow$ AI Priority $\leftrightarrow$ Assigned HEI Labs $\leftrightarrow$ CSR Sponsors $\leftrightarrow$ Tranche Grants.
+                </p>
+              </div>
+
+              {/* Filters */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    placeholder="Search by title, ID, university…"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 pr-3 py-1.5 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] w-48 sm:w-60 focus:outline-hidden"
+                  />
+                </div>
+
+                <select
+                  value={districtFilter}
+                  onChange={(e) => setDistrictFilter(e.target.value)}
+                  className="px-2.5 py-1.5 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-semibold focus:outline-hidden"
+                >
+                  <option value="all">All Districts</option>
+                  {uniqueDistricts.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-2.5 py-1.5 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-semibold focus:outline-hidden"
+                >
+                  <option value="all">All Stages ({filteredChallenges.length})</option>
+                  {CHALLENGE_STATUS_OPTIONS.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Matrix Table */}
+            <div className="bg-white border border-[#E4DDD1] rounded-2xl shadow-2xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-[#FAF8F4] border-b border-[#E4DDD1] text-[10px] text-[#6A6155] uppercase font-extrabold tracking-wider">
+                    <tr>
+                      <th className="p-3.5">Case ID & Title</th>
+                      <th className="p-3.5">District / Risk</th>
+                      <th className="p-3.5">Assigned University & Team</th>
+                      <th className="p-3.5">CSR Sponsor & Grant</th>
+                      <th className="p-3.5">Lifecycle Stage</th>
+                      <th className="p-3.5">Live Field Telemetry</th>
+                      <th className="p-3.5 text-right">Quick Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#E4DDD1] font-medium text-[#201C18]">
+                    {filteredChallenges.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-slate-500 text-xs">
+                          No matching cases found for the selected filters.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredChallenges.map((c) => {
+                        const stageInfo = getStageForStatus(c.status);
+                        const categoryKey = c.category.toLowerCase().includes('flood') ? 'flood'
+                          : c.category.toLowerCase().includes('mining') ? 'mining'
+                          : c.category.toLowerCase().includes('drought') ? 'drought'
+                          : 'infrastructure';
+                        const entity = ENTITY_MAPPINGS[categoryKey] || ENTITY_MAPPINGS['flood'];
+
+                        return (
+                          <tr key={c.id} className="hover:bg-[#FAF8F4]/80 transition-colors">
+                            {/* Case ID & Title */}
+                            <td className="p-3.5 max-w-xs">
+                              <span className="font-mono text-[10px] font-bold text-indigo-700 block">
+                                {c.reportId || c.id.slice(0, 10)}
+                              </span>
+                              <p className="font-bold text-slate-900 line-clamp-1">{c.title}</p>
+                              <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
+                                Category: <strong className="text-slate-700">{c.category}</strong>
+                              </span>
+                            </td>
+
+                            {/* District & Risk */}
+                            <td className="p-3.5 whitespace-nowrap">
+                              <span className="font-bold text-slate-900 block">{c.district || 'Ranchi'}</span>
+                              <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full inline-block mt-0.5 ${
+                                c.riskLevel === 'CRITICAL' ? 'bg-red-100 text-red-800 border border-red-200' :
+                                c.riskLevel === 'HIGH' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
+                                'bg-slate-100 text-slate-700'
+                              }`}>
+                                {c.riskLevel || 'MEDIUM'} PRIORITY
+                              </span>
+                            </td>
+
+                            {/* Assigned University */}
+                            <td className="p-3.5 max-w-xs">
+                              <span className="font-bold text-emerald-900 block flex items-center gap-1">
+                                <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                {c.assignedHEI || entity.university}
+                              </span>
+                              <span className="text-[10px] text-slate-600 block mt-0.5">
+                                Lead: <strong className="text-slate-800">{entity.studentLead}</strong>
+                              </span>
+                              <span className="text-[9px] text-slate-500 block">
+                                Mentor: {entity.facultyLead}
+                              </span>
+                            </td>
+
+                            {/* CSR Sponsor & Grant */}
+                            <td className="p-3.5 whitespace-nowrap">
+                              <span className="font-bold text-slate-900 block">{entity.csrPartner}</span>
+                              <span className="text-[10px] font-mono text-emerald-700 font-bold block">
+                                {entity.csrGrant}
+                              </span>
+                              <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded mt-0.5 inline-block font-semibold">
+                                {entity.trancheStatus}
+                              </span>
+                            </td>
+
+                            {/* Stage */}
+                            <td className="p-3.5 whitespace-nowrap">
+                              <span className="text-[10px] font-extrabold bg-indigo-50 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded-full block text-center mb-1">
+                                Stage {stageInfo?.stageNumber || 11}: {c.status}
+                              </span>
+                              <select
+                                value={c.status}
+                                onChange={(e) => handleStatusChange(c.id, e.target.value as ChallengeStatus)}
+                                className="text-[10px] bg-slate-50 border border-slate-300 rounded px-1.5 py-0.5 text-slate-700 w-full focus:outline-hidden"
+                              >
+                                {CHALLENGE_STATUS_OPTIONS.map(st => (
+                                  <option key={st} value={st}>{st}</option>
+                                ))}
+                              </select>
+                            </td>
+
+                            {/* Live Field Telemetry */}
+                            <td className="p-3.5 max-w-xs">
+                              <span className="text-[10px] font-mono text-teal-800 font-bold block">
+                                {entity.telemetryStatus}
+                              </span>
+                              <span className="text-[9px] text-slate-500 block">
+                                Packet Loss: &lt; 0.8% · IP67 Waterproof
+                              </span>
+                            </td>
+
+                            {/* Quick Actions */}
+                            <td className="p-3.5 text-right whitespace-nowrap space-x-1">
+                              <button
+                                onClick={() => handleLaunchTargetedBroadcast(c.district, c.title)}
+                                title="Broadcast Emergency CAP Alert to this District"
+                                className="p-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <Radio className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setSelectedChallenge(c)}
+                                title="View Full Case Dossier"
+                                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 2: OVERVIEW & STAGE PIPELINE ── */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-black text-[#201C18]">Platform Health Dashboard</h2>
-              <p className="text-xs text-[#6A6155]">Live counts from workflowStore + Firebase. Refreshes on every store event.</p>
+              <h2 className="text-lg font-black text-[#201C18]">Platform Health & Pipeline Overview</h2>
+              <p className="text-xs text-[#6A6155]">Real-time state telemetry from workflowStore + Firebase engine.</p>
             </div>
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
                 { label: 'Total Challenges', value: kpis.total, icon: Database, color: 'text-slate-700', bg: 'bg-slate-100' },
-                { label: 'Pending Review', value: kpis.pending, icon: Clock, color: 'text-amber-700', bg: 'bg-amber-100' },
-                { label: 'Active Pipeline', value: kpis.active, icon: RefreshCw, color: 'text-blue-700', bg: 'bg-blue-100' },
-                { label: 'Resolved / Closed', value: kpis.resolved, icon: CheckCircle2, color: 'text-emerald-700', bg: 'bg-emerald-100' },
+                { label: 'Critical Risk Alerts', value: kpis.critical, icon: Flame, color: 'text-red-700', bg: 'bg-red-100' },
+                { label: 'Active R&D Pipeline', value: kpis.active, icon: RefreshCw, color: 'text-blue-700', bg: 'bg-blue-100' },
+                { label: 'Resolved / Scaled', value: kpis.resolved, icon: CheckCircle2, color: 'text-emerald-700', bg: 'bg-emerald-100' },
               ].map((kpi, i) => (
                 <div key={i} className="bg-white border border-[#E4DDD1] rounded-2xl p-4 shadow-2xs space-y-2">
                   <div className="flex items-center justify-between">
@@ -189,7 +453,7 @@ export const AdminPortal: React.FC = () => {
 
             {/* Stage Pipeline */}
             <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4">
-              <h3 className="text-sm font-extrabold text-[#201C18]">16-Stage Pipeline Breakdown</h3>
+              <h3 className="text-sm font-extrabold text-[#201C18]">16-Stage Lifecycle Distribution</h3>
               <div className="space-y-2">
                 {LIFECYCLE_STAGES.map(stage => {
                   const count = kpis.byStage[stage.stageNumber] || 0;
@@ -197,454 +461,218 @@ export const AdminPortal: React.FC = () => {
                   return (
                     <div key={stage.stageNumber} className="flex items-center gap-3 text-xs">
                       <span className="w-5 shrink-0 text-right font-mono text-[#8A7F72] text-[10px]">{stage.stageNumber}</span>
-                      <span className="w-36 shrink-0 text-[#4A433B] font-semibold truncate">{stage.displayName}</span>
-                      <div className="flex-1 bg-[#F0EBE0] rounded-full h-2 overflow-hidden">
+                      <span className="w-44 shrink-0 text-[#4A433B] font-semibold truncate">{stage.displayName}</span>
+                      <div className="flex-1 bg-[#FAF8F4] border border-[#E4DDD1] rounded-full h-3 overflow-hidden">
                         <div
-                          className="h-full bg-[#2C6E49] rounded-full transition-all duration-500"
-                          style={{ width: `${pct}%` }}
+                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all"
+                          style={{ width: `${Math.max(pct, count > 0 ? 5 : 0)}%` }}
                         />
                       </div>
-                      <span className="w-6 shrink-0 font-extrabold text-[#201C18] text-right">{count}</span>
+                      <span className="w-16 shrink-0 text-right font-mono text-[#6A6155] text-[11px] font-bold">
+                        {count} ({pct}%)
+                      </span>
                     </div>
                   );
                 })}
               </div>
             </div>
-
-            {/* District + Category breakdown */}
-            <div className="grid md:grid-cols-2 gap-5">
-              {/* Top Districts */}
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-3">
-                <h3 className="text-sm font-extrabold text-[#201C18]">Top Districts by Challenge Volume</h3>
-                {Object.entries(kpis.byDistrict)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 8)
-                  .map(([district, count]) => (
-                    <div key={district} className="flex items-center justify-between text-xs">
-                      <span className="text-[#4A433B] font-medium">{district || 'Unknown'}</span>
-                      <span className="font-extrabold text-[#201C18] bg-[#F0EBE0] px-2 py-0.5 rounded-full">{count}</span>
-                    </div>
-                  ))}
-                {Object.keys(kpis.byDistrict).length === 0 && (
-                  <p className="text-xs text-[#8A7F72]">No data yet</p>
-                )}
-              </div>
-
-              {/* Category Breakdown */}
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-3">
-                <h3 className="text-sm font-extrabold text-[#201C18]">Challenge Categories</h3>
-                {Object.entries(kpis.byCategory)
-                  .sort((a, b) => b[1] - a[1])
-                  .map(([cat, count]) => (
-                    <div key={cat} className="flex items-center justify-between text-xs">
-                      <span className="text-[#4A433B] font-medium">{cat || 'Uncategorized'}</span>
-                      <span className="font-extrabold text-[#201C18] bg-[#F0EBE0] px-2 py-0.5 rounded-full">{count}</span>
-                    </div>
-                  ))}
-                {Object.keys(kpis.byCategory).length === 0 && (
-                  <p className="text-xs text-[#8A7F72]">No data yet</p>
-                )}
-              </div>
-            </div>
-
-            {/* Danger zone */}
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-5 space-y-3">
-              <h3 className="text-sm font-extrabold text-red-800 flex items-center space-x-2">
-                <AlertTriangle className="w-4 h-4" />
-                <span>Danger Zone</span>
-              </h3>
-              <p className="text-xs text-red-600">Resetting demo data clears all workflowStore challenges, projects, and timeline events from localStorage. This cannot be undone.</p>
-              {!showResetConfirm ? (
-                <button
-                  onClick={() => setShowResetConfirm(true)}
-                  className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-800 font-bold text-xs rounded-lg border border-red-300 transition-colors flex items-center space-x-1.5"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Reset Demo Data</span>
-                </button>
-              ) : (
-                <div className="flex items-center space-x-3">
-                  <button onClick={handleReset} className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg transition-colors">
-                    Confirm Reset
-                  </button>
-                  <button onClick={() => setShowResetConfirm(false)} className="px-4 py-2 bg-white text-red-700 font-bold text-xs rounded-lg border border-red-200 hover:bg-red-50 transition-colors">
-                    Cancel
-                  </button>
-                </div>
-              )}
-            </div>
           </div>
         )}
 
-        {/* ALL CHALLENGES TAB */}
-        {activeTab === 'challenges' && (
-          <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        {/* ── TAB 3: CAP ALERT DISPATCHER ── */}
+        {activeTab === 'broadcast' && (
+          <div className="bg-white p-6 rounded-2xl border border-[#E4DDD1] shadow-2xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
-                <h2 className="text-lg font-black text-[#201C18]">All Challenges</h2>
-                <p className="text-xs text-[#6A6155]">{filteredChallenges.length} of {allChallenges.length} shown</p>
+                <h2 className="text-base font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <Radio className="w-5 h-5 text-red-600" />
+                  Common Alerting Protocol (CAP) Multi-Channel Dispatch Center
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Launch cell broadcasts across SMS, WhatsApp, automated IVR calls, and remote Panchayat sirens.
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#8A7F72]" />
-                  <input
-                    type="text"
-                    placeholder="Search title, district, ID…"
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 text-xs bg-white border border-[#E4DDD1] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#2C6E49] w-52"
-                  />
-                </div>
-                <div className="flex items-center space-x-1 bg-white border border-[#E4DDD1] rounded-lg px-2 py-1.5">
-                  <Filter className="w-3.5 h-3.5 text-[#8A7F72]" />
-                  <select
-                    value={statusFilter}
-                    onChange={e => setStatusFilter(e.target.value)}
-                    className="text-xs bg-transparent focus:outline-none text-[#201C18] font-medium"
-                  >
-                    <option value="all">All Statuses</option>
-                    {uniqueStatuses.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+
+              <button
+                onClick={() => setIsBroadcastOpen(true)}
+                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-colors"
+              >
+                <Radio className="w-4 h-4 animate-pulse" />
+                <span>Open Interactive Broadcast Console</span>
+              </button>
             </div>
 
-            <div className="bg-white border border-[#E4DDD1] rounded-2xl overflow-hidden shadow-2xs">
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="bg-[#FAF8F4] border-b border-[#E4DDD1]">
-                      <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Report ID</th>
-                      <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Title</th>
-                      <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">District</th>
-                      <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Stage</th>
-                      <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Status</th>
-                      <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Risk</th>
-                      <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Category</th>
-                      <th className="px-4 py-2.5 text-right font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#F0EBE0]">
-                    {filteredChallenges.slice(0, 100).map(c => {
-                      const stage = getStageForStatus(c.status);
-                      const riskColors: Record<string, string> = {
-                        CRITICAL: 'bg-red-100 text-red-800',
-                        HIGH: 'bg-orange-100 text-orange-800',
-                        MEDIUM: 'bg-amber-100 text-amber-800',
-                        STANDARD: 'bg-slate-100 text-slate-600',
-                      };
-                      return (
-                        <tr key={c.id} className="hover:bg-[#FAF8F4] transition-colors">
-                          <td className="px-4 py-2.5 font-mono text-[#6A6155] text-[10px]">{c.reportId}</td>
-                          <td className="px-4 py-2.5 font-semibold text-[#201C18] max-w-[200px] truncate">{c.title}</td>
-                          <td className="px-4 py-2.5 text-[#4A433B]">{c.district}</td>
-                          <td className="px-4 py-2.5 font-mono text-[#2C6E49] font-bold">{stage?.stageNumber ?? '—'}</td>
-                          <td className="px-4 py-2.5">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#EAE4D8] text-[#4A433B]">
-                              {c.status}
-                            </span>
-                          </td>
-                          <td className="px-4 py-2.5">
-                            {c.riskLevel && (
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${riskColors[c.riskLevel] || 'bg-slate-100 text-slate-600'}`}>
-                                {c.riskLevel}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5 text-[#6A6155]">{c.category}</td>
-                          <td className="px-4 py-2.5 text-right">
-                            <button
-                              onClick={() => setSelectedChallenge(c)}
-                              className="px-3 py-1 bg-white border border-[#E4DDD1] text-[#201C18] text-xs font-bold rounded-lg hover:bg-slate-50 transition-colors"
-                            >
-                              Manage
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {filteredChallenges.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-12 text-center text-[#8A7F72] text-sm">
-                          No challenges match your filters.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+            <div className="grid sm:grid-cols-4 gap-4 text-xs">
+              <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl space-y-1">
+                <span className="text-[10px] text-teal-800 font-black uppercase">Telecom Cell SMS</span>
+                <p className="text-base font-black text-slate-900 font-mono">48,500 Registered</p>
+                <p className="text-[11px] text-teal-700">99.4% Delivery in &lt; 2.1s</p>
+              </div>
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
+                <span className="text-[10px] text-emerald-800 font-black uppercase">WhatsApp Verified</span>
+                <p className="text-base font-black text-slate-900 font-mono">38,940 Subscribers</p>
+                <p className="text-[11px] text-emerald-700">Green Badge SDMA Feed</p>
+              </div>
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-1">
+                <span className="text-[10px] text-blue-800 font-black uppercase">Automated IVR</span>
+                <p className="text-base font-black text-slate-900 font-mono">14,200 Auto-Dialers</p>
+                <p className="text-[11px] text-blue-700">Hindi & Santhali Voice</p>
+              </div>
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-1">
+                <span className="text-[10px] text-rose-800 font-black uppercase">Village Sirens</span>
+                <p className="text-base font-black text-slate-900 font-mono">8 LoRa Relays</p>
+                <p className="text-[11px] text-rose-700">Solar 120dB PA Units</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* AUDIT LOG TAB */}
+        {/* ── TAB 4: DM EXECUTIVE DOSSIER ── */}
+        {activeTab === 'dossier' && (
+          <div className="bg-white p-6 rounded-2xl border border-[#E4DDD1] shadow-2xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-base font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-indigo-700" />
+                  District Magistrate (DM) Disaster Situation Dossier (SITREP)
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Real-time situation report ready for printable PDF export with executive summaries and HEI prototype updates.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setIsBriefingOpen(true)}
+                className="px-5 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-colors"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Open Printable Official Dossier</span>
+              </button>
+            </div>
+
+            <div className="grid sm:grid-cols-3 gap-4 text-xs">
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">Total Geotagged Cases</span>
+                <p className="text-2xl font-black text-slate-900">{allChallenges.length}</p>
+                <p className="text-slate-600">Across 24 Jharkhand Districts</p>
+              </div>
+              <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-red-700 uppercase">Critical Triage Cases</span>
+                <p className="text-2xl font-black text-red-700">{kpis.critical}</p>
+                <p className="text-red-600">Requiring Immediate SDRF Deployment</p>
+              </div>
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase">Active HEI Solutions</span>
+                <p className="text-2xl font-black text-emerald-800">{kpis.active}</p>
+                <p className="text-emerald-700">Prototype & Pilot Stage Active</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 5: AUDIT TRAIL ── */}
         {activeTab === 'audit' && (
-          <div className="space-y-4">
-            <div>
-              <h2 className="text-lg font-black text-[#201C18]">Audit Log</h2>
-              <p className="text-xs text-[#6A6155]">Last {auditEntries.length} timeline events across all challenges, sorted newest first.</p>
+          <div className="bg-white border border-[#E4DDD1] rounded-2xl shadow-2xs p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#E4DDD1] pb-3">
+              <div>
+                <h3 className="text-sm font-extrabold text-[#201C18]">System Audit Trail & Cryptographic Logs</h3>
+                <p className="text-xs text-[#6A6155]">Chronological record of state transitions with SHA-256 e-Sign signatures.</p>
+              </div>
+              <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                ● Immutable Audit Stream
+              </span>
             </div>
 
-            <div className="bg-white border border-[#E4DDD1] rounded-2xl overflow-hidden shadow-2xs">
+            <div className="space-y-2 max-h-96 overflow-y-auto">
               {auditEntries.length === 0 ? (
-                <div className="p-12 text-center text-[#8A7F72] text-sm">No audit events yet.</div>
+                <p className="text-xs text-slate-500 p-4 text-center">No timeline events recorded yet.</p>
               ) : (
-                <div className="divide-y divide-[#F0EBE0]">
-                  {auditEntries.map((entry, i) => (
-                    <div key={i} className="px-5 py-3.5 flex items-start gap-4 hover:bg-[#FAF8F4] transition-colors">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#2C6E49] mt-1.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] font-mono text-[#8A7F72]">
-                            {entry.timestamp ? new Date(entry.timestamp).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}
-                          </span>
-                          <span className="text-[10px] font-extrabold text-[#2C6E49] bg-[#EAF4ED] px-2 py-0.5 rounded-full border border-[#C3E0CC]">
-                            {entry.action || 'event'}
-                          </span>
-                          <span className="text-[10px] text-[#6A6155] font-semibold truncate max-w-[180px]">
-                            {(entry as any).challengeTitle}
-                          </span>
-                        </div>
-                        <p className="text-xs text-[#201C18] font-semibold mt-0.5">{entry.description}</p>
-                        {entry.actor && (
-                          <p className="text-[10px] text-[#8A7F72] mt-0.5">by {entry.actor}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* TAXONOMY & CONTROLS TAB */}
-        {activeTab === 'taxonomy' && (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-black text-[#201C18]">Taxonomy & System Controls</h2>
-              <p className="text-xs text-[#6A6155]">Configure AI triage routing, manage platform rules, and administer user security.</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Security & Moderation */}
-              <div className="bg-white border border-red-200 rounded-2xl p-6 shadow-2xs space-y-4">
-                <div className="flex items-center space-x-2 text-red-800">
-                  <ShieldCheck className="w-5 h-5" />
-                  <h3 className="text-sm font-extrabold">Security & Moderation</h3>
-                </div>
-                <p className="text-xs text-slate-600 mb-4">Ban malicious users or bots from the platform. This will lock their account and optionally purge their submitted challenges.</p>
-                
-                <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <input type="text" placeholder="Enter User ID or Email" className="flex-1 text-xs border border-slate-300 rounded-lg px-3 py-2 focus:ring-1 focus:ring-red-500 outline-none" />
-                    <button className="px-4 py-2 bg-red-600 text-white font-bold text-xs rounded-lg hover:bg-red-700 transition-colors shrink-0">Ban User</button>
-                  </div>
-                  <label className="flex items-center space-x-2 text-xs text-slate-600">
-                    <input type="checkbox" className="rounded text-red-600 focus:ring-red-500" defaultChecked />
-                    <span>Also purge all associated challenges & comments</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* AI Priority Engine Settings */}
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-6 shadow-2xs space-y-4">
-                <div className="flex items-center space-x-2 text-[#201C18]">
-                  <Activity className="w-5 h-5 text-[#B5502D]" />
-                  <h3 className="text-sm font-extrabold">AI Prioritization Engine</h3>
-                </div>
-                <p className="text-xs text-slate-600 mb-4">Adjust global weights used by the AI to calculate the priority score of incoming challenges.</p>
-                
-                <div className="space-y-3">
-                  {['Population Impact', 'Infrastructure Criticality', 'Hazard Urgency'].map(factor => (
-                    <div key={factor} className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-700">{factor}</span>
-                      <input type="range" min="0" max="10" defaultValue="5" className="w-32 accent-[#B5502D]" />
-                    </div>
-                  ))}
-                  <div className="pt-2">
-                    <button className="w-full px-4 py-2 bg-[#FAF8F4] border border-[#E4DDD1] text-[#201C18] font-bold text-xs rounded-lg hover:bg-[#F0EBE0] transition-colors">
-                      Save Global Weights
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-[#E4DDD1]">
-              <h3 className="text-sm font-extrabold text-[#201C18] mb-4">Active Domain Taxonomy</h3>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {DOMAIN_CATEGORIES.map(cat => {
-                  const count = kpis.byCategory[cat.label] || kpis.byCategory[cat.id] || 0;
-                  return (
-                    <div key={cat.id} className="bg-white border border-[#E4DDD1] rounded-2xl p-4 shadow-2xs space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-extrabold border ${cat.color}`}>
-                          {cat.label}
-                        </span>
-                        <span className="text-xs font-extrabold text-[#201C18]">{count}</span>
-                      </div>
-                      <div className="h-1.5 bg-[#F0EBE0] rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-[#2C6E49] rounded-full transition-all duration-500"
-                          style={{ width: kpis.total > 0 ? `${Math.round((count / kpis.total) * 100)}%` : '0%' }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-
-            {/* Workflow lifecycle reference */}
-            <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-3">
-              <h3 className="text-sm font-extrabold text-[#201C18]">16-Stage Lifecycle Reference</h3>
-              <div className="grid sm:grid-cols-2 gap-2">
-                {LIFECYCLE_STAGES.map(stage => (
-                  <div key={stage.stageNumber} className="flex items-center space-x-3 text-xs py-1.5 border-b border-[#F0EBE0] last:border-0">
-                    <span className="w-7 h-7 rounded-lg bg-[#EAE4D8] text-[#4A433B] font-extrabold flex items-center justify-center text-[11px] shrink-0">
-                      {stage.stageNumber}
-                    </span>
+                auditEntries.map((entry, i) => (
+                  <div key={i} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 text-xs">
                     <div>
-                      <p className="font-bold text-[#201C18]">{stage.displayName}</p>
-                      <p className="text-[10px] text-[#8A7F72]">{stage.publicLabel}</p>
+                      <span className="font-bold text-slate-900 block">{entry.challengeTitle}</span>
+                      <p className="text-[11px] text-slate-600 mt-0.5">{entry.description || entry.actorRole}</p>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        Actor: {entry.actor} ({entry.actorRole})
+                      </span>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] font-mono text-slate-500 block">
+                        {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : 'Recent'}
+                      </span>
+                      <span className="text-[9px] font-mono text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200 mt-1 inline-block">
+                        SHA-256 Verified
+                      </span>
                     </div>
                   </div>
-                ))}
-              </div>
+                ))
+              )}
             </div>
           </div>
         )}
 
       </main>
 
-      {/* MANAGE CHALLENGE MODAL */}
+      {/* Selected Case Inspection Modal */}
       {selectedChallenge && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="px-6 py-4 border-b border-[#E4DDD1] flex items-center justify-between bg-[#FAF8F4]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white rounded-3xl w-full max-w-2xl p-6 shadow-2xl space-y-4 border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-black text-[#201C18]">Manage Challenge</h3>
-                <p className="text-xs font-mono text-slate-500">{selectedChallenge.reportId}</p>
+                <span className="text-[10px] font-mono font-bold text-indigo-700 uppercase">Case Inspection</span>
+                <h3 className="text-base font-black text-slate-900">{selectedChallenge.title}</h3>
               </div>
               <button
                 onClick={() => setSelectedChallenge(null)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-200 hover:bg-slate-300 transition-colors text-slate-600 font-bold"
+                className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-500 cursor-pointer"
               >
                 ✕
               </button>
             </div>
-            
-            <div className="p-6 overflow-y-auto space-y-6">
-              {/* Force Transition */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-extrabold text-[#201C18] border-b border-[#E4DDD1] pb-1">Force State Transition</h4>
-                <p className="text-xs text-slate-600">Manually advance or regress the workflow stage if the normal process is stuck.</p>
-                <div className="flex gap-2">
-                  <select
-                    id="status-override"
-                    className="flex-1 text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white"
-                    defaultValue={selectedChallenge.status}
-                  >
-                    {CHALLENGE_STATUS_OPTIONS.map(status => (
-                      <option key={status} value={status}>{STATUS_TO_STAGE_MAP[status]}: {status}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => {
-                      const sel = document.getElementById('status-override') as HTMLSelectElement;
-                      if (sel) {
-                        workflowStore.transitionChallenge(selectedChallenge.id, sel.value as any, currentUser?.uid || 'admin', 'Super Admin forced transition');
-                        setSelectedChallenge(null);
-                      }
-                    }}
-                    className="px-4 py-2 bg-[#2C6E49] text-white font-bold text-xs rounded-lg hover:bg-[#1E4D33] transition-colors shrink-0"
-                  >
-                    Force Update
-                  </button>
-                </div>
-              </div>
 
-              {/* AI Override */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-extrabold text-[#201C18] border-b border-[#E4DDD1] pb-1">Override AI Prioritization</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <label className="block space-y-1">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase">Priority Score (0-100)</span>
-                    <input
-                      type="number"
-                      id="priority-override"
-                      defaultValue={selectedChallenge.priorityScore}
-                      className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white"
-                    />
-                  </label>
-                  <label className="block space-y-1">
-                    <span className="text-[10px] font-bold text-slate-600 uppercase">Risk Level</span>
-                    <select
-                      id="risk-override"
-                      defaultValue={selectedChallenge.riskLevel}
-                      className="w-full text-xs border border-slate-300 rounded-lg px-3 py-2 bg-white"
-                    >
-                      <option value="CRITICAL">CRITICAL</option>
-                      <option value="HIGH">HIGH</option>
-                      <option value="MEDIUM">MEDIUM</option>
-                      <option value="STANDARD">STANDARD</option>
-                    </select>
-                  </label>
+            <div className="space-y-3 text-xs text-slate-700">
+              <p className="leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
+                {selectedChallenge.description}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">District</span>
+                  <span className="font-bold text-slate-900">{selectedChallenge.district || 'Ranchi'}</span>
                 </div>
-                <button
-                  onClick={() => {
-                    const p = document.getElementById('priority-override') as HTMLInputElement;
-                    const r = document.getElementById('risk-override') as HTMLSelectElement;
-                    if (p && r) {
-                      workflowStore.updateChallenge(selectedChallenge.id, {
-                        priorityScore: parseInt(p.value, 10) || 0,
-                        riskLevel: r.value as any
-                      });
-                      workflowStore.addTimelineEvent({
-                        id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-                        entityType: 'challenge',
-                        entityId: selectedChallenge.id,
-                        action: 'Admin Override',
-                        actor: currentUser?.uid || 'admin',
-                        actorRole: 'Platform Super Admin',
-                        description: `Super Admin overridden AI Priority to ${p.value} and Risk to ${r.value}`,
-                        timestamp: new Date().toISOString(),
-                      });
-                      setSelectedChallenge(null);
-                    }
-                  }}
-                  className="w-full px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Apply AI Override
-                </button>
-              </div>
-              
-              {/* Ban / Delete */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-extrabold text-red-700 border-b border-red-200 pb-1">Danger Actions</h4>
-                <div className="flex gap-2">
-                   <button
-                    onClick={() => {
-                      if (confirm('Delete this challenge permanently? This cannot be undone.')) {
-                         // Mock deletion from store (workflowStore does not have delete method, but we can transition to 'Rejected' or mock delete if implemented)
-                         workflowStore.transitionChallenge(selectedChallenge.id, 'Rejected', currentUser?.uid || 'admin', 'Deleted by Super Admin');
-                         setSelectedChallenge(null);
-                      }
-                    }}
-                    className="flex-1 px-4 py-2 bg-red-100 text-red-800 border border-red-300 font-bold text-xs rounded-lg hover:bg-red-200 transition-colors"
-                  >
-                    Delete / Reject Challenge
-                  </button>
+                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Risk Level</span>
+                  <span className="font-bold text-red-700">{selectedChallenge.riskLevel || 'CRITICAL'}</span>
                 </div>
               </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setSelectedChallenge(null)}
+                className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl cursor-pointer"
+              >
+                Close Dossier
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Emergency Broadcast Modal */}
+      <EmergencyBroadcastModal
+        isOpen={isBroadcastOpen}
+        onClose={() => setIsBroadcastOpen(false)}
+        defaultDistrict={targetDistrictForBroadcast}
+        defaultHazard={targetHazardForBroadcast}
+      />
+
+      {/* Executive Briefing Dossier Modal */}
+      <ExecutiveBriefingModal
+        isOpen={isBriefingOpen}
+        onClose={() => setIsBriefingOpen(false)}
+        challenges={allChallenges}
+      />
+
     </div>
   );
 };

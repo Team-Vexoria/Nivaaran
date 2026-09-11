@@ -7,6 +7,7 @@ import { CitizenRegionChatTab } from '../../components/citizen/CitizenRegionChat
 import { CitizenLeaderboardTab } from '../../components/citizen/CitizenLeaderboardTab';
 import { CitizenProfileTab } from '../../components/citizen/CitizenProfileTab';
 import { QuickReportModal } from '../../components/QuickReportModal';
+import { LiveEmergencyAlertBanner } from '../../components/LiveEmergencyAlertBanner';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -57,6 +58,9 @@ export const CitizenPortal: React.FC = () => {
   return (
     <div className="min-h-screen bg-white text-slate-900 flex flex-col antialiased">
       
+      {/* Real-time Emergency Disaster Alert Banner */}
+      <LiveEmergencyAlertBanner />
+
       {/* Citizen Navbar with User Session */}
       <CitizenNavbar
         activeTab={activeTab}
