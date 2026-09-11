@@ -2897,6 +2897,6 @@ export function getUniversitiesByDistrict(district: string): UniversityDoc[] {
 export function getUniversitiesByDomain(domain: string): UniversityDoc[] {
   const domainLower = domain.toLowerCase();
   return JHARKHAND_UNIVERSITIES.filter(u =>
-    u.supportedDomains.some(d => d.toLowerCase().includes(domainLower))
+    u.supportedDomains?.some(d => d.toLowerCase().includes(domainLower))
   );
 }

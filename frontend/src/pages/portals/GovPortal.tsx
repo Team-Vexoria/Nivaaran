@@ -225,17 +225,17 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
 
           {/* Consolidated Deduplication Callout */}
           {(challenge as any).citizenReportCount && (challenge as any).citizenReportCount > 1 && (
-            <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white p-3.5 rounded-xl flex items-center justify-between border border-emerald-800/40 shadow-md">
+            <div className="bg-amber-50/90 border border-amber-300/80 text-amber-950 p-3.5 rounded-xl flex items-center justify-between shadow-xs">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                <div className="w-9 h-9 rounded-lg bg-amber-500/15 text-amber-700 flex items-center justify-center shrink-0 border border-amber-500/25">
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider block text-emerald-400">HIGH COMMUNITY CONCERN • DEDUPLICATED & MERGED</span>
-                  <p className="text-sm font-black text-white">{(challenge as any).citizenReportCount} Citizens Reported This Incident</p>
+                  <span className="text-[10px] font-black uppercase tracking-wider block text-amber-700">HIGH COMMUNITY CONCERN • DEDUPLICATED & MERGED</span>
+                  <p className="text-sm font-black text-amber-950">{(challenge as any).citizenReportCount} Citizens Reported This Incident</p>
                 </div>
               </div>
-              <span className="text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-3 py-1.5 rounded-lg uppercase">
+              <span className="text-xs font-bold bg-amber-500/15 text-amber-800 border border-amber-400/40 px-3 py-1.5 rounded-lg uppercase">
                 High Urgency
               </span>
             </div>

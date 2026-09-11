@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send, Users, Trash2, Calendar } from 'lucide-react';
+import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send, Users, Trash2, Calendar, User } from 'lucide-react';
 import { subscribeToChallenges, ChallengeDoc, uploadEvidenceImage, deleteChallengeDoc } from '../../services/firebaseService';
 import { extractIncidentMetadata } from '../../services/dataExtractionService';
 import { CHALLENGE_STATUS_OPTIONS, LIFECYCLE_STAGES, getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
@@ -201,42 +201,62 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
                     </div>
                   </div>
 
-                  {/* Prominently Highlighted Citizen Report Count Banner */}
-                  {report.citizenReportCount && report.citizenReportCount > 1 && (
-                    <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-slate-900 text-white p-3 rounded-xl flex items-center justify-between border border-emerald-800/40 shadow-xs">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-500/30">
-                          <Users className="w-4 h-4" />
-                        </div>
-                        <div>
-                          <span className="text-[9px] font-black uppercase tracking-wider block text-emerald-400">HIGH COMMUNITY PRIORITY</span>
-                          <span className="text-xs font-black tracking-tight">{report.citizenReportCount} Citizens Reported This Incident</span>
-                        </div>
-                      </div>
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2.5 py-1 rounded-lg font-bold tracking-wider uppercase">
-                        Consolidated
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Image Evidence Thumbnail Preview */}
+                  {/* Image Evidence Thumbnail Preview with Floating Priority Overlay */}
                   {photoUrl && (
-                    <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-44 my-1">
+                    <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 h-44 my-1 group">
                       <img
                         src={photoUrl}
                         alt={report.title}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
                       />
+                      {report.citizenReportCount && report.citizenReportCount > 1 ? (
+                        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between pointer-events-none">
+                          <div className="bg-amber-500/95 text-amber-950 backdrop-blur-md px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-md border border-amber-300/70">
+                            <Users className="w-3.5 h-3.5 text-amber-950 shrink-0" />
+                            <span className="text-[11px] font-black tracking-tight">{report.citizenReportCount} Citizens Reported</span>
+                          </div>
+                          <span className="text-[9px] bg-amber-950/90 text-amber-100 backdrop-blur-md border border-amber-400/40 px-2 py-0.5 rounded-md font-black uppercase tracking-wider shadow-sm">
+                            Consolidated
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="absolute top-2.5 left-2.5 pointer-events-none">
+                          <div className="bg-slate-900/75 text-white backdrop-blur-md px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm border border-white/20">
+                            <User className="w-2.5 h-2.5 text-slate-300 shrink-0" />
+                            <span className="text-[10px] font-semibold">1 Citizen Report</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  <h3 className="font-bold text-base text-slate-900 leading-snug">
+                  {/* Category, Domain & Date Metadata Row */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    {report.category && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/80">
+                        {report.category}
+                      </span>
+                    )}
+                    {(report as any).domain && (report as any).domain !== report.category && (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                        {(report as any).domain}
+                      </span>
+                    )}
+                    {report.createdAt && (
+                      <span className="text-[10px] text-slate-400 flex items-center gap-1 ml-auto">
+                        <Calendar className="w-2.5 h-2.5" />
+                        {new Date(report.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </span>
+                    )}
+                  </div>
+
+                  <h3 className="font-bold text-base text-slate-900 leading-snug line-clamp-2 min-h-[1.5rem]">
                     {report.title}
                   </h3>
 
-                  <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
-                    {report.summary || report.aiReasoning || ''}
+                  <p className="text-xs text-slate-600 leading-relaxed line-clamp-2 min-h-[2rem]">
+                    {report.summary || report.aiReasoning || 'Community reported incident logged under active review.'}
                   </p>
 
                   {report.needsHumanVerification && (

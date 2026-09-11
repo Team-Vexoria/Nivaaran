@@ -81,7 +81,7 @@ export const calculateHEIMatchScore = (
   const challengeDistrictLower = (challenge.district || '').toLowerCase();
 
   // 1. Department & Capability Match (30 Points Max)
-  university.departments.forEach((dept) => {
+  for (const dept of university.departments) {
     let deptScore = 0;
     
     // Domain match
@@ -118,7 +118,7 @@ export const calculateHEIMatchScore = (
       highestDeptScore = deptScore;
       bestDept = dept;
     }
-  });
+  }
 
   // 1. Department Capability Fit (30 pts max — scaled from deptScore / max possible)
   departmentFitScore = Math.min(30, Math.round((highestDeptScore / 40) * 30));
