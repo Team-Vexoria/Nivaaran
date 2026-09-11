@@ -28,6 +28,63 @@ const JHARKHAND_DISTRICTS = [
   'Chatra', 'Koderma', 'Lohardaga'
 ];
 
+const JHARKHAND_ISSUE_PRESETS = [
+  {
+    label: '🔥 Jharia Coalfire & Smoke',
+    title: 'Subterranean coalfield fire & toxic gas venting in Lodna Colliery',
+    desc: 'Ground subsidence cracks reaching 1.2m width and continuous carbon monoxide & sulphur dioxide emissions observed near Lodna 4-Pits residential quarters. Ground temperature 56°C.',
+    district: 'Dhanbad',
+    blockVillage: 'Jharia - Lodna Colliery',
+    coords: { lat: 23.7460, lng: 86.4132 },
+    address: 'Lodna 4-Pits Sector, Jharia Coalfield, Dhanbad, Jharkhand',
+  },
+  {
+    label: '☠️ Giridih Arsenic Water',
+    title: 'Severe handpump arsenic & fluoride toxicity in 18 Santhal tribal hamlets',
+    desc: 'Hydrogeological sampling by PHED reveals arsenic levels at 0.08 mg/L (8x WHO safe limit) and fluoride at 3.6 mg/L across 42 handpumps in Tisri block.',
+    district: 'Giridih',
+    blockVillage: 'Tisri - Lokai & Baramasia',
+    coords: { lat: 24.5821, lng: 86.0543 },
+    address: 'Tisri Tribal Belt, Giridih District, Jharkhand',
+  },
+  {
+    label: '☀️ Palamu Drought & Dry Wells',
+    title: 'Severe rain-shadow agricultural drought & acute aquifer drawdown in North Koel basin',
+    desc: 'Consecutive 45-day dry spell led to water table plunging below 42m depth across 1,800 hectares of paddy land in Chhatarpur block. 940 tribal families affected.',
+    district: 'Palamu',
+    blockVillage: 'Chhatarpur - Mahugawan',
+    coords: { lat: 24.2341, lng: 84.1852 },
+    address: 'Chhatarpur Block, Palamu District, Jharkhand',
+  },
+  {
+    label: '🌊 Kanke School Road Flood',
+    title: 'Kanke dam spillway overflow & Hutup culvert blockage flooding school access road',
+    desc: 'Storm backwater accumulation in Hutup Panchayat has submerged the main access road under 3.5 feet of stagnant runoff. 450 students unable to reach Government High School Hutup.',
+    district: 'Ranchi',
+    blockVillage: 'Kanke - Hutup Panchayat',
+    coords: { lat: 23.4031, lng: 85.3208 },
+    address: 'Hutup Panchayat Main Road, Kanke, Ranchi, Jharkhand',
+  },
+  {
+    label: '🐘 Betla Elephant Conflict',
+    title: 'Elephant corridor fragmentation & nocturnal crop raiding in Betla buffer zone',
+    desc: 'A herd of 16 Asiatic elephants entering agrarian settlements nightly in Barwadih block. 120+ farming families lost ₹22 lakh of paddy crops this season.',
+    district: 'Latehar',
+    blockVillage: 'Barwadih - Betla Fringe',
+    coords: { lat: 23.8731, lng: 84.0640 },
+    address: 'Betla Forest Buffer, Barwadih, Latehar, Jharkhand',
+  },
+  {
+    label: '🏭 Saranda Karo Red Mud',
+    title: 'Hematite red mud slurry runoff polluting Karo river tribal drinking sources',
+    desc: 'Heavy rains breached opencast iron ore mine tailing bunds near Gua, discharging high-turbidity hematite red slurry (>450 NTU) into the Karo river.',
+    district: 'West Singhbhum',
+    blockVillage: 'Noamundi - Gua Basti',
+    coords: { lat: 22.1854, lng: 85.3942 },
+    address: 'Saranda Forest Fringe, Gua, West Singhbhum, Jharkhand',
+  },
+];
+
 export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { t, currentLang } = useLanguage();
   const [step, setStep] = useState<'form' | 'submitting' | 'success' | 'forensic_rejected' | 'dedup_merged'>('form');
@@ -841,6 +898,33 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
                   <span>Tap to Speak in {voiceLanguage === 'hi-IN' ? 'हिन्दी (Hindi)' : voiceLanguage === 'bn-IN' ? 'বাংলা' : voiceLanguage === 'sa-IN' ? 'संथाली' : 'English'}</span>
                 </button>
               )}
+            </div>
+
+            {/* Common Jharkhand Incident Presets */}
+            <div className="bg-slate-50 border border-slate-200/90 rounded-xl p-2.5 space-y-1.5">
+              <span className="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider block flex items-center gap-1">
+                📍 Common Jharkhand Ground Issues (1-Click Fill)
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {JHARKHAND_ISSUE_PRESETS.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setTitle(preset.title);
+                      setDescription(preset.desc);
+                      setDistrict(preset.district);
+                      setBlockVillage(preset.blockVillage);
+                      setLocationCoords(preset.coords);
+                      setFormattedAddress(preset.address);
+                      triggerInstantPreTriage('', preset.title, preset.desc);
+                    }}
+                    className="px-2.5 py-1 text-[11px] font-bold bg-white hover:bg-slate-900 hover:text-white border border-slate-200 text-slate-700 rounded-lg shadow-2xs transition-all active:scale-95 cursor-pointer"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Title & Description */}

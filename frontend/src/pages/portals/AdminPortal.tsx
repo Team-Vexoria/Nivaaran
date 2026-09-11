@@ -26,41 +26,95 @@ const ENTITY_MAPPINGS: Record<string, {
   trancheStatus: string;
   telemetryStatus: string;
 }> = {
-  'flood': {
-    university: 'BIT Mesra, Ranchi',
-    facultyLead: 'Dr. Arvind Sinha (IoT Lab)',
-    studentLead: 'Ayush Kumar Singh (Lead · 4th Yr)',
-    csrPartner: 'Tata Steel TSRDS',
-    csrGrant: '₹5,00,000 (₹2.5L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● 115200 Baud Stream Active (4.2m Depth)',
-  },
   'mining': {
     university: 'IIT (ISM) Dhanbad',
-    facultyLead: 'Dr. S. K. Roy (Rock Mechanics)',
-    studentLead: 'Priya Sharma (M.Tech Mining)',
+    facultyLead: 'Dr. S. K. Roy (Rock Mechanics & Safety)',
+    studentLead: 'Priya Sharma (Lead · M.Tech Mining)',
     csrPartner: 'BCCL CSR Foundation',
     csrGrant: '₹6,50,000 (₹3.0L Co-Funded)',
     trancheStatus: 'Tranche 2 Active (40%)',
-    telemetryStatus: '● 4 Borehole Nodes Synced (0.2mm shift)',
+    telemetryStatus: '● 4 Borehole DTS Nodes Synced (56°C peak, 0.2mm shift)',
+  },
+  'water': {
+    university: 'IIT (ISM) Dhanbad',
+    facultyLead: 'Prof. Ankit Verma (Environmental Engg)',
+    studentLead: 'Deepak Sahu (Lead · 4th Yr Env Engg)',
+    csrPartner: 'Tata Steel Foundation',
+    csrGrant: '₹5,20,000 (₹2.6L Co-Funded)',
+    trancheStatus: 'Tranche 2 Active (40%)',
+    telemetryStatus: '● Cartridge Flow: 14.2 L/min (As <0.005 mg/L)',
   },
   'drought': {
-    university: 'Birsa Agricultural University',
-    facultyLead: 'Dr. Rameshwar Oraon',
-    studentLead: 'Amit Murmu (3rd Yr AgriTech)',
-    csrPartner: 'NTPC CSR Rural Fund',
-    csrGrant: '₹4,50,000 (₹2.0L Co-Funded)',
+    university: 'Birsa Agricultural University (BAU)',
+    facultyLead: 'Dr. Rameshwar Oraon (Soil & Water Engg)',
+    studentLead: 'Amit Murmu (Lead · 3rd Yr AgriTech)',
+    csrPartner: 'NTPC CSR Rural Energy Fund',
+    csrGrant: '₹4,80,000 (₹2.4L Co-Funded)',
     trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Soil Moisture Grid: 18.4% (Sub-optimal)',
+    telemetryStatus: '● LoRa Aquifer Piezometer: 42.1m (Soil Tension 28 kPa)',
   },
-  'infrastructure': {
-    university: 'NIT Jamshedpur',
-    facultyLead: 'Dr. V. K. Mahato (Civil Engg)',
-    studentLead: 'Rahul Soren (4th Yr Civil)',
-    csrPartner: 'Jusco Community Dev',
-    csrGrant: '₹4,00,000 (₹1.5L Co-Funded)',
+  'flood': {
+    university: 'BIT Mesra, Ranchi',
+    facultyLead: 'Dr. Arvind Sinha (IoT & Civil Lab)',
+    studentLead: 'Ayush Kumar Singh (Lead · 4th Yr ECE)',
+    csrPartner: 'Central Coalfields Ltd (CCL CSR)',
+    csrGrant: '₹4,50,000 (₹2.25L Co-Funded)',
     trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Culvert Flow Sensor: 1.8 m/s',
+    telemetryStatus: '● 115200 Baud Radar Stream: 1.82m Stage (Normal Flow)',
+  },
+  'confluence': {
+    university: 'NIT Jamshedpur',
+    facultyLead: 'Dr. V. K. Mahato (Hydraulic Engg)',
+    studentLead: 'Rahul Soren (Lead · 4th Yr Civil)',
+    csrPartner: 'Tata Steel TSRDS & Jusco CSR',
+    csrGrant: '₹5,80,000 (₹2.9L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Ultrasonic River Sentinel: 4.1m (Alert at 5.5m)',
+  },
+  'wildlife': {
+    university: 'BIT Sindri',
+    facultyLead: 'Dr. Priya Sharma (Wildlife Ecology & IoT)',
+    studentLead: 'Aditya Kumar (Lead · Forestry & Wildlife)',
+    csrPartner: 'Jharkhand Forest Dev & Adani CSR',
+    csrGrant: '₹4,20,000 (₹2.1L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● 6 Seismic Geophones Online (0 Pachyderm Alerts)',
+  },
+  'erosion': {
+    university: 'Sido Kanhu Murmu University (SKMU)',
+    facultyLead: 'Dr. Hemant Murmu (Fluvial Geomorphology)',
+    studentLead: 'Sanjay Hansda (Lead · Earth Sciences)',
+    csrPartner: 'Inland Waterways CSR & Jindal Power',
+    csrGrant: '₹6,00,000 (₹3.0L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● ADCP Sonar Buoy Active (Current 1.4 m/s · Depth 7.2m)',
+  },
+  'hazardous': {
+    university: 'NIT Jamshedpur',
+    facultyLead: 'Dr. P. K. Soren (Chemical & Env Engg)',
+    studentLead: 'Neha Kumari (Lead · 4th Yr Chem Engg)',
+    csrPartner: 'Adityapur Auto Cluster CSR',
+    csrGrant: '₹5,10,000 (₹2.5L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Optical Fluorometer Stream (Cr-VI: 0.018 mg/L Safe)',
+  },
+  'agri': {
+    university: 'Birsa Agricultural University (BAU)',
+    facultyLead: 'Dr. R. N. Tiwari (Agronomy & Entomology)',
+    studentLead: 'Birsa Munda (Lead · Lac Culture Cell)',
+    csrPartner: 'TRIFED & JSLPS Innovation Grant',
+    csrGrant: '₹3,90,000 (₹1.95L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Multispectral NDVI Drone Scan (Canopy Health 92%)',
+  },
+  'bridge': {
+    university: 'Vinoba Bhave University (VBU) & NIT JSR',
+    facultyLead: 'Dr. Meenakshi Sinha (Geotechnical Engg)',
+    studentLead: 'Tanvi Agarwal (Lead · Structural Engg)',
+    csrPartner: 'NHAI Road Safety & NTPC CSR',
+    csrGrant: '₹5,50,000 (₹2.75L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● FBG Strain Sensor Rig (Pier-3 Scour 2.8m Fixed)',
   },
 };
 
@@ -313,10 +367,21 @@ export const AdminPortal: React.FC = () => {
                     ) : (
                       filteredChallenges.map((c) => {
                         const stageInfo = getStageForStatus(c.status);
-                        const categoryKey = c.category.toLowerCase().includes('flood') ? 'flood'
-                          : c.category.toLowerCase().includes('mining') ? 'mining'
-                          : c.category.toLowerCase().includes('drought') ? 'drought'
-                          : 'infrastructure';
+                        const catLower = c.category.toLowerCase();
+                        const titleLower = c.title.toLowerCase();
+                        const combined = `${catLower} ${titleLower}`;
+
+                        const categoryKey = combined.includes('coal') || combined.includes('mine') || combined.includes('subsidence') ? 'mining'
+                          : combined.includes('arsenic') || combined.includes('fluoride') || combined.includes('water') || combined.includes('pathogen') ? 'water'
+                          : combined.includes('drought') || combined.includes('aquifer') || combined.includes('well') ? 'drought'
+                          : combined.includes('confluence') || combined.includes('kharkai') || combined.includes('subarnarekha') ? 'confluence'
+                          : combined.includes('flood') || combined.includes('drainage') || combined.includes('culvert') ? 'flood'
+                          : combined.includes('elephant') || combined.includes('wildlife') ? 'wildlife'
+                          : combined.includes('ganga') || combined.includes('erosion') || combined.includes('diara') ? 'erosion'
+                          : combined.includes('chemical') || combined.includes('hazardous') || combined.includes('electroplating') || combined.includes('slurry') ? 'hazardous'
+                          : combined.includes('lac') || combined.includes('crop') || combined.includes('blight') || combined.includes('tree') ? 'agri'
+                          : combined.includes('bridge') || combined.includes('scour') || combined.includes('pier') ? 'bridge'
+                          : 'flood';
                         const entity = ENTITY_MAPPINGS[categoryKey] || ENTITY_MAPPINGS['flood'];
 
                         return (
