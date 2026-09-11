@@ -60,7 +60,21 @@ class WorkflowStore {
       const stored = localStorage.getItem(STORE_KEY);
       if (stored) {
         const parsed: unknown = JSON.parse(stored);
-        if (this.isWorkflowState(parsed)) return parsed;
+        if (this.isWorkflowState(parsed)) {
+          // If stored state is from older seed with <=5 challenges, upgrade to new rich Jharkhand seed
+          if (parsed.challenges.length < 10) {
+            const seed = createSeedData();
+            this.persist(seed);
+            return seed;
+          }
+          // Sanitize any dashes in loaded challenges
+          parsed.challenges = parsed.challenges.map(c => ({
+            ...c,
+            title: c.title ? c.title.replace(/[—–]/g, ' to ').replace(/--+/g, ' ') : c.title,
+            description: c.description ? c.description.replace(/[—–]/g, ' to ').replace(/--+/g, ' ') : c.description,
+          }));
+          return parsed;
+        }
         localStorage.setItem(`${STORE_KEY}_corrupt_${Date.now()}`, stored);
       }
     } catch (e) {
