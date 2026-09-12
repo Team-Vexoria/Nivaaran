@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ChevronLeft, ChevronRight, Pause, Play, Eye, ArrowRight, Search, 
-  MapPin, Building2, Award, ShieldAlert, Cpu, Sparkles,
+  MapPin, Building2, Award, ShieldAlert, Cpu,
   Activity, CheckCircle2
 } from 'lucide-react';
 
@@ -233,22 +233,9 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
 
       <div className="max-w-6xl mx-auto space-y-4">
         
-        {/* Top Header Bar: Hackathon Badge + Slide Status Tabs + Auto-Play Control */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1">
-          
-          {/* Official SIH & State Ribbon */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-500/10 border border-amber-600/30 text-amber-900 rounded-full text-[11px] font-extrabold tracking-tight">
-              <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-              <span>Smart India Hackathon 2026 · Problem Statement: SIH-26043</span>
-            </span>
-            <span className="hidden md:inline-flex items-center gap-1 text-[11px] font-semibold text-[#6A6155]">
-              Govt. of Jharkhand & Ministry of Education (MIC)
-            </span>
-          </div>
-
-          {/* Controls: Play/Pause Toggle & Next/Prev Navigation */}
-          <div className="flex items-center gap-1.5 self-end sm:self-auto">
+        {/* Top Controls Bar: Play/Pause Toggle & Next/Prev Navigation */}
+        <div className="flex items-center justify-end gap-1.5 pt-1">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setIsPaused((p) => !p)}
               className="p-1.5 rounded-lg bg-white border border-[#E4DDD1] text-[#6A6155] hover:text-[#201C18] hover:bg-[#F3EDE2] text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
