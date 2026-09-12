@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { JHARKHAND_UNIVERSITIES, UniversityDoc, DepartmentInfo } from '../../services/universityData';
+import { JHARKHAND_UNIVERSITIES, UniversityDoc, DepartmentInfo, getUniversityByEmail } from '../../services/universityData';
 import { UniversityNavbar, UniversityTab, UserRoleType } from '../../components/university/UniversityNavbar';
 import { UniversityIntakeTab } from '../../components/university/UniversityIntakeTab';
 import { MultidisciplinaryTeamTab } from '../../components/university/MultidisciplinaryTeamTab';
@@ -15,13 +15,47 @@ interface UniversityPortalProps {
 }
 
 export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHome }) => {
-  const { logout } = useAuth();
-  const [selectedUniversity, setSelectedUniversity] = useState<UniversityDoc>(JHARKHAND_UNIVERSITIES[0]);
+  const { logout, currentUser } = useAuth();
+  
+  const [selectedUniversity, setSelectedUniversity] = useState<UniversityDoc>(() => {
+    // 1. If logged in with an official college email such as bitmesera@nivaaran.com
+    if (currentUser?.email) {
+      const matchedByEmail = getUniversityByEmail(currentUser.email);
+      if (matchedByEmail) return matchedByEmail;
+    }
+    // 2. If stored in testing session
+    const savedId = localStorage.getItem('nivaaran_active_university_id');
+    if (savedId) {
+      const matchedById = JHARKHAND_UNIVERSITIES.find(u => u.id === savedId);
+      if (matchedById) return matchedById;
+    }
+    // 3. Default to BIT Mesra or first university
+    const bitMesra = JHARKHAND_UNIVERSITIES.find(u => u.id === 'UNI-BIT-MESRA');
+    return bitMesra || JHARKHAND_UNIVERSITIES[0];
+  });
+
   const [userRole, setUserRole] = useState<UserRoleType>('admin');
   const [activeTab, setActiveTab] = useState<UniversityTab>('intake-queue');
   const [activeChallengeForTeam, setActiveChallengeForTeam] = useState<ChallengeDoc | null>(null);
   const [selectedDeptForTeam, setSelectedDeptForTeam] = useState<DepartmentInfo | null>(null);
   const [activeProposalChallengeId, setActiveProposalChallengeId] = useState<string>('');
+
+  useEffect(() => {
+    if (currentUser?.email) {
+      const matched = getUniversityByEmail(currentUser.email);
+      if (matched && matched.id !== selectedUniversity.id) {
+        setSelectedUniversity(matched);
+        setActiveChallengeForTeam(null);
+        localStorage.setItem('nivaaran_active_university_id', matched.id);
+      }
+    }
+  }, [currentUser?.email]);
+
+  const handleUniversityChange = (uni: UniversityDoc) => {
+    setSelectedUniversity(uni);
+    setActiveChallengeForTeam(null);
+    localStorage.setItem('nivaaran_active_university_id', uni.id);
+  };
 
   const handleReturnHome = async () => {
     if (logout) {
@@ -58,10 +92,7 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
       {/* Top Navbar */}
       <UniversityNavbar
         selectedUniversity={selectedUniversity}
-        onUniversityChange={(uni) => {
-          setSelectedUniversity(uni);
-          setActiveChallengeForTeam(null);
-        }}
+        onUniversityChange={handleUniversityChange}
         userRole={userRole}
         onRoleChange={setUserRole}
         activeTab={activeTab}

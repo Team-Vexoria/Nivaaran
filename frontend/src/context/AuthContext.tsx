@@ -9,6 +9,7 @@ import {
 } from 'firebase/auth';
 import { auth, googleProvider } from '../config/firebase';
 import { demoAuthEnabled } from '../api/client';
+import { getUniversityByEmail } from '../services/universityData';
 
 export type UserRole =
   | 'Citizen'
@@ -49,6 +50,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const OFFICIAL_ROLE_MAP: Record<string, UserRole> = {
   'nivaaran@gov.in': 'Government Department',
   'admin@bitmesra.in': 'University Admin',
+  'bitmesera@nivaaran.com': 'University Admin',
+  'bitmesra@nivaaran.com': 'University Admin',
+  'iitism@nivaaran.com': 'University Admin',
+  'nitjsr@nivaaran.com': 'University Admin',
   'faculty@bitmesra.in': 'Faculty / Mentor',
   'student@bitmesra.in': 'Student',
   'partner@tatasteel.com': 'Industry / MSME',
@@ -64,6 +69,10 @@ const OFFICIAL_ROLE_MAP: Record<string, UserRole> = {
 const OFFICIAL_NAME_MAP: Record<string, string> = {
   'nivaaran@gov.in': 'Jharkhand State Nodal Officer',
   'admin@bitmesra.in': 'BIT Mesra Academic Admin',
+  'bitmesera@nivaaran.com': 'BIT Mesra Academic Admin',
+  'bitmesra@nivaaran.com': 'BIT Mesra Academic Admin',
+  'iitism@nivaaran.com': 'IIT (ISM) Dhanbad Academic Admin',
+  'nitjsr@nivaaran.com': 'NIT Jamshedpur Academic Admin',
   'faculty@bitmesra.in': 'Prof. Alok Sharma',
   'student@bitmesra.in': 'Pooja Kumari',
   'partner@tatasteel.com': 'Tata Steel Innovation Lead',
@@ -162,14 +171,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const createLocalUser = (email: string, role: UserRole, customName?: string): UserProfile => {
     const cleanEmail = email.toLowerCase().trim();
-    const assignedRole = OFFICIAL_ROLE_MAP[cleanEmail] || role;
-    const name = customName || OFFICIAL_NAME_MAP[cleanEmail] || cleanEmail.split('@')[0];
+    const matchedUni = getUniversityByEmail(cleanEmail);
+    const assignedRole = matchedUni ? 'University Admin' : (OFFICIAL_ROLE_MAP[cleanEmail] || role);
+    const name = customName || (matchedUni ? `${matchedUni.shortName} Admin` : OFFICIAL_NAME_MAP[cleanEmail]) || cleanEmail.split('@')[0];
     const userProfile: UserProfile = {
       uid: 'user_' + cleanEmail.replace(/[^a-zA-Z0-9]/g, '_'),
       email: cleanEmail,
       displayName: name.charAt(0).toUpperCase() + name.slice(1),
       role: assignedRole,
+      institution: matchedUni ? matchedUni.name : undefined,
     };
+    if (matchedUni) {
+      localStorage.setItem('nivaaran_active_university_id', matchedUni.id);
+    }
     localStorage.setItem(`nivaaran_role_${userProfile.uid}`, assignedRole);
     localStorage.setItem('nivaaran_demo_user', JSON.stringify(userProfile));
     setCurrentUser(userProfile);
@@ -180,8 +194,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     const cleanEmail = email.toLowerCase().trim();
 
-    // If mock Firebase is configured, or it's a recognized official quick-fill credential, log in directly
-    if (isMockFirebase() || OFFICIAL_ROLE_MAP[cleanEmail]) {
+    // If mock Firebase is configured, or recognized official credential, or college test email, log in directly
+    if (isMockFirebase() || OFFICIAL_ROLE_MAP[cleanEmail] || getUniversityByEmail(cleanEmail)) {
       const profile = createLocalUser(cleanEmail, role);
       setLoading(false);
       return profile;

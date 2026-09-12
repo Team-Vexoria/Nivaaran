@@ -2900,3 +2900,96 @@ export function getUniversitiesByDomain(domain: string): UniversityDoc[] {
     u.supportedDomains?.some(d => d.toLowerCase().includes(domainLower))
   );
 }
+
+// Higher education institution assigned testing emails mapping
+export const UNIVERSITY_PORTAL_EMAILS: Record<string, string> = {
+  'UNI-BIT-MESRA': 'bitmesera@nivaaran.com',
+  'VERIFIED-BIT-MESRA': 'bitmesera@nivaaran.com',
+  'UNI-IIT-ISM-DHANBAD': 'iitism@nivaaran.com',
+  'UNI-NIT-JAMSHEDPUR': 'nitjsr@nivaaran.com',
+  'VERIFIED-NIT-JSR': 'nitjsr@nivaaran.com',
+  'UNI-CUJ-RANCHI': 'cuj@nivaaran.com',
+  'VERIFIED-CUJ': 'cuj@nivaaran.com',
+  'UNI-RANCHI-UNIVERSITY': 'ru@nivaaran.com',
+  'UNI-RANCHI-U': 'ru@nivaaran.com',
+  'UNI-VBU-HAZARIBAGH': 'vbu@nivaaran.com',
+  'UNI-VBU': 'vbu@nivaaran.com',
+  'UNI-SKMU-DUMKA': 'skmu@nivaaran.com',
+  'UNI-SKMU': 'skmu@nivaaran.com',
+  'UNI-XLRI-JAMSHEDPUR': 'xlri@nivaaran.com',
+  'UNI-JRU-RANCHI': 'jru@nivaaran.com',
+  'UNI-KOLHAN-CHAIBASA': 'kolhan@nivaaran.com',
+  'UNI-NPU-PALAMU': 'npu@nivaaran.com',
+  'UNI-BBMKU-DHANBAD': 'bbmku@nivaaran.com',
+  'UNI-DSPMU-RANCHI': 'dspmu@nivaaran.com',
+  'UNI-JRSU-RANCHI': 'jrsu@nivaaran.com',
+  'UNI-BAU-RANCHI': 'bau@nivaaran.com',
+  'UNI-BAU': 'bau@nivaaran.com',
+  'UNI-NIFFT-RANCHI': 'nifft@nivaaran.com',
+  'UNI-IIM-RANCHI': 'iimranchi@nivaaran.com',
+  'UNI-NUSRL-RANCHI': 'nusrl@nivaaran.com',
+  'UNI-NUSRL': 'nusrl@nivaaran.com',
+  'UNI-AISECT-HAZARIBAGH': 'aisect@nivaaran.com',
+  'UNI-ARKA-JAMSHEDPUR': 'arkajain@nivaaran.com',
+  'UNI-CAPITAL-KODERMA': 'capital@nivaaran.com',
+  'UNI-ICFAI-RANCHI': 'icfai@nivaaran.com',
+  'UNI-NSU-JAMSHEDPUR': 'nsu@nivaaran.com',
+  'UNI-RGU-RAMGARH': 'rgu@nivaaran.com',
+  'UNI-SBU-RANCHI': 'sbu@nivaaran.com',
+  'UNI-SRINATH-ADITYAPUR': 'srinath@nivaaran.com',
+  'UNI-UMU-RANCHI': 'umu@nivaaran.com',
+  'UNI-YBN-RANCHI': 'ybn@nivaaran.com',
+  'UNI-PIU-RANCHI': 'piu@nivaaran.com',
+  'UNI-AMITY-RANCHI': 'amity@nivaaran.com',
+  'UNI-NIT-PATNA': 'nitpatna@nivaaran.com',
+  'UNI-DR-NAIT': 'drnait@nivaaran.com',
+};
+
+// Helper: get official university email
+export function getUniversityEmail(uni: UniversityDoc): string {
+  if (UNIVERSITY_PORTAL_EMAILS[uni.id]) {
+    return UNIVERSITY_PORTAL_EMAILS[uni.id];
+  }
+  const idLower = uni.id.toLowerCase();
+  if (idLower.includes('bit') || idLower.includes('mesra')) {
+    return 'bitmesera@nivaaran.com';
+  }
+  const clean = (uni.shortName || uni.name).toLowerCase().replace(/[^a-z0-9]/g, '');
+  return `${clean}@nivaaran.com`;
+}
+
+// Helper: get university by email
+export function getUniversityByEmail(email: string): UniversityDoc | undefined {
+  const cleanEmail = email.toLowerCase().trim();
+  if (cleanEmail === 'bitmesera@nivaaran.com' || cleanEmail === 'bitmesra@nivaaran.com' || cleanEmail === 'admin@bitmesra.in') {
+    return JHARKHAND_UNIVERSITIES.find(u => u.id === 'UNI-BIT-MESRA');
+  }
+  for (const [id, mappedEmail] of Object.entries(UNIVERSITY_PORTAL_EMAILS)) {
+    if (mappedEmail.toLowerCase() === cleanEmail) {
+      const match = JHARKHAND_UNIVERSITIES.find(u => u.id === id);
+      if (match) return match;
+    }
+  }
+  return JHARKHAND_UNIVERSITIES.find(u => getUniversityEmail(u).toLowerCase() === cleanEmail);
+}
+
+// Helper: get unique primary institutions list for testing directory
+export function getTestingInstitutionsList(): Array<{ uni: UniversityDoc; email: string }> {
+  const seen = new Set<string>();
+  const list: Array<{ uni: UniversityDoc; email: string }> = [];
+
+  for (const uni of JHARKHAND_UNIVERSITIES) {
+    const email = getUniversityEmail(uni);
+    const key = email.toLowerCase();
+    if (!seen.has(key)) {
+      seen.add(key);
+      list.push({ uni, email });
+    }
+  }
+
+  return list.sort((a, b) => {
+    if (a.email === 'bitmesera@nivaaran.com') return -1;
+    if (b.email === 'bitmesera@nivaaran.com') return 1;
+    return a.uni.shortName?.localeCompare(b.uni.shortName || '') || 0;
+  });
+}

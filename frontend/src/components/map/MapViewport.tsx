@@ -166,8 +166,10 @@ export const MapViewport: React.FC<MapViewportProps> = ({
     // Custom positioned zoom control
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // High clarity CartoDB Voyager base map with OpenStreetMap data
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    // High clarity CartoDB Voyager base map with OpenStreetMap data and authenticated API key
+    const cartoApiKey = import.meta.env.VITE_CARTO_API_KEY || 'cb1_2x3k_1_ad093820ec9951ca03fd4793';
+    const cartoTileUrl = `https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${cartoApiKey}`;
+    L.tileLayer(cartoTileUrl, {
       attribution: '&copy; OpenStreetMap contributors, CARTO',
       subdomains: 'abcd',
       maxZoom: 19,
