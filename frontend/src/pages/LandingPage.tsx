@@ -3,8 +3,9 @@ import { PublicNavbar } from '../components/PublicNavbar';
 import { UniversityPortal } from './portals/UniversityPortal';
 import { JharkhandMapExplorer } from '../components/map/JharkhandMapExplorer';
 import { PublicChallengeTracker } from '../components/tracking/PublicChallengeTracker';
+import { HeroShowcaseSlideshow } from '../components/showcase/HeroShowcaseSlideshow';
 import {
-  Building2, ShieldCheck, UserCheck, ArrowRight, Cpu, Search, Eye, Map, Maximize2
+  Building2, ShieldCheck, UserCheck, ArrowRight, Cpu, Map, Maximize2
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { workflowStore, STORE_EVENT } from '../services/workflowStore';
@@ -26,12 +27,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     reportId: '',
   });
 
-  const [heroTrackQuery, setHeroTrackQuery] = useState<string>('');
-
   const handleOpenTracking = (reportId?: string) => {
     setTrackingModal({
       isOpen: true,
-      reportId: reportId || heroTrackQuery || 'JH-2026-RNC-001',
+      reportId: reportId || 'JH-2026-RNC-001',
     });
   };
 
@@ -171,118 +170,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
       <main className="flex-1 space-y-16 pb-20">
         
-        {/* 2. Public Institutional Hero Section (Full 1st Frame Height) */}
-        <section className="bg-[#FAF8F4] bg-[radial-gradient(#E4DDD1_1px,transparent_1px)] [background-size:16px_16px] text-[#201C18] min-h-[calc(100vh-84px)] flex flex-col justify-center py-8 sm:py-12 px-6 border-b border-[#E4DDD1] relative overflow-hidden">
-          
-          {/* Subtle Motif Ribbon */}
-          <div className="absolute top-0 left-0 right-0 h-1 bg-[linear-gradient(90deg,#2C6E49_0%,#C98A2C_50%,#B5502D_100%)]"></div>
-
-          <div className="max-w-4xl mx-auto text-center space-y-6 relative z-10 my-auto">
-            
-            {/* Main Headline */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black font-heading text-[#201C18] tracking-tight leading-tight max-w-4xl mx-auto">
-              {t.landing.heroMainTitle}
-            </h1>
-
-            {/* Subtitle */}
-            <p className="text-[#4A433B] text-sm sm:text-base leading-relaxed font-normal max-w-3xl mx-auto">
-              {t.landing.heroSubtitle}
-            </p>
-
-            {/* Primary Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-              <button
-                onClick={onOpenAuth}
-                className="w-full sm:w-auto bg-[#2C6E49] hover:bg-[#23583a] text-white font-semibold px-6 py-3.5 shadow-sm transition-all rounded-lg flex items-center justify-center space-x-2 cursor-pointer text-xs sm:text-sm"
-              >
-                <span>{t.landing.heroCtaPortals}</span>
-                <ArrowRight className="w-4 h-4 shrink-0 text-white" />
-              </button>
-
-              <button
-                onClick={() => {
-                  const el = document.getElementById('framework-16');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="w-full sm:w-auto bg-white border border-[#E4DDD1] text-[#201C18] hover:bg-[#F3EDE2] hover:border-[#C4BDB0] font-semibold px-6 py-3.5 rounded-lg shadow-2xs transition-all flex items-center justify-center space-x-2 cursor-pointer text-xs sm:text-sm"
-              >
-                <span>{t.landing.heroCtaLifecycle}</span>
-              </button>
-            </div>
-
-            {/* Live 16-Stage Challenge Tracking Bar */}
-            <div className="max-w-xl mx-auto pt-2">
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleOpenTracking(heroTrackQuery || 'JH-2026-RNC-001');
-                }}
-                className="bg-white border border-[#E4DDD1] rounded-2xl p-2 shadow-sm flex items-center gap-2"
-              >
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 text-[#8A7F72] absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    placeholder={t.landing.trackChallengePlaceholder}
-                    value={heroTrackQuery}
-                    onChange={(e) => setHeroTrackQuery(e.target.value)}
-                    className="w-full bg-transparent pl-9 pr-3 py-1.5 text-xs text-[#201C18] font-medium focus:outline-none placeholder:text-[#8A7F72]"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-extrabold rounded-xl transition-all cursor-pointer shadow-2xs flex items-center gap-1.5 shrink-0"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>{t.landing.trackStatusBtn}</span>
-                </button>
-              </form>
-              <div className="flex items-center justify-center gap-2 mt-2 text-[11px] text-[#6A6155]">
-                <span className="text-[#8A7F72]">{t.landing.popularAudits}</span>
-                {['JH-2026-RNC-001', 'JH-2026-DHN-002', 'JH-2026-ESB-003'].map(code => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => handleOpenTracking(code)}
-                    className="font-mono text-[10px] text-[#2C6E49] hover:underline cursor-pointer font-bold"
-                  >
-                    {code}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Integrated Monolithic Civic Impact Ticker Strip */}
-            <div className="w-full max-w-5xl mx-auto mt-8 bg-white border border-[#E4DDD1] rounded-xl p-4 sm:p-5 grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-[#E4DDD1] text-left shadow-2xs relative z-10">
-              
-              <div className="p-3 space-y-0.5">
-                <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">{liveTickerStats.verifiedDistricts} / 24</p>
-                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerDistrictsLabel}</p>
-                <p className="text-[11px] text-[#2C6E49] font-medium">{t.landing.tickerDistrictsNote}</p>
-              </div>
-
-              <div className="p-3 space-y-0.5 md:pl-6">
-                <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">48</p>
-                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerLabsLabel}</p>
-                <p className="text-[11px] text-slate-600 font-medium">{t.landing.tickerLabsNote}</p>
-              </div>
-
-              <div className="p-3 space-y-0.5 md:pl-6">
-                <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">{liveTickerStats.verificationRate}%</p>
-                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerAuditLabel}</p>
-                <p className="text-[11px] text-[#2C6E49] font-medium">{t.landing.tickerAuditNote}</p>
-              </div>
-
-              <div className="p-3 space-y-0.5 md:pl-6">
-                <p className="text-2xl sm:text-3xl font-bold text-[#201C18] tracking-tight font-heading">{t.landing.tickerResolutionValue}</p>
-                <p className="text-xs uppercase tracking-wider text-slate-500 font-semibold mt-1">{t.landing.tickerResolutionLabel}</p>
-                <p className="text-[11px] text-[#2C6E49] font-medium">{t.landing.tickerResolutionNote}</p>
-              </div>
-
-            </div>
-
-          </div>
-        </section>
+        {/* 2. Public Institutional Hero Showcase (Interactive 6-Slide Problem vs Solution) */}
+        <HeroShowcaseSlideshow
+          onOpenAuth={onOpenAuth}
+          onOpenTracking={handleOpenTracking}
+          onNavigatePortal={handleNavigatePortal}
+          liveStats={liveTickerStats}
+        />
 
         {/* 3. Role Portals Gateway Tree Diagram */}
         <section id="role-gateways" className="max-w-7xl mx-auto px-6 space-y-6">

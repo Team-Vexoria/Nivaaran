@@ -8,6 +8,7 @@ import { CitizenLeaderboardTab } from '../../components/citizen/CitizenLeaderboa
 import { CitizenProfileTab } from '../../components/citizen/CitizenProfileTab';
 import { QuickReportModal } from '../../components/QuickReportModal';
 import { LiveEmergencyAlertBanner } from '../../components/LiveEmergencyAlertBanner';
+import { PublicChallengeTracker } from '../../components/tracking/PublicChallengeTracker';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -26,6 +27,17 @@ export const CitizenPortal: React.FC = () => {
 
   const [activeTab, setActiveTabState] = useState<CitizenTab>(getInitialTab);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [trackingModal, setTrackingModal] = useState<{ isOpen: boolean; reportId?: string }>({
+    isOpen: false,
+    reportId: '',
+  });
+
+  const handleOpenTracking = (reportId?: string) => {
+    setTrackingModal({
+      isOpen: true,
+      reportId: reportId || 'JH-2026-RNC-001',
+    });
+  };
 
   // Push tab change to browser history so Back button navigates between views
   const handleTabChange = (newTab: CitizenTab) => {
@@ -79,6 +91,7 @@ export const CitizenPortal: React.FC = () => {
           <CitizenHomeTab
             onOpenReportModal={() => setIsReportModalOpen(true)}
             onNavigateTab={handleTabChange}
+            onOpenTracking={handleOpenTracking}
           />
         )}
 
@@ -112,6 +125,14 @@ export const CitizenPortal: React.FC = () => {
           />
         )}
       </main>
+
+      {/* Public Challenge 16-Stage Audit Tracker Modal */}
+      {trackingModal.isOpen && (
+        <PublicChallengeTracker
+          initialReportId={trackingModal.reportId}
+          onClose={() => setTrackingModal({ isOpen: false, reportId: '' })}
+        />
+      )}
 
       {/* Quick Report & Evidence Modal */}
       <QuickReportModal
