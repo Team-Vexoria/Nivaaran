@@ -361,15 +361,30 @@ export interface MapData {
 }
 
 export function useMapData(): MapData {
-  const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
+  const [challenges, setChallenges] = useState<ChallengeDoc[]>(() => {
+    try {
+      return workflowStore.getChallenges().map(toLegacyChallengeDoc);
+    } catch {
+      return [];
+    }
+  });
   const [heatmapData, setHeatmapData] = useState<{ districts: HeatmapDistrict[]; totalCount: number } | null>(null);
   const [districts, setDistricts] = useState<unknown[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    
-    // Phase 2: API-first with graceful fallback
+
+    // Listen to local workflow store updates
+    const onStoreUpdate = () => {
+      if (!cancelled) {
+        setChallenges(workflowStore.getChallenges().map(toLegacyChallengeDoc));
+      }
+    };
+    window.addEventListener('nivaaran-store-updated', onStoreUpdate);
+    window.addEventListener('storage', onStoreUpdate);
+
+    // Phase 2: API first with graceful fallback
     Promise.all([
       apiClient.getDistrictHeatmap().catch(() => ({ ok: false, data: null })),
       apiClient.getDistricts().catch(() => ({ ok: false, data: null })),
@@ -380,7 +395,9 @@ export function useMapData(): MapData {
       // Process heatmap data from API
       if (heatRes && heatRes.ok && heatRes.data) {
         const data = heatRes.data as { districts: HeatmapDistrict[]; totalCount: number };
-        setHeatmapData(data);
+        if (data && data.totalCount > 0) {
+          setHeatmapData(data);
+        }
       }
       
       // Process districts from API
@@ -390,37 +407,36 @@ export function useMapData(): MapData {
       }
       
       // Process challenges from API
-      let loadedChallenges: ChallengeDoc[] = [];
       if (chalRes && chalRes.ok && chalRes.data && Array.isArray(chalRes.data) && chalRes.data.length > 0) {
-        loadedChallenges = chalRes.data.map((c: any) => {
+        const loadedChallenges = chalRes.data.map((c: any) => {
           const wf = toWorkflowChallengeFromApi(c);
           return toLegacyChallengeDoc(wf);
         });
+        setChallenges(loadedChallenges);
       }
       
-      // If API returned no challenges, use workflowStore (localStorage fallback)
-      if (loadedChallenges.length === 0) {
-        loadedChallenges = workflowStore.getChallenges().map(toLegacyChallengeDoc);
-      }
-      
-      setChallenges(loadedChallenges);
       setLoading(false);
     }).catch(() => {
       if (!cancelled) {
-        setChallenges(workflowStore.getChallenges().map(toLegacyChallengeDoc));
         setLoading(false);
       }
     });
     
-    return () => { cancelled = true; };
+    return () => { 
+      cancelled = true; 
+      window.removeEventListener('nivaaran-store-updated', onStoreUpdate);
+      window.removeEventListener('storage', onStoreUpdate);
+    };
   }, []);
+
+  const totalCount = (heatmapData && heatmapData.totalCount > 0) ? heatmapData.totalCount : challenges.length;
 
   return {
     challenges,
     districtStats: buildDistrictStats(challenges, heatmapData?.districts),
     heatmapData,
     districts,
-    totalCount: heatmapData?.totalCount ?? challenges.length,
+    totalCount,
     criticalCount: challenges.filter(c => c.riskLevel === 'CRITICAL').length,
     validatedCount: challenges.filter(c => {
       const stageNumber = getStageForStatus(c.status)?.stageNumber || 0;

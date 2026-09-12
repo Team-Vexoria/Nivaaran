@@ -254,9 +254,14 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
           {/* Visual Evidence / Photos */}
           <div className="space-y-2">
             <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px]">Citizen Uploaded Visual Evidence</h4>
-            {challenge.evidenceUrl ? (
+            {(challenge.evidenceUrl || (challenge.evidenceUrls && challenge.evidenceUrls[0])) ? (
               <div className="rounded-xl overflow-hidden border border-[#E4DDD1] bg-black/5 max-h-64 flex items-center justify-center">
-                <img src={challenge.evidenceUrl} alt="Ground Evidence" className="max-h-64 object-contain" />
+                <img 
+                  src={challenge.evidenceUrl || challenge.evidenceUrls![0]} 
+                  alt="Ground Evidence" 
+                  className="max-h-64 w-full object-cover" 
+                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                />
               </div>
             ) : (
               <div className="bg-[#FAF8F4] border border-dashed border-[#E4DDD1] rounded-xl p-6 text-center space-y-1">
@@ -911,6 +916,14 @@ export const GovPortal: React.FC = () => {
                         return (
                           <div key={ch.id || ch.reportId} className="px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-[#FAF8F4] transition-colors">
                             <div className="flex items-center gap-3 min-w-0">
+                              {(ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])) && (
+                                <img
+                                  src={ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])}
+                                  alt={ch.title}
+                                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                  className="w-11 h-11 rounded-lg object-cover border border-[#E4DDD1] shrink-0 shadow-2xs"
+                                />
+                              )}
                               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${getSeverityBg(ch.riskLevel)}`} />
                               <div className="min-w-0">
                                 <p className="text-xs font-bold text-[#201C18] truncate">{ch.title}</p>
@@ -1179,7 +1192,7 @@ export const GovPortal: React.FC = () => {
 
         {/* MAP TAB */}
         {activeTab === 'map' && (
-          <div className="flex-1 overflow-hidden min-h-0 h-full">
+          <div className="flex-1 overflow-hidden min-h-0 h-[calc(100vh-115px)] min-h-[620px] w-full flex flex-col">
             <JharkhandMapExplorer
               govtMode={true}
               embedded={true}
@@ -1258,10 +1271,27 @@ export const GovPortal: React.FC = () => {
                               </span>
                             )}
                           </div>
-                          <h3 className="text-sm font-bold text-[#201C18] leading-tight">{ch.title}</h3>
-                          <p className="text-xs text-[#6A6155] mt-0.5">
-                            {[ch.village, ch.block, ch.district].filter(Boolean).join(', ')}
-                          </p>
+                          <div className="flex flex-col sm:flex-row sm:items-start gap-3 mt-1.5">
+                            {(ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])) && (
+                              <img
+                                src={ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])}
+                                alt={ch.title}
+                                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                className="w-full sm:w-44 h-28 object-cover rounded-xl border border-[#E4DDD1] shrink-0 shadow-2xs"
+                              />
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <h3 className="text-sm font-bold text-[#201C18] leading-tight">{ch.title}</h3>
+                              <p className="text-xs text-[#6A6155] mt-0.5">
+                                {[ch.village, ch.block, ch.district].filter(Boolean).join(', ')}
+                              </p>
+                              {ch.summary && (
+                                <p className="text-xs text-[#5A5247] mt-1.5 line-clamp-2 leading-relaxed">
+                                  {ch.summary}
+                                </p>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         <div className="text-right shrink-0">
                           {editingPriorityId === id ? (

@@ -74,7 +74,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 export const useLanguage = (): LanguageContextType => {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    const defaultLang: SupportedLanguage = 'en';
+    const t = getTranslations(defaultLang);
+    const langMeta = JHARKHAND_LANGUAGES[0];
+    return {
+      currentLang: defaultLang,
+      setLanguage: () => {},
+      t,
+      langMeta,
+      languages: JHARKHAND_LANGUAGES,
+    };
   }
   return context;
 };

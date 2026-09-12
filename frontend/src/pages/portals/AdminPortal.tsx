@@ -523,13 +523,25 @@ export const AdminPortal: React.FC = () => {
                           <tr key={c.id} className="hover:bg-[#FAF8F4]/80 transition-colors">
                             {/* Case ID & Title */}
                             <td className="p-3.5 max-w-xs">
-                              <span className="font-mono text-[10px] font-bold text-indigo-700 block">
-                                {c.reportId || c.id.slice(0, 10)}
-                              </span>
-                              <p className="font-bold text-slate-900 line-clamp-1">{c.title}</p>
-                              <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
-                                Category: <strong className="text-slate-700">{c.category}</strong>
-                              </span>
+                              <div className="flex items-start gap-2.5">
+                                {((c as any).evidenceUrl || (c.evidenceUrls && c.evidenceUrls[0])) && (
+                                  <img
+                                    src={(c as any).evidenceUrl || (c.evidenceUrls && c.evidenceUrls[0])}
+                                    alt={c.title}
+                                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                    className="w-12 h-12 rounded-lg object-cover border border-[#E4DDD1] shrink-0 shadow-2xs mt-0.5"
+                                  />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <span className="font-mono text-[10px] font-bold text-indigo-700 block">
+                                    {c.reportId || c.id.slice(0, 10)}
+                                  </span>
+                                  <p className="font-bold text-slate-900 line-clamp-1">{c.title}</p>
+                                  <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
+                                    Category: <strong className="text-slate-700">{c.category}</strong>
+                                  </span>
+                                </div>
+                              </div>
                             </td>
 
                             {/* District & Risk */}
@@ -546,16 +558,30 @@ export const AdminPortal: React.FC = () => {
 
                             {/* Assigned University */}
                             <td className="p-3.5 max-w-xs">
-                              <span className="font-bold text-emerald-900 block flex items-center gap-1">
-                                <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                                {c.assignedHEI || entity.university}
-                              </span>
-                              <span className="text-[10px] text-slate-600 block mt-0.5">
-                                Lead: <strong className="text-slate-800">{entity.studentLead}</strong>
-                              </span>
-                              <span className="text-[9px] text-slate-500 block">
-                                Mentor: {entity.facultyLead}
-                              </span>
+                              {c.assignedHEI ? (
+                                <>
+                                  <span className="font-bold text-emerald-900 block flex items-center gap-1">
+                                    <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                    {c.assignedHEI}
+                                  </span>
+                                  <span className="text-[10px] text-slate-600 block mt-0.5">
+                                    Lead: <strong className="text-slate-800">{entity.studentLead}</strong>
+                                  </span>
+                                  <span className="text-[9px] text-slate-500 block">
+                                    Mentor: {entity.facultyLead}
+                                  </span>
+                                </>
+                              ) : (
+                                <div className="space-y-1">
+                                  <span className="text-[11px] font-extrabold text-amber-800 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                                    <Building2 className="w-3 h-3 text-amber-600" />
+                                    Unallocated
+                                  </span>
+                                  <span className="text-[10px] text-slate-500 block font-medium">
+                                    Open for university intake &amp; multi-dept match
+                                  </span>
+                                </div>
+                              )}
                             </td>
 
                             {/* CSR Sponsor & Grant */}
@@ -831,6 +857,16 @@ export const AdminPortal: React.FC = () => {
             </div>
 
             <div className="space-y-3 text-xs text-slate-700">
+              {((selectedChallenge as any).evidenceUrl || (selectedChallenge.evidenceUrls && selectedChallenge.evidenceUrls[0])) && (
+                <div className="w-full h-48 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                  <img
+                    src={(selectedChallenge as any).evidenceUrl || (selectedChallenge.evidenceUrls && selectedChallenge.evidenceUrls[0])}
+                    alt={selectedChallenge.title}
+                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
               <p className="leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
                 {selectedChallenge.description}
               </p>

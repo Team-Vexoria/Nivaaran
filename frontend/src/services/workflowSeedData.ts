@@ -309,9 +309,9 @@ export const SEED_CHALLENGES: Challenge[] = [
     village: 'Kankjol Diara',
     locationCoords: { lat: 25.0489, lng: 87.8341 },
     formattedAddress: 'Rajmahal Ganga Riverbank, Sahibganj District, Jharkhand',
-    status: 'In Progress',
-    stageNumber: 10,
-    stageName: 'Stage 10: Proposal Approved & Tranche 1 Disbursed',
+    status: 'Government Validated',
+    stageNumber: 4,
+    stageName: 'Stage 4: Government Triage & Field Verification',
     category: 'Riverbank Erosion & Disaster Inundation',
     aiAnalysis: {
       category: 'Riverbank Erosion & Disaster Inundation',
@@ -337,9 +337,7 @@ export const SEED_CHALLENGES: Challenge[] = [
     govtOfficerNote: 'District Disaster Management Cell sanctioned emergency funds. SKMU Dumka and NIT Jamshedpur assigned.',
     govtValidatedBy: 'Shri Umesh Prasad, DC Sahibganj',
     govtValidatedAt: daysAgo(22),
-    assignedHEI: 'Sido Kanhu Murmu University (SKMU)',
-    assignedDept: 'Earth Sciences & Hydraulic Engineering',
-    assignedProjectId: 'DEMO-PRJ-007',
+    
     createdAt: daysAgo(29),
     updatedAt: daysAgo(1),
   },
@@ -539,9 +537,9 @@ export const SEED_CHALLENGES: Challenge[] = [
     village: 'Mohanpur Border',
     locationCoords: { lat: 24.2625, lng: 86.6452 },
     formattedAddress: 'Mohanpur Pilgrim Corridor, Deoghar District, Jharkhand',
-    status: 'Submitted',
-    stageNumber: 1,
-    stageName: 'Stage 1: Citizen Submission',
+    status: 'Prioritized',
+    stageNumber: 5,
+    stageName: 'Stage 5: State Priority Scoring & Clustering',
     category: 'Public Health & Drinking Water Quality',
     aiAnalysis: {
       category: 'Public Health & Drinking Water Quality',
@@ -567,9 +565,7 @@ export const SEED_CHALLENGES: Challenge[] = [
     govtOfficerNote: 'Inspected by Deoghar Municipal Corporation and PHED. Sanctioned for AIIMS Deoghar and SKMU pilot.',
     govtValidatedBy: 'Shri Vishal Sagar, DC Deoghar',
     govtValidatedAt: daysAgo(2),
-    assignedHEI: 'AIIMS Deoghar & SKMU Dumka',
-    assignedDept: 'Public Health Engineering',
-    assignedProjectId: 'DEMO-PRJ-012',
+    
     createdAt: hoursAgo(4),
     updatedAt: hoursAgo(4),
   },
@@ -631,9 +627,9 @@ export const SEED_CHALLENGES: Challenge[] = [
     village: 'Dhab Forest Rim',
     locationCoords: { lat: 24.4660, lng: 85.5990 },
     formattedAddress: 'Dhab Mica Belt, Chandwara, Koderma, Jharkhand',
-    status: 'Submitted',
-    stageNumber: 1,
-    stageName: 'Stage 1: Citizen Submission',
+    status: 'Government Validated',
+    stageNumber: 4,
+    stageName: 'Stage 4: Government Triage & Field Verification',
     category: 'Abandoned Mine Hazard & Geotechnical Stability',
     aiAnalysis: {
       category: 'Abandoned Mine Hazard & Geotechnical Stability',
@@ -659,9 +655,7 @@ export const SEED_CHALLENGES: Challenge[] = [
     govtOfficerNote: 'BDO Chandwara verified ground hazard. Matched to BIT Sindri Mining Engineering team.',
     govtValidatedBy: 'Shri Megha Bhardwaj, DC Koderma',
     govtValidatedAt: daysAgo(1),
-    assignedHEI: 'BIT Sindri & VBU',
-    assignedDept: 'Mining & Geological Sciences',
-    assignedProjectId: 'DEMO-PRJ-014',
+    
     createdAt: hoursAgo(12),
     updatedAt: hoursAgo(12),
   },
@@ -679,7 +673,7 @@ export const SEED_CHALLENGES: Challenge[] = [
     formattedAddress: 'Bishunpur Hill Route, Netarhat Foothills, Gumla, Jharkhand',
     status: 'Under Review',
     stageNumber: 2,
-    stageName: 'Stage 2: AI Triage Complete awaiting Government Review',
+    stageName: 'Stage 2: Citizen Submission & AI Triage',
     category: 'Rural Road Infrastructure & Transport',
     aiAnalysis: {
       category: 'Rural Road Infrastructure & Transport',
@@ -705,9 +699,7 @@ export const SEED_CHALLENGES: Challenge[] = [
     govtOfficerNote: 'PWD Gumla and BDO Bishunpur conducted joint audit. Cleared for Ranchi University and BIT Mesra geotechnical intervention.',
     govtValidatedBy: 'Shri Sushant Gaurav, DC Gumla',
     govtValidatedAt: daysAgo(2),
-    assignedHEI: 'Ranchi University & BIT Mesra',
-    assignedDept: 'Civil & Geotechnical Engineering',
-    assignedProjectId: 'DEMO-PRJ-015',
+    
     createdAt: daysAgo(2),
     updatedAt: daysAgo(1),
   },
@@ -883,31 +875,6 @@ export const SEED_PROJECTS: Project[] = [
   },
 
   // PRJ-007: Sahibganj Ganga Riverbank Geotextile Eco-Spur & Sonar Buoy
-  {
-    id: 'DEMO-PRJ-007',
-    challengeId: 'DEMO-CH-007',
-    challengeTitle: 'Ganga riverbank erosion and seasonal island submergence cutting off boat access',
-    category: 'Riverbank Erosion & Disaster Inundation',
-    district: 'Sahibganj',
-    universityId: 'SKMU-DUMKA',
-    universityName: 'Sido Kanhu Murmu University (SKMU)',
-    facultyMentorName: 'Dr. Hemant Murmu (Fluvial Geomorphology)',
-    facultyEmail: 'hemant.murmu@skmu.ac.in',
-    teamMembers: [
-      { id: 'TM-015', name: 'Sanjay Hansda', departmentName: 'Earth Sciences', role: 'Team Lead', skills: ['Riverbank bathymetry', 'Fluvial sediment transport'] },
-      { id: 'TM-016', name: 'Pooja Soren', departmentName: 'Civil Engineering', role: 'Geotechnical Engineer', skills: ['Geotextile mattresses', 'Slope stability'] },
-    ],
-    status: 'Team Formed',
-    milestones: [
-      { id: 'MS-015', stageNumber: 1, title: 'Bank Recession Rate & Sonar Survey', description: 'Measure 85m scour pocket using ADCP sonar and satellite optical change detection', status: 'Completed', targetDays: 14, completedAt: daysAgo(12) },
-      { id: 'MS-016', stageNumber: 2, title: 'Eco-Spur Geotextile Matrix Design', description: 'Design permeable bamboo-reinforced coir-geotextile spurs to deflect current', status: 'In Progress', targetDays: 21 },
-    ],
-    proposals: [],
-    budgetEstimated: 600000,
-    budgetApproved: 600000,
-    createdAt: daysAgo(22),
-    updatedAt: daysAgo(1),
-  },
 
   // PRJ-008: Ranchi Kanke Dam Automated De-siltation & Radar Telemetry
   {
@@ -1018,31 +985,6 @@ export const SEED_PROJECTS: Project[] = [
   },
 
   // PRJ-012: Deoghar Solar UV-C Pilgrim Water Disinfection Cartridge
-  {
-    id: 'DEMO-PRJ-012',
-    challengeId: 'DEMO-CH-012',
-    challengeTitle: 'High coliform biological contamination and handpump failure during pilgrim rush',
-    category: 'Public Health & Drinking Water Quality',
-    district: 'Deoghar',
-    universityId: 'AIIMS-DEOGHAR',
-    universityName: 'AIIMS Deoghar & SKMU Dumka',
-    facultyMentorName: 'Dr. M. K. Ray (Public Health & Microbiology)',
-    facultyEmail: 'mkray@aiimsdeoghar.edu.in',
-    teamMembers: [
-      { id: 'TM-025', name: 'Gopal Krishna Jha', departmentName: 'Public Health Engineering', role: 'Team Lead', skills: ['Bacteriological culture', 'UV-C dosimetry'] },
-      { id: 'TM-026', name: 'Naveen Murmu', departmentName: 'Mechanical Engineering', role: 'Handpump Specialist', skills: ['India Mark-II mechanics', 'Flow governors'] },
-    ],
-    status: 'Team Formed',
-    milestones: [
-      { id: 'MS-025', stageNumber: 1, title: 'Pilgrim Corridor Pathogen Microbial Audit', description: 'Culture 38 handpump samples for E. coli and Vibrio cholerae counts', status: 'Completed', targetDays: 4, completedAt: daysAgo(1) },
-      { id: 'MS-026', stageNumber: 2, title: 'Solar Inline UV-C Disinfection Sleeve Assembly', description: 'Build 254nm quartz UV-C sterilization cylinder retrofittable directly on handpump spout', status: 'In Progress', targetDays: 12 },
-    ],
-    proposals: [],
-    budgetEstimated: 360000,
-    budgetApproved: 360000,
-    createdAt: daysAgo(4),
-    updatedAt: daysAgo(1),
-  },
 
   // PRJ-013: Hazaribagh Barakar Bridge FBG Strain Sensor Geo-Jacket
   {
@@ -1072,58 +1014,8 @@ export const SEED_PROJECTS: Project[] = [
   },
 
   // PRJ-014: Koderma Dhab Mica Quarry Geotechnical Slope Terracing
-  {
-    id: 'DEMO-PRJ-014',
-    challengeId: 'DEMO-CH-014',
-    challengeTitle: 'Abandoned open pit mica mine quarry waterlogging and slope rim collapse hazard',
-    category: 'Abandoned Mine Hazard & Geotechnical Stability',
-    district: 'Koderma',
-    universityId: 'BIT-SINDRI',
-    universityName: 'BIT Sindri & VBU',
-    facultyMentorName: 'Dr. Alok Kumar (Mining Geology & Slope Stability)',
-    facultyEmail: 'alok.kumar@bitsindri.ac.in',
-    teamMembers: [
-      { id: 'TM-029', name: 'Budhan Soren', departmentName: 'Mining Engineering', role: 'Team Lead', skills: ['Slope stability modeling', 'Mine reclamation'] },
-      { id: 'TM-030', name: 'Deepak Soren', departmentName: 'Geology', role: 'Geotechnical Analyst', skills: ['Soil shear strength', 'Geo-textile reinforcement'] },
-    ],
-    status: 'Team Formed',
-    milestones: [
-      { id: 'MS-029', stageNumber: 1, title: 'Mica Pit Rim Slump Rate & Hydrology Audit', description: 'LiDAR drone topographical mapping of 35-foot acidic pit perimeter and crack propagation', status: 'Completed', targetDays: 5, completedAt: daysAgo(2) },
-      { id: 'MS-030', stageNumber: 2, title: 'Geo-Grid Vegetative Terracing & Bio-Retention Plan', description: 'Design stepped bench terracing with vetiver grass and lime-dosed drainage channels', status: 'In Progress', targetDays: 18 },
-    ],
-    proposals: [],
-    budgetEstimated: 410000,
-    budgetApproved: 410000,
-    createdAt: daysAgo(8),
-    updatedAt: daysAgo(2),
-  },
 
   // PRJ-015: Gumla Bishunpur Bauxite Haulage Road Geogrid Stabilization
-  {
-    id: 'DEMO-PRJ-015',
-    challengeId: 'DEMO-CH-015',
-    challengeTitle: 'Bauxite ore haulage truck road subsidence and hill slope slip on rural route',
-    category: 'Rural Road Infrastructure & Transport',
-    district: 'Gumla',
-    universityId: 'RANCHI-UNIV',
-    universityName: 'Ranchi University & BIT Mesra',
-    facultyMentorName: 'Dr. Sunil Kumar (Highway & Geotechnical Engineering)',
-    facultyEmail: 'sunil.kumar@ranchiuniv.ac.in',
-    teamMembers: [
-      { id: 'TM-031', name: 'Anand Bhagat', departmentName: 'Civil Engineering', role: 'Team Lead', skills: ['Pavement design', 'Geogrid sub-base stabilization'] },
-      { id: 'TM-032', name: 'Pankaj Oraon', departmentName: 'Geotechnical Engineering', role: 'Field Engineer', skills: ['Soil nailing', 'Dynamic cone penetrometer'] },
-    ],
-    status: 'Team Formed',
-    milestones: [
-      { id: 'MS-031', stageNumber: 1, title: 'Bishunpur Haul Road Axle Load & Rutting Audit', description: 'CBR soil strength testing and 16-wheeler dynamic axle load stress modeling', status: 'Completed', targetDays: 4, completedAt: daysAgo(1) },
-      { id: 'MS-032', stageNumber: 2, title: 'Biaxial Polypropylene Geogrid Sub-Base Trial', description: 'Construct 200m pilot road section using interlocked geogrid and soil nail anchors', status: 'In Progress', targetDays: 16 },
-    ],
-    proposals: [],
-    budgetEstimated: 470000,
-    budgetApproved: 470000,
-    createdAt: daysAgo(5),
-    updatedAt: daysAgo(1),
-  },
 ];
 
 // ── 15 Real CSR Funding Proposals Matching Corporate Sponsors ────────────────
@@ -1214,19 +1106,6 @@ export const SEED_PROPOSALS: Proposal[] = [
     reviewNote: 'Approved by DFO Latehar. Jharkhand Forest Development & Adani Foundation CSR grant of ₹4.20L released.',
   },
   // 7. Sahibganj
-  {
-    id: 'DEMO-PROP-007',
-    projectId: 'DEMO-PRJ-007',
-    title: 'Bamboo-Reinforced Coir Geotextile Eco-Spur Matrix & ADCP Sonar Buoys on Ganga Riverbank',
-    description: 'Bio-engineered permeable eco-spurs constructed from treated bamboo piling and heavy coir geotextiles to dampen meander current velocities and prevent island loss at Rajmahal.',
-    approach: 'Phase 1: ADCP bathymetric scour profiling. Phase 2: Drive treated bamboo timber piles and lay geotextile mattresses. Phase 3: Deploy solar sonar telemetry buoy.',
-    estimatedBudget: 600000,
-    estimatedTimeline: '16 weeks',
-    status: 'Approved',
-    submittedBy: 'Sanjay Hansda (Team Lead, SKMU Dumka)',
-    submittedAt: daysAgo(18),
-    reviewNote: 'Approved by District Disaster Management Cell. Inland Waterways CSR & Jindal Steel grant of ₹6.00L sanctioned.',
-  },
   // 8. Ranchi
   {
     id: 'DEMO-PROP-008',
@@ -1284,19 +1163,6 @@ export const SEED_PROPOSALS: Proposal[] = [
     reviewNote: 'Approved by Khunti District Administration. TRIFED & JSLPS Innovation grant of ₹3.90L released.',
   },
   // 12. Deoghar
-  {
-    id: 'DEMO-PROP-012',
-    projectId: 'DEMO-PRJ-012',
-    title: 'Solar Inline UV-C Bactericidal Disinfection Module for Pilgrim Corridor Handpumps',
-    description: 'Compact 254nm quartz UV-C sterilization cylinder retrofitted onto high-extraction handpumps to eradicate coliform bacteria during Shravani Mela congregations.',
-    approach: 'Phase 1: Handpump microbial pathogen audit. Phase 2: Fabricate solar UV-C sleeve. Phase 3: Deploy at 15 pilgrim water points with chlorine test validation.',
-    estimatedBudget: 360000,
-    estimatedTimeline: '8 weeks',
-    status: 'Approved',
-    submittedBy: 'Gopal Krishna Jha (Team Lead, AIIMS Deoghar)',
-    submittedAt: daysAgo(3),
-    reviewNote: 'Approved by Deoghar Municipal Corporation. Baidyanath Dham Trust & Coal India CSR grant of ₹3.60L confirmed.',
-  },
   // 13. Hazaribagh
   {
     id: 'DEMO-PROP-013',
@@ -1312,33 +1178,7 @@ export const SEED_PROPOSALS: Proposal[] = [
     reviewNote: 'Approved by PWD Hazaribagh. NHAI Road Safety & NTPC CSR grant of ₹5.50L sanctioned.',
   },
   // 14. Koderma
-  {
-    id: 'DEMO-PROP-014',
-    projectId: 'DEMO-PRJ-014',
-    title: 'Geo-Grid Vegetative Terracing & Solar Warning Perimeter for Abandoned Mica Quarries',
-    description: 'Engineered stepped slope benches reinforced with high-strength geo-grids and deep-rooted vetiver grass to halt rim collapse around waterlogged mica quarries in Dhab forest.',
-    approach: 'Phase 1: LiDAR slope profile audit. Phase 2: Construct tiered benching with lime bio-retention swales. Phase 3: Erect solar perimeter telemetry and warning beacons.',
-    estimatedBudget: 410000,
-    estimatedTimeline: '12 weeks',
-    status: 'Approved',
-    submittedBy: 'Budhan Soren (Team Lead, BIT Sindri)',
-    submittedAt: daysAgo(5),
-    reviewNote: 'Approved by BDO Chandwara & DC Koderma. DVC Koderma Thermal Power CSR grant of ₹4.10L released.',
-  },
   // 15. Gumla
-  {
-    id: 'DEMO-PROP-015',
-    projectId: 'DEMO-PRJ-015',
-    title: 'Biaxial Geogrid Sub-Base Stabilization & Soil Nail Anchors for Bauxite Transport Corridor',
-    description: 'High-tensile biaxial polypropylene geogrid sub-base reinforcement and self-drilling soil nail anchors along collapsing hill road shoulders to restore safe tribal transit.',
-    approach: 'Phase 1: Core sampling and dynamic cone penetrometer audit. Phase 2: Install self-drilling soil nails on slope face. Phase 3: Lay interlocking geogrid layer with asphalt seal.',
-    estimatedBudget: 470000,
-    estimatedTimeline: '12 weeks',
-    status: 'Approved',
-    submittedBy: 'Anand Bhagat (Team Lead, Ranchi Univ)',
-    submittedAt: daysAgo(3),
-    reviewNote: 'Approved by PWD Gumla. Hindalco Industries CSR (Bauxite Mines Div) grant of ₹4.70L confirmed.',
-  },
 ];
 
 // ── Seed Timeline Events for All 15 Cases ─────────────────────────────────────

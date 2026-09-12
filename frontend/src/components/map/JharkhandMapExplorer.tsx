@@ -51,12 +51,10 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
   const handleValidate = externalValidate ?? (() => {});
   const handleRequestEvidence = externalRequestEvidence ?? (() => {});
 
-  const heightClass = embedded ? 'h-full' : 'h-screen';
-
-
+  const heightClass = embedded ? 'flex-1 h-full min-h-[620px]' : 'h-screen';
 
   return (
-    <div className={`${heightClass} flex flex-col bg-[#FAF8F4] overflow-hidden`}>
+    <div className={`${heightClass} flex flex-col bg-[#FAF8F4] overflow-hidden w-full`}>
 
       {/* ── Top Bar ── */}
       <div className="shrink-0 bg-[#FAF8F4] border-b border-[#E4DDD1] px-4 py-2.5 flex items-center justify-between gap-3 shadow-2xs">
@@ -125,7 +123,7 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
       )}
 
       {/* ── Main body ── */}
-      <div className="flex flex-1 overflow-hidden min-h-0">
+      <div className="flex flex-1 overflow-hidden min-h-[520px] h-full w-full">
         <MapSidebar
           districtStats={districtStats}
           challenges={filteredChallenges}

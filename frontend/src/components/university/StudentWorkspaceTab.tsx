@@ -524,12 +524,22 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
 
         {assignedProject ? (
           <div className="space-y-3">
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-1">
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Project Title</span>
-              <p className="font-extrabold text-slate-900 text-sm">{assignedProject.challengeTitle}</p>
-              <p className="text-xs text-slate-600">
-                Faculty Mentor: <strong className="font-bold text-slate-900">{assignedProject.facultyMentorName || 'Dr. Arvind Sinha'}</strong> · District: <strong className="font-bold text-slate-900">{assignedProject.district || 'Ranchi'}</strong>
-              </p>
+            <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col sm:flex-row sm:items-start gap-4">
+              {(assignedChallenge?.evidenceUrl || (assignedChallenge?.evidenceUrls && assignedChallenge.evidenceUrls[0])) && (
+                <img
+                  src={assignedChallenge.evidenceUrl || (assignedChallenge.evidenceUrls && assignedChallenge.evidenceUrls[0])}
+                  alt={assignedProject.challengeTitle}
+                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                  className="w-full sm:w-44 h-28 object-cover rounded-xl border border-slate-200 shrink-0 shadow-2xs"
+                />
+              )}
+              <div className="min-w-0 flex-1 space-y-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Project Title</span>
+                <p className="font-extrabold text-slate-900 text-sm">{assignedProject.challengeTitle}</p>
+                <p className="text-xs text-slate-600">
+                  Faculty Mentor: <strong className="font-bold text-slate-900">{assignedProject.facultyMentorName || 'Dr. Arvind Sinha'}</strong> · District: <strong className="font-bold text-slate-900">{assignedProject.district || 'Ranchi'}</strong>
+                </p>
+              </div>
             </div>
 
             <div className="space-y-2 pt-1">

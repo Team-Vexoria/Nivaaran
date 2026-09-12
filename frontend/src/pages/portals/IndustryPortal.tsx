@@ -470,6 +470,18 @@ export const IndustryPortal: React.FC = () => {
                         </span>
                       </div>
 
+                      {/* Evidence Photo Preview */}
+                      {(ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])) && (
+                        <div className="relative w-full h-36 rounded-xl overflow-hidden border border-[#E4DDD1] bg-[#FAF8F4]">
+                          <img
+                            src={ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])}
+                            alt={ch.title}
+                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      )}
+
                       {/* Title & Summary */}
                       <div>
                         <h3 className="text-sm font-extrabold text-[#201C18] line-clamp-2 leading-snug">

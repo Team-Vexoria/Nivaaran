@@ -44,6 +44,18 @@ export const ChallengePopupCard: React.FC<ChallengePopupCardProps> = ({
         style={{ backgroundColor: severityColor }}
       />
 
+      {/* Evidence photo */}
+      {(challenge.evidenceUrl || (challenge.evidenceUrls && challenge.evidenceUrls[0])) && (
+        <div className="mb-2.5 rounded-lg overflow-hidden border border-[#E4DDD1] bg-stone-100 h-28 w-full">
+          <img
+            src={challenge.evidenceUrl || challenge.evidenceUrls![0]}
+            alt={challenge.title}
+            className="w-full h-full object-cover"
+            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+          />
+        </div>
+      )}
+
       {/* Title & location */}
       <div className="space-y-1 mb-3">
         <div className="flex items-start justify-between gap-2">

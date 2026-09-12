@@ -14,7 +14,7 @@ import {
 } from '../../services/mapDataService';
 import { ChallengePopupCard } from './ChallengePopupCard';
 import ReactDOM from 'react-dom/client';
-import { useLanguage } from '../../context/LanguageContext';
+import { useLanguage, LanguageProvider } from '../../context/LanguageContext';
 import { Layers, CloudRain, AlertTriangle, Building2, Droplets, Radio, ChevronDown } from 'lucide-react';
 
 // Fix default Leaflet icon broken by bundlers
@@ -166,20 +166,12 @@ export const MapViewport: React.FC<MapViewportProps> = ({
     // Custom positioned zoom control
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    // High clarity dark-accented base map
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+    // High clarity CartoDB Voyager base map with OpenStreetMap data
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap contributors, CARTO',
+      subdomains: 'abcd',
       maxZoom: 19,
     }).addTo(map);
-
-    // Real-time Live Weather Precipitation Radar Tile Layer (Open Weather / RainViewer live cache)
-    const radarLayer = L.tileLayer('https://tilecache.rainviewer.com/v2/radar/nowcast_0/256/{z}/{x}/{y}/2/1_1.png', {
-      opacity: 0.55,
-      maxZoom: 18,
-      attribution: '&copy; <a href="https://www.rainviewer.com">RainViewer</a> Live Radar',
-    });
-    weatherRadarLayerRef.current = radarLayer;
-    radarLayer.addTo(map);
 
     map.fitBounds(JHARKHAND_BOUNDS);
 
@@ -189,7 +181,16 @@ export const MapViewport: React.FC<MapViewportProps> = ({
     disasterZonesLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
+    const resizeTimer1 = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+    const resizeTimer2 = setTimeout(() => {
+      map.invalidateSize();
+    }, 350);
+
     return () => {
+      clearTimeout(resizeTimer1);
+      clearTimeout(resizeTimer2);
       map.remove();
       mapRef.current = null;
     };
@@ -417,12 +418,16 @@ export const MapViewport: React.FC<MapViewportProps> = ({
       const container = document.createElement('div');
       const root = ReactDOM.createRoot(container);
       root.render(
-        React.createElement(ChallengePopupCard, {
-          challenge: ch,
-          govtMode,
-          onValidate,
-          onRequestEvidence,
-        })
+        React.createElement(
+          LanguageProvider,
+          null,
+          React.createElement(ChallengePopupCard, {
+            challenge: ch,
+            govtMode,
+            onValidate,
+            onRequestEvidence,
+          })
+        )
       );
 
       marker.bindPopup(container, { maxWidth: 310, minWidth: 288 });
@@ -464,9 +469,13 @@ export const MapViewport: React.FC<MapViewportProps> = ({
   }, [selectedDistrict]);
 
   return (
-    <div className="flex-1 relative h-full min-h-0">
+    <div className="flex-1 relative h-full min-h-[520px] w-full">
       {/* Leaflet Map DOM Node */}
-      <div ref={mapDivRef} className="w-full h-full" />
+      <div 
+        ref={mapDivRef} 
+        className="w-full h-full min-h-[520px]" 
+        style={{ minHeight: '520px', height: '100%', width: '100%' }}
+      />
 
       {/* ── Interactive GIS Layer Control Switcher HUD (Floating Top-Right) ── */}
       <div className="absolute top-3 right-3 z-[1000]">

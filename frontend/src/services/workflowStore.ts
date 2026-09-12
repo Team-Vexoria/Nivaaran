@@ -61,8 +61,8 @@ class WorkflowStore {
       if (stored) {
         const parsed: unknown = JSON.parse(stored);
         if (this.isWorkflowState(parsed)) {
-          // If stored state is from older seed with < 15 challenges, upgrade to new rich Jharkhand seed
-          if (parsed.challenges.length < 15) {
+          // If stored state is from older seed with < 15 challenges or full allocations, upgrade to new unallocated demo state
+          if (parsed.challenges.length < 15 || parsed.projects.length > 11 || parsed.challenges.some(c => c.id === 'DEMO-CH-015' && c.assignedHEI)) {
             const seed = createSeedData();
             this.persist(seed);
             return seed;
