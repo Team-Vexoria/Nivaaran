@@ -340,47 +340,129 @@ export const PublicChallengeTracker: React.FC<PublicChallengeTrackerProps> = ({
                   <div className="flex items-center space-x-2 border-b border-[#F0EBE0] pb-2.5">
                     <Cpu className="w-4 h-4 text-[#C98A2C]" />
                     <h4 className="text-xs font-extrabold text-[#201C18] uppercase tracking-wider">
-                      IoT Prototype & Pilot Trial (Stages 11–13)
+                      IoT Prototype &amp; Pilot Trial (Stages 11–13)
                     </h4>
                   </div>
 
-                  <div className="space-y-3 text-xs">
-                    <div className="flex justify-between py-1 border-b border-[#F0EBE0]">
-                      <span className="text-[#8A7F72]">Hardware Node:</span>
-                      <span className="font-bold text-[#201C18]">
-                        {selectedChallenge.prototypeDetails?.hardwareSpec || 'ESP32 LoRaWAN v2.4 + Ultrasonic Hydro-Station'}
-                      </span>
-                    </div>
+                  {(() => {
+                    const catLower = (selectedChallenge.category || '').toLowerCase();
+                    const titleLower = (selectedChallenge.title || '').toLowerCase();
+                    const isWaterRelated = catLower.includes('flood') || catLower.includes('drainage') || catLower.includes('water') || catLower.includes('drought') || catLower.includes('aquifer') || catLower.includes('river') || titleLower.includes('flood') || titleLower.includes('dam') || titleLower.includes('river') || titleLower.includes('water');
+                    const hasLivePrototype = currentStageNum >= 11 || !!selectedChallenge.prototypeDetails;
 
-                    {/* Interactive Telemetry Card (Always interactive & live) */}
-                    <div className="py-1">
-                      <IoTSensorTelemetryCard
-                        stationName={`${selectedChallenge.district} River Basin — Node R1`}
-                        hardwareNode={selectedChallenge.prototypeDetails?.hardwareSpec || 'ESP32 LoRaWAN Hydro Station'}
-                        waterLevelMeters={4.2}
-                        dangerThresholdMeters={5.5}
-                        batteryPct={85}
-                        signalBars={4}
-                        lastSyncedText="Live Audit Stream"
-                        rawLogs={selectedChallenge.prototypeDetails?.telemetryLogs || `[08:42:19.102] TX LoRa: Freq=865.2MHz SF=7 BW=125kHz RSSI=-72dBm SNR=9.5dB
+                    if (hasLivePrototype && isWaterRelated) {
+                      return (
+                        <div className="space-y-3 text-xs">
+                          <div className="flex justify-between py-1 border-b border-[#F0EBE0]">
+                            <span className="text-[#8A7F72]">Hardware Node:</span>
+                            <span className="font-bold text-[#201C18]">
+                              {selectedChallenge.prototypeDetails?.hardwareSpec || `${selectedChallenge.district} LoRaWAN Hydro Station`}
+                            </span>
+                          </div>
+
+                          {/* Interactive Telemetry Card (Active for hydro / water stations) */}
+                          <div className="py-1">
+                            <IoTSensorTelemetryCard
+                              stationName={`${selectedChallenge.district} Basin — Sensor Node`}
+                              hardwareNode={selectedChallenge.prototypeDetails?.hardwareSpec || 'ESP32 LoRaWAN Hydro Station'}
+                              waterLevelMeters={4.2}
+                              dangerThresholdMeters={5.5}
+                              batteryPct={85}
+                              signalBars={4}
+                              lastSyncedText="Live Audit Stream"
+                              rawLogs={selectedChallenge.prototypeDetails?.telemetryLogs || `[08:42:19.102] TX LoRa: Freq=865.2MHz SF=7 BW=125kHz RSSI=-72dBm SNR=9.5dB
 [08:42:19.145] SENS_WATER_ULTRASONIC: distance_cm=420.4, calculated_level=4.20m [NORMAL]
 [08:42:19.180] BATT_ADC_VOLTS: 3.94V (85%) | SOLAR_IN: 5.10V @ 180mA
 [08:42:19.210] STATUS: OK | PAYLOAD_HASH=0x7F2A9B | PANCHAYAT_GATEWAY_ACK=RECVD`}
-                      />
-                    </div>
+                            />
+                          </div>
 
-                    {selectedChallenge.pilotDetails && (
-                      <div className="flex justify-between py-1 border-b border-[#F0EBE0]">
-                        <span className="text-[#8A7F72]">Panchayat Ground Trial:</span>
-                        <span className="font-bold text-[#201C18]">{selectedChallenge.pilotDetails.panchayatLocation} (~{selectedChallenge.pilotDetails.communityBeneficiaries} people benefited)</span>
+                          {selectedChallenge.pilotDetails && (
+                            <div className="flex justify-between py-1 border-b border-[#F0EBE0]">
+                              <span className="text-[#8A7F72]">Panchayat Ground Trial:</span>
+                              <span className="font-bold text-[#201C18]">
+                                {selectedChallenge.pilotDetails.panchayatLocation} (~{selectedChallenge.pilotDetails.communityBeneficiaries} people benefited)
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between py-1">
+                            <span className="text-[#8A7F72]">Industry / CSR Partner:</span>
+                            <span className="font-semibold text-[#B5502D]">
+                              {selectedChallenge.csrSponsor || 'Tata Steel CSR / MSME Innovation Fund'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    if (hasLivePrototype) {
+                      return (
+                        <div className="space-y-3 text-xs">
+                          <div className="flex justify-between py-1 border-b border-[#F0EBE0]">
+                            <span className="text-[#8A7F72]">Engineering Module:</span>
+                            <span className="font-bold text-[#201C18]">
+                              {selectedChallenge.prototypeDetails?.hardwareSpec || 'Field Intervention Unit'}
+                            </span>
+                          </div>
+
+                          <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3.5 space-y-2">
+                            <div className="flex items-center gap-2 text-xs font-bold text-[#2C6E49]">
+                              <CheckCircle2 className="w-4 h-4 text-[#2C6E49]" />
+                              <span>Custom Engineering Solution Deployed</span>
+                            </div>
+                            <p className="text-[11px] text-[#6A6155] leading-relaxed">
+                              This problem involves specialized geotechnical, biological, or structural mitigation rather than hydraulic water level sensing. University team telemetry and field reports are filed under the verified ledger.
+                            </p>
+                          </div>
+
+                          {selectedChallenge.pilotDetails && (
+                            <div className="flex justify-between py-1 border-b border-[#F0EBE0]">
+                              <span className="text-[#8A7F72]">Panchayat Ground Trial:</span>
+                              <span className="font-bold text-[#201C18]">
+                                {selectedChallenge.pilotDetails.panchayatLocation} (~{selectedChallenge.pilotDetails.communityBeneficiaries} people benefited)
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="flex justify-between py-1">
+                            <span className="text-[#8A7F72]">Industry / CSR Partner:</span>
+                            <span className="font-semibold text-[#B5502D]">
+                              {selectedChallenge.csrSponsor || 'State Innovation Fund & CSR'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-3 text-xs">
+                        <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-4 text-center space-y-2">
+                          <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-600/20 text-[#C98A2C] flex items-center justify-center mx-auto">
+                            <Clock className="w-4 h-4 animate-pulse" />
+                          </div>
+                          <p className="text-xs font-bold text-[#201C18]">Prototype Stage Pending</p>
+                          <p className="text-[11px] text-[#6A6155] leading-relaxed max-w-sm mx-auto">
+                            Telemetry hardware instruments and sensor cards activate upon reaching Stage 11 (Hardware &amp; IoT Prototyping) following University R&amp;D acceptance.
+                          </p>
+                        </div>
+
+                        <div className="flex justify-between py-1 border-b border-[#F0EBE0]">
+                          <span className="text-[#8A7F72]">Pipeline Status:</span>
+                          <span className="font-bold text-[#C98A2C]">
+                            Stage {currentStageNum} of 16 Active
+                          </span>
+                        </div>
+
+                        <div className="flex justify-between py-1">
+                          <span className="text-[#8A7F72]">Industry / CSR Partner:</span>
+                          <span className="font-semibold text-[#B5502D]">
+                            {selectedChallenge.csrSponsor || 'Allocated during Stage 10'}
+                          </span>
+                        </div>
                       </div>
-                    )}
-
-                    <div className="flex justify-between py-1">
-                      <span className="text-[#8A7F72]">Industry / CSR Partner:</span>
-                      <span className="font-semibold text-[#B5502D]">{selectedChallenge.csrSponsor || 'Tata Steel CSR / MSME Innovation Fund'}</span>
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
 
               </div>

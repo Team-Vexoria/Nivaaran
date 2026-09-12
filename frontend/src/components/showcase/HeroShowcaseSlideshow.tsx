@@ -296,49 +296,6 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
                 </button>
               </div>
 
-              {/* Integrated Interactive Action Bar & Live Search */}
-              <div className="bg-white border border-[#E4DDD1] rounded-xl p-3 sm:p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
-                
-                {/* CTA Buttons */}
-                <div className="flex items-center gap-2.5 w-full md:w-auto">
-                  <button
-                    onClick={onOpenAuth}
-                    className="flex-1 sm:flex-initial px-5 py-2.5 bg-[#2C6E49] hover:bg-[#23583a] text-white font-extrabold text-xs sm:text-sm rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
-                  >
-                    <span>Launch Role Portals</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-
-                  <button
-                    onClick={() => onOpenTracking('JH-2026-RNC-001')}
-                    className="flex-1 sm:flex-initial px-4 py-2.5 bg-white hover:bg-[#F3EDE2] border border-[#E4DDD1] text-[#201C18] font-bold text-xs sm:text-sm rounded-lg shadow-2xs transition-all cursor-pointer"
-                  >
-                    Track Challenge
-                  </button>
-                </div>
-
-                {/* Search Bar */}
-                <form onSubmit={handleSearchSubmit} className="w-full md:w-80 flex items-center gap-1.5">
-                  <div className="relative flex-1">
-                    <Search className="w-4 h-4 text-[#8A7F72] absolute left-3 top-1/2 -translate-y-1/2" />
-                    <input
-                      type="text"
-                      placeholder="Enter Report ID (e.g. JH-2026-RNC-001)"
-                      value={trackInput}
-                      onChange={(e) => setTrackInput(e.target.value)}
-                      className="w-full bg-[#FAF8F4] border border-[#E4DDD1] rounded-lg pl-9 pr-3 py-2 text-xs text-[#201C18] focus:outline-none focus:border-[#2C6E49]"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="px-3 py-2 bg-[#2C6E49] hover:bg-[#23583a] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0"
-                  >
-                    Search
-                  </button>
-                </form>
-
-              </div>
-
               {/* 4-Pillar Civic Metric Strip */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 text-left">
                 <div className="bg-white border border-[#E4DDD1] p-3 rounded-xl shadow-2xs">
@@ -525,6 +482,49 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
 
             </div>
           )}
+
+        </div>
+
+        {/* Integrated Interactive Action Bar and Live Search persistent across all slides */}
+        <div className="bg-white border border-[#E4DDD1] rounded-xl p-3 sm:p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3">
+          
+          {/* CTA Buttons */}
+          <div className="flex items-center gap-2.5 w-full md:w-auto">
+            <button
+              onClick={onOpenAuth}
+              className="flex-1 sm:flex-initial px-5 py-2.5 bg-[#2C6E49] hover:bg-[#23583a] text-white font-extrabold text-xs sm:text-sm rounded-lg shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <span>Report Problem</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => onOpenTracking('JH-2026-RNC-001')}
+              className="flex-1 sm:flex-initial px-4 py-2.5 bg-white hover:bg-[#F3EDE2] border border-[#E4DDD1] text-[#201C18] font-bold text-xs sm:text-sm rounded-lg shadow-2xs transition-all cursor-pointer"
+            >
+              Track Challenge
+            </button>
+          </div>
+
+          {/* Search Bar */}
+          <form onSubmit={handleSearchSubmit} className="w-full md:w-80 flex items-center gap-1.5">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-[#8A7F72] absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Enter Report ID (e.g. JH-2026-RNC-001)"
+                value={trackInput}
+                onChange={(e) => setTrackInput(e.target.value)}
+                className="w-full bg-[#FAF8F4] border border-[#E4DDD1] rounded-lg pl-9 pr-3 py-2 text-xs text-[#201C18] focus:outline-none focus:border-[#2C6E49]"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-3 py-2 bg-[#2C6E49] hover:bg-[#23583a] text-white rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0"
+            >
+              Search
+            </button>
+          </form>
 
         </div>
 
