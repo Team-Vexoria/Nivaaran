@@ -159,9 +159,11 @@ export async function verifyReport(report: any, existingIds?: string[]): Promise
   }
 
   // 3c. Near-duplicate: same district + Jaccard >= 0.72 + created within 14 days
+  //     existingIds excludes the challenge itself when the pipeline runs post-save.
   if (dedupStatus === 'ORIGINAL') {
     const reportTitle = (report.title || '').toLowerCase().trim();
     const districtCode = (report.district_code || report.district || '').toUpperCase();
+    const excludeIds = new Set(existingIds || []);
     if (districtCode && reportTitle.length >= 10) {
       try {
         const recentWindow = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
@@ -176,6 +178,8 @@ export async function verifyReport(report: any, existingIds?: string[]): Promise
           orderBy: { created_at: 'desc' },
         });
         for (const candidate of candidates) {
+          // Skip challenges the caller already knows about (self, etc.)
+          if (excludeIds.has(candidate.id)) continue;
           const sim = jaccardBigrams(reportTitle, (candidate.title || '').toLowerCase().trim());
           if (sim >= 0.72) {
             dedupStatus = 'NEAR_DUPLICATE';

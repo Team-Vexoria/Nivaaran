@@ -427,7 +427,11 @@ export async function runAIPipeline(
           dedup_status: verification.dedupStatus || undefined,
           duplicate_of: verification.duplicateOf || undefined,
           // Stage 4 — priority factors & score
-          priority_score: priorityResult.priorityScore,
+          // The scorer returns 0–100 but the DB column (chk_priority_range,
+          // DECIMAL(4,2)) caps at 9.99 — normalize 100 → 10 so the write can't
+          // violate the constraint (this previously dropped the whole write and
+          // every auto-enqueued challenge lost its enrichment).
+          priority_score: Math.min(9.99, Math.round((priorityResult.priorityScore / 10) * 100) / 100),
           priority_factors: JSON.parse(JSON.stringify(priorityResult.factors)),
           // Stage 2 — AI understanding denormalized fields
           ai_summary: understanding.summary || undefined,

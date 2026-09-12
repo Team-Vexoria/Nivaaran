@@ -39,8 +39,8 @@ export const guards: Record<string, GuardFunction> = {
   },
 
   priorityComputed: (_ch: any, payload: any) => {
-    if (payload?.priorityScore !== undefined && (payload.priorityScore < 0 || payload.priorityScore > 100)) {
-      return { allowed: false, reason: 'Priority score must be a number between 0 and 100.' };
+    if (payload?.priorityScore !== undefined && (payload.priorityScore < 0 || payload.priorityScore > 9.99)) {
+      return { allowed: false, reason: 'Priority score is stored on a 0–10 scale and must be between 0 and 9.99.' };
     }
     return { allowed: true };
   },

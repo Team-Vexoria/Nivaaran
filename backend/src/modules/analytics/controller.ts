@@ -99,14 +99,24 @@ export async function aiPerformance(req: Request, res: Response, next: NextFunct
 }
 
 // ── Impact Metrics ───────────────────────────────────────────
+// Counts every project with recorded impact — not only COMPLETED ones — so
+// the impact dashboard reflects mid-journey progress (an ACTIVE project with
+// a deployed pilot and impact records is still measuring impact).
 export async function impactMetrics(req: Request, res: Response, next: NextFunction) {
   try {
     const projects = await prisma.project.findMany({
-      where: { status: 'COMPLETED' },
-      include: { impact_records: true },
+      where: { impact_records: { some: {} } },
+      select: {
+        id: true,
+        impact_records: { select: { beneficiaries: true } },
+        deployments: { select: { id: true } },
+      },
     });
-    const totalBen = projects.reduce((s, p) => s + p.impact_records.reduce((si, i) => si + (i.beneficiaries || 0), 0), 0);
-    const totalDep = await prisma.deployment.count({ where: { project: { status: 'COMPLETED' } } });
+    const totalBen = projects.reduce(
+      (s, p) => s + p.impact_records.reduce((si, i) => si + (i.beneficiaries || 0), 0),
+      0,
+    );
+    const totalDep = projects.reduce((s, p) => s + p.deployments.length, 0);
     res.json({ ok: true, data: { totalProjects: projects.length, totalBeneficiaries: totalBen, totalDeployments: totalDep } });
   } catch (e) { next(e); }
 }

@@ -15,6 +15,16 @@ function computeDedupHash(report: any): string {
   return Math.abs(h).toString(16);
 }
 
+// Jaccard bigram similarity — mirrors verifyEngine.dedupHelpers.jaccardBigrams
+function jaccardBigrams(a: string, b: string): number {
+  if (!a || !b) return a === b ? 1 : 0;
+  const bigrams = (s: string) => new Set(s.slice(0, -1).split('').map((_, i) => s.slice(i, i + 2)));
+  const A = bigrams(a), B = bigrams(b);
+  const inter = [...A].filter((x) => B.has(x)).length;
+  const uni = A.size + B.size - inter;
+  return uni === 0 ? 1 : inter / uni;
+}
+
 export const challengeService = {
   async list() {
     return prisma.challenge.findMany({
@@ -86,6 +96,44 @@ export const challengeService = {
       }
     }
 
+    // ── Near-duplicate scan (synchronous, pre-save) ──────────────────────────────
+    // Same district + Jaccard(title) >= 0.72 + created within 14 days.
+    // Runs AFTER exact-hash check so exact duplicates are caught first.
+    if (!duplicateOf) {
+      const reportTitle = (input.title || '').toLowerCase().trim();
+      const districtCode = (input.district_code || input.district || '').toUpperCase();
+      if (districtCode && reportTitle.length >= 10) {
+        try {
+          const recentWindow = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+          const candidates = await prisma.challenge.findMany({
+            where: {
+              district_code: districtCode,
+              created_at: { gte: recentWindow },
+              deleted_at: null,
+            },
+            select: { id: true, title: true, citizen_report_count: true },
+            take: 50,
+            orderBy: { created_at: 'desc' },
+          });
+          for (const candidate of candidates) {
+            const sim = jaccardBigrams(reportTitle, (candidate.title || '').toLowerCase().trim());
+            if (sim >= 0.72) {
+              dedupStatus = 'NEAR_DUPLICATE';
+              duplicateOf = candidate.id;
+              // Merge: increment the primary's citizenReportCount.
+              await prisma.challenge.update({
+                where: { id: candidate.id },
+                data: { citizen_report_count: { increment: 1 } },
+              });
+              break;
+            }
+          }
+        } catch {
+          // Prisma query failed — continue as ORIGINAL
+        }
+      }
+    }
+
     const data = {
       id,
       title: input.title,
@@ -132,6 +180,38 @@ export const challengeService = {
       });
       return [created];
     });
+
+    // ── Fire-and-forget: enqueue full 5-stage AI pipeline for background enrichment ──
+    // Includes authoritative near-dup verification, priority scoring, university match.
+    // Runs in aiQueue (in-process worker). Does NOT block the HTTP response.
+    try {
+      const { aiQueue } = await import('../../core/workers/index.js');
+      aiQueue.add('pipeline', {
+        action: 'pipeline',
+        challengeId: id,
+        payload: {
+          challenge: {
+            id,
+            title: input.title,
+            description: input.description || '',
+            category: input.category || 'GENERAL',
+            district_code: input.district_code || input.district || 'RANCHI',
+            block_code: input.block_code || null,
+            lat: input.lat,
+            lng: input.lng,
+            submitter_id: input.submitter_id || 'demo-citizen',
+            submitter_type: (input.submitter_type as UserRole) || UserRole.CITIZEN,
+            status: input.status || ChallengeStatus.SUBMITTED,
+          },
+          // exclude the newly-created challenge from the near-dup scan inside verifyReport
+          // by passing its id in existingIds — the pipeline will skip self-matching.
+          existingIds: [id],
+          upvotes: 1,
+        },
+      }, { attempts: 3, backoff: { type: 'exponential', delay: 2000 } });
+    } catch {
+      // Queue unavailable (tests, etc.) — pipeline will run on-demand via /ai/pipeline
+    }
 
     return { ...challenge, ...input, dedupStatus, duplicateOf };
   },
