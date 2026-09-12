@@ -26,10 +26,145 @@ const ENTITY_MAPPINGS: Record<string, {
   trancheStatus: string;
   telemetryStatus: string;
 }> = {
+  'DEMO-CH-001': {
+    university: 'IIT (ISM) Dhanbad',
+    facultyLead: 'Dr. S. K. Roy (Rock Mechanics & Safety)',
+    studentLead: 'Priya Sharma (Lead, M.Tech Mining)',
+    csrPartner: 'BCCL CSR Foundation',
+    csrGrant: '₹6,50,000 (₹3.0L Co-Funded)',
+    trancheStatus: 'Tranche 2 Active (40%)',
+    telemetryStatus: '● 4 Borehole DTS Nodes Synced (56°C peak, 0.2mm shift)',
+  },
+  'DEMO-CH-002': {
+    university: 'IIT (ISM) Dhanbad',
+    facultyLead: 'Prof. Ankit Verma (Environmental Engg)',
+    studentLead: 'Deepak Sahu (Lead, 4th Yr Env Engg)',
+    csrPartner: 'Tata Steel Foundation',
+    csrGrant: '₹5,20,000 (₹2.6L Co-Funded)',
+    trancheStatus: 'Tranche 2 Active (40%)',
+    telemetryStatus: '● Cartridge Flow: 14.2 L/min (As <0.005 mg/L)',
+  },
+  'DEMO-CH-003': {
+    university: 'Birsa Agricultural University (BAU)',
+    facultyLead: 'Dr. Rameshwar Oraon (Soil & Water Engg)',
+    studentLead: 'Amit Murmu (Lead, 3rd Yr AgriTech)',
+    csrPartner: 'NTPC CSR Rural Energy Fund',
+    csrGrant: '₹4,80,000 (₹2.4L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● LoRa Aquifer Piezometer: 42.1m (Soil Tension 28 kPa)',
+  },
+  'DEMO-CH-004': {
+    university: 'NIT Jamshedpur',
+    facultyLead: 'Dr. V. K. Mahato (Hydraulic Engg)',
+    studentLead: 'Rahul Soren (Lead, 4th Yr Civil)',
+    csrPartner: 'Tata Steel TSRDS & Jusco CSR',
+    csrGrant: '₹5,80,000 (₹2.9L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Ultrasonic River Sentinel: 4.1m (Alert at 5.5m)',
+  },
+  'DEMO-CH-005': {
+    university: 'Kolhan University & NIT Jamshedpur',
+    facultyLead: 'Dr. Meenakshi Soren (Environmental Geoscience)',
+    studentLead: 'Salil Banra (Lead, Metallurgical & Geo Engg)',
+    csrPartner: 'Tata Steel Mining & SAIL Rungta CSR',
+    csrGrant: '₹6,20,000 (₹3.1L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Karo River Spectro Sensor: Turbidity 18 NTU (Fe <0.3 mg/L)',
+  },
+  'DEMO-CH-006': {
+    university: 'BIT Sindri',
+    facultyLead: 'Dr. Priya Sharma (Wildlife Ecology & IoT)',
+    studentLead: 'Aditya Kumar (Lead, Forestry & Wildlife)',
+    csrPartner: 'Jharkhand Forest Dev & Adani CSR',
+    csrGrant: '₹4,20,000 (₹2.1L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● 6 Seismic Geophones Online (0 Pachyderm Alerts)',
+  },
+  'DEMO-CH-007': {
+    university: 'Sido Kanhu Murmu University (SKMU)',
+    facultyLead: 'Dr. Hemant Murmu (Fluvial Geomorphology)',
+    studentLead: 'Sanjay Hansda (Lead, Earth Sciences)',
+    csrPartner: 'Inland Waterways CSR & Jindal Power',
+    csrGrant: '₹6,00,000 (₹3.0L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● ADCP Sonar Buoy Active (Current 1.4 m/s, Depth 7.2m)',
+  },
+  'DEMO-CH-008': {
+    university: 'BIT Mesra, Ranchi',
+    facultyLead: 'Dr. Arvind Sinha (IoT & Civil Lab)',
+    studentLead: 'Ayush Kumar Singh (Lead, 4th Yr ECE)',
+    csrPartner: 'Central Coalfields Ltd (CCL CSR)',
+    csrGrant: '₹4,50,000 (₹2.25L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● 115200 Baud Radar Stream: 1.82m Stage (Normal Flow)',
+  },
+  'DEMO-CH-009': {
+    university: 'IIT (ISM) Dhanbad & Bokaro Steel City College',
+    facultyLead: 'Dr. Sanjeev Kumar (Slurry Rheology & Waste)',
+    studentLead: 'Vikramaditya Roy (Lead, Chemical Engg)',
+    csrPartner: 'SAIL Bokaro Steel Plant CSR & DVC',
+    csrGrant: '₹5,60,000 (₹2.8L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Konar River Intake Optical Sensor: Turbidity 14 NTU Safe',
+  },
+  'DEMO-CH-010': {
+    university: 'NIT Jamshedpur',
+    facultyLead: 'Dr. P. K. Soren (Chemical & Env Engg)',
+    studentLead: 'Neha Kumari (Lead, 4th Yr Chem Engg)',
+    csrPartner: 'Adityapur Auto Cluster CSR',
+    csrGrant: '₹5,10,000 (₹2.5L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Optical Fluorometer Stream (Cr-VI: 0.018 mg/L Safe)',
+  },
+  'DEMO-CH-011': {
+    university: 'Birsa Agricultural University (BAU)',
+    facultyLead: 'Dr. R. N. Tiwari (Agronomy & Entomology)',
+    studentLead: 'Birsa Munda (Lead, Lac Culture Cell)',
+    csrPartner: 'TRIFED & JSLPS Innovation Grant',
+    csrGrant: '₹3,90,000 (₹1.95L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Multispectral NDVI Drone Scan (Canopy Health 92%)',
+  },
+  'DEMO-CH-012': {
+    university: 'AIIMS Deoghar & SKMU Dumka',
+    facultyLead: 'Dr. Alok Ranjan (Microbiology & Public Health)',
+    studentLead: 'Kavita Mishra (Lead, Bioengineering)',
+    csrPartner: 'Baidyanath Dham Trust & Coal India CSR',
+    csrGrant: '₹4,70,000 (₹2.35L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● UV-LED Sterilizer Stream: E. coli 0 CFU/100ml Safe',
+  },
+  'DEMO-CH-013': {
+    university: 'Vinoba Bhave University (VBU) & NIT JSR',
+    facultyLead: 'Dr. Meenakshi Sinha (Geotechnical Engg)',
+    studentLead: 'Tanvi Agarwal (Lead, Structural Engg)',
+    csrPartner: 'NHAI Road Safety & NTPC CSR',
+    csrGrant: '₹5,50,000 (₹2.75L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● FBG Strain Sensor Rig (Pier 3 Scour 2.8m Fixed)',
+  },
+  'DEMO-CH-014': {
+    university: 'BIT Sindri & Vinoba Bhave University',
+    facultyLead: 'Dr. Rajeshwar Mandal (Mine Reclamation)',
+    studentLead: 'Kunal Kumar (Lead, Mining Environmental Lab)',
+    csrPartner: 'Damodar Valley Corporation DVC CSR & JSMDC',
+    csrGrant: '₹5,40,000 (₹2.7L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Pit Water Level Sonar: 11.2m Rim Stability Steady',
+  },
+  'DEMO-CH-015': {
+    university: 'Ranchi University & BIT Mesra',
+    facultyLead: 'Dr. Sandeep Toppo (Geotechnical & Highway Engg)',
+    studentLead: 'Roshan Kujur (Lead, Civil & Geomatics)',
+    csrPartner: 'Hindalco Industries CSR Netarhat Division',
+    csrGrant: '₹4,90,000 (₹2.45L Co-Funded)',
+    trancheStatus: 'Tranche 1 Disbursed (30%)',
+    telemetryStatus: '● Inclinometer Sensor String: Slope Creep 0.05 mm/day Stable',
+  },
   'mining': {
     university: 'IIT (ISM) Dhanbad',
     facultyLead: 'Dr. S. K. Roy (Rock Mechanics & Safety)',
-    studentLead: 'Priya Sharma (Lead · M.Tech Mining)',
+    studentLead: 'Priya Sharma (Lead, M.Tech Mining)',
     csrPartner: 'BCCL CSR Foundation',
     csrGrant: '₹6,50,000 (₹3.0L Co-Funded)',
     trancheStatus: 'Tranche 2 Active (40%)',
@@ -38,7 +173,7 @@ const ENTITY_MAPPINGS: Record<string, {
   'water': {
     university: 'IIT (ISM) Dhanbad',
     facultyLead: 'Prof. Ankit Verma (Environmental Engg)',
-    studentLead: 'Deepak Sahu (Lead · 4th Yr Env Engg)',
+    studentLead: 'Deepak Sahu (Lead, 4th Yr Env Engg)',
     csrPartner: 'Tata Steel Foundation',
     csrGrant: '₹5,20,000 (₹2.6L Co-Funded)',
     trancheStatus: 'Tranche 2 Active (40%)',
@@ -47,7 +182,7 @@ const ENTITY_MAPPINGS: Record<string, {
   'drought': {
     university: 'Birsa Agricultural University (BAU)',
     facultyLead: 'Dr. Rameshwar Oraon (Soil & Water Engg)',
-    studentLead: 'Amit Murmu (Lead · 3rd Yr AgriTech)',
+    studentLead: 'Amit Murmu (Lead, 3rd Yr AgriTech)',
     csrPartner: 'NTPC CSR Rural Energy Fund',
     csrGrant: '₹4,80,000 (₹2.4L Co-Funded)',
     trancheStatus: 'Tranche 1 Disbursed (30%)',
@@ -56,7 +191,7 @@ const ENTITY_MAPPINGS: Record<string, {
   'flood': {
     university: 'BIT Mesra, Ranchi',
     facultyLead: 'Dr. Arvind Sinha (IoT & Civil Lab)',
-    studentLead: 'Ayush Kumar Singh (Lead · 4th Yr ECE)',
+    studentLead: 'Ayush Kumar Singh (Lead, 4th Yr ECE)',
     csrPartner: 'Central Coalfields Ltd (CCL CSR)',
     csrGrant: '₹4,50,000 (₹2.25L Co-Funded)',
     trancheStatus: 'Tranche 1 Disbursed (30%)',
@@ -65,7 +200,7 @@ const ENTITY_MAPPINGS: Record<string, {
   'confluence': {
     university: 'NIT Jamshedpur',
     facultyLead: 'Dr. V. K. Mahato (Hydraulic Engg)',
-    studentLead: 'Rahul Soren (Lead · 4th Yr Civil)',
+    studentLead: 'Rahul Soren (Lead, 4th Yr Civil)',
     csrPartner: 'Tata Steel TSRDS & Jusco CSR',
     csrGrant: '₹5,80,000 (₹2.9L Co-Funded)',
     trancheStatus: 'Tranche 1 Disbursed (30%)',
@@ -74,7 +209,7 @@ const ENTITY_MAPPINGS: Record<string, {
   'wildlife': {
     university: 'BIT Sindri',
     facultyLead: 'Dr. Priya Sharma (Wildlife Ecology & IoT)',
-    studentLead: 'Aditya Kumar (Lead · Forestry & Wildlife)',
+    studentLead: 'Aditya Kumar (Lead, Forestry & Wildlife)',
     csrPartner: 'Jharkhand Forest Dev & Adani CSR',
     csrGrant: '₹4,20,000 (₹2.1L Co-Funded)',
     trancheStatus: 'Tranche 1 Disbursed (30%)',
@@ -83,16 +218,16 @@ const ENTITY_MAPPINGS: Record<string, {
   'erosion': {
     university: 'Sido Kanhu Murmu University (SKMU)',
     facultyLead: 'Dr. Hemant Murmu (Fluvial Geomorphology)',
-    studentLead: 'Sanjay Hansda (Lead · Earth Sciences)',
+    studentLead: 'Sanjay Hansda (Lead, Earth Sciences)',
     csrPartner: 'Inland Waterways CSR & Jindal Power',
     csrGrant: '₹6,00,000 (₹3.0L Co-Funded)',
     trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● ADCP Sonar Buoy Active (Current 1.4 m/s · Depth 7.2m)',
+    telemetryStatus: '● ADCP Sonar Buoy Active (Current 1.4 m/s, Depth 7.2m)',
   },
   'hazardous': {
     university: 'NIT Jamshedpur',
     facultyLead: 'Dr. P. K. Soren (Chemical & Env Engg)',
-    studentLead: 'Neha Kumari (Lead · 4th Yr Chem Engg)',
+    studentLead: 'Neha Kumari (Lead, 4th Yr Chem Engg)',
     csrPartner: 'Adityapur Auto Cluster CSR',
     csrGrant: '₹5,10,000 (₹2.5L Co-Funded)',
     trancheStatus: 'Tranche 1 Disbursed (30%)',
@@ -101,7 +236,7 @@ const ENTITY_MAPPINGS: Record<string, {
   'agri': {
     university: 'Birsa Agricultural University (BAU)',
     facultyLead: 'Dr. R. N. Tiwari (Agronomy & Entomology)',
-    studentLead: 'Birsa Munda (Lead · Lac Culture Cell)',
+    studentLead: 'Birsa Munda (Lead, Lac Culture Cell)',
     csrPartner: 'TRIFED & JSLPS Innovation Grant',
     csrGrant: '₹3,90,000 (₹1.95L Co-Funded)',
     trancheStatus: 'Tranche 1 Disbursed (30%)',
@@ -110,11 +245,11 @@ const ENTITY_MAPPINGS: Record<string, {
   'bridge': {
     university: 'Vinoba Bhave University (VBU) & NIT JSR',
     facultyLead: 'Dr. Meenakshi Sinha (Geotechnical Engg)',
-    studentLead: 'Tanvi Agarwal (Lead · Structural Engg)',
+    studentLead: 'Tanvi Agarwal (Lead, Structural Engg)',
     csrPartner: 'NHAI Road Safety & NTPC CSR',
     csrGrant: '₹5,50,000 (₹2.75L Co-Funded)',
     trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● FBG Strain Sensor Rig (Pier-3 Scour 2.8m Fixed)',
+    telemetryStatus: '● FBG Strain Sensor Rig (Pier 3 Scour 2.8m Fixed)',
   },
 };
 
@@ -382,7 +517,7 @@ export const AdminPortal: React.FC = () => {
                           : combined.includes('lac') || combined.includes('crop') || combined.includes('blight') || combined.includes('tree') ? 'agri'
                           : combined.includes('bridge') || combined.includes('scour') || combined.includes('pier') ? 'bridge'
                           : 'flood';
-                        const entity = ENTITY_MAPPINGS[categoryKey] || ENTITY_MAPPINGS['flood'];
+                        const entity = ENTITY_MAPPINGS[c.id] || (c.reportId ? ENTITY_MAPPINGS[c.reportId] : undefined) || ENTITY_MAPPINGS[categoryKey] || ENTITY_MAPPINGS['DEMO-CH-001'];
 
                         return (
                           <tr key={c.id} className="hover:bg-[#FAF8F4]/80 transition-colors">

@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // NIVAARAN — Demo Seed Data (SIH 26043)
-// Hyper-realistic Jharkhand-specific challenges, HEI R&D projects, CSR funding,
-// and IoT telemetry streams spanning all major districts & crisis zones.
+// 15 Real Jharkhand Crisis Problems, HEI R&D Engineering Projects, Corporate CSR Sponsors,
+// and Live Field IoT Telemetry Streams Spanning Jharkhand Crisis Districts.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type {
@@ -12,45 +12,45 @@ import type {
   WorkflowState,
 } from './workflowTypes';
 
-// ── Helper: generate timestamps relative to "now" ────────────────────────────
+// Helper: generate timestamps relative to "now"
 const daysAgo = (days: number): string =>
   new Date(Date.now() - days * 86_400_000).toISOString();
 
 const hoursAgo = (hours: number): string =>
   new Date(Date.now() - hours * 3_600_000).toISOString();
 
-// ── Seed Challenges ──────────────────────────────────────────────────────────
+// ── 15 Real Jharkhand Crisis Challenges ───────────────────────────────────────
 
-const SEED_CHALLENGES: Challenge[] = [
-  // 1. Dhanbad — Jharia Subterranean Coal Seam Fire & Subsidence (CRITICAL)
+export const SEED_CHALLENGES: Challenge[] = [
+  // 1. Dhanbad (Jharia / Lodna)
   {
     id: 'DEMO-CH-001',
     reportId: 'NIV-2026-0001',
-    title: 'Subterranean coalfield fire & toxic gas venting in Lodna Colliery',
-    description: 'Ground subsidence cracks reaching 1.2m width and continuous carbon monoxide & sulphur dioxide emissions observed near Lodna 4-Pits residential quarters. Surface temperature measured at 56°C. Over 3,400 residents facing acute respiratory hazards and collapse vulnerability.',
+    title: 'Ground subsidence cracks and toxic CO gas venting near Lodna 4 Pits',
+    description: 'Continuous subterranean coalfire smoke and 1.2m wide ground cracks opened near residential quarters. Ground surface temperature measured at 56 degrees Celsius with asphyxiation risks.',
     district: 'Dhanbad',
     block: 'Jharia',
     village: 'Lodna Colliery',
     locationCoords: { lat: 23.7460, lng: 86.4132 },
-    formattedAddress: 'Lodna 4-Pits Sector, Jharia Coalfield, Dhanbad, Jharkhand',
+    formattedAddress: 'Lodna 4 Pits Sector, Jharia Coalfield, Dhanbad, Jharkhand',
     status: 'In Progress',
     stageNumber: 8,
     stageName: 'Stage 8: Team Formation & Project Initiation',
-    category: 'Coalfire, Subsidence & Industrial Hazard',
+    category: 'Mining & Coalfire Disaster',
     aiAnalysis: {
-      category: 'Coalfire, Subsidence & Industrial Hazard',
+      category: 'Mining & Coalfire Disaster',
       categoryCode: 'GOV-MINE',
       matchedProblem: 'Subterranean coal seam fire and toxic gas venting',
       confidenceScore: 98,
       priorityScore: 96,
       riskLevel: 'CRITICAL',
       factors: {
-        populationImpact:          { score: 25, max: 25, reason: '3,400+ mining township residents in direct plume & collapse path' },
-        economicLifeSaving:        { score: 25, max: 25, reason: 'Critical life-safety hazard with imminent subsidence collapse risk' },
-        resolutionCostFeasibility: { score: 22, max: 25, reason: 'Borehole nitrogen-foam grouting and thermal InSAR telemetry feasible' },
-        hazardUrgency:             { score: 24, max: 25, reason: 'Toxic CO venting and 56°C ground surface temperatures active' },
+        populationImpact: { score: 25, max: 25, reason: '3400+ mining township residents in direct plume and collapse path' },
+        economicLifeSaving: { score: 25, max: 25, reason: 'Critical life safety hazard with imminent subsidence collapse risk' },
+        resolutionCostFeasibility: { score: 22, max: 25, reason: 'Borehole nitrogen foam grouting and thermal InSAR telemetry feasible' },
+        hazardUrgency: { score: 24, max: 25, reason: 'Toxic CO venting and 56C ground surface temperatures active' },
       },
-      reasoning: 'Critical geotechnical and toxicological hazard. Deep underground combustion requires thermal gradient monitoring and multi-point borehole telemetry.',
+      reasoning: 'Critical geotechnical and toxicological hazard. Deep underground combustion requires thermal gradient monitoring and multi point borehole telemetry.',
       needsHumanVerification: false,
       recommendedUniversityDepts: ['Mining Engineering', 'Geotechnical Engineering', 'Environmental Science'],
     },
@@ -58,7 +58,7 @@ const SEED_CHALLENGES: Challenge[] = [
     confidenceScore: 98,
     riskLevel: 'CRITICAL',
     evidenceUrls: ['https://imgs.etvbharat.com/etvbharat/prod-images/22-08-2026/1200-675-27455673-thumbnail-16x9-land-subsidence-1-aspera.jpg'],
-    govtOfficerNote: 'Inspected by Dhanbad Mining Safety Directorate & DC Office. Cleared for IIT (ISM) Dhanbad prototype deployment.',
+    govtOfficerNote: 'Inspected by Dhanbad Mining Safety Directorate and DC Office. Cleared for IIT (ISM) Dhanbad prototype deployment.',
     govtValidatedBy: 'Shri A. K. Rai, Deputy Commissioner, Dhanbad',
     govtValidatedAt: daysAgo(14),
     assignedHEI: 'IIT (ISM) Dhanbad',
@@ -68,12 +68,12 @@ const SEED_CHALLENGES: Challenge[] = [
     updatedAt: daysAgo(2),
   },
 
-  // 2. Giridih — Arsenic & Fluoride Toxicity in Santhal Villages (CRITICAL)
+  // 2. Giridih (Tisri / Lokai)
   {
     id: 'DEMO-CH-002',
     reportId: 'NIV-2026-0002',
-    title: 'Severe handpump arsenic & fluoride toxicity in 18 Santhal tribal hamlets',
-    description: 'Hydrogeological sampling by PHED reveals arsenic levels at 0.08 mg/L (8x WHO safe limit) and fluoride at 3.6 mg/L across 42 handpumps in Tisri block. Over 6,200 residents afflicted with dental/skeletal fluorosis and keratosis lesions.',
+    title: 'Severe arsenic and fluoride toxicity in 18 Santhal tribal village handpumps',
+    description: 'Water quality lab tests show arsenic at 8x WHO safe limits and fluoride at 3.6 mg per litre in community tubewells. Over 6200 residents suffering from skeletal fluorosis and skin lesions.',
     district: 'Giridih',
     block: 'Tisri',
     village: 'Lokai & Baramasia',
@@ -82,23 +82,23 @@ const SEED_CHALLENGES: Challenge[] = [
     status: 'Prototype Active',
     stageNumber: 11,
     stageName: 'Stage 11: Prototype Development & Testing',
-    category: 'Drinking Water Quality & Toxic Contamination',
+    category: 'Water Quality & Contamination',
     aiAnalysis: {
-      category: 'Drinking Water Quality & Toxic Contamination',
+      category: 'Water Quality & Contamination',
       categoryCode: 'GOV-WATER',
       matchedProblem: 'Arsenic and fluoride contamination in drinking water',
       confidenceScore: 99,
       priorityScore: 95,
       riskLevel: 'CRITICAL',
       factors: {
-        populationImpact:          { score: 25, max: 25, reason: '6,200+ tribal citizens consuming severely toxic groundwater' },
-        economicLifeSaving:        { score: 25, max: 25, reason: 'Prevention of permanent crippling skeletal fluorosis & arsenicosis' },
-        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Solar-powered nano-iron adsorbent filter cartridges retrofittable on Mark-II pumps' },
-        hazardUrgency:             { score: 24, max: 25, reason: 'Chronic poisoning ongoing daily at 8x safe thresholds' },
+        populationImpact: { score: 25, max: 25, reason: '6200+ tribal citizens consuming severely toxic groundwater' },
+        economicLifeSaving: { score: 25, max: 25, reason: 'Prevention of permanent crippling skeletal fluorosis and arsenicosis' },
+        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Solar powered nano iron adsorbent filter cartridges retrofittable on Mark II pumps' },
+        hazardUrgency: { score: 24, max: 25, reason: 'Chronic poisoning ongoing daily at 8x safe thresholds' },
       },
-      reasoning: 'Urgent public health crisis in remote tribal belt. Low-cost adsorbent nano-media required to provide immediate clean water.',
+      reasoning: 'Urgent public health crisis in remote tribal belt. Low cost adsorbent nano media required to provide immediate clean water.',
       needsHumanVerification: false,
-      recommendedUniversityDepts: ['Environmental Engineering', 'Chemistry', 'Biotechnology', 'Public Health'],
+      recommendedUniversityDepts: ['Environmental Engineering', 'Chemistry', 'Biotechnology'],
     },
     priorityScore: 95,
     confidenceScore: 99,
@@ -114,12 +114,12 @@ const SEED_CHALLENGES: Challenge[] = [
     updatedAt: daysAgo(1),
   },
 
-  // 3. Palamu — Severe Agricultural Drought & Aquifer Depletion (CRITICAL)
+  // 3. Palamu (Chhatarpur / Mahugawan)
   {
     id: 'DEMO-CH-003',
     reportId: 'NIV-2026-0003',
-    title: 'Severe rain-shadow agricultural drought & acute aquifer drawdown in North Koel basin',
-    description: 'Consecutive 45-day dry spell led to water table plunging below 42m depth across 1,800 hectares of paddy land in Chhatarpur block. 940 tribal smallholder families facing total crop failure. Deep borewells running dry with zero surface irrigation.',
+    title: 'North Koel rain shadow drought and deep aquifer drawdown below 42 metres',
+    description: 'Over 1800 hectares of paddy wilting due to 45 day monsoon deficit. Deep community borewells running dry with zero surface irrigation for 940 tribal farming families.',
     district: 'Palamu',
     block: 'Chhatarpur',
     village: 'Mahugawan',
@@ -128,21 +128,21 @@ const SEED_CHALLENGES: Challenge[] = [
     status: 'In Progress',
     stageNumber: 9,
     stageName: 'Stage 9: R&D & Engineering Specification',
-    category: 'Agricultural Drought & Aquifer Depletion',
+    category: 'Drought & Aquifer Depletion',
     aiAnalysis: {
-      category: 'Agricultural Drought & Aquifer Depletion',
+      category: 'Drought & Aquifer Depletion',
       categoryCode: 'GOV-DROUGHT',
       matchedProblem: 'Severe agricultural drought and groundwater depletion',
       confidenceScore: 96,
       priorityScore: 91,
       riskLevel: 'CRITICAL',
       factors: {
-        populationImpact:          { score: 23, max: 25, reason: '940 farming families and 1,800 hectares facing complete livelihood loss' },
-        economicLifeSaving:        { score: 24, max: 25, reason: 'Agrarian crisis mitigation and groundwater recharge preservation' },
-        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Solar micro-drip automation and IoT piezometer telemetry networks' },
-        hazardUrgency:             { score: 23, max: 25, reason: 'Current kharif season crop at critical wilting point' },
+        populationImpact: { score: 23, max: 25, reason: '940 farming families and 1800 hectares facing complete livelihood loss' },
+        economicLifeSaving: { score: 24, max: 25, reason: 'Agrarian crisis mitigation and groundwater recharge preservation' },
+        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Solar micro drip automation and IoT piezometer telemetry networks' },
+        hazardUrgency: { score: 23, max: 25, reason: 'Current kharif season crop at critical wilting point' },
       },
-      reasoning: 'Chronic rain-shadow zone vulnerability exacerbated by over-extraction. Automated micro-irrigation and aquifer telemetry needed.',
+      reasoning: 'Chronic rain shadow zone vulnerability exacerbated by over extraction. Automated micro irrigation and aquifer telemetry needed.',
       needsHumanVerification: false,
       recommendedUniversityDepts: ['Agronomy', 'Agricultural Engineering', 'Hydrology & Remote Sensing'],
     },
@@ -150,7 +150,7 @@ const SEED_CHALLENGES: Challenge[] = [
     confidenceScore: 96,
     riskLevel: 'CRITICAL',
     evidenceUrls: ['https://img.manoramayearbook.in/content/dam/yearbook/learn/world/images/2023/oct/koel-project.jpg'],
-    govtOfficerNote: 'Joint field appraisal completed by District Agriculture Officer & BAU Ranchi. Co-funded by NTPC CSR.',
+    govtOfficerNote: 'Joint field appraisal completed by District Agriculture Officer and BAU Ranchi. Co funded by NTPC CSR.',
     govtValidatedBy: 'Shri Shashi Ranjan, DC Palamu',
     govtValidatedAt: daysAgo(21),
     assignedHEI: 'Birsa Agricultural University (BAU)',
@@ -160,12 +160,12 @@ const SEED_CHALLENGES: Challenge[] = [
     updatedAt: daysAgo(4),
   },
 
-  // 4. East Singhbhum — Subarnarekha Flash Flood & Culvert Siltation (HIGH)
+  // 4. East Singhbhum (Jamshedpur / Bagbera & Mango)
   {
     id: 'DEMO-CH-004',
     reportId: 'NIV-2026-0004',
-    title: 'Subarnarekha & Kharkai confluence flash inundation & culvert siltation',
-    description: 'Depressional downpour caused 4.2m rapid river swell at Bagbera-Mango riverbanks. Storm culverts choked with industrial slag runoff, trapping 3.5 feet of stormwater across residential wards and cutting off primary roads.',
+    title: 'Subarnarekha and Kharkai confluence flash flood backwater inundating Bagbera colony',
+    description: 'Depressional downpour caused 4.2m rapid river swell. Storm culverts choked with industrial slag runoff, trapping stormwater across 6 residential wards and cutting off arterial roads.',
     district: 'East Singhbhum',
     block: 'Jamshedpur',
     village: 'Bagbera Colony',
@@ -183,12 +183,12 @@ const SEED_CHALLENGES: Challenge[] = [
       priorityScore: 89,
       riskLevel: 'HIGH',
       factors: {
-        populationImpact:          { score: 23, max: 25, reason: '45,000+ peri-urban residents in low-lying Bagbera-Mango catchment' },
-        economicLifeSaving:        { score: 22, max: 25, reason: 'Prevention of commercial inundation and seasonal waterborne outbreaks' },
-        resolutionCostFeasibility: { score: 22, max: 25, reason: 'Ultrasonic river-stage sensor nodes and self-scouring siphon gates' },
-        hazardUrgency:             { score: 22, max: 25, reason: 'Monsoon depression storm cycles repeating bi-weekly' },
+        populationImpact: { score: 23, max: 25, reason: '45000+ peri urban residents in low lying Bagbera Mango catchment' },
+        economicLifeSaving: { score: 22, max: 25, reason: 'Prevention of commercial inundation and seasonal waterborne outbreaks' },
+        resolutionCostFeasibility: { score: 22, max: 25, reason: 'Ultrasonic river stage sensor nodes and self scouring siphon gates' },
+        hazardUrgency: { score: 22, max: 25, reason: 'Monsoon depression storm cycles repeating bi weekly' },
       },
-      reasoning: 'High-density urban flood vulnerability caused by combined river swell and clogged drainage egress. Telemetry early-warning essential.',
+      reasoning: 'High density urban flood vulnerability caused by combined river swell and clogged drainage egress. Telemetry early warning essential.',
       needsHumanVerification: false,
       recommendedUniversityDepts: ['Civil Engineering', 'Hydraulics', 'Electronics & IoT'],
     },
@@ -206,12 +206,12 @@ const SEED_CHALLENGES: Challenge[] = [
     updatedAt: daysAgo(2),
   },
 
-  // 5. West Singhbhum — Saranda Forest Karo River Red Mud Contamination (CRITICAL)
+  // 5. West Singhbhum (Noamundi / Gua Basti)
   {
     id: 'DEMO-CH-005',
     reportId: 'NIV-2026-0005',
-    title: 'Hematite red mud slurry runoff polluting Karo river tribal drinking sources',
-    description: 'Heavy rains breached opencast iron ore mine tailing bunds near Gua, discharging high-turbidity hematite red slurry (>450 NTU) into the Karo river. 14 indigenous Ho tribal settlements cutoff from safe potable water.',
+    title: 'Hematite red mud slurry runoff polluting Karo river drinking water sources',
+    description: 'Opencast iron ore mine tailing bund breach discharged high turbidity hematite red slurry above 450 NTU into Karo river, depriving 14 Ho tribal settlements of safe drinking water.',
     district: 'West Singhbhum',
     block: 'Noamundi',
     village: 'Gua Basti',
@@ -229,10 +229,10 @@ const SEED_CHALLENGES: Challenge[] = [
       priorityScore: 93,
       riskLevel: 'CRITICAL',
       factors: {
-        populationImpact:          { score: 24, max: 25, reason: '14 tribal settlements completely dependent on Karo river' },
-        economicLifeSaving:        { score: 24, max: 25, reason: 'Acute gastrointestinal epidemic and heavy-metal bioaccumulation prevention' },
-        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Solar-powered multi-stage coagulant-flocculation clarifier system' },
-        hazardUrgency:             { score: 24, max: 25, reason: 'Turbidity exceeds 450 NTU with total loss of drinking water access' },
+        populationImpact: { score: 24, max: 25, reason: '14 tribal settlements completely dependent on Karo river' },
+        economicLifeSaving: { score: 24, max: 25, reason: 'Acute gastrointestinal epidemic and heavy metal bioaccumulation prevention' },
+        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Solar powered multi stage coagulant flocculation clarifier system' },
+        hazardUrgency: { score: 24, max: 25, reason: 'Turbidity exceeds 450 NTU with total loss of drinking water access' },
       },
       reasoning: 'Critical ecological and indigenous community water crisis. Requires immediate decentralized clarifier filtration and bund stabilization.',
       needsHumanVerification: false,
@@ -242,19 +242,22 @@ const SEED_CHALLENGES: Challenge[] = [
     confidenceScore: 98,
     riskLevel: 'CRITICAL',
     evidenceUrls: ['https://www.researchgate.net/publication/257909496/figure/fig1/AS:611887985225730@1522896872236/Discharge-of-red-mud-as-slurry-into-the-pond.png'],
-    govtOfficerNote: 'District Collector Office & State Pollution Board site visit completed. Fast-tracked for Kolhan University & NIT Jamshedpur match.',
+    govtOfficerNote: 'District Collector Office and State Pollution Board site visit completed. Fast tracked for Kolhan University and NIT Jamshedpur match.',
     govtValidatedBy: 'Shri Kuldeep Choudhary, DC West Singhbhum',
     govtValidatedAt: daysAgo(6),
+    assignedHEI: 'Kolhan University & NIT Jamshedpur',
+    assignedDept: 'Metallurgical & Chemical Engineering',
+    assignedProjectId: 'DEMO-PRJ-005',
     createdAt: daysAgo(12),
     updatedAt: daysAgo(6),
   },
 
-  // 6. Latehar — Betla Elephant Corridor Crop Raiding & Human Conflict (HIGH)
+  // 6. Latehar (Barwadih / Betla Buffer)
   {
     id: 'DEMO-CH-006',
     reportId: 'NIV-2026-0006',
-    title: 'Elephant corridor fragmentation & nocturnal crop raiding in Betla buffer zone',
-    description: 'A herd of 16 Asiatic elephants displaced by railway siding construction is entering agrarian settlements nightly in Barwadih block. 120+ farming families lost ₹22 lakh of paddy crops this season with repeated near-fatal encounters.',
+    title: 'Elephant herd corridor disruption and nocturnal crop raiding in Betla forest fringe',
+    description: 'A herd of 16 Asiatic elephants displaced by railway barrier construction is entering agricultural farmlands nightly. 120 farming families lost 22 lakh rupees in ruined paddy crops.',
     district: 'Latehar',
     block: 'Barwadih',
     village: 'Betla Fringe / Kechki',
@@ -263,21 +266,21 @@ const SEED_CHALLENGES: Challenge[] = [
     status: 'In Progress',
     stageNumber: 8,
     stageName: 'Stage 8: Team Formation & Project Initiation',
-    category: 'Wildlife Conservation & Human-Animal Conflict',
+    category: 'Wildlife Conservation & Conflict',
     aiAnalysis: {
-      category: 'Wildlife Conservation & Human-Animal Conflict',
+      category: 'Wildlife Conservation & Conflict',
       categoryCode: 'GOV-WILD',
-      matchedProblem: 'Elephant corridor fragmentation and human-wildlife conflict',
+      matchedProblem: 'Elephant corridor fragmentation and human wildlife conflict',
       confidenceScore: 95,
       priorityScore: 86,
       riskLevel: 'HIGH',
       factors: {
-        populationImpact:          { score: 21, max: 25, reason: '120+ farming families facing nocturnal safety risk and crop ruin' },
-        economicLifeSaving:        { score: 23, max: 25, reason: 'Preservation of agricultural livelihoods and elephant conservation' },
-        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Solar LoRa seismic & thermal acoustic elephant early-warning arrays' },
-        hazardUrgency:             { score: 21, max: 25, reason: 'Nightly elephant intrusions ongoing during peak harvest' },
+        populationImpact: { score: 21, max: 25, reason: '120+ farming families facing nocturnal safety risk and crop ruin' },
+        economicLifeSaving: { score: 23, max: 25, reason: 'Preservation of agricultural livelihoods and elephant conservation' },
+        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Solar LoRa seismic and thermal acoustic elephant early warning arrays' },
+        hazardUrgency: { score: 21, max: 25, reason: 'Nightly elephant intrusions ongoing during peak harvest' },
       },
-      reasoning: 'Critical human-wildlife conflict demanding non-invasive AI bio-acoustic detection and community SMS siren triggers.',
+      reasoning: 'Critical human wildlife conflict demanding non invasive AI bio acoustic detection and community SMS siren triggers.',
       needsHumanVerification: false,
       recommendedUniversityDepts: ['Forestry & Wildlife Science', 'Electronics & IoT', 'Remote Sensing'],
     },
@@ -285,22 +288,22 @@ const SEED_CHALLENGES: Challenge[] = [
     confidenceScore: 95,
     riskLevel: 'HIGH',
     evidenceUrls: ['https://images.moneycontrol.com/static-mcnews/2018/09/Elephants.jpg?impolicy=website&width=1280&height=720'],
-    govtOfficerNote: 'DFO Latehar approved prototype intervention plan. BIT Sindri Forestry & Electronics team onboarded.',
+    govtOfficerNote: 'DFO Latehar approved prototype intervention plan. BIT Sindri Forestry and Electronics team onboarded.',
     govtValidatedBy: 'Shri Himanshu Mohan, DC Latehar',
     govtValidatedAt: daysAgo(19),
     assignedHEI: 'BIT Sindri',
     assignedDept: 'Electronics & Forestry Ecology',
-    assignedProjectId: 'DEMO-PRJ-005',
+    assignedProjectId: 'DEMO-PRJ-006',
     createdAt: daysAgo(25),
     updatedAt: daysAgo(3),
   },
 
-  // 7. Sahibganj — Ganga Riverbank Erosion & Diara Island Submergence (CRITICAL)
+  // 7. Sahibganj (Rajmahal / Kankjol Diara)
   {
     id: 'DEMO-CH-007',
     reportId: 'NIV-2026-0007',
-    title: 'Ganga riverbank erosion & seasonal diara island submergence',
-    description: 'Intense northward meander scour of the Ganga river eroded 85 metres of fertile riverbank near Rajmahal, isolating 420 diara families and cutting off emergency river ambulance boat logistics to Sahibganj Sadar Hospital.',
+    title: 'Ganga riverbank erosion and seasonal island submergence cutting off boat access',
+    description: 'Severe northward meander scour along Ganga riverbank eroded 85 metres of embankment near Rajmahal, isolating 420 diara families and cutting off river ambulance logistics.',
     district: 'Sahibganj',
     block: 'Rajmahal',
     village: 'Kankjol Diara',
@@ -318,14 +321,14 @@ const SEED_CHALLENGES: Challenge[] = [
       priorityScore: 94,
       riskLevel: 'CRITICAL',
       factors: {
-        populationImpact:          { score: 24, max: 25, reason: '420 diara families cut off from medical and food lifelines' },
-        economicLifeSaving:        { score: 25, max: 25, reason: 'Immediate prevention of village washing-away into active river channel' },
-        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Geotextile eco-spur placement and real-time bathymetric sonar buoys' },
-        hazardUrgency:             { score: 24, max: 25, reason: 'Bank erosion rate of 1.5m per day during peak monsoon discharge' },
+        populationImpact: { score: 24, max: 25, reason: '420 diara families cut off from medical and food lifelines' },
+        economicLifeSaving: { score: 25, max: 25, reason: 'Immediate prevention of village washing away into active river channel' },
+        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Geotextile eco spur placement and real time bathymetric sonar buoys' },
+        hazardUrgency: { score: 24, max: 25, reason: 'Bank erosion rate of 1.5m per day during peak monsoon discharge' },
       },
-      reasoning: 'High-hazard dynamic fluvial erosion requiring bio-engineered geotextile spur defenses and river stage telemetry.',
+      reasoning: 'High hazard dynamic fluvial erosion requiring bio engineered geotextile spur defenses and river stage telemetry.',
       needsHumanVerification: false,
-      recommendedUniversityDepts: ['Hydraulic Engineering', 'Civil Engineering', 'Ocean & River Sciences'],
+      recommendedUniversityDepts: ['Hydraulic Engineering', 'Civil Engineering', 'Earth Sciences'],
     },
     priorityScore: 94,
     confidenceScore: 97,
@@ -336,17 +339,17 @@ const SEED_CHALLENGES: Challenge[] = [
     govtValidatedAt: daysAgo(22),
     assignedHEI: 'Sido Kanhu Murmu University (SKMU)',
     assignedDept: 'Earth Sciences & Hydraulic Engineering',
-    assignedProjectId: 'DEMO-PRJ-006',
+    assignedProjectId: 'DEMO-PRJ-007',
     createdAt: daysAgo(29),
     updatedAt: daysAgo(1),
   },
 
-  // 8. Ranchi — Kanke Dam Inundation & Hutup School Access Cutoff (HIGH)
+  // 8. Ranchi (Kanke / Hutup)
   {
     id: 'DEMO-CH-008',
     reportId: 'NIV-2026-0008',
-    title: 'Kanke dam spillway overflow & Hutup culvert blockage flooding school access road',
-    description: 'Storm backwater accumulation in Hutup Panchayat has submerged the main access road under 3.5 feet of stagnant runoff. 450 students unable to reach Government High School Hutup safely. Stagnant water breeding vector-borne diseases.',
+    title: 'Monsoon stormwater accumulation submerging Government High School road in Hutup',
+    description: 'Heavy storm runoff from Kanke catchment has submerged the main access road under 3.5 feet of stagnant runoff. 450 school children cannot reach school safely.',
     district: 'Ranchi',
     block: 'Kanke',
     village: 'Hutup',
@@ -355,21 +358,21 @@ const SEED_CHALLENGES: Challenge[] = [
     status: 'In Progress',
     stageNumber: 8,
     stageName: 'Stage 8: Team Formation & Project Initiation',
-    category: 'Urban Infrastructure & Drainage Flooding',
+    category: 'Flooding & Drainage',
     aiAnalysis: {
-      category: 'Urban Infrastructure & Drainage Flooding',
+      category: 'Flooding & Drainage',
       categoryCode: 'GOV-FLOOD',
       matchedProblem: 'Culvert drainage blockage and school road flooding',
       confidenceScore: 96,
       priorityScore: 84,
       riskLevel: 'HIGH',
       factors: {
-        populationImpact:          { score: 20, max: 25, reason: '450 school children and 1,200 village households affected' },
-        economicLifeSaving:        { score: 21, max: 25, reason: 'Child pedestrian safety & dengue epidemic containment' },
-        resolutionCostFeasibility: { score: 23, max: 25, reason: 'Automated de-siltation siphon and solar radar water level sensor' },
-        hazardUrgency:             { score: 20, max: 25, reason: 'Daily school disruption and dengue threat' },
+        populationImpact: { score: 20, max: 25, reason: '450 school children and 1200 village households affected' },
+        economicLifeSaving: { score: 21, max: 25, reason: 'Child pedestrian safety and dengue epidemic containment' },
+        resolutionCostFeasibility: { score: 23, max: 25, reason: 'Automated de siltation siphon and solar radar water level sensor' },
+        hazardUrgency: { score: 20, max: 25, reason: 'Daily school disruption and dengue threat' },
       },
-      reasoning: 'Recurring seasonal drainage choke. Modular sensor-activated drainage pumps and culvert de-siltation will resolve permanently.',
+      reasoning: 'Recurring seasonal drainage choke. Modular sensor activated drainage pumps and culvert de siltation will resolve permanently.',
       needsHumanVerification: false,
       recommendedUniversityDepts: ['Civil Engineering', 'IoT & Embedded Systems', 'Urban Hydrology'],
     },
@@ -382,17 +385,17 @@ const SEED_CHALLENGES: Challenge[] = [
     govtValidatedAt: daysAgo(10),
     assignedHEI: 'BIT Mesra, Ranchi',
     assignedDept: 'Civil Engineering & IoT Lab',
-    assignedProjectId: 'DEMO-PRJ-007',
+    assignedProjectId: 'DEMO-PRJ-008',
     createdAt: daysAgo(15),
     updatedAt: daysAgo(2),
   },
 
-  // 9. Bokaro — Fly Ash & Thermal Effluent Contamination of Konar River (HIGH)
+  // 9. Bokaro (Bermo / Phusro)
   {
     id: 'DEMO-CH-009',
     reportId: 'NIV-2026-0009',
-    title: 'Fly ash slurry pipeline rupture contaminating Konar river water intake',
-    description: 'Ash pond slurry pipeline rupture discharged dense coal fly ash into Konar river tributary. River water TDS surged above 1,850 ppm, choking public drinking intake pumps serving 28,000 residents in Phusro and Bermo.',
+    title: 'Coal fly ash slurry pipeline rupture contaminating Konar river municipal intake',
+    description: 'Thermal power plant ash pond slurry pipeline rupture discharged dense coal fly ash into Konar tributary. Total dissolved solids surged above 1850 ppm, choking public water intake for 28000 people.',
     district: 'Bokaro',
     block: 'Bermo',
     village: 'Phusro / Dhori',
@@ -400,20 +403,20 @@ const SEED_CHALLENGES: Challenge[] = [
     formattedAddress: 'Konar River Stretch, Phusro, Bokaro, Jharkhand',
     status: 'Under Review',
     stageNumber: 2,
-    stageName: 'Stage 2: AI Triage Complete — Awaiting Government Review',
-    category: 'Thermal Power Industrial Pollution & Air/Water Quality',
+    stageName: 'Stage 2: AI Triage Complete awaiting Government Review',
+    category: 'Thermal Power Industrial Pollution',
     aiAnalysis: {
-      category: 'Thermal Power Industrial Pollution & Air/Water Quality',
+      category: 'Thermal Power Industrial Pollution',
       categoryCode: 'GOV-POLLUTION',
       matchedProblem: 'Fly ash pipeline rupture and water intake contamination',
       confidenceScore: 98,
       priorityScore: 88,
       riskLevel: 'CRITICAL',
       factors: {
-        populationImpact:          { score: 23, max: 25, reason: '28,000 residents reliant on contaminated municipal water intake' },
-        economicLifeSaving:        { score: 23, max: 25, reason: 'Prevention of heavy metal toxicity and drinking water shutdown' },
-        resolutionCostFeasibility: { score: 20, max: 25, reason: 'Rapid electro-coagulation ash separator and autonomous TDS telemetry' },
-        hazardUrgency:             { score: 22, max: 25, reason: 'Continuous ash slurry seepage into drinking water supply' },
+        populationImpact: { score: 23, max: 25, reason: '28000 residents reliant on contaminated municipal water intake' },
+        economicLifeSaving: { score: 23, max: 25, reason: 'Prevention of heavy metal toxicity and drinking water shutdown' },
+        resolutionCostFeasibility: { score: 20, max: 25, reason: 'Rapid electro coagulation ash separator and autonomous TDS telemetry' },
+        hazardUrgency: { score: 22, max: 25, reason: 'Continuous ash slurry seepage into drinking water supply' },
       },
       reasoning: 'Critical industrial environmental incident. Immediate slurry containment and automated water intake diversion required.',
       needsHumanVerification: false,
@@ -423,16 +426,22 @@ const SEED_CHALLENGES: Challenge[] = [
     confidenceScore: 98,
     riskLevel: 'CRITICAL',
     evidenceUrls: ['https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQhPjXniEU02EaABe2m7kGFX1AVhsfBLFVCQkv2vCA-v2Yx0z4OCxDARFy9&s=10'],
+    govtOfficerNote: 'Bokaro Disaster Management Cell inspected. Fast tracked for IIT (ISM) Dhanbad intervention.',
+    govtValidatedBy: 'Shri Kuldeep Chaudhary, DC Bokaro',
+    govtValidatedAt: daysAgo(3),
+    assignedHEI: 'IIT (ISM) Dhanbad & Bokaro College',
+    assignedDept: 'Chemical & Environmental Engineering',
+    assignedProjectId: 'DEMO-PRJ-009',
     createdAt: hoursAgo(6),
     updatedAt: hoursAgo(2),
   },
 
-  // 10. Saraikela Kharsawan — Industrial Electroplating Effluent into Kharkai River (CRITICAL)
+  // 10. Saraikela Kharsawan (Adityapur / Gamharia)
   {
     id: 'DEMO-CH-010',
     reportId: 'NIV-2026-0010',
-    title: 'Untreated electroplating heavy-metal chemical discharge into Kharkai river',
-    description: 'High hexavalent chromium (Cr VI) and nickel detected in stormwater runoff discharging into Kharkai River at Adityapur Phase 6. Downstream villagers report burning rashes and severe aquatic mortality.',
+    title: 'Untreated electroplating heavy metal chemical effluent discharge into Kharkai river',
+    description: 'High hexavalent chromium and nickel detected in stormwater runoff discharging into Kharkai river at Adityapur Phase 6. Downstream villagers report skin dermatitis and severe fish mortality.',
     district: 'Saraikela Kharsawan',
     block: 'Adityapur',
     village: 'Gamharia',
@@ -441,19 +450,19 @@ const SEED_CHALLENGES: Challenge[] = [
     status: 'Government Validated',
     stageNumber: 3,
     stageName: 'Stage 3: Government Validated & Prioritized',
-    category: 'Industrial Hazardous Chemical Effluent',
+    category: 'Hazardous Industrial Chemical Effluent',
     aiAnalysis: {
-      category: 'Industrial Hazardous Chemical Effluent',
+      category: 'Hazardous Industrial Chemical Effluent',
       categoryCode: 'GOV-HAZMAT',
       matchedProblem: 'Industrial heavy metal electroplating chemical discharge',
       confidenceScore: 99,
       priorityScore: 94,
       riskLevel: 'CRITICAL',
       factors: {
-        populationImpact:          { score: 24, max: 25, reason: 'Downstream river users and Gamharia village population' },
-        economicLifeSaving:        { score: 25, max: 25, reason: 'Hexavalent chromium carcinogenic exposure prevention' },
-        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Electrochemical reduction cell & continuous optical ion probe' },
-        hazardUrgency:             { score: 24, max: 25, reason: 'Active toxic discharge into public riverway' },
+        populationImpact: { score: 24, max: 25, reason: 'Downstream river users and Gamharia village population' },
+        economicLifeSaving: { score: 25, max: 25, reason: 'Hexavalent chromium carcinogenic exposure prevention' },
+        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Electrochemical reduction cell and continuous optical ion probe' },
+        hazardUrgency: { score: 24, max: 25, reason: 'Active toxic discharge into public riverway' },
       },
       reasoning: 'Severe industrial effluent violation with carcinogen exposure risk. Prioritized for NIT Jamshedpur chemical engineering lab.',
       needsHumanVerification: false,
@@ -463,42 +472,45 @@ const SEED_CHALLENGES: Challenge[] = [
     confidenceScore: 99,
     riskLevel: 'CRITICAL',
     evidenceUrls: ['https://irp.cdn-website.com/c6509cd8/dms3rep/multi/opt/902x677p591x444-640w.jpg'],
-    govtOfficerNote: 'JSPCB Regional Officer issued show-cause. R&D intervention approved for NIT Jamshedpur.',
+    govtOfficerNote: 'JSPCB Regional Officer issued show cause. R&D intervention approved for NIT Jamshedpur.',
     govtValidatedBy: 'Shri Ravi Shankar Shukla, DC Saraikela',
     govtValidatedAt: daysAgo(4),
+    assignedHEI: 'NIT Jamshedpur',
+    assignedDept: 'Chemical & Environmental Engineering',
+    assignedProjectId: 'DEMO-PRJ-010',
     createdAt: daysAgo(8),
     updatedAt: daysAgo(4),
   },
 
-  // 11. Khunti — Lac Cultivation Pest Blight Devastation (HIGH)
+  // 11. Khunti (Torpa / Diyakel)
   {
     id: 'DEMO-CH-011',
     reportId: 'NIV-2026-0011',
-    title: 'Severe blight infestation on Kusum & Ber trees devastating tribal lac cultivation',
-    description: 'Sudden outbreak of fungal blight and predatory Eublemma amabilis moth larvae attacking 2,400 lac host trees across 12 Munda tribal hamlets in Torpa. 680 farming families facing 70% income loss during peak winter crop cycle.',
+    title: 'Fungal blight and moth infestation destroying tribal lac cultivation on Kusum trees',
+    description: 'Sudden outbreak of fungal blight and predatory moth larvae attacking 2400 lac host trees across 12 Munda tribal hamlets in Torpa. 680 farming families facing 70 percent income loss.',
     district: 'Khunti',
     block: 'Torpa',
     village: 'Diyakel',
     locationCoords: { lat: 22.9542, lng: 85.2793 },
-    formattedAddress: 'Torpa Tribal Agro-Forestry Belt, Khunti District, Jharkhand',
+    formattedAddress: 'Torpa Tribal Agro Forestry Belt, Khunti District, Jharkhand',
     status: 'In Progress',
     stageNumber: 8,
     stageName: 'Stage 8: Team Formation & Project Initiation',
-    category: 'Agriculture, Agro-Forestry & Tribal Livelihood',
+    category: 'Agro Forestry & Tribal Livelihood',
     aiAnalysis: {
-      category: 'Agriculture, Agro-Forestry & Tribal Livelihood',
+      category: 'Agro Forestry & Tribal Livelihood',
       categoryCode: 'GOV-AGRI',
       matchedProblem: 'Lac host tree pest blight and fungal infection',
       confidenceScore: 95,
       priorityScore: 83,
       riskLevel: 'HIGH',
       factors: {
-        populationImpact:          { score: 20, max: 25, reason: '680 tribal households dependent on lac as primary cash crop' },
-        economicLifeSaving:        { score: 22, max: 25, reason: 'Preservation of ₹1.4 Crore rural agro-forestry harvest' },
-        resolutionCostFeasibility: { score: 22, max: 25, reason: 'Organic bio-pesticide formulations and drone thermal canopy survey' },
-        hazardUrgency:             { score: 19, max: 25, reason: 'Larval proliferation active during pupation phase' },
+        populationImpact: { score: 20, max: 25, reason: '680 tribal households dependent on lac as primary cash crop' },
+        economicLifeSaving: { score: 22, max: 25, reason: 'Preservation of 1.4 Crore rural agro forestry harvest' },
+        resolutionCostFeasibility: { score: 22, max: 25, reason: 'Organic bio pesticide formulations and drone thermal canopy survey' },
+        hazardUrgency: { score: 19, max: 25, reason: 'Larval proliferation active during pupation phase' },
       },
-      reasoning: 'Critical tribal livelihood threat in Jharkhand’s primary lac hub. Natural bio-control and canopy monitoring needed.',
+      reasoning: 'Critical tribal livelihood threat in Jharkhand primary lac hub. Natural bio control and canopy monitoring needed.',
       needsHumanVerification: false,
       recommendedUniversityDepts: ['Entomology & Lac Research', 'Agronomy', 'Biotechnology'],
     },
@@ -511,17 +523,17 @@ const SEED_CHALLENGES: Challenge[] = [
     govtValidatedAt: daysAgo(12),
     assignedHEI: 'Birsa Agricultural University (BAU)',
     assignedDept: 'Entomology & Indian Institute of Natural Resins',
-    assignedProjectId: 'DEMO-PRJ-008',
+    assignedProjectId: 'DEMO-PRJ-011',
     createdAt: daysAgo(18),
     updatedAt: daysAgo(3),
   },
 
-  // 12. Deoghar — Handpump Bacterial Contamination during Shravani Pilgrim Rush (HIGH)
+  // 12. Deoghar (Madhupur / Mohanpur)
   {
     id: 'DEMO-CH-012',
-    reportId: 'NIV-2026-012',
-    title: 'Deep aquifer biological pathogen contamination & dry handpump failure during pilgrim rush',
-    description: 'High coliform bacterial counts (>120 CFU/100ml) identified in 19 public water points along the Shravani Mela pilgrim corridor near Mohanpur. 3 deep handpumps collapsed under high extraction stress.',
+    reportId: 'NIV-2026-0012',
+    title: 'High coliform biological contamination and handpump failure during pilgrim rush',
+    description: 'Coliform bacteria counts above 120 CFU per 100ml detected in 19 public water points along Shravani Mela pilgrim corridor near Mohanpur. 3 deep handpumps collapsed under high extraction.',
     district: 'Deoghar',
     block: 'Madhupur',
     village: 'Mohanpur Border',
@@ -539,12 +551,12 @@ const SEED_CHALLENGES: Challenge[] = [
       priorityScore: 87,
       riskLevel: 'HIGH',
       factors: {
-        populationImpact:          { score: 23, max: 25, reason: 'Thousands of transit pilgrims and local resident communities' },
-        economicLifeSaving:        { score: 23, max: 25, reason: 'Waterborne cholera/gastroenteritis epidemic prevention' },
-        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Solar inline UV-C disinfection modules and sensorized flow valves' },
-        hazardUrgency:             { score: 20, max: 25, reason: 'Peak festival pilgrim congregation underway' },
+        populationImpact: { score: 23, max: 25, reason: 'Thousands of transit pilgrims and local resident communities' },
+        economicLifeSaving: { score: 23, max: 25, reason: 'Waterborne cholera and gastroenteritis epidemic prevention' },
+        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Solar inline UV C disinfection modules and sensorized flow valves' },
+        hazardUrgency: { score: 20, max: 25, reason: 'Peak festival pilgrim congregation underway' },
       },
-      reasoning: 'High-traffic pilgrim corridor water safety risk. Solar UV-C disinfection cartridges required.',
+      reasoning: 'High traffic pilgrim corridor water safety risk. Solar UV C disinfection cartridges required.',
       needsHumanVerification: false,
       recommendedUniversityDepts: ['Public Health & Hygiene', 'Environmental Engineering', 'Water Resources'],
     },
@@ -552,16 +564,22 @@ const SEED_CHALLENGES: Challenge[] = [
     confidenceScore: 96,
     riskLevel: 'HIGH',
     evidenceUrls: ['https://cdn.ncbi.nlm.nih.gov/pmc/blobs/2e16/5920553/a342a6cbc907/nihms960800f1.jpg'],
+    govtOfficerNote: 'Inspected by Deoghar Municipal Corporation and PHED. Sanctioned for AIIMS Deoghar and SKMU pilot.',
+    govtValidatedBy: 'Shri Vishal Sagar, DC Deoghar',
+    govtValidatedAt: daysAgo(2),
+    assignedHEI: 'AIIMS Deoghar & SKMU Dumka',
+    assignedDept: 'Public Health Engineering',
+    assignedProjectId: 'DEMO-PRJ-012',
     createdAt: hoursAgo(4),
     updatedAt: hoursAgo(4),
   },
 
-  // 13. Hazaribagh — Barakar River Bridge Pier Scour Undermining (CRITICAL)
+  // 13. Hazaribagh (Chouparan / Barakar Ghat)
   {
     id: 'DEMO-CH-013',
     reportId: 'NIV-2026-0013',
-    title: 'Flash runoff undermining Barakar river bridge pier foundation on rural lifeline',
-    description: 'Severe riverbed scour of 2.8m detected around Pier-3 of the Barakar bridge connecting 22 agrarian villages to Chouparan market. Structural vibrations and foundation exposure risk catastrophic collapse during peak flood currents.',
+    title: 'Barakar river bridge pier foundation scour endangering rural transit lifeline',
+    description: '2.8m deep riverbed scour pocket detected around Pier 3 of Barakar bridge connecting 22 agrarian villages to Chouparan market. Foundation exposure creates collapse risk during flash currents.',
     district: 'Hazaribagh',
     block: 'Chouparan',
     village: 'Barakar Ghat',
@@ -570,19 +588,19 @@ const SEED_CHALLENGES: Challenge[] = [
     status: 'Government Validated',
     stageNumber: 3,
     stageName: 'Stage 3: Government Validated & Prioritized',
-    category: 'Bridge Infrastructure & Transportation Safety',
+    category: 'Bridge Infrastructure & Transport Safety',
     aiAnalysis: {
-      category: 'Bridge Infrastructure & Transportation Safety',
+      category: 'Bridge Infrastructure & Transport Safety',
       categoryCode: 'GOV-INFRA',
       matchedProblem: 'Bridge pier scour and structural foundation undermining',
       confidenceScore: 98,
       priorityScore: 92,
       riskLevel: 'CRITICAL',
       factors: {
-        populationImpact:          { score: 23, max: 25, reason: '22 agrarian villages completely isolated if bridge collapses' },
-        economicLifeSaving:        { score: 25, max: 25, reason: 'Prevention of catastrophic bridge collapse with vehicular transit' },
-        resolutionCostFeasibility: { score: 20, max: 25, reason: 'Fiber-optic Bragg grating strain sensors and micro-concrete geo-jacketing' },
-        hazardUrgency:             { score: 24, max: 25, reason: '2.8m scour depth exposing critical foundation footing' },
+        populationImpact: { score: 23, max: 25, reason: '22 agrarian villages completely isolated if bridge collapses' },
+        economicLifeSaving: { score: 25, max: 25, reason: 'Prevention of catastrophic bridge collapse with vehicular transit' },
+        resolutionCostFeasibility: { score: 20, max: 25, reason: 'Fiber optic Bragg grating strain sensors and micro concrete geo jacketing' },
+        hazardUrgency: { score: 24, max: 25, reason: '2.8m scour depth exposing critical foundation footing' },
       },
       reasoning: 'Imminent structural failure on rural arterial bridge. Geotechnical reinforcement and continuous vibration telemetry required.',
       needsHumanVerification: false,
@@ -592,19 +610,22 @@ const SEED_CHALLENGES: Challenge[] = [
     confidenceScore: 98,
     riskLevel: 'CRITICAL',
     evidenceUrls: ['https://www.mdpi.com/water/water-15-02858/article_deploy/html/images/water-15-02858-g001-550.jpg'],
-    govtOfficerNote: 'Executive Engineer PWD Hazaribagh submitted site inspection report. Assigned to VBU & NIT Jamshedpur.',
+    govtOfficerNote: 'Executive Engineer PWD Hazaribagh submitted site inspection report. Assigned to VBU and NIT Jamshedpur.',
     govtValidatedBy: 'Nancy Sahay, DC Hazaribagh',
     govtValidatedAt: daysAgo(5),
+    assignedHEI: 'Vinoba Bhave University (VBU) & NIT Jamshedpur',
+    assignedDept: 'Structural & Civil Engineering',
+    assignedProjectId: 'DEMO-PRJ-013',
     createdAt: daysAgo(11),
     updatedAt: daysAgo(5),
   },
 
-  // 14. Koderma — Abandoned Mica Open-Cast Pit Collapse Hazard (HIGH)
+  // 14. Koderma (Chandwara / Dhab Forest Rim)
   {
     id: 'DEMO-CH-014',
     reportId: 'NIV-2026-0014',
-    title: 'Unreclaimed abandoned mica opencast mine pit waterlogging and rim collapse hazard',
-    description: 'Deep unbarricaded mica open-pit excavations filled with 35-foot deep acidic water (pH 4.8) spanning 18 hectares near residential settlement. Heavy slope erosion threatens 140 tribal houses during heavy downpours.',
+    title: 'Abandoned open pit mica mine quarry waterlogging and slope rim collapse hazard',
+    description: 'Unbarricaded 35 foot deep acidic water pit spanning 18 hectares near residential settlement. Heavy slope erosion threatens 140 tribal houses during monsoon cloudbursts.',
     district: 'Koderma',
     block: 'Chandwara',
     village: 'Dhab Forest Rim',
@@ -617,15 +638,15 @@ const SEED_CHALLENGES: Challenge[] = [
     aiAnalysis: {
       category: 'Abandoned Mine Hazard & Geotechnical Stability',
       categoryCode: 'GOV-MINE',
-      matchedProblem: 'Abandoned open-cast mine pit waterlogging and rim collapse',
+      matchedProblem: 'Abandoned open cast mine pit waterlogging and rim collapse',
       confidenceScore: 95,
       priorityScore: 82,
       riskLevel: 'HIGH',
       factors: {
-        populationImpact:          { score: 19, max: 25, reason: '140 tribal families living directly adjacent to collapsing pit rim' },
-        economicLifeSaving:        { score: 22, max: 25, reason: 'Landslide prevention and child drowning hazard elimination' },
-        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Geo-grid vegetative slope stabilization and solar perimeter beacons' },
-        hazardUrgency:             { score: 20, max: 25, reason: 'Pit rim receding 1.2m per monsoon season' },
+        populationImpact: { score: 19, max: 25, reason: '140 tribal families living directly adjacent to collapsing pit rim' },
+        economicLifeSaving: { score: 22, max: 25, reason: 'Landslide prevention and child drowning hazard elimination' },
+        resolutionCostFeasibility: { score: 21, max: 25, reason: 'Geo grid vegetative slope stabilization and solar perimeter beacons' },
+        hazardUrgency: { score: 20, max: 25, reason: 'Pit rim receding 1.2m per monsoon season' },
       },
       reasoning: 'Geotechnical collapse risk from abandoned mica quarries. Vegetative soil reinforcement and drainage terracing needed.',
       needsHumanVerification: false,
@@ -635,38 +656,87 @@ const SEED_CHALLENGES: Challenge[] = [
     confidenceScore: 95,
     riskLevel: 'HIGH',
     evidenceUrls: ['https://static.independent.co.uk/2023/02/23/08/newFile-6.jpg?width=1200&height=630&fit=crop'],
+    govtOfficerNote: 'BDO Chandwara verified ground hazard. Matched to BIT Sindri Mining Engineering team.',
+    govtValidatedBy: 'Shri Megha Bhardwaj, DC Koderma',
+    govtValidatedAt: daysAgo(1),
+    assignedHEI: 'BIT Sindri & VBU',
+    assignedDept: 'Mining & Geological Sciences',
+    assignedProjectId: 'DEMO-PRJ-014',
     createdAt: hoursAgo(12),
     updatedAt: hoursAgo(12),
   },
+
+  // 15. Gumla (Bishunpur / Netarhat Foothills)
+  {
+    id: 'DEMO-CH-015',
+    reportId: 'NIV-2026-0015',
+    title: 'Bauxite ore haulage truck road subsidence and hill slope slip on rural route',
+    description: 'Heavy 16 wheeler bauxite transport trucks caused 2km stretch of hill road to develop deep rutting and edge shoulder collapse, cutting off bus and emergency ambulance connectivity to Bishunpur PHC.',
+    district: 'Gumla',
+    block: 'Bishunpur',
+    village: 'Netarhat Foothills',
+    locationCoords: { lat: 23.3854, lng: 84.3621 },
+    formattedAddress: 'Bishunpur Hill Route, Netarhat Foothills, Gumla, Jharkhand',
+    status: 'Under Review',
+    stageNumber: 2,
+    stageName: 'Stage 2: AI Triage Complete awaiting Government Review',
+    category: 'Rural Road Infrastructure & Transport',
+    aiAnalysis: {
+      category: 'Rural Road Infrastructure & Transport',
+      categoryCode: 'GOV-INFRA',
+      matchedProblem: 'Heavy vehicle haulage road subsidence and shoulder collapse',
+      confidenceScore: 96,
+      priorityScore: 85,
+      riskLevel: 'HIGH',
+      factors: {
+        populationImpact: { score: 21, max: 25, reason: '9 remote tribal villages reliant on single arterial road for PHC access' },
+        economicLifeSaving: { score: 23, max: 25, reason: 'Prevention of fatal bus rollover and ambulance disruption' },
+        resolutionCostFeasibility: { score: 21, max: 25, reason: 'High tensile biaxial geogrid sub base reinforcement and soil nailing' },
+        hazardUrgency: { score: 20, max: 25, reason: 'Continuous bauxite truck traffic worsening fissure collapse daily' },
+      },
+      reasoning: 'Critical rural arterial failure threatening tribal emergency transit. Geogrid sub base stabilization and soil nail anchoring needed.',
+      needsHumanVerification: false,
+      recommendedUniversityDepts: ['Civil & Transportation Engineering', 'Geotechnical Engineering'],
+    },
+    priorityScore: 85,
+    confidenceScore: 96,
+    riskLevel: 'HIGH',
+    evidenceUrls: ['https://imgs.mongabay.com/wp-content/uploads/sites/30/2023/04/28114850/Boxite-Mines-near-Sakhuapani-Village-768x512-1.jpg'],
+    govtOfficerNote: 'PWD Gumla and BDO Bishunpur conducted joint audit. Cleared for Ranchi University and BIT Mesra geotechnical intervention.',
+    govtValidatedBy: 'Shri Sushant Gaurav, DC Gumla',
+    govtValidatedAt: daysAgo(2),
+    assignedHEI: 'Ranchi University & BIT Mesra',
+    assignedDept: 'Civil & Geotechnical Engineering',
+    assignedProjectId: 'DEMO-PRJ-015',
+    createdAt: daysAgo(2),
+    updatedAt: daysAgo(1),
+  },
 ];
 
-// ── Seed Projects ────────────────────────────────────────────────────────────
+// ── 15 Seed Projects Matching Real Jharkhand Problems ─────────────────────────
 
-const SEED_PROJECTS: Project[] = [
-  // PRJ-001: Jharia Coalfield Subterranean Fire DTS & InSAR Sensor Grid
+export const SEED_PROJECTS: Project[] = [
+  // PRJ-001: Jharia Coalfield Fire DTS & InSAR Sensor Grid
   {
     id: 'DEMO-PRJ-001',
     challengeId: 'DEMO-CH-001',
-    challengeTitle: 'Subterranean coalfield fire & toxic gas venting in Lodna Colliery',
-    category: 'Coalfire, Subsidence & Industrial Hazard',
+    challengeTitle: 'Ground subsidence cracks and toxic CO gas venting near Lodna 4 Pits',
+    category: 'Mining & Coalfire Disaster',
     district: 'Dhanbad',
     universityId: 'IIT-ISM-DHANBAD',
     universityName: 'IIT (ISM) Dhanbad',
-    facultyMentorName: 'Dr. S. K. Roy (Rock Mechanics & Mining Safety)',
+    facultyMentorName: 'Dr. S. K. Roy (Rock Mechanics & Safety)',
     facultyEmail: 'skroy@iitism.ac.in',
     teamMembers: [
       { id: 'TM-001', name: 'Priya Sharma', departmentName: 'Mining Engineering', role: 'Team Lead & Field Investigator', skills: ['Rock mechanics', 'Borehole logging', 'Underground mining safety'] },
       { id: 'TM-002', name: 'Aditya Raj', departmentName: 'Electronics & Instrumentation', role: 'IoT & Telemetry Engineer', skills: ['Fiber-optic DTS', 'LoRaWAN gateways', 'Gas sensors (CO/SO2)'] },
       { id: 'TM-003', name: 'Rohan Soren', departmentName: 'Earth Sciences & Remote Sensing', role: 'InSAR & GIS Analyst', skills: ['Satellite InSAR deformation', 'Thermal drone mapping', 'Python GIS'] },
-      { id: 'TM-004', name: 'Ankita Verma', departmentName: 'Chemical Engineering', role: 'Grouting Specialist', skills: ['Nitrogen foam inertization', 'Fly ash grout rheology', 'Lab analysis'] },
     ],
     status: 'Team Formed',
     milestones: [
-      { id: 'MS-001', stageNumber: 1, title: 'Surface Thermal & Gas Mapping', description: 'Deploy thermal drone scanner and multi-gas detectors across Lodna 4-Pits zone', status: 'Completed', targetDays: 7, completedAt: daysAgo(10) },
-      { id: 'MS-002', stageNumber: 2, title: 'Fiber-Optic DTS Borehole Sensor Rig', description: 'Design high-temperature armored fiber-optic DTS cable for 60m borehole deployment', status: 'In Progress', targetDays: 14 },
-      { id: 'MS-003', stageNumber: 3, title: 'Real-time UART/LoRa Gateway Sync', description: 'Integrate 115200 Baud local telemetry gateway with Nivaaran Super Admin dashboard', status: 'Pending', targetDays: 10 },
-      { id: 'MS-004', stageNumber: 4, title: 'Nitrogen-Foam Grouting Barrier Trial', description: 'Execute localized borehole inertization trial with BCCL safety personnel', status: 'Pending', targetDays: 21 },
-      { id: 'MS-005', stageNumber: 5, title: 'Community Early Warning Siren Handover', description: 'Install automated CO threshold siren linked to district DM disaster control room', status: 'Pending', targetDays: 14 },
+      { id: 'MS-001', stageNumber: 1, title: 'Surface Thermal & Gas Mapping', description: 'Deploy thermal drone scanner and multi gas detectors across Lodna 4 Pits zone', status: 'Completed', targetDays: 7, completedAt: daysAgo(10) },
+      { id: 'MS-002', stageNumber: 2, title: 'Fiber Optic DTS Borehole Sensor Rig', description: 'Design high temperature armored fiber optic DTS cable for 60m borehole deployment', status: 'In Progress', targetDays: 14 },
+      { id: 'MS-003', stageNumber: 3, title: 'Nitrogen Foam Grouting Barrier Trial', description: 'Execute localized borehole inertization trial with BCCL safety personnel', status: 'Pending', targetDays: 21 },
     ],
     proposals: [],
     budgetEstimated: 650000,
@@ -675,31 +745,27 @@ const SEED_PROJECTS: Project[] = [
     updatedAt: daysAgo(2),
   },
 
-  // PRJ-002: Giridih Arsenic & Fluoride Nanoadsorbent Filter Cartridge
+  // PRJ-002: Giridih Arsenic & Fluoride Nanoadsorbent Cartridge
   {
     id: 'DEMO-PRJ-002',
     challengeId: 'DEMO-CH-002',
-    challengeTitle: 'Severe handpump arsenic & fluoride toxicity in 18 Santhal tribal hamlets',
-    category: 'Drinking Water Quality & Toxic Contamination',
+    challengeTitle: 'Severe arsenic and fluoride toxicity in 18 Santhal tribal village handpumps',
+    category: 'Water Quality & Contamination',
     district: 'Giridih',
     universityId: 'IIT-ISM-DHANBAD',
     universityName: 'IIT (ISM) Dhanbad',
     facultyMentorName: 'Prof. Ankit Verma (Environmental Engineering)',
     facultyEmail: 'ankit.verma@iitism.ac.in',
     teamMembers: [
-      { id: 'TM-005', name: 'Deepak Sahu', departmentName: 'Environmental Engineering', role: 'Team Lead', skills: ['Water treatment', 'Nano-adsorption', 'Atomic Absorption Spectrophotometry'] },
-      { id: 'TM-006', name: 'Kavita Singh', departmentName: 'Chemistry', role: 'Materials Researcher', skills: ['Iron-oxide synthesis', 'Activated alumina coating', 'Lab safety'] },
-      { id: 'TM-007', name: 'Arjun Mahto', departmentName: 'Mechanical Engineering', role: 'Hardware Product Designer', skills: ['Mark-II retrofit CAD', '3D additive prototyping', 'Pressure drop calc'] },
-      { id: 'TM-008', name: 'Ritu Kumari', departmentName: 'Biotechnology', role: 'Water Quality Analyst', skills: ['Microbiology testing', 'Turbidity analysis', 'Heavy metal detection'] },
+      { id: 'TM-004', name: 'Deepak Sahu', departmentName: 'Environmental Engineering', role: 'Team Lead', skills: ['Water treatment', 'Nano-adsorption', 'Atomic Absorption Spectrophotometry'] },
+      { id: 'TM-005', name: 'Kavita Singh', departmentName: 'Chemistry', role: 'Materials Researcher', skills: ['Iron-oxide synthesis', 'Activated alumina coating', 'Lab safety'] },
+      { id: 'TM-006', name: 'Arjun Mahto', departmentName: 'Mechanical Engineering', role: 'Hardware Product Designer', skills: ['Mark-II retrofit CAD', '3D additive prototyping'] },
     ],
     status: 'Prototype Active',
     milestones: [
-      { id: 'MS-006', stageNumber: 1, title: 'Comprehensive Handpump Water Baseline', description: 'AAS lab analysis of arsenic and fluoride across 42 Tisri handpumps', status: 'Completed', targetDays: 10, completedAt: daysAgo(25) },
-      { id: 'MS-007', stageNumber: 2, title: 'Iron-Oxide Nano-Adsorbent Media Synthesis', description: 'Synthesise high-capacity FeOOH coated granular media in university lab', status: 'Completed', targetDays: 14, completedAt: daysAgo(12) },
-      { id: 'MS-008', stageNumber: 3, title: 'Modular Cartridge Prototype Fabrication', description: 'Fabricate stainless steel 304 filter cartridge with toolless quick-swap flange', status: 'Completed', targetDays: 10, completedAt: daysAgo(3) },
-      { id: 'MS-009', stageNumber: 4, title: 'Continuous Flow Breakthrough Lab Testing', description: 'Verify <10 ppb arsenic and <1.0 ppm fluoride over 10,000 litres throughput', status: 'In Progress', targetDays: 14 },
-      { id: 'MS-010', stageNumber: 5, title: 'Field Pilot in 3 Santhal Hamlets', description: 'Deploy filter units at Lokai & Baramasia community handpumps with daily sampling', status: 'Pending', targetDays: 28 },
-      { id: 'MS-011', stageNumber: 6, title: 'Village Jal Sahiyya Training & Handover', description: 'Train local tribal women water stewards for media regeneration & cartridge swap', status: 'Pending', targetDays: 14 },
+      { id: 'MS-004', stageNumber: 1, title: 'Comprehensive Handpump Water Baseline', description: 'AAS lab analysis of arsenic and fluoride across 42 Tisri handpumps', status: 'Completed', targetDays: 10, completedAt: daysAgo(25) },
+      { id: 'MS-005', stageNumber: 2, title: 'Modular Cartridge Prototype Fabrication', description: 'Fabricate stainless steel 304 filter cartridge with toolless quick-swap flange', status: 'Completed', targetDays: 10, completedAt: daysAgo(3) },
+      { id: 'MS-006', stageNumber: 3, title: 'Field Pilot in 3 Santhal Hamlets', description: 'Deploy filter units at Lokai & Baramasia community handpumps with daily sampling', status: 'In Progress', targetDays: 28 },
     ],
     proposals: [],
     budgetEstimated: 520000,
@@ -712,23 +778,21 @@ const SEED_PROJECTS: Project[] = [
   {
     id: 'DEMO-PRJ-003',
     challengeId: 'DEMO-CH-003',
-    challengeTitle: 'Severe rain-shadow agricultural drought & acute aquifer drawdown in North Koel basin',
-    category: 'Agricultural Drought & Aquifer Depletion',
+    challengeTitle: 'North Koel rain shadow drought and deep aquifer drawdown below 42 metres',
+    category: 'Drought & Aquifer Depletion',
     district: 'Palamu',
     universityId: 'BAU-RANCHI',
     universityName: 'Birsa Agricultural University (BAU)',
     facultyMentorName: 'Dr. Rameshwar Oraon (Soil & Water Engineering)',
     facultyEmail: 'rameshwar.oraon@bauranchi.ac.in',
     teamMembers: [
-      { id: 'TM-009', name: 'Amit Murmu', departmentName: 'Agricultural Engineering', role: 'Team Lead', skills: ['Micro-irrigation design', 'Soil moisture sensors', 'Hydrology'] },
-      { id: 'TM-010', name: 'Shweta Kumari', departmentName: 'Agronomy', role: 'Crop Water Modeler', skills: ['Crop evapotranspiration (ETc)', 'Drought-tolerant cultivars', 'Tribal outreach'] },
-      { id: 'TM-011', name: 'Vikas Pandey', departmentName: 'Electronics & Telemetry', role: 'Firmware Engineer', skills: ['Solar MPPT', 'LoRa piezometer nodes', 'ESP32 firmware'] },
+      { id: 'TM-007', name: 'Amit Murmu', departmentName: 'Agricultural Engineering', role: 'Team Lead', skills: ['Micro-irrigation design', 'Soil moisture sensors', 'Hydrology'] },
+      { id: 'TM-008', name: 'Shweta Kumari', departmentName: 'Agronomy', role: 'Crop Water Modeler', skills: ['Crop evapotranspiration', 'Drought-tolerant cultivars'] },
     ],
     status: 'Team Formed',
     milestones: [
-      { id: 'MS-012', stageNumber: 1, title: 'Aquifer Depth & Soil Moisture Audit', description: 'Map 42m groundwater drawdown and TDR soil moisture gradients in Chhatarpur', status: 'Completed', targetDays: 10, completedAt: daysAgo(15) },
-      { id: 'MS-013', stageNumber: 2, title: 'Solar Smart Drip Controller R&D', description: 'Build automated valve controller triggered by sub-surface tension threshold (<30 kPa)', status: 'In Progress', targetDays: 18 },
-      { id: 'MS-014', stageNumber: 3, title: 'Pilot Field Trial on 50 Hectares', description: 'Deploy micro-drip pilot with 40 tribal farmers in Mahugawan', status: 'Pending', targetDays: 30 },
+      { id: 'MS-007', stageNumber: 1, title: 'Aquifer Depth & Soil Moisture Audit', description: 'Map 42m groundwater drawdown and TDR soil moisture gradients in Chhatarpur', status: 'Completed', targetDays: 10, completedAt: daysAgo(15) },
+      { id: 'MS-008', stageNumber: 2, title: 'Solar Smart Drip Controller R&D', description: 'Build automated valve controller triggered by sub-surface tension threshold', status: 'In Progress', targetDays: 18 },
     ],
     proposals: [],
     budgetEstimated: 480000,
@@ -741,7 +805,7 @@ const SEED_PROJECTS: Project[] = [
   {
     id: 'DEMO-PRJ-004',
     challengeId: 'DEMO-CH-004',
-    challengeTitle: 'Subarnarekha & Kharkai confluence flash inundation & culvert siltation',
+    challengeTitle: 'Subarnarekha and Kharkai confluence flash flood backwater inundating Bagbera colony',
     category: 'Flood Management & Urban Drainage',
     district: 'East Singhbhum',
     universityId: 'NIT-JAMSHEDPUR',
@@ -749,15 +813,13 @@ const SEED_PROJECTS: Project[] = [
     facultyMentorName: 'Dr. V. K. Mahato (Hydraulic Engineering)',
     facultyEmail: 'vkmahato@nitjsr.ac.in',
     teamMembers: [
-      { id: 'TM-012', name: 'Rahul Soren', departmentName: 'Civil Engineering', role: 'Team Lead', skills: ['HEC-RAS flood modeling', 'Culvert hydraulics', 'Structural concrete'] },
-      { id: 'TM-013', name: 'Ayush Kumar Singh', departmentName: 'Electronics & Communication', role: 'IoT Lead', skills: ['Ultrasonic stage sensors', 'Cellular MQTT', 'Low-power design'] },
-      { id: 'TM-014', name: 'Neha Kumari', departmentName: 'Computer Science', role: 'Fullstack & GIS', skills: ['Leaflet GIS overlays', 'Early warning broadcast algorithms', 'REST APIs'] },
+      { id: 'TM-009', name: 'Rahul Soren', departmentName: 'Civil Engineering', role: 'Team Lead', skills: ['HEC-RAS flood modeling', 'Culvert hydraulics'] },
+      { id: 'TM-010', name: 'Ayush Kumar Singh', departmentName: 'Electronics & Communication', role: 'IoT Lead', skills: ['Ultrasonic stage sensors', 'Cellular MQTT'] },
     ],
     status: 'Team Formed',
     milestones: [
-      { id: 'MS-015', stageNumber: 1, title: 'Confluence Bathymetry & Hydrodynamic Model', description: 'HEC-RAS 2D simulation of Subarnarekha-Kharkai flood backwater curves', status: 'Completed', targetDays: 14, completedAt: daysAgo(8) },
-      { id: 'MS-016', stageNumber: 2, title: 'Solar Ultrasonic Stage Sentinel Assembly', description: 'Fabricate waterproof IP68 river stage telemetry unit with dual SIM failover', status: 'In Progress', targetDays: 14 },
-      { id: 'MS-017', stageNumber: 3, title: 'Self-Flushing Culvert Siphon Pilot', description: 'Install automated vortex de-silting siphon at Bagbera outflow channel', status: 'Pending', targetDays: 21 },
+      { id: 'MS-009', stageNumber: 1, title: 'Confluence Bathymetry & Hydrodynamic Model', description: 'HEC-RAS 2D simulation of Subarnarekha-Kharkai flood backwater curves', status: 'Completed', targetDays: 14, completedAt: daysAgo(8) },
+      { id: 'MS-010', stageNumber: 2, title: 'Solar Ultrasonic Stage Sentinel Assembly', description: 'Fabricate waterproof IP68 river stage telemetry unit with dual SIM failover', status: 'In Progress', targetDays: 14 },
     ],
     proposals: [],
     budgetEstimated: 580000,
@@ -766,27 +828,52 @@ const SEED_PROJECTS: Project[] = [
     updatedAt: daysAgo(2),
   },
 
-  // PRJ-005: Latehar Elephant Early-Warning Seismic Array
+  // PRJ-005: West Singhbhum Gua Red Mud Mobile Clarifier
   {
     id: 'DEMO-PRJ-005',
+    challengeId: 'DEMO-CH-005',
+    challengeTitle: 'Hematite red mud slurry runoff polluting Karo river drinking water sources',
+    category: 'Industrial Mining Effluent & River Contamination',
+    district: 'West Singhbhum',
+    universityId: 'KOLHAN-UNIV',
+    universityName: 'Kolhan University & NIT Jamshedpur',
+    facultyMentorName: 'Dr. P. K. Soren (Chemical & Metallurgical Engg)',
+    facultyEmail: 'pksoren@kolhan.ac.in',
+    teamMembers: [
+      { id: 'TM-011', name: 'Birsa Ho', departmentName: 'Metallurgical Engineering', role: 'Team Lead', skills: ['Slurry settling kinetics', 'Flocculant dosing'] },
+      { id: 'TM-012', name: 'Manish Sahu', departmentName: 'Chemical Engineering', role: 'Process Chemist', skills: ['Coagulation jar testing', 'Turbidity telemetry'] },
+    ],
+    status: 'Team Formed',
+    milestones: [
+      { id: 'MS-011', stageNumber: 1, title: 'Karo River Slurry Characterization', description: 'Analyze 450 NTU hematite tailing sample settling kinetics and heavy metal leachate', status: 'Completed', targetDays: 7, completedAt: daysAgo(4) },
+      { id: 'MS-012', stageNumber: 2, title: 'Solar Mobile Clarifier Fabrication', description: 'Build 5000 LPH multi-chamber clarifier unit mounted on trailer chassis', status: 'In Progress', targetDays: 16 },
+    ],
+    proposals: [],
+    budgetEstimated: 540000,
+    budgetApproved: 540000,
+    createdAt: daysAgo(10),
+    updatedAt: daysAgo(3),
+  },
+
+  // PRJ-006: Latehar Elephant Early-Warning Seismic Array
+  {
+    id: 'DEMO-PRJ-006',
     challengeId: 'DEMO-CH-006',
-    challengeTitle: 'Elephant corridor fragmentation & nocturnal crop raiding in Betla buffer zone',
-    category: 'Wildlife Conservation & Human-Animal Conflict',
+    challengeTitle: 'Elephant herd corridor disruption and nocturnal crop raiding in Betla forest fringe',
+    category: 'Wildlife Conservation & Conflict',
     district: 'Latehar',
     universityId: 'BIT-SINDRI',
     universityName: 'BIT Sindri',
     facultyMentorName: 'Dr. Priya Sharma (Wildlife Ecology & Electronics)',
     facultyEmail: 'priya.sharma@bitsindri.ac.in',
     teamMembers: [
-      { id: 'TM-015', name: 'Aditya Kumar', departmentName: 'Forestry & Wildlife Ecology', role: 'Team Lead', skills: ['Wildlife telemetry', 'Palamu corridor tracking', 'Community liaison'] },
-      { id: 'TM-016', name: 'Sneha Mishra', departmentName: 'Electronics & Communication', role: 'IoT Developer', skills: ['Seismic geophone sensors', 'LoRa mesh network', 'Edge AI'] },
-      { id: 'TM-017', name: 'Rahul Oraon', departmentName: 'Computer Science', role: 'ML Engineer', skills: ['Audio bio-acoustic classifier', 'Footstep waveform analysis', 'Python'] },
+      { id: 'TM-013', name: 'Aditya Kumar', departmentName: 'Forestry & Wildlife Ecology', role: 'Team Lead', skills: ['Wildlife telemetry', 'Palamu corridor tracking'] },
+      { id: 'TM-014', name: 'Sneha Mishra', departmentName: 'Electronics & Communication', role: 'IoT Developer', skills: ['Seismic geophone sensors', 'LoRa mesh network'] },
     ],
     status: 'Team Formed',
     milestones: [
-      { id: 'MS-018', stageNumber: 1, title: 'Corridor Movement & Footprint Audit', description: 'Map 14 active elephant migratory crossing points along Betla-Barwadih boundary', status: 'Completed', targetDays: 14, completedAt: daysAgo(10) },
-      { id: 'MS-019', stageNumber: 2, title: 'Buried Geophone Seismic Array Test', description: 'Calibrate seismic infrasound sensor detection of heavy pachyderm footsteps at 200m range', status: 'In Progress', targetDays: 21 },
-      { id: 'MS-020', stageNumber: 3, title: 'Automated Solar Flashing Siren & SMS Trigger', description: 'Deploy 6 perimeter warning towers with trilingual village SMS dispatch', status: 'Pending', targetDays: 18 },
+      { id: 'MS-013', stageNumber: 1, title: 'Corridor Movement & Footprint Audit', description: 'Map 14 active elephant migratory crossing points along Betla-Barwadih boundary', status: 'Completed', targetDays: 14, completedAt: daysAgo(10) },
+      { id: 'MS-014', stageNumber: 2, title: 'Buried Geophone Seismic Array Test', description: 'Calibrate seismic infrasound sensor detection of heavy pachyderm footsteps', status: 'In Progress', targetDays: 21 },
     ],
     proposals: [],
     budgetEstimated: 420000,
@@ -795,11 +882,11 @@ const SEED_PROJECTS: Project[] = [
     updatedAt: daysAgo(3),
   },
 
-  // PRJ-006: Sahibganj Ganga Riverbank Geotextile Eco-Spur & Sonar Buoy
+  // PRJ-007: Sahibganj Ganga Riverbank Geotextile Eco-Spur & Sonar Buoy
   {
-    id: 'DEMO-PRJ-006',
+    id: 'DEMO-PRJ-007',
     challengeId: 'DEMO-CH-007',
-    challengeTitle: 'Ganga riverbank erosion & seasonal diara island submergence',
+    challengeTitle: 'Ganga riverbank erosion and seasonal island submergence cutting off boat access',
     category: 'Riverbank Erosion & Disaster Inundation',
     district: 'Sahibganj',
     universityId: 'SKMU-DUMKA',
@@ -807,15 +894,13 @@ const SEED_PROJECTS: Project[] = [
     facultyMentorName: 'Dr. Hemant Murmu (Fluvial Geomorphology)',
     facultyEmail: 'hemant.murmu@skmu.ac.in',
     teamMembers: [
-      { id: 'TM-018', name: 'Sanjay Hansda', departmentName: 'Earth Sciences', role: 'Team Lead', skills: ['Riverbank bathymetry', 'Fluvial sediment transport', 'Santhali communication'] },
-      { id: 'TM-019', name: 'Pooja Soren', departmentName: 'Civil Engineering', role: 'Geotechnical Engineer', skills: ['Geotextile mattresses', 'Rip-rap revetment design', 'Slope stability'] },
-      { id: 'TM-020', name: 'Manish Kumar', departmentName: 'Electronics', role: 'Sonar Telemetry Lead', skills: ['Acoustic Doppler Current Profiler (ADCP)', 'Solar buoys', 'GPS tracking'] },
+      { id: 'TM-015', name: 'Sanjay Hansda', departmentName: 'Earth Sciences', role: 'Team Lead', skills: ['Riverbank bathymetry', 'Fluvial sediment transport'] },
+      { id: 'TM-016', name: 'Pooja Soren', departmentName: 'Civil Engineering', role: 'Geotechnical Engineer', skills: ['Geotextile mattresses', 'Slope stability'] },
     ],
     status: 'Team Formed',
     milestones: [
-      { id: 'MS-021', stageNumber: 1, title: 'Bank Recession Rate & Sonar Survey', description: 'Measure 85m scour pocket using ADCP sonar and satellite optical change detection', status: 'Completed', targetDays: 14, completedAt: daysAgo(12) },
-      { id: 'MS-022', stageNumber: 2, title: 'Eco-Spur Geotextile Matrix Design', description: 'Design permeable bamboo-reinforced coir-geotextile spurs to deflect main thalweg current', status: 'In Progress', targetDays: 21 },
-      { id: 'MS-023', stageNumber: 3, title: 'Pilot Spur Construction & Erosion Sentinel', description: 'Construct 2 pilot spurs at Kankjol Diara with live bank vibration sensors', status: 'Pending', targetDays: 30 },
+      { id: 'MS-015', stageNumber: 1, title: 'Bank Recession Rate & Sonar Survey', description: 'Measure 85m scour pocket using ADCP sonar and satellite optical change detection', status: 'Completed', targetDays: 14, completedAt: daysAgo(12) },
+      { id: 'MS-016', stageNumber: 2, title: 'Eco-Spur Geotextile Matrix Design', description: 'Design permeable bamboo-reinforced coir-geotextile spurs to deflect current', status: 'In Progress', targetDays: 21 },
     ],
     proposals: [],
     budgetEstimated: 600000,
@@ -824,27 +909,25 @@ const SEED_PROJECTS: Project[] = [
     updatedAt: daysAgo(1),
   },
 
-  // PRJ-007: Ranchi Kanke Dam Automated De-siltation & Radar Telemetry
+  // PRJ-008: Ranchi Kanke Dam Automated De-siltation & Radar Telemetry
   {
-    id: 'DEMO-PRJ-007',
+    id: 'DEMO-PRJ-008',
     challengeId: 'DEMO-CH-008',
-    challengeTitle: 'Kanke dam spillway overflow & Hutup culvert blockage flooding school access road',
-    category: 'Urban Infrastructure & Drainage Flooding',
+    challengeTitle: 'Monsoon stormwater accumulation submerging Government High School road in Hutup',
+    category: 'Flooding & Drainage',
     district: 'Ranchi',
     universityId: 'BIT-MESRA',
     universityName: 'BIT Mesra, Ranchi',
     facultyMentorName: 'Dr. Arvind Sinha (IoT Lab & Environmental Engineering)',
     facultyEmail: 'arvind.sinha@bitmesra.ac.in',
     teamMembers: [
-      { id: 'TM-021', name: 'Ayush Kumar Singh', departmentName: 'Electronics & Communication', role: 'Team Lead', skills: ['IoT sensor telemetry', 'UART 115200 Baud communication', 'Embedded C'] },
-      { id: 'TM-022', name: 'Tanvi Agarwal', departmentName: 'Civil Engineering', role: 'Hydraulics Specialist', skills: ['Drainage gradient design', 'Archimedes de-silting screw', 'CAD'] },
-      { id: 'TM-023', name: 'Nikhil Tirkey', departmentName: 'Computer Science', role: 'Cloud & Telemetry Dashboard', skills: ['React', 'WebSockets', 'Telemetry log stream'] },
+      { id: 'TM-017', name: 'Ayush Kumar Singh', departmentName: 'Electronics & Communication', role: 'Team Lead', skills: ['IoT sensor telemetry', 'Embedded C', 'Radar level sensing'] },
+      { id: 'TM-018', name: 'Tanvi Agarwal', departmentName: 'Civil Engineering', role: 'Hydraulics Specialist', skills: ['Drainage gradient design', 'Archimedes screw'] },
     ],
     status: 'Team Formed',
     milestones: [
-      { id: 'MS-024', stageNumber: 1, title: 'Drainage Gradient & Silt Profile Inspection', description: 'Inspect 1.2km Hutup stormwater canal and calculate peak runoff coefficient', status: 'Completed', targetDays: 7, completedAt: daysAgo(6) },
-      { id: 'MS-025', stageNumber: 2, title: 'Radar Water Level Sentinel Deployment', description: 'Install millimeter-wave radar sensor with 4G solar telemetry node at culvert inlet', status: 'In Progress', targetDays: 10 },
-      { id: 'MS-026', stageNumber: 3, title: 'Solar Powered De-siltation Augur Rig', description: 'Commission automatic Archimedes trash-rake to prevent vegetative culvert blockage', status: 'Pending', targetDays: 18 },
+      { id: 'MS-017', stageNumber: 1, title: 'Drainage Gradient & Silt Profile Inspection', description: 'Inspect 1.2km Hutup stormwater canal and calculate peak runoff coefficient', status: 'Completed', targetDays: 7, completedAt: daysAgo(6) },
+      { id: 'MS-018', stageNumber: 2, title: 'Radar Water Level Sentinel Deployment', description: 'Install millimeter-wave radar sensor with 4G solar telemetry node at culvert inlet', status: 'In Progress', targetDays: 10 },
     ],
     proposals: [],
     budgetEstimated: 450000,
@@ -853,27 +936,79 @@ const SEED_PROJECTS: Project[] = [
     updatedAt: daysAgo(2),
   },
 
-  // PRJ-008: Khunti Tribal Lac Cultivation Bio-Pesticide & Thermal Drone Rig
+  // PRJ-009: Bokaro Konar River Coal Fly Ash Separator
   {
-    id: 'DEMO-PRJ-008',
+    id: 'DEMO-PRJ-009',
+    challengeId: 'DEMO-CH-009',
+    challengeTitle: 'Coal fly ash slurry pipeline rupture contaminating Konar river municipal intake',
+    category: 'Thermal Power Industrial Pollution',
+    district: 'Bokaro',
+    universityId: 'IIT-ISM-DHANBAD',
+    universityName: 'IIT (ISM) Dhanbad & Bokaro College',
+    facultyMentorName: 'Dr. N. K. Jha (Chemical Engineering & Power Systems)',
+    facultyEmail: 'nkjha@iitism.ac.in',
+    teamMembers: [
+      { id: 'TM-019', name: 'Rajesh Pandey', departmentName: 'Chemical Engineering', role: 'Team Lead', skills: ['Ash slurry rheology', 'Electro-coagulation'] },
+      { id: 'TM-020', name: 'Swati Kumari', departmentName: 'Environmental Science', role: 'Water Quality Analyst', skills: ['Heavy metal spectroscopy', 'TDS optical sensors'] },
+    ],
+    status: 'Team Formed',
+    milestones: [
+      { id: 'MS-019', stageNumber: 1, title: 'Konar Intake TDS Audit & Plume Mapping', description: 'Sample dissolved solids across 8km river stretch from ash pond rupture point', status: 'Completed', targetDays: 5, completedAt: daysAgo(2) },
+      { id: 'MS-020', stageNumber: 2, title: 'Electro-Coagulation Ash Clarifier Cell', description: 'Assemble DC electric field coagulation chamber to precipitate sub-micron fly ash', status: 'In Progress', targetDays: 14 },
+    ],
+    proposals: [],
+    budgetEstimated: 490000,
+    budgetApproved: 490000,
+    createdAt: daysAgo(6),
+    updatedAt: daysAgo(1),
+  },
+
+  // PRJ-010: Saraikela Adityapur Heavy Metal Chemical Reduction Cell
+  {
+    id: 'DEMO-PRJ-010',
+    challengeId: 'DEMO-CH-010',
+    challengeTitle: 'Untreated electroplating heavy metal chemical effluent discharge into Kharkai river',
+    category: 'Hazardous Industrial Chemical Effluent',
+    district: 'Saraikela Kharsawan',
+    universityId: 'NIT-JAMSHEDPUR',
+    universityName: 'NIT Jamshedpur',
+    facultyMentorName: 'Dr. P. K. Soren (Chemical & Environmental Engg)',
+    facultyEmail: 'pksoren@nitjsr.ac.in',
+    teamMembers: [
+      { id: 'TM-021', name: 'Neha Kumari', departmentName: 'Chemical Engineering', role: 'Team Lead', skills: ['Electrochemistry', 'Chromium reduction', 'Ion probes'] },
+      { id: 'TM-022', name: 'Rohit Verma', departmentName: 'Instrumentation & IoT', role: 'Telemetry Lead', skills: ['Optical fluorometers', 'Automatic shutoff valves'] },
+    ],
+    status: 'Team Formed',
+    milestones: [
+      { id: 'MS-021', stageNumber: 1, title: 'Adityapur Phase 6 Drain Outfall Profiling', description: 'Continuous UV-Vis spectrophotometry of hexavalent chromium and nickel concentrations', status: 'Completed', targetDays: 7, completedAt: daysAgo(3) },
+      { id: 'MS-022', stageNumber: 2, title: 'Electrochemical Cr(VI) to Cr(III) Reduction Cell', description: 'Fabricate iron-electrode reduction reactor with inline sludge precipitator', status: 'In Progress', targetDays: 14 },
+    ],
+    proposals: [],
+    budgetEstimated: 510000,
+    budgetApproved: 510000,
+    createdAt: daysAgo(8),
+    updatedAt: daysAgo(2),
+  },
+
+  // PRJ-011: Khunti Tribal Lac Cultivation Bio-Pesticide & Thermal Drone Rig
+  {
+    id: 'DEMO-PRJ-011',
     challengeId: 'DEMO-CH-011',
-    challengeTitle: 'Severe blight infestation on Kusum & Ber trees devastating tribal lac cultivation',
-    category: 'Agriculture, Agro-Forestry & Tribal Livelihood',
+    challengeTitle: 'Fungal blight and moth infestation destroying tribal lac cultivation on Kusum trees',
+    category: 'Agro Forestry & Tribal Livelihood',
     district: 'Khunti',
     universityId: 'BAU-RANCHI',
     universityName: 'Birsa Agricultural University (BAU)',
     facultyMentorName: 'Dr. R. N. Tiwari (Agronomy & Entomology)',
     facultyEmail: 'rntiwari@bauranchi.ac.in',
     teamMembers: [
-      { id: 'TM-024', name: 'Birsa Munda', departmentName: 'Entomology & Lac Culture', role: 'Team Lead', skills: ['Lac insect life cycle', 'Bio-control of Eublemma amabilis', 'Mundari language'] },
-      { id: 'TM-025', name: 'Pooja Kispotta', departmentName: 'Biotechnology', role: 'Formulation Chemist', skills: ['Neem-karanj nano-emulsion', 'Fungal antagonistic microbes', 'Bioassay'] },
-      { id: 'TM-026', name: 'Ravi Prakash', departmentName: 'Agricultural Engineering', role: 'Drone Pilot & Remote Sensing', skills: ['Multispectral NDVI imaging', 'Precision drone spraying', 'Flight planning'] },
+      { id: 'TM-023', name: 'Birsa Munda', departmentName: 'Entomology & Lac Culture', role: 'Team Lead', skills: ['Lac insect life cycle', 'Bio-control of Eublemma amabilis'] },
+      { id: 'TM-024', name: 'Pooja Kispotta', departmentName: 'Biotechnology', role: 'Formulation Chemist', skills: ['Neem-karanj nano-emulsion', 'Bioassay'] },
     ],
     status: 'Team Formed',
     milestones: [
-      { id: 'MS-027', stageNumber: 1, title: 'Infestation Mapping & Larval Count', description: 'Sample 2,400 host trees in Torpa and isolate fungal blight strains in laboratory', status: 'Completed', targetDays: 10, completedAt: daysAgo(8) },
-      { id: 'MS-028', stageNumber: 2, title: 'Organic Micro-Encapsulated Bio-Spray Formulation', description: 'Synthesise non-toxic bio-pesticide lethal to predator moths but safe for lac insects', status: 'In Progress', targetDays: 14 },
-      { id: 'MS-029', stageNumber: 3, title: 'Precision Drone Canopy Spraying Demonstration', description: 'Demonstrate ultra-low volume drone spraying across 500 trees in Diyakel village', status: 'Pending', targetDays: 20 },
+      { id: 'MS-023', stageNumber: 1, title: 'Infestation Mapping & Larval Count', description: 'Sample 2400 host trees in Torpa and isolate fungal blight strains in laboratory', status: 'Completed', targetDays: 10, completedAt: daysAgo(8) },
+      { id: 'MS-024', stageNumber: 2, title: 'Organic Micro-Encapsulated Bio-Spray Formulation', description: 'Synthesise non-toxic bio-pesticide lethal to predator moths but safe for lac insects', status: 'In Progress', targetDays: 14 },
     ],
     proposals: [],
     budgetEstimated: 390000,
@@ -881,17 +1016,126 @@ const SEED_PROJECTS: Project[] = [
     createdAt: daysAgo(12),
     updatedAt: daysAgo(3),
   },
+
+  // PRJ-012: Deoghar Solar UV-C Pilgrim Water Disinfection Cartridge
+  {
+    id: 'DEMO-PRJ-012',
+    challengeId: 'DEMO-CH-012',
+    challengeTitle: 'High coliform biological contamination and handpump failure during pilgrim rush',
+    category: 'Public Health & Drinking Water Quality',
+    district: 'Deoghar',
+    universityId: 'AIIMS-DEOGHAR',
+    universityName: 'AIIMS Deoghar & SKMU Dumka',
+    facultyMentorName: 'Dr. M. K. Ray (Public Health & Microbiology)',
+    facultyEmail: 'mkray@aiimsdeoghar.edu.in',
+    teamMembers: [
+      { id: 'TM-025', name: 'Gopal Krishna Jha', departmentName: 'Public Health Engineering', role: 'Team Lead', skills: ['Bacteriological culture', 'UV-C dosimetry'] },
+      { id: 'TM-026', name: 'Naveen Murmu', departmentName: 'Mechanical Engineering', role: 'Handpump Specialist', skills: ['India Mark-II mechanics', 'Flow governors'] },
+    ],
+    status: 'Team Formed',
+    milestones: [
+      { id: 'MS-025', stageNumber: 1, title: 'Pilgrim Corridor Pathogen Microbial Audit', description: 'Culture 38 handpump samples for E. coli and Vibrio cholerae counts', status: 'Completed', targetDays: 4, completedAt: daysAgo(1) },
+      { id: 'MS-026', stageNumber: 2, title: 'Solar Inline UV-C Disinfection Sleeve Assembly', description: 'Build 254nm quartz UV-C sterilization cylinder retrofittable directly on handpump spout', status: 'In Progress', targetDays: 12 },
+    ],
+    proposals: [],
+    budgetEstimated: 360000,
+    budgetApproved: 360000,
+    createdAt: daysAgo(4),
+    updatedAt: daysAgo(1),
+  },
+
+  // PRJ-013: Hazaribagh Barakar Bridge FBG Strain Sensor Geo-Jacket
+  {
+    id: 'DEMO-PRJ-013',
+    challengeId: 'DEMO-CH-013',
+    challengeTitle: 'Barakar river bridge pier foundation scour endangering rural transit lifeline',
+    category: 'Bridge Infrastructure & Transport Safety',
+    district: 'Hazaribagh',
+    universityId: 'VBU-HAZARIBAGH',
+    universityName: 'Vinoba Bhave University (VBU) & NIT Jamshedpur',
+    facultyMentorName: 'Dr. Meenakshi Sinha (Structural & Geotechnical Engg)',
+    facultyEmail: 'meenakshi.sinha@vbu.ac.in',
+    teamMembers: [
+      { id: 'TM-027', name: 'Tanvi Agarwal', departmentName: 'Civil & Structural Engineering', role: 'Team Lead', skills: ['Bridge scour mechanics', 'FBG optical strain sensors'] },
+      { id: 'TM-028', name: 'Surendra Singh', departmentName: 'Geotechnical Engineering', role: 'Field Lead', skills: ['Underwater micro-concrete', 'Geo-jacketing'] },
+    ],
+    status: 'Team Formed',
+    milestones: [
+      { id: 'MS-027', stageNumber: 1, title: 'Underwater Scour Depth & Ultrasonic Sonar Profile', description: 'Bathymetric 3D contour of 2.8m scour pocket around Pier 3 foundation', status: 'Completed', targetDays: 6, completedAt: daysAgo(4) },
+      { id: 'MS-028', stageNumber: 2, title: 'Fiber Bragg Grating (FBG) Strain Array Installation', description: 'Affix optical fiber strain sensors on bridge piers to log live dynamic vibration loads', status: 'In Progress', targetDays: 14 },
+    ],
+    proposals: [],
+    budgetEstimated: 550000,
+    budgetApproved: 550000,
+    createdAt: daysAgo(9),
+    updatedAt: daysAgo(2),
+  },
+
+  // PRJ-014: Koderma Dhab Mica Quarry Geotechnical Slope Terracing
+  {
+    id: 'DEMO-PRJ-014',
+    challengeId: 'DEMO-CH-014',
+    challengeTitle: 'Abandoned open pit mica mine quarry waterlogging and slope rim collapse hazard',
+    category: 'Abandoned Mine Hazard & Geotechnical Stability',
+    district: 'Koderma',
+    universityId: 'BIT-SINDRI',
+    universityName: 'BIT Sindri & VBU',
+    facultyMentorName: 'Dr. Alok Kumar (Mining Geology & Slope Stability)',
+    facultyEmail: 'alok.kumar@bitsindri.ac.in',
+    teamMembers: [
+      { id: 'TM-029', name: 'Budhan Soren', departmentName: 'Mining Engineering', role: 'Team Lead', skills: ['Slope stability modeling', 'Mine reclamation'] },
+      { id: 'TM-030', name: 'Deepak Soren', departmentName: 'Geology', role: 'Geotechnical Analyst', skills: ['Soil shear strength', 'Geo-textile reinforcement'] },
+    ],
+    status: 'Team Formed',
+    milestones: [
+      { id: 'MS-029', stageNumber: 1, title: 'Mica Pit Rim Slump Rate & Hydrology Audit', description: 'LiDAR drone topographical mapping of 35-foot acidic pit perimeter and crack propagation', status: 'Completed', targetDays: 5, completedAt: daysAgo(2) },
+      { id: 'MS-030', stageNumber: 2, title: 'Geo-Grid Vegetative Terracing & Bio-Retention Plan', description: 'Design stepped bench terracing with vetiver grass and lime-dosed drainage channels', status: 'In Progress', targetDays: 18 },
+    ],
+    proposals: [],
+    budgetEstimated: 410000,
+    budgetApproved: 410000,
+    createdAt: daysAgo(8),
+    updatedAt: daysAgo(2),
+  },
+
+  // PRJ-015: Gumla Bishunpur Bauxite Haulage Road Geogrid Stabilization
+  {
+    id: 'DEMO-PRJ-015',
+    challengeId: 'DEMO-CH-015',
+    challengeTitle: 'Bauxite ore haulage truck road subsidence and hill slope slip on rural route',
+    category: 'Rural Road Infrastructure & Transport',
+    district: 'Gumla',
+    universityId: 'RANCHI-UNIV',
+    universityName: 'Ranchi University & BIT Mesra',
+    facultyMentorName: 'Dr. Sunil Kumar (Highway & Geotechnical Engineering)',
+    facultyEmail: 'sunil.kumar@ranchiuniv.ac.in',
+    teamMembers: [
+      { id: 'TM-031', name: 'Anand Bhagat', departmentName: 'Civil Engineering', role: 'Team Lead', skills: ['Pavement design', 'Geogrid sub-base stabilization'] },
+      { id: 'TM-032', name: 'Pankaj Oraon', departmentName: 'Geotechnical Engineering', role: 'Field Engineer', skills: ['Soil nailing', 'Dynamic cone penetrometer'] },
+    ],
+    status: 'Team Formed',
+    milestones: [
+      { id: 'MS-031', stageNumber: 1, title: 'Bishunpur Haul Road Axle Load & Rutting Audit', description: 'CBR soil strength testing and 16-wheeler dynamic axle load stress modeling', status: 'Completed', targetDays: 4, completedAt: daysAgo(1) },
+      { id: 'MS-032', stageNumber: 2, title: 'Biaxial Polypropylene Geogrid Sub-Base Trial', description: 'Construct 200m pilot road section using interlocked geogrid and soil nail anchors', status: 'In Progress', targetDays: 16 },
+    ],
+    proposals: [],
+    budgetEstimated: 470000,
+    budgetApproved: 470000,
+    createdAt: daysAgo(5),
+    updatedAt: daysAgo(1),
+  },
 ];
 
-// ── Seed Proposals ───────────────────────────────────────────────────────────
+// ── 15 Real CSR Funding Proposals Matching Corporate Sponsors ────────────────
 
-const SEED_PROPOSALS: Proposal[] = [
+export const SEED_PROPOSALS: Proposal[] = [
+  // 1. Dhanbad
   {
     id: 'DEMO-PROP-001',
     projectId: 'DEMO-PRJ-001',
     title: 'Distributed Fiber-Optic DTS & InSAR Deformation Monitoring for Jharia Coalfire Hazard',
     description: 'Armored fiber-optic temperature sensors combined with high-frequency satellite InSAR deformation and autonomous borehole CO/SO2 sniffers to detect catastrophic ground collapse 72 hours prior to failure.',
-    approach: 'Phase 1: Drill 4 monitoring boreholes to intercept fire frontier. Phase 2: Lower armored DTS cable with continuous 1m spatial resolution. Phase 3: Sync UART 115200 Baud local gateway with Nivaaran emergency broadcast system. Phase 4: Deploy nitrogen-foam barrier to suppress high-temperature hotspots.',
+    approach: 'Phase 1: Drill 4 monitoring boreholes. Phase 2: Lower armored DTS cable with continuous 1m spatial resolution. Phase 3: Sync UART gateway with Nivaaran emergency broadcast. Phase 4: Deploy nitrogen-foam barrier to suppress high-temperature hotspots.',
     estimatedBudget: 650000,
     estimatedTimeline: '18 weeks',
     status: 'Approved',
@@ -899,12 +1143,13 @@ const SEED_PROPOSALS: Proposal[] = [
     submittedAt: daysAgo(12),
     reviewNote: 'Approved by Mining Safety Directorate & District Administration. BCCL CSR grant of ₹6.50L sanctioned.',
   },
+  // 2. Giridih
   {
     id: 'DEMO-PROP-002',
     projectId: 'DEMO-PRJ-002',
     title: 'Gravity-Fed Solar-Regenerated FeOOH Nano-Adsorbent Cartridge for Rural Mark-II Handpumps',
-    description: 'Turnkey, zero-electricity gravity cartridge utilizing synthesised iron oxide (FeOOH) and activated alumina media to selectively adsorb arsenic (<10 ppb) and fluoride (<1.0 ppm) at flow rates up to 15 L/min.',
-    approach: 'Phase 1: Synthesise nanoparticle media from domestic industrial precursors. Phase 2: Design quick-release 304 stainless steel cartridge fitting standard India Mark-II spout. Phase 3: 10,000L laboratory breakthrough curve validation. Phase 4: Field pilot in 3 Santhal hamlets with Jal Sahiyya training.',
+    description: 'Turnkey zero-electricity gravity cartridge utilizing synthesised iron oxide (FeOOH) and activated alumina media to selectively adsorb arsenic (<10 ppb) and fluoride (<1.0 ppm) at flow rates up to 15 L/min.',
+    approach: 'Phase 1: Synthesise nanoparticle media. Phase 2: Design quick-release 304 stainless steel cartridge fitting standard India Mark-II spout. Phase 3: 10,000L laboratory breakthrough validation. Phase 4: Field pilot in 3 Santhal hamlets with Jal Sahiyya training.',
     estimatedBudget: 520000,
     estimatedTimeline: '16 weeks',
     status: 'Approved',
@@ -912,59 +1157,262 @@ const SEED_PROPOSALS: Proposal[] = [
     submittedAt: daysAgo(20),
     reviewNote: 'Approved by PHED Giridih. Tata Steel Foundation CSR grant of ₹5.20L confirmed.',
   },
+  // 3. Palamu
   {
     id: 'DEMO-PROP-003',
+    projectId: 'DEMO-PRJ-003',
+    title: 'Solar Smart Aquifer Piezometer Network & Automated Tension-Triggered Micro-Drip System',
+    description: 'Automated solar micro-drip kit triggered by sub-surface tension threshold (<30 kPa) linked to long-range LoRa piezometers across 50 hectares of paddy in Mahugawan.',
+    approach: 'Phase 1: Install 6 piezometer sensor nodes. Phase 2: Deploy solar drip manifolds. Phase 3: Train 40 tribal farmers on automated irrigation scheduling.',
+    estimatedBudget: 480000,
+    estimatedTimeline: '14 weeks',
+    status: 'Approved',
+    submittedBy: 'Amit Murmu (Team Lead, BAU Ranchi)',
+    submittedAt: daysAgo(16),
+    reviewNote: 'Approved by District Agriculture Officer. NTPC CSR Rural Energy Fund grant of ₹4.80L released.',
+  },
+  // 4. East Singhbhum
+  {
+    id: 'DEMO-PROP-004',
     projectId: 'DEMO-PRJ-004',
     title: 'Ultrasonic Stage Telemetry & High-Discharge Self-Scouring Siphon at Subarnarekha Confluence',
     description: 'Solar millimeter-wave ultrasonic river stage sensors linked to autonomous siphon discharge gates to relieve waterlogging in low-lying Bagbera and Mango wards.',
-    approach: 'Phase 1: HEC-RAS 2D dynamic hydrodynamic model of confluence. Phase 2: Deploy solar radar sensors with 4G LTE-M failover telemetry. Phase 3: Construct self-scouring vortex siphon gate at arterial drain outlet. Phase 4: Integrate with SDMA Cap Alert dispatcher.',
+    approach: 'Phase 1: HEC-RAS 2D dynamic hydrodynamic model. Phase 2: Deploy solar radar sensors. Phase 3: Construct self-scouring vortex siphon gate. Phase 4: Integrate with SDMA Cap Alert dispatcher.',
     estimatedBudget: 580000,
     estimatedTimeline: '14 weeks',
     status: 'Approved',
     submittedBy: 'Rahul Soren (Team Lead, NIT Jamshedpur)',
     submittedAt: daysAgo(14),
-    reviewNote: 'Approved by JNAC & DC East Singhbhum. Tata Steel TSRDS grant of ₹5.80L released.',
+    reviewNote: 'Approved by JNAC & DC East Singhbhum. Tata Steel TSRDS & Jusco CSR grant of ₹5.80L released.',
+  },
+  // 5. West Singhbhum
+  {
+    id: 'DEMO-PROP-005',
+    projectId: 'DEMO-PRJ-005',
+    title: 'Solar Multi-Stage Coagulant-Flocculation Clarifier for Karo River Hematite Runoff',
+    description: 'Mobile 5000 LPH multi-chamber clarifier trailer with eco-friendly poly-aluminum coagulant dosing to reduce Karo river turbidity from 450 NTU to <5 NTU for 14 tribal settlements.',
+    approach: 'Phase 1: Bench scale settling optimization. Phase 2: Fabricate mobile solar clarifier trailer. Phase 3: Pilot operation at Gua Basti river intake.',
+    estimatedBudget: 540000,
+    estimatedTimeline: '12 weeks',
+    status: 'Approved',
+    submittedBy: 'Birsa Ho (Team Lead, Kolhan Univ)',
+    submittedAt: daysAgo(8),
+    reviewNote: 'Approved by State Pollution Board & DC West Singhbhum. Tata Steel Mining & SAIL Rungta CSR grant of ₹5.40L confirmed.',
+  },
+  // 6. Latehar
+  {
+    id: 'DEMO-PROP-006',
+    projectId: 'DEMO-PRJ-006',
+    title: 'Solar Infrasound Seismic Geophone Array & Directional Acoustic Siren for Betla Elephant Corridor',
+    description: 'Buried solar geophone seismic array detecting low-frequency pachyderm ground vibrations at 200m distance with automated SMS early warning and directional acoustic flashing sirens.',
+    approach: 'Phase 1: Calibrate geophone threshold waveforms. Phase 2: Install 6 perimeter warning nodes. Phase 3: Village community early-warning drill with Forest Dept.',
+    estimatedBudget: 420000,
+    estimatedTimeline: '12 weeks',
+    status: 'Approved',
+    submittedBy: 'Aditya Kumar (Team Lead, BIT Sindri)',
+    submittedAt: daysAgo(14),
+    reviewNote: 'Approved by DFO Latehar. Jharkhand Forest Development & Adani Foundation CSR grant of ₹4.20L released.',
+  },
+  // 7. Sahibganj
+  {
+    id: 'DEMO-PROP-007',
+    projectId: 'DEMO-PRJ-007',
+    title: 'Bamboo-Reinforced Coir Geotextile Eco-Spur Matrix & ADCP Sonar Buoys on Ganga Riverbank',
+    description: 'Bio-engineered permeable eco-spurs constructed from treated bamboo piling and heavy coir geotextiles to dampen meander current velocities and prevent island loss at Rajmahal.',
+    approach: 'Phase 1: ADCP bathymetric scour profiling. Phase 2: Drive treated bamboo timber piles and lay geotextile mattresses. Phase 3: Deploy solar sonar telemetry buoy.',
+    estimatedBudget: 600000,
+    estimatedTimeline: '16 weeks',
+    status: 'Approved',
+    submittedBy: 'Sanjay Hansda (Team Lead, SKMU Dumka)',
+    submittedAt: daysAgo(18),
+    reviewNote: 'Approved by District Disaster Management Cell. Inland Waterways CSR & Jindal Steel grant of ₹6.00L sanctioned.',
+  },
+  // 8. Ranchi
+  {
+    id: 'DEMO-PROP-008',
+    projectId: 'DEMO-PRJ-008',
+    title: 'Millimeter-Wave Radar Water Level Sentinel & Solar Archimedes Culvert De-Siltation Rig',
+    description: 'Radar water level sensor logging real-time stormwater surges on Hutup school access road coupled with an automated Archimedes trash-rake to eliminate culvert blockages.',
+    approach: 'Phase 1: Hydraulic gradient canal audit. Phase 2: Install millimeter-wave radar telemetry node. Phase 3: Fabricate and commission solar powered de-siltation screw.',
+    estimatedBudget: 450000,
+    estimatedTimeline: '10 weeks',
+    status: 'Approved',
+    submittedBy: 'Ayush Kumar Singh (Team Lead, BIT Mesra)',
+    submittedAt: daysAgo(8),
+    reviewNote: 'Approved by BDO Kanke & DC Ranchi. Central Coalfields Ltd (CCL CSR) grant of ₹4.50L sanctioned.',
+  },
+  // 9. Bokaro
+  {
+    id: 'DEMO-PROP-009',
+    projectId: 'DEMO-PRJ-009',
+    title: 'Autonomous Electro-Coagulation Fly Ash Separator & Inline TDS Telemetry Diverter',
+    description: 'High-efficiency DC electro-coagulation chamber to neutralize coal fly ash slurry particles and divert water intake during pipeline breaches in Konar river.',
+    approach: 'Phase 1: Slurry precipitation kinetics test. Phase 2: Install optical TDS telemetry diverter valve at municipal intake. Phase 3: Commission electro-coagulation pilot.',
+    estimatedBudget: 490000,
+    estimatedTimeline: '12 weeks',
+    status: 'Approved',
+    submittedBy: 'Rajesh Pandey (Team Lead, IIT ISM Dhanbad)',
+    submittedAt: daysAgo(4),
+    reviewNote: 'Approved by Bokaro Disaster Cell. SAIL Bokaro Steel & DVC CSR grant of ₹4.90L released.',
+  },
+  // 10. Saraikela Kharsawan
+  {
+    id: 'DEMO-PROP-010',
+    projectId: 'DEMO-PRJ-010',
+    title: 'Decentralized Optical Ion Probe & Electrochemical Reduction Cell for Hexavalent Chromium',
+    description: 'Continuous fluorometer monitoring of electroplating stormwater effluent coupled with an electrochemical reactor converting carcinogenic Cr(VI) to non-hazardous Cr(III).',
+    approach: 'Phase 1: Outfall effluent mapping. Phase 2: Assemble iron-electrode reduction reactor. Phase 3: Automated gate shutoff and compliance dashboard sync.',
+    estimatedBudget: 510000,
+    estimatedTimeline: '14 weeks',
+    status: 'Approved',
+    submittedBy: 'Neha Kumari (Team Lead, NIT Jamshedpur)',
+    submittedAt: daysAgo(6),
+    reviewNote: 'Approved by State Pollution Board & DC Saraikela. Adityapur Auto Cluster CSR grant of ₹5.10L confirmed.',
+  },
+  // 11. Khunti
+  {
+    id: 'DEMO-PROP-011',
+    projectId: 'DEMO-PRJ-011',
+    title: 'Micro-Encapsulated Organic Neem Bio-Spray Formulation & Thermal Drone Canopy Rig',
+    description: 'Targeted organic bio-pesticide lethal to Eublemma amabilis moth larvae without harming beneficial lac insects, applied via ultra-low volume precision spraying drones.',
+    approach: 'Phase 1: Formulate micro-encapsulated neem nano-emulsion. Phase 2: Calibrate drone spray droplet dispersion. Phase 3: Field demonstration across 500 trees in Diyakel.',
+    estimatedBudget: 390000,
+    estimatedTimeline: '10 weeks',
+    status: 'Approved',
+    submittedBy: 'Birsa Munda (Team Lead, BAU Ranchi)',
+    submittedAt: daysAgo(10),
+    reviewNote: 'Approved by Khunti District Administration. TRIFED & JSLPS Innovation grant of ₹3.90L released.',
+  },
+  // 12. Deoghar
+  {
+    id: 'DEMO-PROP-012',
+    projectId: 'DEMO-PRJ-012',
+    title: 'Solar Inline UV-C Bactericidal Disinfection Module for Pilgrim Corridor Handpumps',
+    description: 'Compact 254nm quartz UV-C sterilization cylinder retrofitted onto high-extraction handpumps to eradicate coliform bacteria during Shravani Mela congregations.',
+    approach: 'Phase 1: Handpump microbial pathogen audit. Phase 2: Fabricate solar UV-C sleeve. Phase 3: Deploy at 15 pilgrim water points with chlorine test validation.',
+    estimatedBudget: 360000,
+    estimatedTimeline: '8 weeks',
+    status: 'Approved',
+    submittedBy: 'Gopal Krishna Jha (Team Lead, AIIMS Deoghar)',
+    submittedAt: daysAgo(3),
+    reviewNote: 'Approved by Deoghar Municipal Corporation. Baidyanath Dham Trust & Coal India CSR grant of ₹3.60L confirmed.',
+  },
+  // 13. Hazaribagh
+  {
+    id: 'DEMO-PROP-013',
+    projectId: 'DEMO-PRJ-013',
+    title: 'Fiber Bragg Grating Optical Strain Rig & Micro-Concrete Geo-Jacket for Barakar Bridge',
+    description: 'High-frequency FBG optical strain sensors to log structural vibration frequencies of undermined Pier 3 paired with underwater micro-concrete geo-jacketing.',
+    approach: 'Phase 1: Ultrasonic sonar scour bathymetry. Phase 2: Install optical strain sensors on pier footing. Phase 3: Underwater tremie placement of micro-concrete geo-jacket.',
+    estimatedBudget: 550000,
+    estimatedTimeline: '14 weeks',
+    status: 'Approved',
+    submittedBy: 'Tanvi Agarwal (Team Lead, VBU & NIT JSR)',
+    submittedAt: daysAgo(7),
+    reviewNote: 'Approved by PWD Hazaribagh. NHAI Road Safety & NTPC CSR grant of ₹5.50L sanctioned.',
+  },
+  // 14. Koderma
+  {
+    id: 'DEMO-PROP-014',
+    projectId: 'DEMO-PRJ-014',
+    title: 'Geo-Grid Vegetative Terracing & Solar Warning Perimeter for Abandoned Mica Quarries',
+    description: 'Engineered stepped slope benches reinforced with high-strength geo-grids and deep-rooted vetiver grass to halt rim collapse around waterlogged mica quarries in Dhab forest.',
+    approach: 'Phase 1: LiDAR slope profile audit. Phase 2: Construct tiered benching with lime bio-retention swales. Phase 3: Erect solar perimeter telemetry and warning beacons.',
+    estimatedBudget: 410000,
+    estimatedTimeline: '12 weeks',
+    status: 'Approved',
+    submittedBy: 'Budhan Soren (Team Lead, BIT Sindri)',
+    submittedAt: daysAgo(5),
+    reviewNote: 'Approved by BDO Chandwara & DC Koderma. DVC Koderma Thermal Power CSR grant of ₹4.10L released.',
+  },
+  // 15. Gumla
+  {
+    id: 'DEMO-PROP-015',
+    projectId: 'DEMO-PRJ-015',
+    title: 'Biaxial Geogrid Sub-Base Stabilization & Soil Nail Anchors for Bauxite Transport Corridor',
+    description: 'High-tensile biaxial polypropylene geogrid sub-base reinforcement and self-drilling soil nail anchors along collapsing hill road shoulders to restore safe tribal transit.',
+    approach: 'Phase 1: Core sampling and dynamic cone penetrometer audit. Phase 2: Install self-drilling soil nails on slope face. Phase 3: Lay interlocking geogrid layer with asphalt seal.',
+    estimatedBudget: 470000,
+    estimatedTimeline: '12 weeks',
+    status: 'Approved',
+    submittedBy: 'Anand Bhagat (Team Lead, Ranchi Univ)',
+    submittedAt: daysAgo(3),
+    reviewNote: 'Approved by PWD Gumla. Hindalco Industries CSR (Bauxite Mines Div) grant of ₹4.70L confirmed.',
   },
 ];
 
-// ── Seed Timeline Events ─────────────────────────────────────────────────────
+// ── Seed Timeline Events for All 15 Cases ─────────────────────────────────────
 
-const SEED_TIMELINE: TimelineEvent[] = [
-  // Jharia Coalfire Events
-  { id: 'DEMO-TL-001', entityType: 'challenge', entityId: 'DEMO-CH-001', action: 'submitted', actor: 'Kusunda Village Mukhiya', actorRole: 'Citizen', description: 'Report submitted: Subsidence cracks & CO smoke venting at Lodna 4-Pits', timestamp: daysAgo(20) },
+export const SEED_TIMELINE: TimelineEvent[] = [
+  // 1. Dhanbad Jharia
+  { id: 'DEMO-TL-001', entityType: 'challenge', entityId: 'DEMO-CH-001', action: 'submitted', actor: 'Manoj Mahto (Jharia Committee)', actorRole: 'Citizen', description: 'Report submitted: Subsidence cracks & CO smoke venting at Lodna 4 Pits', timestamp: daysAgo(20) },
   { id: 'DEMO-TL-002', entityType: 'challenge', entityId: 'DEMO-CH-001', action: 'ai_triage_complete', actor: 'Nivaaran AI Engine', actorRole: 'System', description: 'AI Triage: CRITICAL Priority 96/100 · Geotechnical & Toxic Hazard', timestamp: daysAgo(20) },
   { id: 'DEMO-TL-003', entityType: 'challenge', entityId: 'DEMO-CH-001', action: 'status_changed', actor: 'Shri A. K. Rai, DC Dhanbad', actorRole: 'Government Department', description: 'Government validated after joint site inspection with BCCL safety cell', previousValue: 'Under Review', newValue: 'Government Validated', timestamp: daysAgo(14) },
-  { id: 'DEMO-TL-004', entityType: 'challenge', entityId: 'DEMO-CH-001', action: 'hei_matched', actor: 'Nivaaran Matching Engine', actorRole: 'System', description: 'Matched to IIT (ISM) Dhanbad (Mining & Earth Sciences) — 98% compatibility', timestamp: daysAgo(15) },
-  { id: 'DEMO-TL-005', entityType: 'project',   entityId: 'DEMO-PRJ-001', action: 'created', actor: 'Dr. S. K. Roy', actorRole: 'Faculty / Mentor', description: 'R&D Project initialized with 4-member student engineering team', timestamp: daysAgo(15) },
-  { id: 'DEMO-TL-006', entityType: 'proposal',  entityId: 'DEMO-PROP-001', action: 'approved', actor: 'BCCL CSR Foundation', actorRole: 'Corporate CSR Partner', description: '₹6.50L CSR grant approved. Tranche 1 (30%) disbursed.', timestamp: daysAgo(12) },
-  { id: 'DEMO-TL-007', entityType: 'milestone', entityId: 'MS-001', action: 'completed', actor: 'Priya Sharma', actorRole: 'Student', description: 'Thermal drone surface survey completed across Lodna Colliery', timestamp: daysAgo(10) },
+  { id: 'DEMO-TL-004', entityType: 'project', entityId: 'DEMO-PRJ-001', action: 'created', actor: 'Dr. S. K. Roy', actorRole: 'Faculty / Mentor', description: 'IIT (ISM) Dhanbad R&D Project initialized with student engineering team', timestamp: daysAgo(15) },
+  { id: 'DEMO-TL-005', entityType: 'proposal', entityId: 'DEMO-PROP-001', action: 'approved', actor: 'BCCL CSR Foundation', actorRole: 'Corporate CSR Partner', description: '₹6.50L CSR grant approved. Tranche 1 (30%) disbursed.', timestamp: daysAgo(12) },
 
-  // Giridih Arsenic Events
-  { id: 'DEMO-TL-008', entityType: 'challenge', entityId: 'DEMO-CH-002', action: 'submitted', actor: 'Tisri Gram Pradhan', actorRole: 'Citizen', description: 'Report submitted: Toxic arsenic in 18 Santhal village handpumps', timestamp: daysAgo(35) },
-  { id: 'DEMO-TL-009', entityType: 'challenge', entityId: 'DEMO-CH-002', action: 'status_changed', actor: 'Shri Vikram Singh, DC Giridih', actorRole: 'Government Department', description: 'PHED lab confirms 8x WHO arsenic limits. Validated for emergency HEI action.', previousValue: 'Under Review', newValue: 'Government Validated', timestamp: daysAgo(28) },
-  { id: 'DEMO-TL-010', entityType: 'project',   entityId: 'DEMO-PRJ-002', action: 'created', actor: 'Prof. Ankit Verma', actorRole: 'Faculty / Mentor', description: 'IIT (ISM) Dhanbad Environmental Eng team formed', timestamp: daysAgo(32) },
-  { id: 'DEMO-TL-011', entityType: 'proposal',  entityId: 'DEMO-PROP-002', action: 'approved', actor: 'Tata Steel Foundation', actorRole: 'Corporate CSR Partner', description: '₹5.20L grant approved for nano-adsorbent cartridge field pilot', timestamp: daysAgo(20) },
-  { id: 'DEMO-TL-012', entityType: 'milestone', entityId: 'MS-008', action: 'completed', actor: 'Arjun Mahto', actorRole: 'Student', description: 'Modular 304 SS handpump cartridge prototype fabricated & pressure-tested', timestamp: daysAgo(3) },
-  { id: 'DEMO-TL-013', entityType: 'challenge', entityId: 'DEMO-CH-002', action: 'status_changed', actor: 'System', actorRole: 'System', description: 'Advanced to Stage 11: Prototype Development & Testing', previousValue: 'In Progress', newValue: 'Prototype Active', timestamp: daysAgo(1) },
+  // 2. Giridih Tisri
+  { id: 'DEMO-TL-006', entityType: 'challenge', entityId: 'DEMO-CH-002', action: 'submitted', actor: 'Deepak Soren (Tisri Pradhan)', actorRole: 'Citizen', description: 'Report submitted: Toxic arsenic in 18 Santhal village handpumps', timestamp: daysAgo(35) },
+  { id: 'DEMO-TL-007', entityType: 'challenge', entityId: 'DEMO-CH-002', action: 'status_changed', actor: 'Shri Vikram Singh, DC Giridih', actorRole: 'Government Department', description: 'PHED lab confirms 8x WHO arsenic limits. Validated for emergency HEI action.', previousValue: 'Under Review', newValue: 'Government Validated', timestamp: daysAgo(28) },
+  { id: 'DEMO-TL-008', entityType: 'project', entityId: 'DEMO-PRJ-002', action: 'created', actor: 'Prof. Ankit Verma', actorRole: 'Faculty / Mentor', description: 'IIT (ISM) Dhanbad Environmental Eng team formed', timestamp: daysAgo(32) },
+  { id: 'DEMO-TL-009', entityType: 'proposal', entityId: 'DEMO-PROP-002', action: 'approved', actor: 'Tata Steel Foundation', actorRole: 'Corporate CSR Partner', description: '₹5.20L grant approved for nano-adsorbent cartridge field pilot', timestamp: daysAgo(20) },
 
-  // Palamu Drought Events
-  { id: 'DEMO-TL-014', entityType: 'challenge', entityId: 'DEMO-CH-003', action: 'submitted', actor: 'Chhatarpur Kisan Samiti', actorRole: 'Citizen', description: 'Report submitted: 42m groundwater drop & crop wilting', timestamp: daysAgo(30) },
-  { id: 'DEMO-TL-015', entityType: 'challenge', entityId: 'DEMO-CH-003', action: 'status_changed', actor: 'Shri Shashi Ranjan, DC Palamu', actorRole: 'Government Department', description: 'Validated as Stage 3 Priority Drought Zone', previousValue: 'Under Review', newValue: 'Government Validated', timestamp: daysAgo(21) },
-  { id: 'DEMO-TL-016', entityType: 'project',   entityId: 'DEMO-PRJ-003', action: 'created', actor: 'Dr. Rameshwar Oraon', actorRole: 'Faculty / Mentor', description: 'BAU Ranchi Agricultural Engineering team assigned', timestamp: daysAgo(20) },
+  // 3. Palamu Chhatarpur
+  { id: 'DEMO-TL-010', entityType: 'challenge', entityId: 'DEMO-CH-003', action: 'submitted', actor: 'Sunita Devi (Kisan Samiti)', actorRole: 'Citizen', description: 'Report submitted: 42m groundwater drop & crop wilting in Chhatarpur', timestamp: daysAgo(30) },
+  { id: 'DEMO-TL-011', entityType: 'challenge', entityId: 'DEMO-CH-003', action: 'status_changed', actor: 'Shri Shashi Ranjan, DC Palamu', actorRole: 'Government Department', description: 'Validated as Stage 3 Priority Drought Zone', previousValue: 'Under Review', newValue: 'Government Validated', timestamp: daysAgo(21) },
+  { id: 'DEMO-TL-012', entityType: 'project', entityId: 'DEMO-PRJ-003', action: 'created', actor: 'Dr. Rameshwar Oraon', actorRole: 'Faculty / Mentor', description: 'BAU Ranchi Agricultural Engineering team assigned', timestamp: daysAgo(20) },
+  { id: 'DEMO-TL-013', entityType: 'proposal', entityId: 'DEMO-PROP-003', action: 'approved', actor: 'NTPC CSR Rural Energy Fund', actorRole: 'Corporate CSR Partner', description: '₹4.80L grant approved for solar smart drip controller', timestamp: daysAgo(16) },
 
-  // East Singhbhum Flood Events
-  { id: 'DEMO-TL-017', entityType: 'challenge', entityId: 'DEMO-CH-004', action: 'submitted', actor: 'Bagbera Ward Member', actorRole: 'Citizen', description: 'Report submitted: Confluence river surge & culvert choke', timestamp: daysAgo(24) },
-  { id: 'DEMO-TL-018', entityType: 'challenge', entityId: 'DEMO-CH-004', action: 'status_changed', actor: 'Shri Ananya Mittal, DC East Singhbhum', actorRole: 'Government Department', description: 'JNAC validated. High priority for monsoon flood management.', previousValue: 'Under Review', newValue: 'Government Validated', timestamp: daysAgo(16) },
-  { id: 'DEMO-TL-019', entityType: 'project',   entityId: 'DEMO-PRJ-004', action: 'created', actor: 'Dr. V. K. Mahato', actorRole: 'Faculty / Mentor', description: 'NIT Jamshedpur Civil & IoT team assigned', timestamp: daysAgo(16) },
+  // 4. East Singhbhum Bagbera
+  { id: 'DEMO-TL-014', entityType: 'challenge', entityId: 'DEMO-CH-004', action: 'submitted', actor: 'Subhasish Ghosh (Bagbera Citizens)', actorRole: 'Citizen', description: 'Report submitted: Confluence river surge & culvert choke in Bagbera', timestamp: daysAgo(24) },
+  { id: 'DEMO-TL-015', entityType: 'project', entityId: 'DEMO-PRJ-004', action: 'created', actor: 'Dr. V. K. Mahato', actorRole: 'Faculty / Mentor', description: 'NIT Jamshedpur Civil & IoT team assigned', timestamp: daysAgo(16) },
+  { id: 'DEMO-TL-016', entityType: 'proposal', entityId: 'DEMO-PROP-004', action: 'approved', actor: 'Tata Steel TSRDS', actorRole: 'Corporate CSR Partner', description: '₹5.80L grant approved for ultrasonic stage telemetry', timestamp: daysAgo(14) },
 
-  // West Singhbhum Gua Slurry Events
-  { id: 'DEMO-TL-020', entityType: 'challenge', entityId: 'DEMO-CH-005', action: 'submitted', actor: 'Gua Basti Munda Committee', actorRole: 'Citizen', description: 'Report submitted: Hematite red mud slurry in Karo river', timestamp: daysAgo(12) },
-  { id: 'DEMO-TL-021', entityType: 'challenge', entityId: 'DEMO-CH-005', action: 'status_changed', actor: 'Shri Kuldeep Choudhary, DC West Singhbhum', actorRole: 'Government Department', description: 'Government validated. Kolhan Univ & NIT Jamshedpur assigned.', previousValue: 'Under Review', newValue: 'Government Validated', timestamp: daysAgo(6) },
+  // 5. West Singhbhum Gua
+  { id: 'DEMO-TL-017', entityType: 'challenge', entityId: 'DEMO-CH-005', action: 'submitted', actor: 'Birsa Ho (Saranda Forest Samiti)', actorRole: 'Citizen', description: 'Report submitted: Hematite red mud slurry in Karo river', timestamp: daysAgo(12) },
+  { id: 'DEMO-TL-018', entityType: 'project', entityId: 'DEMO-PRJ-005', action: 'created', actor: 'Dr. P. K. Soren', actorRole: 'Faculty / Mentor', description: 'Kolhan University & NIT Jamshedpur clarifier team formed', timestamp: daysAgo(10) },
 
-  // Ranchi Kanke Overflow Events
-  { id: 'DEMO-TL-022', entityType: 'challenge', entityId: 'DEMO-CH-008', action: 'submitted', actor: 'Hutup Panchayat Resident', actorRole: 'Citizen', description: 'Report submitted: School road submerged under 3.5ft water', timestamp: daysAgo(15) },
-  { id: 'DEMO-TL-023', entityType: 'challenge', entityId: 'DEMO-CH-008', action: 'status_changed', actor: 'Shri Rahul Sinha, DC Ranchi', actorRole: 'Government Department', description: 'SDO Kanke site inspection confirmed. BIT Mesra team assigned.', previousValue: 'Under Review', newValue: 'Government Validated', timestamp: daysAgo(10) },
-  { id: 'DEMO-TL-024', entityType: 'project',   entityId: 'DEMO-PRJ-007', action: 'created', actor: 'Dr. Arvind Sinha', actorRole: 'Faculty / Mentor', description: 'BIT Mesra IoT & Civil team formed', timestamp: daysAgo(10) },
+  // 6. Latehar Betla
+  { id: 'DEMO-TL-019', entityType: 'challenge', entityId: 'DEMO-CH-006', action: 'submitted', actor: 'Kishore Tirkey (Betla Eco Comm)', actorRole: 'Citizen', description: 'Report submitted: Elephant corridor raiding in Betla buffer', timestamp: daysAgo(25) },
+  { id: 'DEMO-TL-020', entityType: 'project', entityId: 'DEMO-PRJ-006', action: 'created', actor: 'Dr. Priya Sharma', actorRole: 'Faculty / Mentor', description: 'BIT Sindri Forestry & Electronics team formed', timestamp: daysAgo(18) },
+
+  // 7. Sahibganj Rajmahal
+  { id: 'DEMO-TL-021', entityType: 'challenge', entityId: 'DEMO-CH-007', action: 'submitted', actor: 'Alimuddin Ansari (Diara Mukhiya)', actorRole: 'Citizen', description: 'Report submitted: Ganga riverbank 85m scour at Rajmahal', timestamp: daysAgo(29) },
+  { id: 'DEMO-TL-022', entityType: 'project', entityId: 'DEMO-PRJ-007', action: 'created', actor: 'Dr. Hemant Murmu', actorRole: 'Faculty / Mentor', description: 'SKMU Dumka Geomorphology team formed', timestamp: daysAgo(22) },
+
+  // 8. Ranchi Kanke
+  { id: 'DEMO-TL-023', entityType: 'challenge', entityId: 'DEMO-CH-008', action: 'submitted', actor: 'Ramesh Kumar (Hutup Resident)', actorRole: 'Citizen', description: 'Report submitted: School road submerged under 3.5ft water in Hutup', timestamp: daysAgo(15) },
+  { id: 'DEMO-TL-024', entityType: 'project', entityId: 'DEMO-PRJ-008', action: 'created', actor: 'Dr. Arvind Sinha', actorRole: 'Faculty / Mentor', description: 'BIT Mesra IoT & Civil team formed', timestamp: daysAgo(10) },
+  { id: 'DEMO-TL-025', entityType: 'proposal', entityId: 'DEMO-PROP-008', action: 'approved', actor: 'Central Coalfields Ltd (CCL CSR)', actorRole: 'Corporate CSR Partner', description: '₹4.50L grant approved for radar water level sentinel', timestamp: daysAgo(8) },
+
+  // 9. Bokaro Konar
+  { id: 'DEMO-TL-026', entityType: 'challenge', entityId: 'DEMO-CH-009', action: 'submitted', actor: 'Rajesh Pandey (Bermo Forum)', actorRole: 'Citizen', description: 'Report submitted: Fly ash slurry spill contaminating municipal water', timestamp: daysAgo(6) },
+  { id: 'DEMO-TL-027', entityType: 'project', entityId: 'DEMO-PRJ-009', action: 'created', actor: 'Dr. N. K. Jha', actorRole: 'Faculty / Mentor', description: 'IIT (ISM) Dhanbad ash separator team formed', timestamp: daysAgo(4) },
+
+  // 10. Saraikela Adityapur
+  { id: 'DEMO-TL-028', entityType: 'challenge', entityId: 'DEMO-CH-010', action: 'submitted', actor: 'Manish Sahu (Industrial Assoc)', actorRole: 'Citizen', description: 'Report submitted: Electroplating heavy metal effluent in Kharkai river', timestamp: daysAgo(8) },
+  { id: 'DEMO-TL-029', entityType: 'project', entityId: 'DEMO-PRJ-010', action: 'created', actor: 'Dr. P. K. Soren', actorRole: 'Faculty / Mentor', description: 'NIT Jamshedpur chemical reduction cell team formed', timestamp: daysAgo(6) },
+
+  // 11. Khunti Torpa
+  { id: 'DEMO-TL-030', entityType: 'challenge', entityId: 'DEMO-CH-011', action: 'submitted', actor: 'Somra Munda (Lac Cooperative)', actorRole: 'Citizen', description: 'Report submitted: Kusum tree lac crop fungal blight outbreak', timestamp: daysAgo(18) },
+  { id: 'DEMO-TL-031', entityType: 'project', entityId: 'DEMO-PRJ-011', action: 'created', actor: 'Dr. R. N. Tiwari', actorRole: 'Faculty / Mentor', description: 'BAU Ranchi Lac Research team formed', timestamp: daysAgo(12) },
+
+  // 12. Deoghar Madhupur
+  { id: 'DEMO-TL-032', entityType: 'challenge', entityId: 'DEMO-CH-012', action: 'submitted', actor: 'Gopal Krishna Jha (Seva Samiti)', actorRole: 'Citizen', description: 'Report submitted: Coliform contamination in pilgrim corridor handpumps', timestamp: daysAgo(4) },
+  { id: 'DEMO-TL-033', entityType: 'project', entityId: 'DEMO-PRJ-012', action: 'created', actor: 'Dr. M. K. Ray', actorRole: 'Faculty / Mentor', description: 'AIIMS Deoghar Public Health team formed', timestamp: daysAgo(2) },
+
+  // 13. Hazaribagh Barakar Bridge
+  { id: 'DEMO-TL-034', entityType: 'challenge', entityId: 'DEMO-CH-013', action: 'submitted', actor: 'Surendra Singh (Bridge Samiti)', actorRole: 'Citizen', description: 'Report submitted: Barakar bridge Pier 3 scour pocket of 2.8m detected', timestamp: daysAgo(11) },
+  { id: 'DEMO-TL-035', entityType: 'project', entityId: 'DEMO-PRJ-013', action: 'created', actor: 'Dr. Meenakshi Sinha', actorRole: 'Faculty / Mentor', description: 'VBU & NIT Jamshedpur structural monitoring team formed', timestamp: daysAgo(8) },
+
+  // 14. Koderma Dhab Mica
+  { id: 'DEMO-TL-036', entityType: 'challenge', entityId: 'DEMO-CH-014', action: 'submitted', actor: 'Budhan Soren (Van Suraksha)', actorRole: 'Citizen', description: 'Report submitted: Unbarricaded acidic water mica pit slope erosion', timestamp: daysAgo(8) },
+  { id: 'DEMO-TL-037', entityType: 'project', entityId: 'DEMO-PRJ-014', action: 'created', actor: 'Dr. Alok Kumar', actorRole: 'Faculty / Mentor', description: 'BIT Sindri Mining Geology team formed', timestamp: daysAgo(5) },
+
+  // 15. Gumla Bishunpur
+  { id: 'DEMO-TL-038', entityType: 'challenge', entityId: 'DEMO-CH-015', action: 'submitted', actor: 'Anand Bhagat (Tribal Kisan Sangha)', actorRole: 'Citizen', description: 'Report submitted: Bauxite truck road subsidence on Bishunpur route', timestamp: daysAgo(5) },
+  { id: 'DEMO-TL-039', entityType: 'project', entityId: 'DEMO-PRJ-015', action: 'created', actor: 'Dr. Sunil Kumar', actorRole: 'Faculty / Mentor', description: 'Ranchi University & BIT Mesra geotechnical team formed', timestamp: daysAgo(3) },
+  { id: 'DEMO-TL-040', entityType: 'proposal', entityId: 'DEMO-PROP-015', action: 'approved', actor: 'Hindalco Industries CSR', actorRole: 'Corporate CSR Partner', description: '₹4.70L grant approved for biaxial geogrid stabilization trial', timestamp: daysAgo(2) },
 ];
 
 // ── Export full seed state ───────────────────────────────────────────────────

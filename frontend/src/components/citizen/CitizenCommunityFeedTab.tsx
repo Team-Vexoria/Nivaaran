@@ -448,7 +448,35 @@ export const CitizenCommunityFeedTab: React.FC = () => {
     },
   ];
 
-    const [posts, setPosts] = useState<FeedPostUI[]>(seedPosts);
+  // Persistent upvoting helper functions
+  const getStoredUpvotes = (): { votedPostIds: Set<string>; deltas: Record<string, number> } => {
+    try {
+      const votedArr = JSON.parse(localStorage.getItem('nivaaran_user_voted_posts') || '[]');
+      const deltasMap = JSON.parse(localStorage.getItem('nivaaran_post_upvote_deltas') || '{}');
+      return {
+        votedPostIds: new Set(Array.isArray(votedArr) ? votedArr : []),
+        deltas: typeof deltasMap === 'object' && deltasMap !== null ? deltasMap : {}
+      };
+    } catch {
+      return { votedPostIds: new Set(), deltas: {} };
+    }
+  };
+
+  const applyUpvotesToPosts = (list: FeedPostUI[]): FeedPostUI[] => {
+    const { votedPostIds, deltas } = getStoredUpvotes();
+    return list.map(p => {
+      const postId = p.id || '';
+      const delta = postId ? (deltas[postId] || 0) : 0;
+      const isVoted = postId ? votedPostIds.has(postId) : false;
+      return {
+        ...p,
+        hasUpvoted: isVoted,
+        upvotes: Math.max(0, p.upvotes + delta)
+      };
+    });
+  };
+
+  const [posts, setPosts] = useState<FeedPostUI[]>(() => applyUpvotesToPosts(seedPosts));
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostContent, setNewPostContent] = useState('');
   const [newPostDistrict, setNewPostDistrict] = useState('Ranchi');
@@ -501,9 +529,9 @@ export const CitizenCommunityFeedTab: React.FC = () => {
             })),
           }));
 
-        setPosts([...customUserPosts, ...seedPosts]);
+        setPosts(applyUpvotesToPosts([...customUserPosts, ...seedPosts]));
       } else {
-        setPosts(seedPosts);
+        setPosts(applyUpvotesToPosts(seedPosts));
       }
     });
 
@@ -516,20 +544,39 @@ export const CitizenCommunityFeedTab: React.FC = () => {
     const target = posts.find(p => p.id === postId);
     if (!target) return;
 
+    const nextHasUpvoted = !target.hasUpvoted;
+    const diff = nextHasUpvoted ? 1 : -1;
+
+    try {
+      const votedArr: string[] = JSON.parse(localStorage.getItem('nivaaran_user_voted_posts') || '[]');
+      const votedSet = new Set(votedArr);
+      const deltasMap: Record<string, number> = JSON.parse(localStorage.getItem('nivaaran_post_upvote_deltas') || '{}');
+
+      if (nextHasUpvoted) {
+        votedSet.add(postId);
+        deltasMap[postId] = (deltasMap[postId] || 0) + 1;
+      } else {
+        votedSet.delete(postId);
+        deltasMap[postId] = (deltasMap[postId] || 0) - 1;
+      }
+
+      localStorage.setItem('nivaaran_user_voted_posts', JSON.stringify(Array.from(votedSet)));
+      localStorage.setItem('nivaaran_post_upvote_deltas', JSON.stringify(deltasMap));
+    } catch {}
+
     setPosts(prev => prev.map(p => {
       if (p.id === postId) {
-        const nextHasUpvoted = !p.hasUpvoted;
         return {
           ...p,
           hasUpvoted: nextHasUpvoted,
-          upvotes: nextHasUpvoted ? p.upvotes + 1 : p.upvotes - 1,
+          upvotes: Math.max(0, p.upvotes + diff),
         };
       }
       return p;
     }));
 
     try {
-      await upvotePostInFirestore(postId, target.upvotes);
+      await upvotePostInFirestore(postId, target.upvotes + diff);
     } catch {
       // Offline fallback
     }
