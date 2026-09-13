@@ -11,6 +11,7 @@ import { ChallengeDoc } from '../../services/firebaseService';
 import { CollaborationReviewPanel } from '../../components/university/CollaborationReviewPanel';
 import { InnovationOutcomesTracker } from '../../components/analytics/InnovationOutcomesTracker';
 import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
+import { PFMSDisbursementLedger } from '../../components/gov/PFMSDisbursementLedger';
 
 interface UniversityPortalProps {
   onNavigateHome?: () => void;
@@ -151,6 +152,13 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
             currentRole="university"
             currentUserName={`${selectedUniversity.shortName} Nodal Officer`}
             userHEI={selectedUniversity.name}
+          />
+        )}
+
+        {activeTab === 'pfms' && (
+          <PFMSDisbursementLedger
+            userRole="university"
+            defaultHEI={selectedUniversity.name}
           />
         )}
       </main>

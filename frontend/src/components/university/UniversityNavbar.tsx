@@ -2,14 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { 
   Building2, UserCheck, GraduationCap, CheckCircle2, Layers, FileText, 
   Users, Award, LogOut, Handshake, FlaskConical, Search, Copy, Check, X, ShieldCheck,
-  MessageSquare
+  MessageSquare, IndianRupee
 } from 'lucide-react';
 import { 
   UniversityDoc, getUniversityEmail, getTestingInstitutionsList 
 } from '../../services/universityData';
 import { NotificationBellDropdown } from '../notifications/NotificationBellDropdown';
 
-export type UniversityTab = 'intake-queue' | 'team-builder' | 'proposals' | 'student-workspace' | 'industry-collab' | 'outcomes' | 'messages';
+export type UniversityTab = 'intake-queue' | 'team-builder' | 'proposals' | 'student-workspace' | 'industry-collab' | 'outcomes' | 'messages' | 'pfms';
 export type UserRoleType = 'admin' | 'faculty' | 'student';
 
 interface UniversityNavbarProps {
@@ -247,6 +247,18 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
           >
             <MessageSquare className="w-3.5 h-3.5 text-[#2C6E49]" />
             <span>7. Stakeholder Comms</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange('pfms')}
+            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+              activeTab === 'pfms'
+                ? 'bg-[#2C6E49] text-white shadow-2xs'
+                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+            }`}
+          >
+            <IndianRupee className="w-3.5 h-3.5 text-[#2C6E49]" />
+            <span>8. PFMS Grant Ledger</span>
           </button>
         </nav>
 

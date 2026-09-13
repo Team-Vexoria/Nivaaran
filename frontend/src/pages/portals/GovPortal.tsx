@@ -32,7 +32,9 @@ import {
   Users,
   Handshake,
   Sparkles,
-  Star
+  Star,
+  IndianRupee,
+  Radio
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
@@ -62,8 +64,10 @@ import { LiveEmergencyAlertBanner } from '../../components/LiveEmergencyAlertBan
 import { NotificationBellDropdown } from '../../components/notifications/NotificationBellDropdown';
 import { InnovationOutcomesTracker } from '../../components/analytics/InnovationOutcomesTracker';
 import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
+import { PFMSDisbursementLedger } from '../../components/gov/PFMSDisbursementLedger';
+import { IoTSensorTelemetryStreamer } from '../../components/iot/IoTSensorTelemetryStreamer';
 
-type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports' | 'deployment' | 'closure' | 'clusters' | 'messages' | 'outcomes';
+type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports' | 'deployment' | 'closure' | 'clusters' | 'messages' | 'outcomes' | 'pfms' | 'iot';
 
 interface HEIData {
   id: string;
@@ -692,6 +696,8 @@ export const GovPortal: React.FC = () => {
     { id: 'universities', label: 'HEI Allocations',       icon: <Building2 className="w-3.5 h-3.5" /> },
     { id: 'proposals',    label: 'Proposal Review',       icon: <FileCheck className="w-3.5 h-3.5" /> },
     { id: 'deployment',   label: 'Deployment Approval',   icon: <Rocket className="w-3.5 h-3.5" /> },
+    { id: 'pfms',         label: 'PFMS Treasury',         icon: <IndianRupee className="w-3.5 h-3.5" /> },
+    { id: 'iot',          label: 'IoT Stream',            icon: <Radio className="w-3.5 h-3.5" /> },
     { id: 'outcomes',     label: 'Innovation & IP',       icon: <Award className="w-3.5 h-3.5" /> },
     { id: 'messages',     label: 'Stakeholder Comms',     icon: <MessageSquare className="w-3.5 h-3.5" /> },
     { id: 'reports',      label: 'Impact KPIs',           icon: <TrendingUp className="w-3.5 h-3.5" /> },
@@ -1638,6 +1644,20 @@ export const GovPortal: React.FC = () => {
         {/* DEPLOYMENT APPROVAL TAB */}
         {activeTab === 'deployment' && (
           <DeploymentApprovalTab officerName={officerName} showToast={showToast} />
+        )}
+
+        {/* PFMS TREASURY DISBURSEMENT TAB */}
+        {activeTab === 'pfms' && (
+          <div className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full">
+            <PFMSDisbursementLedger userRole="gov" />
+          </div>
+        )}
+
+        {/* IOT SENSOR STREAM TAB */}
+        {activeTab === 'iot' && (
+          <div className="flex-1 overflow-y-auto p-6 max-w-7xl mx-auto w-full">
+            <IoTSensorTelemetryStreamer />
+          </div>
         )}
 
         {/* INNOVATION AND IP OUTCOMES TRACKER TAB */}

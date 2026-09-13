@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowRight, MapPin } from 'lucide-react';
+import { ArrowRight, MapPin, PhoneCall } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 import { getStageForStatus } from '../../services/workflowLifecycle';
 import { HeroShowcaseSlideshow } from '../showcase/HeroShowcaseSlideshow';
+import { IVRWhatsAppIntakeGateway } from './IVRWhatsAppIntakeGateway';
 
 interface CitizenHomeTabProps {
   onOpenReportModal: () => void;
@@ -22,6 +23,7 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
 }) => {
   const { t } = useLanguage();
   const [showAllDistricts, setShowAllDistricts] = useState(false);
+  const [isIvrModalOpen, setIsIvrModalOpen] = useState(false);
   const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());
 
   useEffect(() => {
@@ -141,6 +143,50 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
         onOpenTracking={onOpenTracking || (() => onNavigateTab('my-reports'))}
         onNavigatePortal={() => onNavigateTab('community-feed')}
         liveStats={liveStats}
+      />
+
+      {/* Offline Toll Free IVR and WhatsApp Helpline Banner */}
+      <section className="max-w-7xl mx-auto px-6">
+        <div className="bg-gradient-to-r from-[#2C6E49] via-[#23583a] to-[#1e4830] text-white rounded-2xl p-5 sm:p-6 shadow-md flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-start space-x-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center shrink-0">
+              <PhoneCall className="w-6 h-6 text-amber-300" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-amber-400 text-stone-950 px-2 py-0.5 rounded">
+                  2G Keypad and Offline Support
+                </span>
+                <span className="text-[11px] text-emerald-200 font-bold">No Smartphone Required</span>
+              </div>
+              <h3 className="text-lg font-black text-white font-heading mt-0.5">
+                Report via Toll Free IVR Helpline or WhatsApp Chatbot
+              </h3>
+              <p className="text-xs text-emerald-100 max-w-2xl leading-relaxed">
+                Call Toll Free 1800 345 NIVAARAN (1800 345 6482) or WhatsApp +91 98351 24982 with automatic Hindi and Santhali voice recording.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0 self-start md:self-auto">
+            <button
+              onClick={() => setIsIvrModalOpen(true)}
+              className="bg-white text-[#2C6E49] hover:bg-emerald-50 px-4 py-2.5 rounded-xl text-xs font-black transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+            >
+              <PhoneCall className="w-3.5 h-3.5 text-[#2C6E49]" />
+              <span>Open Call and Chat Simulator</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* IVR WhatsApp Modal */}
+      <IVRWhatsAppIntakeGateway
+        isOpen={isIvrModalOpen}
+        onClose={() => setIsIvrModalOpen(false)}
+        onTicketGenerated={(id) => {
+          if (onOpenTracking) onOpenTracking(id);
+        }}
       />
 
       {/* 2. Before vs After Proof Section */}

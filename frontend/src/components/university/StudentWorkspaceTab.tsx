@@ -121,6 +121,8 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
   const [successMessage, setSuccessMessage] = useState('');
   const [isCertificateOpen, setIsCertificateOpen] = useState(false);
   const [advancingStage, setAdvancingStage] = useState<number | null>(null);
+  const [isAbcModalOpen, setIsAbcModalOpen] = useState<boolean>(false);
+  const [abcId] = useState<string>('ABC-9821-4432-1190');
 
   useEffect(() => {
     const unsubscribeProjects = subscribeToProjects(setProjects);
@@ -338,7 +340,118 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
         </div>
       </div>
 
-      {/* ── Stages 8–13 University Lab Milestone Tracker ── */}
+      {/* DigiLocker and Academic Bank of Credits (ABC) Verification Card */}
+      <div className="bg-gradient-to-r from-emerald-900 via-slate-900 to-teal-950 border border-emerald-500/30 rounded-2xl p-5 shadow-md text-white">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div className="space-y-0.5">
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
+                  National Academic Depository (NAD)
+                </span>
+                <span className="text-[10px] text-emerald-400 font-bold">DigiLocker Certified</span>
+              </div>
+              <h3 className="text-base font-black font-heading text-white">
+                Academic Bank of Credits (ABC) : 4 UGC Credits Awarded
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+                Official NEP 2020 experiential learning credits verified for active technical problem solving on Jharkhand civic challenges.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
+            <div className="text-right hidden md:block">
+              <span className="text-[10px] text-slate-400 uppercase font-bold block">ABC Account ID</span>
+              <span className="font-mono text-xs font-bold text-teal-300">{abcId}</span>
+            </div>
+            <button
+              onClick={() => setIsAbcModalOpen(true)}
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>Verify ABC Credential</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* DigiLocker ABC Modal */}
+      {isAbcModalOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-[250] p-4 text-left">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+              <div>
+                <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Ministry of Education : Govt of India
+                </span>
+                <h3 className="text-base font-black text-slate-900 mt-1">Official Academic Bank of Credits Transcript</h3>
+                <p className="text-xs text-slate-500">Verified via DigiLocker IndiaStack Gateway</p>
+              </div>
+              <button 
+                onClick={() => setIsAbcModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 text-xs">
+              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                <span className="text-slate-500 font-bold">Student Name:</span>
+                <span className="font-bold text-slate-900">{currentStudent.name}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                <span className="text-slate-500 font-bold">Institutional Roll:</span>
+                <span className="font-mono text-slate-900">{currentStudent.rollNumber}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                <span className="text-slate-500 font-bold">Institution:</span>
+                <span className="font-semibold text-slate-900">{university.name}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                <span className="text-slate-500 font-bold">Permanent ABC ID:</span>
+                <span className="font-mono font-bold text-emerald-700">{abcId}</span>
+              </div>
+              <div className="flex justify-between border-b border-slate-200 pb-1.5">
+                <span className="text-slate-500 font-bold">Course Category:</span>
+                <span className="font-semibold text-slate-900">Societal Innovation and Experiential Field Deployment</span>
+              </div>
+              <div className="flex justify-between pt-1">
+                <span className="text-slate-900 font-bold">UGC Credits Deposited:</span>
+                <span className="font-black text-emerald-600 text-sm">4.0 Academic Credits</span>
+              </div>
+            </div>
+
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800 space-y-1">
+              <p className="font-bold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Digitally Signed and Authenticated by DigiLocker Authority</span>
+              </p>
+              <p className="font-mono text-[9px] text-emerald-700">
+                Signature SHA256: 0x98FA2B019CC47D8E21098AA7C5E941
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => {
+                  alert(`Official DigiLocker ABC Transcript for ${currentStudent.name} (ABC ID: ${abcId}) downloaded.`);
+                  setIsAbcModalOpen(false);
+                }}
+                className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+              >
+                Download Verified Transcript (PDF)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stages 8 to 13 University Lab Milestone Tracker */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
           <div>
