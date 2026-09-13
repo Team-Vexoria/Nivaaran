@@ -9,8 +9,10 @@ import { tr } from '../../i18n/translationEngine';
 import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
 import { getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { PortalLoadingState, PortalEmptyState } from '../../components/PortalUIStates';
+import { NotificationBellDropdown } from '../../components/notifications/NotificationBellDropdown';
+import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
 
-type ULBTab = 'overview' | 'challenges' | 'municipal';
+type ULBTab = 'overview' | 'challenges' | 'municipal' | 'messages';
 
 // ─── Dept Coordination Modal ────────────────────────────────────────────────
 interface DeptActionModalProps {
@@ -230,6 +232,7 @@ export const ULBPortal: React.FC = () => {
             <span className="hidden sm:inline text-[11px] bg-white/10 px-3 py-1 rounded-full text-white/70 font-semibold">
               {officialName}
             </span>
+            <NotificationBellDropdown userRole="ulb" userDistrict={city} />
             <button
               onClick={logout}
               className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors"
@@ -245,6 +248,7 @@ export const ULBPortal: React.FC = () => {
             { id: 'overview', label: tr('Municipal Overview', currentLang), icon: Building2 },
             { id: 'challenges', label: tr('Urban Challenges', currentLang), icon: AlertTriangle },
             { id: 'municipal', label: tr('Dept Coordination', currentLang), icon: Wrench },
+            { id: 'messages', label: tr('Messages', currentLang), icon: Building2 },
           ] as const).map(tab => (
             <button
               key={tab.id}
@@ -465,6 +469,17 @@ export const ULBPortal: React.FC = () => {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* MESSAGES TAB */}
+        {activeTab === 'messages' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-black text-[#201C18]">Cross-Portal Stakeholder Messages</h2>
+              <p className="text-xs text-[#6A6155]">Coordinate with government officers, university mentors, student leads, and citizens across active challenges.</p>
+            </div>
+            <CrossPortalMessagingHub currentRole="ulb" currentUserName={officialName} />
           </div>
         )}
           </>

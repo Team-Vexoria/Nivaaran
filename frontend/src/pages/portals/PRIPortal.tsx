@@ -9,8 +9,10 @@ import { tr } from '../../i18n/translationEngine';
 import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
 import { getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { PortalLoadingState, PortalEmptyState } from '../../components/PortalUIStates';
+import { NotificationBellDropdown } from '../../components/notifications/NotificationBellDropdown';
+import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
 
-type PRITab = 'overview' | 'challenges' | 'coordination';
+type PRITab = 'overview' | 'challenges' | 'coordination' | 'messages';
 
 // ─── Coordination Action Modal ────────────────────────────────────────────────
 interface ActionModalProps {
@@ -189,6 +191,7 @@ export const PRIPortal: React.FC = () => {
             <span className="hidden sm:inline text-[11px] bg-white/10 px-3 py-1 rounded-full text-white/70 font-semibold">
               {officialName}
             </span>
+            <NotificationBellDropdown userRole="pri" userDistrict={district} />
             <button
               onClick={logout}
               className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors"
@@ -204,6 +207,7 @@ export const PRIPortal: React.FC = () => {
             { id: 'overview', label: tr('Panchayat Overview', currentLang), icon: Landmark },
             { id: 'challenges', label: tr('Local Challenges', currentLang), icon: AlertTriangle },
             { id: 'coordination', label: tr('Coordination', currentLang), icon: Users },
+            { id: 'messages', label: tr('Messages', currentLang), icon: Users },
           ] as const).map(tab => (
             <button
               key={tab.id}
@@ -409,6 +413,17 @@ export const PRIPortal: React.FC = () => {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* MESSAGES TAB */}
+        {activeTab === 'messages' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-black text-[#201C18]">Cross-Portal Stakeholder Messages</h2>
+              <p className="text-xs text-[#6A6155]">Coordinate with government officers, university mentors, student leads, and citizens across active challenges.</p>
+            </div>
+            <CrossPortalMessagingHub currentRole="pri" currentUserName={officialName} />
           </div>
         )}
           </>

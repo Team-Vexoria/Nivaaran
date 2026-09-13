@@ -23,8 +23,10 @@ import {
   SUPPORT_OPTIONS
 } from '../../services/workflowTypes';
 import { getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
+import { NotificationBellDropdown } from '../../components/notifications/NotificationBellDropdown';
+import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
 
-type IndustryTab = 'discovery' | 'my-requests' | 'active' | 'compliance' | 'certificates' | 'opportunities' | 'history' | 'dashboard';
+type IndustryTab = 'discovery' | 'my-requests' | 'active' | 'compliance' | 'certificates' | 'opportunities' | 'history' | 'dashboard' | 'messages';
 
 const SCHEDULE7_LIST: Schedule7Category[] = [
   'i. Eradicating extreme hunger, poverty and malnutrition',
@@ -234,6 +236,8 @@ export const IndustryPortal: React.FC = () => {
               </div>
             </div>
 
+            <NotificationBellDropdown userRole="industry" userDistrict={orgName} />
+
             <button
               onClick={handleReturnHome}
               className="text-[11px] font-extrabold text-white bg-[#B5502D] hover:bg-[#9c4323] px-3 py-1.5 rounded-lg transition-colors shrink-0 flex items-center space-x-1 cursor-pointer active:scale-95 shadow-2xs"
@@ -351,6 +355,15 @@ export const IndustryPortal: React.FC = () => {
           >
             <BarChart3 className="w-3.5 h-3.5" />
             <span>CSR Funding Tracker</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('messages')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all ${
+              activeTab === 'messages' ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/10'
+            }`}
+          >
+            <MessageSquareText className="w-3.5 h-3.5" />
+            <span>Messages</span>
           </button>
         </div>
       </header>
@@ -1026,6 +1039,17 @@ export const IndustryPortal: React.FC = () => {
               </div>
             </div>
           </section>
+        )}
+
+        {/* MESSAGES TAB */}
+        {activeTab === 'messages' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-black text-[#201C18]">Cross-Portal Stakeholder Messages</h2>
+              <p className="text-xs text-[#6A6155]">Coordinate with government officers, university mentors, student leads, and citizens across active challenges.</p>
+            </div>
+            <CrossPortalMessagingHub currentRole="industry" currentUserName={orgName} />
+          </div>
         )}
       </main>
 

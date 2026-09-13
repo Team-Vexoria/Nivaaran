@@ -280,7 +280,7 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
               {/* Graphic Hero Card */}
               <div className="relative w-full rounded-2xl overflow-hidden border border-[#E4DDD1] shadow-lg bg-white group">
                 <img
-                  src="/images/showcase/slide-1-overview.jpg"
+                  src="/images/showcase/hero.jpeg"
                   alt="NIVAARAN - Jharkhand's Institutional Problem-to-Solution Engine (Government of Jharkhand & Government of India)"
                   className="w-full h-auto max-h-[380px] sm:max-h-[440px] md:max-h-[480px] object-cover sm:object-contain mx-auto transition-transform duration-700 group-hover:scale-[1.01]"
                   loading="eager"

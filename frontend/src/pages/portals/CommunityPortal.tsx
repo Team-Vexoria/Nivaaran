@@ -7,8 +7,10 @@ import { useAuth } from '../../context/AuthContext';
 import { subscribeToChallenges, subscribeToProjects, submitOutcomeAudit, ChallengeDoc, ProjectDoc } from '../../services/firebaseService';
 import { getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { PortalLoadingState, PortalEmptyState } from '../../components/PortalUIStates';
+import { NotificationBellDropdown } from '../../components/notifications/NotificationBellDropdown';
+import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
 
-type CommunityTab = 'overview' | 'challenges' | 'actions';
+type CommunityTab = 'overview' | 'challenges' | 'actions' | 'messages';
 
 /**
  * Community / NGO Portal
@@ -138,6 +140,7 @@ export const CommunityPortal: React.FC = () => {
             <span className="hidden sm:inline text-[11px] bg-white/10 px-3 py-1 rounded-full text-white/70 font-semibold">
               {orgName}
             </span>
+            <NotificationBellDropdown userRole="community" userDistrict={orgName} />
             <button
               onClick={logout}
               className="flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors"
@@ -154,6 +157,7 @@ export const CommunityPortal: React.FC = () => {
             { id: 'overview', label: 'Overview', icon: FileText },
             { id: 'challenges', label: 'All Challenges', icon: AlertTriangle },
             { id: 'actions', label: 'NGO Actions', icon: Handshake },
+            { id: 'messages', label: 'Messages', icon: MessageSquare },
           ] as const).map(tab => (
             <button
               key={tab.id}
@@ -515,6 +519,17 @@ export const CommunityPortal: React.FC = () => {
               </div>
             )}
           </section>
+        )}
+
+        {/* MESSAGES TAB */}
+        {activeTab === 'messages' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-black text-[#201C18]">Cross-Portal Stakeholder Messages</h2>
+              <p className="text-xs text-[#6A6155]">Coordinate with government officers, university mentors, student leads, and citizens across active challenges.</p>
+            </div>
+            <CrossPortalMessagingHub currentRole="community" currentUserName={orgName} />
+          </div>
         )}
         </>
       )}
