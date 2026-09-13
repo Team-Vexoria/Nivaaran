@@ -9,6 +9,8 @@ import { StudentWorkspaceTab } from '../../components/university/StudentWorkspac
 import { ChallengeDoc } from '../../services/firebaseService';
 
 import { CollaborationReviewPanel } from '../../components/university/CollaborationReviewPanel';
+import { InnovationOutcomesTracker } from '../../components/analytics/InnovationOutcomesTracker';
+import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
 
 interface UniversityPortalProps {
   onNavigateHome?: () => void;
@@ -135,6 +137,21 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
 
         {activeTab === 'industry-collab' && (
           <CollaborationReviewPanel />
+        )}
+
+        {activeTab === 'outcomes' && (
+          <InnovationOutcomesTracker
+            userRole="university"
+            defaultHEI={selectedUniversity.name}
+          />
+        )}
+
+        {activeTab === 'messages' && (
+          <CrossPortalMessagingHub
+            currentRole="university"
+            currentUserName={`${selectedUniversity.shortName} Nodal Officer`}
+            userHEI={selectedUniversity.name}
+          />
         )}
       </main>
 

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage, JHARKHAND_LANGUAGES } from '../../i18n/translations';
+import { NotificationBellDropdown } from '../notifications/NotificationBellDropdown';
 
 export type CitizenTab = 'home' | 'my-reports' | 'community-feed' | 'region-chat' | 'leaderboard' | 'profile';
 
@@ -116,6 +117,9 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
               </div>
             )}
           </div>
+
+          {/* Real-time Notification Bell */}
+          <NotificationBellDropdown userRole="citizen" userDistrict="Ranchi" />
 
           {/* Login or User Profile Button */}
           {userDisplayName && userDisplayName !== 'Guest' && userDisplayName !== '' ? (

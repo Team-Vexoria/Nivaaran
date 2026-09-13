@@ -1,13 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Building2, UserCheck, GraduationCap, CheckCircle2, Layers, FileText, 
-  Users, Award, LogOut, Handshake, FlaskConical, Search, Copy, Check, X, ShieldCheck 
+  Users, Award, LogOut, Handshake, FlaskConical, Search, Copy, Check, X, ShieldCheck,
+  MessageSquare
 } from 'lucide-react';
 import { 
   UniversityDoc, getUniversityEmail, getTestingInstitutionsList 
 } from '../../services/universityData';
+import { NotificationBellDropdown } from '../notifications/NotificationBellDropdown';
 
-export type UniversityTab = 'intake-queue' | 'team-builder' | 'proposals' | 'student-workspace' | 'industry-collab';
+export type UniversityTab = 'intake-queue' | 'team-builder' | 'proposals' | 'student-workspace' | 'industry-collab' | 'outcomes' | 'messages';
 export type UserRoleType = 'admin' | 'faculty' | 'student';
 
 interface UniversityNavbarProps {
@@ -104,6 +106,9 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
             <span className="hidden md:inline font-bold">Testing Accounts</span>
             <span className="md:hidden font-bold">Test</span>
           </button>
+
+          {/* Real-time Notification Bell */}
+          <NotificationBellDropdown userRole="university" userDistrict={selectedUniversity.district} />
 
           {/* Role Switcher Pill */}
           <div className="hidden sm:flex items-center bg-[#EAE4D8] p-1 rounded-xl border border-[#E4DDD1] text-xs">
@@ -218,6 +223,30 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
           >
             <Handshake className="w-3.5 h-3.5 text-[#C98A2C]" />
             <span>5. Industry / CSR Collaboration Requests</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange('outcomes')}
+            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+              activeTab === 'outcomes'
+                ? 'bg-[#2C6E49] text-white shadow-2xs'
+                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+            }`}
+          >
+            <Award className="w-3.5 h-3.5 text-[#2C6E49]" />
+            <span>6. Innovation & IP Registry</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange('messages')}
+            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+              activeTab === 'messages'
+                ? 'bg-[#2C6E49] text-white shadow-2xs'
+                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-[#2C6E49]" />
+            <span>7. Stakeholder Comms</span>
           </button>
         </nav>
 
