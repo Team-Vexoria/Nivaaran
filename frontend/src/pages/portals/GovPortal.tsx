@@ -34,7 +34,11 @@ import {
   Sparkles,
   Star,
   IndianRupee,
-  Radio
+  Radio,
+  Volume2,
+  Film,
+  ExternalLink,
+  Copy
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
@@ -100,6 +104,15 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
 }) => {
   const [selectedAction, setSelectedAction] = useState<'validate' | 'evidence' | 'deploy' | 'reject'>('validate');
   const [officerNote, setOfficerNote] = useState('');
+  const [activePhotoUrl, setActivePhotoUrl] = useState<string | null>(null);
+  const [copiedTicket, setCopiedTicket] = useState(false);
+
+  // Evidence resolution
+  const isVideoUrl = (url: string) => url.startsWith('data:video') || url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov') || url.includes('/evidence_videos/');
+  const rawEvUrls = challenge.evidenceUrls || (challenge.evidenceUrl ? [challenge.evidenceUrl] : []);
+  const allImages = Array.isArray(rawEvUrls) ? rawEvUrls.filter(url => url && !isVideoUrl(url)) : [];
+  const allVideos = challenge.videoUrls?.length ? challenge.videoUrls : (challenge.videoUrl ? [challenge.videoUrl] : []);
+  const currentMainPhoto = activePhotoUrl || allImages[0] || null;
 
   const isPending = challenge.status === 'Under Review';
   const isDeployable = challenge.status === 'In Progress' || (challenge.stageNumber && challenge.stageNumber >= 11);
@@ -128,9 +141,19 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-[#8A7F72] bg-[#EAE4D8] px-2 py-0.5 rounded">
-                  {challenge.reportId}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(challenge.reportId);
+                    setCopiedTicket(true);
+                    setTimeout(() => setCopiedTicket(false), 2000);
+                  }}
+                  className="text-xs font-mono font-bold text-[#8A7F72] bg-[#EAE4D8] hover:bg-[#ded6c7] px-2 py-0.5 rounded flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Click to copy tracking ID"
+                >
+                  <span>{challenge.reportId}</span>
+                  {copiedTicket ? <Check className="w-3 h-3 text-[#2C6E49]" /> : <Copy className="w-3 h-3 text-[#8A7F72]" />}
+                </button>
                 <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full text-white ${getSeverityBg(challenge.riskLevel)}`}>
                   {challenge.riskLevel || 'STANDARD'} SEVERITY
                 </span>
@@ -183,6 +206,41 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
               <p className="text-[10px] text-[#8A7F72]">Automated NLP & GIS Impact Rating</p>
             </div>
           </div>
+
+          {/* Key Impact & Resource Estimates */}
+          {(challenge.affectedPopulation || challenge.economicValueEstimate || challenge.estimatedResolutionCost) && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-0.5">
+                <span className="text-[10px] font-bold text-[#6A6155] uppercase flex items-center gap-1">
+                  <Users className="w-3 h-3 text-[#2C6E49]" /> Affected Population
+                </span>
+                <p className="text-sm font-extrabold text-[#201C18]">
+                  {challenge.affectedPopulation ? `${challenge.affectedPopulation.toLocaleString()} citizens` : 'Area Community'}
+                </p>
+                <p className="text-[9px] text-[#8A7F72]">Ward & Panchayat census estimate</p>
+              </div>
+
+              <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-0.5">
+                <span className="text-[10px] font-bold text-[#6A6155] uppercase flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-[#C98A2C]" /> Economic Impact Value
+                </span>
+                <p className="text-sm font-extrabold text-[#201C18]">
+                  {challenge.economicValueEstimate ? `₹${challenge.economicValueEstimate.toLocaleString()}` : 'Standard Civic Priority'}
+                </p>
+                <p className="text-[9px] text-[#8A7F72]">Disruption & livelihood cost model</p>
+              </div>
+
+              <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-0.5">
+                <span className="text-[10px] font-bold text-[#6A6155] uppercase flex items-center gap-1">
+                  <IndianRupee className="w-3 h-3 text-[#2C6E49]" /> Est. Resolution Budget
+                </span>
+                <p className="text-sm font-extrabold text-[#201C18]">
+                  {challenge.estimatedResolutionCost ? `₹${challenge.estimatedResolutionCost.toLocaleString()}` : 'Assigned Dept Triage'}
+                </p>
+                <p className="text-[9px] text-[#8A7F72]">Govt Line Dept benchmark estimate</p>
+              </div>
+            </div>
+          )}
 
           {/* AI Priority Assessment (8C layout order):
               Risk Badge → Priority Score → 4-Factor Breakdown → Live Research (8A)
@@ -261,25 +319,118 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
             </div>
           )}
 
-          {/* Visual Evidence / Photos */}
-          <div className="space-y-2">
-            <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px]">Citizen Uploaded Visual Evidence</h4>
-            {(challenge.evidenceUrl || (challenge.evidenceUrls && challenge.evidenceUrls[0])) ? (
-              <div className="rounded-xl overflow-hidden border border-[#E4DDD1] bg-black/5 max-h-64 flex items-center justify-center">
-                <img 
-                  src={challenge.evidenceUrl || challenge.evidenceUrls![0]} 
-                  alt="Ground Evidence" 
-                  className="max-h-64 w-full object-cover" 
-                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                />
+          {/* Visual Evidence / Photos / Audio / Video */}
+          <div className="space-y-3 bg-white border border-[#E4DDD1] rounded-xl p-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                <FileCheck className="w-3.5 h-3.5 text-[#2C6E49]" />
+                Citizen Uploaded Evidence & Field Telemetry
+              </h4>
+              <div className="flex items-center gap-2">
+                {allImages.length > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                    {allImages.length} {allImages.length === 1 ? 'Photo' : 'Photos'}
+                  </span>
+                )}
+                {allVideos.length > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700">
+                    {allVideos.length} {allVideos.length === 1 ? 'Video' : 'Videos'}
+                  </span>
+                )}
+                {challenge.audioUrl && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800">
+                    Voice Note
+                  </span>
+                )}
               </div>
-            ) : (
+            </div>
+
+            {/* 1. Voice note playback */}
+            {challenge.audioUrl && (
+              <div className="p-3 bg-amber-50/80 border border-amber-200/80 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300 text-amber-800 flex items-center justify-center shrink-0">
+                    <Volume2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-amber-950">Citizen Voice Statement</p>
+                    <p className="text-[10px] text-amber-700">
+                      Language: <span className="font-bold">{challenge.voiceLanguage || 'Hindi / Regional'}</span>
+                    </p>
+                  </div>
+                </div>
+                <audio controls src={challenge.audioUrl} className="h-8 max-w-full sm:max-w-[280px]" />
+              </div>
+            )}
+
+            {/* 2. Video recording playback */}
+            {allVideos.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-[10px] font-bold text-[#8A7F72] uppercase flex items-center gap-1">
+                  <Film className="w-3 h-3 text-[#2C6E49]" /> Video Evidence Inspection
+                </span>
+                <div className="grid grid-cols-1 gap-2">
+                  {allVideos.map((vid, vIdx) => (
+                    <div key={vIdx} className="rounded-xl overflow-hidden border border-[#E4DDD1] bg-black">
+                      <video
+                        controls
+                        src={vid}
+                        className="w-full max-h-72 object-contain mx-auto"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 3. Photos Gallery & High-Res Viewer */}
+            {allImages.length > 0 ? (
+              <div className="space-y-2">
+                <div className="relative group rounded-xl overflow-hidden border border-[#E4DDD1] bg-black/5 max-h-72 flex items-center justify-center">
+                  <img 
+                    src={currentMainPhoto!} 
+                    alt="Ground Evidence" 
+                    className="max-h-72 w-full object-contain" 
+                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                  />
+                  <a
+                    href={currentMainPhoto!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="absolute top-2 right-2 bg-black/70 hover:bg-black/90 text-white text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 transition-opacity opacity-80 hover:opacity-100"
+                  >
+                    <ExternalLink className="w-3 h-3" />
+                    <span>Open High-Res</span>
+                  </a>
+                </div>
+
+                {/* Thumbnails strip for multiple photos */}
+                {allImages.length > 1 && (
+                  <div className="flex items-center gap-2 overflow-x-auto py-1">
+                    {allImages.map((url, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setActivePhotoUrl(url)}
+                        className={`w-16 h-14 rounded-lg overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                          (currentMainPhoto === url)
+                            ? 'border-[#2C6E49] scale-105 shadow-xs'
+                            : 'border-transparent opacity-70 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={url} alt={`Evidence ${i + 1}`} className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : !allVideos.length && !challenge.audioUrl ? (
               <div className="bg-[#FAF8F4] border border-dashed border-[#E4DDD1] rounded-xl p-6 text-center space-y-1">
                 <FileText className="w-8 h-8 text-[#8A7F72] mx-auto mb-1" />
                 <p className="font-bold text-[#4A433B]">Standard Citizen Hazard Report</p>
                 <p className="text-[11px] text-[#8A7F72]">GPS coordinates & spatial density log verified by Panchayat Cell.</p>
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Stage 4: Extracted On-Ground Proof & Audit Metadata */}
@@ -321,15 +472,21 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
 
                   <div className="bg-[#FAF8F4] p-2.5 rounded-lg border border-[#E4DDD1]/80 space-y-0.5">
                     <span className="text-[9px] font-bold text-slate-500 uppercase block">GPS Coordinates</span>
-                    <p className="font-mono font-extrabold text-[#201C18] text-[11px]">{extractedMeta.gpsCoordinates.lat}°N, {extractedMeta.gpsCoordinates.lng}°E</p>
-                    <a
-                      href={`https://maps.google.com/?q=${extractedMeta.gpsCoordinates.lat},${extractedMeta.gpsCoordinates.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[9px] font-bold text-indigo-600 hover:underline inline-flex items-center gap-0.5"
-                    >
-                      <span>Sat-Map View</span>
-                    </a>
+                    {extractedMeta.gpsCoordinates ? (
+                      <>
+                        <p className="font-mono font-extrabold text-[#201C18] text-[11px]">{extractedMeta.gpsCoordinates.lat}°N, {extractedMeta.gpsCoordinates.lng}°E</p>
+                        <a
+                          href={`https://maps.google.com/?q=${extractedMeta.gpsCoordinates.lat},${extractedMeta.gpsCoordinates.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] font-bold text-indigo-600 hover:underline inline-flex items-center gap-0.5"
+                        >
+                          <span>Sat-Map View</span>
+                        </a>
+                      </>
+                    ) : (
+                      <p className="text-[10px] text-slate-500 font-medium">No GPS (location matched by district text)</p>
+                    )}
                   </div>
                 </div>
 
@@ -992,14 +1149,27 @@ export const GovPortal: React.FC = () => {
                         return (
                           <div key={ch.id || ch.reportId} className="px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-[#FAF8F4] transition-colors">
                             <div className="flex items-center gap-3 min-w-0">
-                              {(ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])) && (
-                                <img
-                                  src={ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])}
-                                  alt={ch.title}
-                                  onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                                  className="w-11 h-11 rounded-lg object-cover border border-[#E4DDD1] shrink-0 shadow-2xs"
-                                />
-                              )}
+                              {(() => {
+                                const ev = ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0]);
+                                if (ev) {
+                                  return (
+                                    <img
+                                      src={ev}
+                                      alt={ch.title}
+                                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                      className="w-11 h-11 rounded-lg object-cover border border-[#E4DDD1] shrink-0 shadow-2xs"
+                                    />
+                                  );
+                                }
+                                if (ch.videoUrl || (ch.videoUrls && ch.videoUrls.length > 0)) {
+                                  return (
+                                    <div className="w-11 h-11 rounded-lg bg-slate-800 text-emerald-400 flex items-center justify-center border border-slate-700 shrink-0">
+                                      <Film className="w-4 h-4" />
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                               <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${getSeverityBg(ch.riskLevel)}`} />
                               <div className="min-w-0">
                                 <p className="text-xs font-bold text-[#201C18] truncate">{ch.title}</p>
@@ -1480,16 +1650,44 @@ export const GovPortal: React.FC = () => {
                                 <Users className="w-3.5 h-3.5 text-emerald-400" /> {ch.citizenReportCount} Citizens Reported
                               </span>
                             )}
+                            {ch.audioUrl && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                                <Volume2 className="w-2.5 h-2.5" /> Voice Note
+                              </span>
+                            )}
                           </div>
                           <div className="flex flex-col sm:flex-row sm:items-start gap-3 mt-1.5">
-                            {(ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])) && (
-                              <img
-                                src={ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])}
-                                alt={ch.title}
-                                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                                className="w-full sm:w-44 h-28 object-cover rounded-xl border border-[#E4DDD1] shrink-0 shadow-2xs"
-                              />
-                            )}
+                            {(() => {
+                              const evImgs = ch.evidenceUrls?.length ? ch.evidenceUrls : (ch.evidenceUrl ? [ch.evidenceUrl] : []);
+                              const hasVideo = Boolean(ch.videoUrl || (ch.videoUrls && ch.videoUrls.length > 0));
+
+                              if (evImgs.length > 0) {
+                                return (
+                                  <div className="relative w-full sm:w-44 h-28 shrink-0 rounded-xl overflow-hidden border border-[#E4DDD1] shadow-2xs">
+                                    <img
+                                      src={evImgs[0]}
+                                      alt={ch.title}
+                                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                                      className="w-full h-full object-cover"
+                                    />
+                                    {evImgs.length > 1 && (
+                                      <span className="absolute bottom-1.5 right-1.5 bg-black/75 backdrop-blur-xs text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md">
+                                        +{evImgs.length} photos
+                                      </span>
+                                    )}
+                                  </div>
+                                );
+                              }
+                              if (hasVideo) {
+                                return (
+                                  <div className="w-full sm:w-44 h-28 bg-slate-900 rounded-xl flex flex-col items-center justify-center text-slate-300 relative border border-slate-700 shrink-0">
+                                    <Film className="w-6 h-6 text-emerald-400 mb-1" />
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-200">Video Evidence</span>
+                                  </div>
+                                );
+                              }
+                              return null;
+                            })()}
                             <div className="min-w-0 flex-1">
                               <h3 className="text-sm font-bold text-[#201C18] leading-tight">{ch.title}</h3>
                               <p className="text-xs text-[#6A6155] mt-0.5">

@@ -240,6 +240,13 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
                             </div>
                           </div>
                         )}
+                        {report.evidenceUrls && report.evidenceUrls.length > 1 && (
+                          <div className="absolute bottom-2.5 right-2.5 pointer-events-none">
+                            <span className="text-[10px] font-extrabold bg-black/75 text-white backdrop-blur-md px-2 py-0.5 rounded-md border border-white/20">
+                              +{report.evidenceUrls.length - 1} more photo{report.evidenceUrls.length - 1 > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
@@ -533,18 +540,26 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ report, wfStageNumber, ti
                 <span>GPS Geotag Coordinates</span>
               </div>
               <div className="font-mono font-black text-slate-900 text-xs">
-                {extractedMeta.gpsCoordinates.lat}°N, {extractedMeta.gpsCoordinates.lng}°E
+                {extractedMeta.gpsCoordinates
+                  ? `${extractedMeta.gpsCoordinates.lat}°N, ${extractedMeta.gpsCoordinates.lng}°E`
+                  : 'Not captured'}
               </div>
-              <div className="text-[10px] text-slate-500 font-medium">Precision: ±{extractedMeta.gpsCoordinates.accuracyMeters || 4.5}m</div>
-              <a 
-                href={`https://maps.google.com/?q=${extractedMeta.gpsCoordinates.lat},${extractedMeta.gpsCoordinates.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[10px] font-bold text-indigo-600 hover:underline inline-flex items-center gap-1 mt-0.5"
-              >
+              <div className="text-[10px] text-slate-500 font-medium">
+                {extractedMeta.gpsCoordinates
+                  ? `Precision: ±${extractedMeta.gpsCoordinates.accuracyMeters || 4.5}m`
+                  : 'No GPS geotag (matched by district text)'}
+              </div>
+              {extractedMeta.gpsCoordinates && (
+                <a
+                  href={`https://maps.google.com/?q=${extractedMeta.gpsCoordinates.lat},${extractedMeta.gpsCoordinates.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] font-bold text-indigo-600 hover:underline inline-flex items-center gap-1 mt-0.5"
+                >
                 <span>Open Sat-Map View</span>
                 <ChevronRight className="w-3 h-3" />
               </a>
+              )}
             </div>
 
             {/* 3. Forensic Audit Hash */}

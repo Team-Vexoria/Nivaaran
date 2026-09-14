@@ -1,25 +1,64 @@
 /**
- * NIVAARAN — Semantic Deduplication & Auto-Merge Engine (SIH 26043)
+ * NIVAARAN — 4-Stage Deduplication Engine (SIH 26043)
  * Stage 4: Challenge Clustering & Deduplication Gate
  *
- * 1. Scores similarity between submitted challenges:
- *    - Keyword & text overlap (35%)
- *    - GPS Haversine distance & village/district proximity (30%)
- *    - Category & problem domain match (25%)
- *    - Recency bonus (10%)
+ * 4-Stage pipeline (user-specified):
+ *   Stage 1 — District (hard gate): both must be in the same district.
+ *   Stage 2 — Village / Block match.
+ *   Stage 3 — GPS within 500m radius.
+ *   Stage 4 — Keyword overlap.
  *
- * 2. Auto-Merge Pipeline:
- *    - When an identical/proximate issue is detected (score >= 0.70 or <1km same category),
- *      it consolidates into the original primary post:
- *      - Increments `citizenReportCount` on the primary challenge (+1 citizen report).
- *      - Increments `communityUpvotes`.
- *      - Appends new citizen photo evidence into `evidenceUrls`.
- *      - Dynamically boosts the priority score due to higher citizen volume.
- *      - Emits a timeline event logged for government officers & universities.
+ * Scoring:
+ *   Location component = 50% of total  (village 25% + GPS 25%)
+ *   Keyword component  = 50% of total
+ *   Duplicate threshold ≥ 0.75
+ *
+ * When geolocation is denied by the user, the system falls back to the
+ * centroid of the selected district (DISTRICT_CENTROIDS map below).
  */
 
 import { workflowStore } from './workflowStore';
 import type { Challenge, RiskLevel } from './workflowTypes';
+
+// ── DISTRICT CENTROID MAP ────────────────────────────────────────────────
+// Used as GPS fallback when the user denies geolocation. Instead of null
+// (which breaks GPS-based scoring), we substitute the centroid of the
+// selected district so Stage 3 (GPS proximity) can still function.
+const DISTRICT_CENTROIDS: Record<string, { lat: number; lng: number }> = {
+  'ranchi':                     { lat: 23.3441, lng: 85.3096 },
+  'dhanbad':                    { lat: 23.7957, lng: 86.4304 },
+  'east singhbhum':             { lat: 22.8046, lng: 86.2029 },
+  'east singhbhum (jamshedpur)':{ lat: 22.8046, lng: 86.2029 },
+  'bokaro':                     { lat: 23.6693, lng: 86.1511 },
+  'palamu':                     { lat: 24.0167, lng: 84.0667 },
+  'hazaribagh':                 { lat: 23.9928, lng: 85.3611 },
+  'deoghar':                    { lat: 24.4764, lng: 86.6947 },
+  'giridih':                    { lat: 24.1896, lng: 86.2996 },
+  'ramgarh':                    { lat: 24.1840, lng: 85.6050 },
+  'latehar':                    { lat: 23.6693, lng: 84.5000 },
+  'garhwa':                     { lat: 24.1840, lng: 83.8140 },
+  'dumka':                      { lat: 24.2644, lng: 87.2418 },
+  'godda':                      { lat: 24.8250, lng: 87.2144 },
+  'sahibganj':                  { lat: 25.2492, lng: 87.6492 },
+  'pakur':                      { lat: 24.6300, lng: 87.8400 },
+  'jamtara':                    { lat: 23.9610, lng: 86.8600 },
+  'khunti':                     { lat: 23.0726, lng: 85.2800 },
+  'gumla':                      { lat: 23.0726, lng: 84.5400 },
+  'simdega':                    { lat: 22.6167, lng: 84.5167 },
+  'west singhbhum':             { lat: 22.3550, lng: 85.2500 },
+  'saraikela kharsawan':        { lat: 22.6960, lng: 85.8260 },
+  'chatra':                     { lat: 24.2068, lng: 84.8732 },
+  'koderma':                    { lat: 24.4680, lng: 85.5340 },
+  'lohardaga':                  { lat: 23.4322, lng: 84.6800 },
+};
+
+/**
+ * Return the centroid coordinates for a Jharkhand district.
+ * Used as GPS fallback when the citizen denies browser geolocation.
+ */
+export function getDistrictCentroid(district: string): { lat: number; lng: number } | null {
+  return DISTRICT_CENTROIDS[district.toLowerCase().trim()] || null;
+}
 
 export interface DeduplicationResult {
   isDuplicate: boolean;
@@ -86,7 +125,15 @@ export function findSimilarChallenges(
   scoredMatches.sort((a, b) => b.score - a.score);
 
   const bestMatch = scoredMatches[0];
-  if (!bestMatch || bestMatch.score < 0.35) {
+  // STAGE 5: DECISION — 4-stage scores fall on [0,1]. The user-defined rule:
+  // two problems are duplicates ONLY when same district, same village/block,
+  // coords within ~500m, and at least half of keywords match. That composite
+  // works out to a threshold of 0.75. Below 0.50 (truly dissimilar district /
+  // keyword overlap) there is nothing worth flagging to the citizen at all.
+  const SCORE_TOO_LOW = 0.50; // No worthwhile signal below this — return not-duplicate.
+  const DUP_THRESHOLD = 0.75; // >= 0.75 = same problem (the user's rule).
+
+  if (!bestMatch || bestMatch.score < SCORE_TOO_LOW) {
     return {
       isDuplicate: false,
       clusterId: null,
@@ -96,8 +143,9 @@ export function findSimilarChallenges(
     };
   }
 
-  // Deduplication threshold: >= 0.55 is an exact duplicate/merge candidate
-  const isDuplicate = bestMatch.score >= 0.55;
+  // 0.50–0.75: some shared signal (same district + partial keyword match) but
+  // NOT enough to call them the same problem — surface as "similar" only.
+  const isDuplicate = bestMatch.score >= DUP_THRESHOLD;
   const existingClusterId = bestMatch.challenge.clusterId || `${CLUSTER_PREFIX}${bestMatch.challenge.reportId || bestMatch.challenge.id}`;
 
   const clusterMembers = candidateChallenges.filter(
@@ -208,62 +256,61 @@ export async function mergeWithPrimaryChallenge(
 }
 
 /**
- * Calculate multi-dimensional similarity score (0 to 1 range)
+ * 4-Stage Similarity Scoring (user-specified spec):
+ *   Stage 1 — District: hard gate. Different districts → 0.0.
+ *   Stage 2 — Village/Block match: same block/village → +25%
+ *   Stage 3 — GPS proximity: within 500m → up to +25%
+ *   Stage 4 — Keyword overlap: Jaccard-like → up to +50%
+ *   Duplicate threshold: ≥ 0.75
+ *
+ * When GPS is unavailable (user denied geolocation), the centroid of the
+ * selected district is substituted so Stage 3 still functions.
  */
 export function calculateSimilarityScore(
   a: Partial<Challenge>,
   b: Challenge
 ): number {
-  // 1. Keyword & Title overlap
+  // ── STAGE 1: DISTRICT HARD GATE ─────────────────────────────────────
+  const distA = (a.district || '').toLowerCase().trim();
+  const distB = (b.district || '').toLowerCase().trim();
+  if (!distA || !distB) return 0;
+  if (distA !== distB) return 0.0; // different district → never a duplicate
+
+  // ── STAGE 2 + 3: LOCATION = 50% (village 25% + GPS 25%), REQUIRED TOGETHER ─
+  // Both signals must co-firm: same village/block AND coords within ~500m.
+  // Multiplicative AND, not additive — otherwise the user's rule is violated:
+  // a report could reach 0.75 from "same village + full keyword" while its GPS
+  // is 14km away, which is NOT a duplicate. GPS only overrides when real coords
+  // exist; when either side lacks GPS (geolocation denied), the district-centroid
+  // fallback or village text is used as the proximity proxy.
+  const blockA = (a.block || a.village || '').toLowerCase().trim();
+  const blockB = (b.block || b.village || '').toLowerCase().trim();
+  const villageScore = (blockA && blockB && blockA === blockB) ? 1.0 : 0.0;
+
+  const gpsA = a.locationCoords;
+  const gpsB = b.locationCoords;
+  const bothHaveGps = !!(gpsA && gpsB && gpsA.lat && gpsB.lat);
+
+  let gpsScore: number;
+  if (bothHaveGps) {
+    // Hard radius gate: "within radius of 500 m" is a boolean condition.
+    const distM = calculateHaversineDistanceKm(gpsA.lat, gpsA.lng, gpsB.lat, gpsB.lng) * 1000;
+    gpsScore = distM <= 500 ? 1.0 : 0.0;
+  } else {
+    // One/both missing real GPS (denied/timeout): the report is anchored to the
+    // district centroid. Same village is our only proximity signal — assume
+    // close when villages match, otherwise unknown (score 0).
+    gpsScore = villageScore;
+  }
+
+  // Location contributes 50% and requires village AND gps to co-fire.
+  const locationScore = 0.50 * villageScore * gpsScore;
+
+  // ── STAGE 4: KEYWORD OVERLAP (50%) ───────────────────────────────────
   const keywordScore = calculateKeywordScore(a, b);
+  const keywordComponent = keywordScore * 0.50;
 
-  // 2. Geographic & GPS proximity
-  const locationScore = calculateLocationScore(a, b);
-
-  // 3. Category & Problem Domain match
-  const categoryScore = calculateCategoryScore(a, b);
-
-  // 4. Recency bonus
-  const recencyScore = calculateRecencyScore(a, b);
-
-  // ── TITLE-ONLY RULES (no location required) ──
-  // Rule 0: Exact title match anywhere → ALWAYS duplicate
-  const titleA = (a.title || '').toLowerCase().trim();
-  const titleB = (b.title || '').toLowerCase().trim();
-  if (titleA && titleB && titleA === titleB) return 1.0;
-
-  // Rule 0b: Title prefix match (4+ chars) → high duplicate confidence
-  if (titleA.length >= 4 && titleB.length >= 4) {
-    const minLen = Math.min(titleA.length, titleB.length, 8);
-    if (titleA.slice(0, minLen) === titleB.slice(0, minLen)) return 0.96;
-    if (titleA.slice(0, 4) === titleB.slice(0, 4)) return 0.92;
-  }
-
-  // Rule 0c: One title contains the other → duplicate
-  if ((titleA.includes(titleB) || titleB.includes(titleA)) && Math.min(titleA.length, titleB.length) >= 4) return 0.95;
-
-  // ── LOCATION + KEYWORD RULES ──
-  // Rule 1: Similar title/keywords in same location (same district/block or GPS <= 2km) -> Immediate duplicate (0.95)
-  if (locationScore >= 0.70 && keywordScore >= 0.50) {
-    return 0.95;
-  }
-
-  // Rule 2: Same location (GPS <= 1km or same village) + same category -> Immediate duplicate (0.95)
-  if (locationScore >= 0.85 && categoryScore >= 0.60) {
-    return 0.95;
-  }
-
-  // Rule 3: Exact or prefix title match anywhere in same district -> Immediate duplicate (0.92)
-  if (locationScore >= 0.65 && keywordScore >= 0.80) {
-    return 0.92;
-  }
-
-  // Rule 4: Close proximity (< 500m) with any similar context
-  if (locationScore >= 0.90) {
-    return Math.max(0.70, (keywordScore * 0.45) + (categoryScore * 0.35) + 0.20);
-  }
-
-  return (keywordScore * 0.40) + (locationScore * 0.30) + (categoryScore * 0.20) + (recencyScore * 0.10);
+  return locationScore + keywordComponent;
 }
 
 /**
@@ -298,7 +345,19 @@ function calculateKeywordScore(a: Partial<Challenge>, b: Challenge): number {
     return textA.includes(textB) || textB.includes(textA) ? 0.85 : 0;
   }
 
-  const intersection = [...wordsA].filter(w => wordsB.has(w) || [...wordsB].some(bw => bw.includes(w) || w.includes(bw)));
+  // Cross-word containment, gated by length ratio: only count as a match when
+  // one term is essentially a variant/prefix of the other (>=60% of its length).
+  // This fixes the old bug where the short token "water" matched "waterlogging",
+  // "waterworks", "water scarcity", etc. making a generic word overlap with any
+  // water-related report. Purely partial overlaps ("water" ⊂ "watershed") no
+  // longer count unless the tokens genuinely share most of their characters.
+  const intersection = [...wordsA].filter(w =>
+    wordsB.has(w) || [...wordsB].some(bw => {
+      const short = w.length <= bw.length ? w : bw;
+      const long = w.length <= bw.length ? bw : w;
+      return long.includes(short) && short.length / long.length >= 0.6;
+    })
+  );
   const union = new Set([...wordsA, ...wordsB]);
 
   return intersection.length / Math.max(1, union.size);
@@ -348,95 +407,6 @@ function calculateHaversineDistanceKm(
       Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
-}
-
-/**
- * Location proximity: computes GPS distance if coordinates exist, otherwise district/block/village matching
- */
-function calculateLocationScore(a: Partial<Challenge>, b: Challenge): number {
-  // 1. Precise GPS calculation if both have coordinates
-  if (a.locationCoords && b.locationCoords && a.locationCoords.lat && b.locationCoords.lat) {
-    const distKm = calculateHaversineDistanceKm(
-      a.locationCoords.lat,
-      a.locationCoords.lng,
-      b.locationCoords.lat,
-      b.locationCoords.lng
-    );
-
-    if (distKm <= 0.3) return 1.0;     // Within 300m = same exact spot
-    if (distKm <= 1.0) return 0.90;    // Within 1km = same neighborhood / street
-    if (distKm <= 3.0) return 0.75;    // Within 3km = same village / ward
-    if (distKm <= 10.0) return 0.50;   // Within 10km = same block
-    if (distKm <= 25.0) return 0.25;   // Same sub-district
-    return 0.05;
-  }
-
-  // 2. Text-based hierarchy matching
-  const districtA = (a.district || '').toLowerCase().trim();
-  const districtB = (b.district || '').toLowerCase().trim();
-  const villageA = (a.village || a.block || '').toLowerCase().trim();
-  const villageB = (b.village || b.block || '').toLowerCase().trim();
-
-  if (!districtA || !districtB) return 0;
-
-  if (villageA && villageB && villageA === villageB && districtA === districtB) {
-    return 1.0;
-  }
-
-  if (districtA === districtB) {
-    const blockA = (a.block || '').toLowerCase().trim();
-    const blockB = (b.block || '').toLowerCase().trim();
-    if (blockA && blockB && blockA === blockB) {
-      return 0.85;
-    }
-    return 0.70;
-  }
-
-  return 0;
-}
-
-/**
- * Category match: exact match = 1.0, related = 0.5, different = 0
- */
-function calculateCategoryScore(a: Partial<Challenge>, b: Challenge): number {
-  const catA = (a.category || '').toLowerCase().trim();
-  const catB = (b.category || '').toLowerCase().trim();
-
-  if (!catA || !catB) return 0;
-
-  if (catA === catB) {
-    return 1.0;
-  }
-
-  const wordsA = extractKeywords(catA);
-  const wordsB = extractKeywords(catB);
-  const overlap = wordsA.filter(w => wordsB.some(bw => bw.includes(w) || w.includes(bw)));
-
-  if (overlap.length >= 2) {
-    return 0.7;
-  }
-  if (overlap.length >= 1) {
-    return 0.45;
-  }
-
-  return 0;
-}
-
-/**
- * Recency: more recent = higher score (challenges within 7 days get highest bonus)
- */
-function calculateRecencyScore(a: Partial<Challenge>, b: Challenge): number {
-  const dateA = a.createdAt ? new Date(a.createdAt).getTime() : Date.now();
-  const dateB = new Date(b.createdAt).getTime();
-
-  const daysDiff = Math.abs(dateA - dateB) / (1000 * 60 * 60 * 24);
-
-  if (daysDiff <= 1) return 1.0;
-  if (daysDiff <= 7) return 0.9;
-  if (daysDiff <= 30) return 0.7;
-  if (daysDiff <= 90) return 0.4;
-
-  return 0.1;
 }
 
 /**

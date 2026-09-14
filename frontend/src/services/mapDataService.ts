@@ -406,13 +406,21 @@ export function useMapData(): MapData {
         setDistricts(arr);
       }
       
-      // Process challenges from API
+      // Process challenges from API — merge into local data instead of overwriting,
+      // same pattern as firebaseService's API poll fix. Preserves locally-submitted
+      // challenges that haven't synced to the server yet.
       if (chalRes && chalRes.ok && chalRes.data && Array.isArray(chalRes.data) && chalRes.data.length > 0) {
-        const loadedChallenges = chalRes.data.map((c: any) => {
+        const serverChallenges = chalRes.data.map((c: any) => {
           const wf = toWorkflowChallengeFromApi(c);
           return toLegacyChallengeDoc(wf);
         });
-        setChallenges(loadedChallenges);
+        setChallenges(prev => {
+          const serverIds = new Set(serverChallenges.map(c => c.id));
+          return [
+            ...serverChallenges,
+            ...prev.filter(c => !serverIds.has(c.id)),
+          ];
+        });
       }
       
       setLoading(false);

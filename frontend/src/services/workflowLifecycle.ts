@@ -152,7 +152,7 @@ export const LIFECYCLE_STAGES: WorkflowStage[] = [
     displayName: 'Deployment',
     publicLabel: 'Resolved',
     description: 'Full-scale rollout of the solution.',
-    allowedNextStages: [15],
+    allowedNextStages: [15, 16],
     isPublic: true,
   },
   {

@@ -26,9 +26,26 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
     return () => unsubscribe();
   }, []);
 
+  // Robust check: does the stored assignedHEI string match this university?
+  const isAssignedToThisUniversity = (assignedHEI: string | undefined): boolean => {
+    if (!assignedHEI) return false;
+    const heiLower = assignedHEI.toLowerCase().trim();
+    const nameLower = university.name.toLowerCase().trim();
+    const shortLower = (university.shortName || '').toLowerCase().trim();
+    // Direct exact matches
+    if (heiLower === nameLower || heiLower === shortLower) return true;
+    // Short name contained in assignedHEI (handles compound assignments like "IIT ISM & NIT Jamshedpur")
+    if (shortLower && shortLower.length >= 3 && heiLower.includes(shortLower)) return true;
+    // Full name contained in assignedHEI (handles "Birsa Agricultural University (BAU)")
+    if (nameLower.length >= 10 && heiLower.includes(nameLower)) return true;
+    return false;
+  };
+
   // Filter challenges matched against this specific university
-  const matchedChallenges = challenges
-    .filter((challenge) => (getStageForStatus(challenge.status)?.stageNumber || 0) >= 3)
+  const allStage3Plus = challenges.filter((challenge) => (getStageForStatus(challenge.status)?.stageNumber || 0) >= 3);
+
+  const matchedChallenges = allStage3Plus
+    .filter((challenge) => isAssignedToThisUniversity(challenge.assignedHEI))
     .map((challenge) => {
       const match = calculateHEIMatchScore(challenge, university);
       return { challenge, match };
@@ -97,8 +114,8 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
       {/* Matched Challenges List */}
       <div className="grid gap-4">
         {matchedChallenges.map(({ challenge, match }) => {
-          const isAcceptedByThisUni = challenge.assignedHEI === university.name;
-          const isAcceptedByOther = challenge.assignedHEI && challenge.assignedHEI !== university.name;
+          const isAcceptedByThisUni = isAssignedToThisUniversity(challenge.assignedHEI);
+          const isAcceptedByOther = false; // If it's in matchedChallenges, it's assigned to THIS uni
 
           return (
             <div 

@@ -138,7 +138,9 @@ export const challengeService = {
       id,
       title: input.title,
       description: input.description || '',
-      status: input.status || ChallengeStatus.SUBMITTED,
+      status: (Object.values(ChallengeStatus).includes(input.status as ChallengeStatus)
+        ? input.status as ChallengeStatus
+        : ChallengeStatus.SUBMITTED),
       district_code: input.district_code || input.district || 'RANCHI',
       block_code: input.block_code || null,
       submitter_id: input.submitter_id || 'demo-citizen',
@@ -201,7 +203,9 @@ export const challengeService = {
             lng: input.lng,
             submitter_id: input.submitter_id || 'demo-citizen',
             submitter_type: (input.submitter_type as UserRole) || UserRole.CITIZEN,
-            status: input.status || ChallengeStatus.SUBMITTED,
+            status: (Object.values(ChallengeStatus).includes(input.status as ChallengeStatus)
+        ? input.status as ChallengeStatus
+        : ChallengeStatus.SUBMITTED),
           },
           // exclude the newly-created challenge from the near-dup scan inside verifyReport
           // by passing its id in existingIds — the pipeline will skip self-matching.

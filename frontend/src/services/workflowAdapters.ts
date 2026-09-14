@@ -89,6 +89,10 @@ export function toWorkflowChallenge(doc: ChallengeDoc): Challenge {
     citizenReportCount: doc.citizenReportCount,
     communityUpvotes: doc.communityUpvotes,
     extractedMetadata: doc.extractedMetadata,
+    affectedPopulation: doc.affectedPopulation,
+    economicValueEstimate: doc.economicValueEstimate,
+    estimatedResolutionCost: doc.estimatedResolutionCost,
+    research: doc.research,
     assignedHEI: doc.assignedHEI,
     assignedDept: doc.assignedDept,
     csrSponsor: doc.csrSponsor,
@@ -140,6 +144,10 @@ export function toLegacyChallengeDoc(challenge: Challenge): ChallengeDoc {
     citizenReportCount: challenge.citizenReportCount,
     communityUpvotes: challenge.communityUpvotes,
     extractedMetadata: challenge.extractedMetadata,
+    affectedPopulation: challenge.affectedPopulation || (challenge as any).affectedPopulation,
+    economicValueEstimate: challenge.economicValueEstimate || (challenge as any).economicValueEstimate,
+    estimatedResolutionCost: challenge.estimatedResolutionCost || (challenge as any).estimatedResolutionCost,
+    research: challenge.research || (challenge as any).research,
     createdAt: challenge.createdAt || new Date().toISOString(),
   };
 }
@@ -287,9 +295,16 @@ export function toWorkflowChallengeFromApi(item: any): Challenge {
     stageName: stage ? formatStageName(stage.stageNumber) : 'Submitted',
     priorityScore: item.priority_score ? Number(item.priority_score) : undefined,
     evidenceUrls: Array.isArray(item.evidence)
-      ? item.evidence.map((e: any) => e.storage_ref)
-      : (item.evidenceUrls || []),
-    createdAt: item.created_at ? new Date(item.created_at).toISOString() : new Date().toISOString(),
-    updatedAt: item.updated_at ? new Date(item.updated_at).toISOString() : new Date().toISOString(),
+      ? item.evidence.map((e: any) => e.storage_ref).filter(Boolean)
+      : (item.evidenceUrls || (item.evidenceUrl ? [item.evidenceUrl] : [])),
+    videoUrl: item.videoUrl,
+    videoUrls: item.videoUrls || (item.videoUrl ? [item.videoUrl] : []),
+    audioUrl: item.audioUrl,
+    voiceLanguage: item.voiceLanguage,
+    evidenceType: item.evidenceType || (item.videoUrl ? 'video' : 'image'),
+    assignedHEI: item.assigned_org_id || item.assignedHEI,
+    assignedDept: item.assigned_dept || item.assignedDept,
+    createdAt: item.created_at ? new Date(item.created_at).toISOString() : (item.createdAt || new Date().toISOString()),
+    updatedAt: item.updated_at ? new Date(item.updated_at).toISOString() : (item.updatedAt || new Date().toISOString()),
   };
 }

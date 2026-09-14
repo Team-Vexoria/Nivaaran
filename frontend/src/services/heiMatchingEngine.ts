@@ -170,17 +170,32 @@ export const calculateHEIMatchScore = (
   // Composite Score (0-100) using new weights: 30 + 20 + 20 + 10 + 20 = 100
   const totalScore = Math.min(100, departmentFitScore + expertiseScore + labFitScore + achievementsScore + proximityScore);
 
+  // Robust assignment check — handles all naming variants
+  const assignedLower = (challenge.assignedHEI || '').toLowerCase();
+  const uniNameLower = university.name.toLowerCase();
+  const uniShortLower = (university.shortName || '').toLowerCase();
+  const isAssignedToThisUni = !!challenge.assignedHEI && (
+    assignedLower === uniNameLower ||
+    assignedLower === uniShortLower ||
+    (uniShortLower.length > 2 && assignedLower.includes(uniShortLower)) ||
+    (uniNameLower.length > 3 && (assignedLower.includes(uniNameLower) || uniNameLower.includes(assignedLower)))
+  );
+  const finalScore = isAssignedToThisUni ? Math.max(totalScore, 100) : totalScore;
+  const finalReasons = isAssignedToThisUni 
+    ? ['Officially assigned to this HEI by Government/AI framework.', ...reasons] 
+    : reasons;
+
   return {
     university,
-    matchScore: totalScore,
+    matchScore: finalScore,
     districtMatch: uniDistrictLower === challengeDistrictLower,
     recommendedDepartment: bestDept,
-    matchingReasons: reasons,
-    departmentFitScore,
-    expertiseScore,
-    labFitScore,
-    achievementsScore,
-    proximityScore,
+    matchingReasons: finalReasons,
+    departmentFitScore: isAssignedToThisUni ? Math.max(departmentFitScore, 30) : departmentFitScore,
+    expertiseScore: isAssignedToThisUni ? Math.max(expertiseScore, 20) : expertiseScore,
+    labFitScore: isAssignedToThisUni ? Math.max(labFitScore, 20) : labFitScore,
+    achievementsScore: isAssignedToThisUni ? Math.max(achievementsScore, 10) : achievementsScore,
+    proximityScore: isAssignedToThisUni ? Math.max(proximityScore, 20) : proximityScore,
   };
 };
 

@@ -9,6 +9,8 @@
  * 4. Forensic Audit Proof Stamp: Cryptographic SHA-style hash ensuring non-repudiation for government officers.
  */
 
+import { getDistrictCentroid } from './deduplicationService';
+
 export interface StructuredLocationAddress {
   road?: string;
   landmark?: string;
@@ -30,7 +32,7 @@ export interface IncidentExtractedData {
     lat: number;
     lng: number;
     accuracyMeters?: number;
-  };
+  } | null; // null when geotagged coords were unavailable (GPS denied/timeout)
   address: StructuredLocationAddress;
   sceneClassification: string;
   detectedFeatures: string[];
@@ -172,7 +174,12 @@ export function extractIncidentMetadata(input: {
 }): IncidentExtractedData {
   const now = input.customDate || new Date();
   const temporal = extractTemporalContext(now);
-  const coords = input.locationCoords || { lat: 23.3441, lng: 85.3096 };
+  // coords is null when geolocation was never obtained — we fall back to the
+  // *selected district's centroid* so the 4-stage dedup pipeline (GPS proximity
+  // stage) still gets a meaningful anchor. Only if the district is unknown do
+  // we stay null (purely deductive text matching). Previously this hard-coded
+  // Ranchi (23.3441, 85.3096).
+  const coords = input.locationCoords || getDistrictCentroid(input.district) || null;
   const scene = extractSceneFeatures(input.title, input.description, input.category);
 
   // Parse structured address components
@@ -192,8 +199,8 @@ export function extractIncidentMetadata(input: {
   const proofHash = generateForensicProofHash(
     input.reportId,
     now.toISOString(),
-    coords.lat,
-    coords.lng,
+    coords?.lat ?? 0,
+    coords?.lng ?? 0,
     input.title
   );
 
@@ -203,11 +210,11 @@ export function extractIncidentMetadata(input: {
     formattedTime: temporal.formattedTime,
     timeOfDay: temporal.timeOfDay,
     season: temporal.season,
-    gpsCoordinates: {
+    gpsCoordinates: coords ? {
       lat: parseFloat(coords.lat.toFixed(5)),
       lng: parseFloat(coords.lng.toFixed(5)),
       accuracyMeters: 4.5,
-    },
+    } : null,
     address,
     sceneClassification: scene.sceneClassification,
     detectedFeatures: scene.detectedFeatures,

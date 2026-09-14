@@ -28,7 +28,7 @@ const CLIENT_URL = getConfig().CLIENT_URL;
 // Security & parsing
 app.use(helmet());
 app.use(cors({ origin: CLIENT_URL as string, credentials: true }));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: false }));
 
 // Request-id + logger correlation

@@ -106,8 +106,17 @@ async function apiRequest<T>(
       headers: { ...headers, ...(options.headers as Record<string, string> || {}) },
       signal: controller.signal,
     });
+    // The fetch abort does NOT cover reading the response body: once response
+    // headers arrive, `res.text()` can stall indefinitely if the server stops
+    // sending bytes mid-body (e.g. a large photo upload rejected by a proxy).
+    // Race the body read against its own timeout so no caller ever hangs.
+    const text = await Promise.race([
+      res.text(),
+      new Promise<string>((_, reject) =>
+        setTimeout(() => reject(new DOMException('Aborted', 'AbortError')), 15_000)
+      ),
+    ]);
     let body: ApiResponse<T>;
-    const text = await res.text();
     try {
       body = text ? JSON.parse(text) : { ok: res.ok, data: undefined as any };
     } catch {
@@ -115,11 +124,12 @@ async function apiRequest<T>(
     }
     return body;
   } catch (e) {
-    clearTimeout(timeout);
     if (e instanceof DOMException && e.name === 'AbortError') {
       return { ok: false, error: { code: 'TIMEOUT', message: 'Request timed out' } };
     }
     return { ok: false, error: { code: 'NETWORK_ERROR', message: (e as Error).message } };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

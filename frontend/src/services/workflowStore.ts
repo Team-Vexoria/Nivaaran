@@ -61,19 +61,19 @@ class WorkflowStore {
       if (stored) {
         const parsed: unknown = JSON.parse(stored);
         if (this.isWorkflowState(parsed)) {
-          // If stored state is from older seed with < 15 challenges or full allocations, upgrade to new unallocated demo state
-          if (parsed.challenges.length < 15 || parsed.projects.length > 11 || parsed.challenges.some(c => c.id === 'DEMO-CH-015' && c.assignedHEI)) {
-            const seed = createSeedData();
-            this.persist(seed);
-            return seed;
-          }
-          // Sanitize any dashes in loaded challenges
-          parsed.challenges = parsed.challenges.map(c => ({
-            ...c,
-            title: c.title ? c.title.replace(/[—–]/g, ' to ').replace(/--+/g, ' ') : c.title,
-            description: c.description ? c.description.replace(/[—–]/g, ' to ').replace(/--+/g, ' ') : c.description,
-          }));
-          return parsed;
+          // Always refresh DEMO challenges from the latest seed data.
+          // This ensures any seed corrections (e.g. assignedHEI fixes) take effect immediately.
+          // User-submitted challenges (non-DEMO) are always preserved.
+          const seed = createSeedData();
+          const userChallenges = parsed.challenges.filter((c: any) => !c.id.startsWith('DEMO-'));
+          const freshDemoChallenges = seed.challenges.filter((c: any) => c.id.startsWith('DEMO-'));
+          const merged = [...freshDemoChallenges, ...userChallenges];
+          const finalState: WorkflowState = {
+            ...parsed,
+            challenges: merged,
+          };
+          this.persist(finalState);
+          return finalState;
         }
         localStorage.setItem(`${STORE_KEY}_corrupt_${Date.now()}`, stored);
       }
@@ -131,9 +131,22 @@ class WorkflowStore {
    * Replaces localStorage data with server data without triggering API calls.
    */
   public loadFromApi(data: { challenges?: Challenge[]; projects?: Project[]; proposals?: Proposal[] }) {
+    let finalChallenges = data.challenges ?? this.state.challenges;
+    
+    // IMPORTANT: Never let API data overwrite local DEMO seed challenges.
+    // DEMO challenges have curated assignedHEI values that must be preserved.
+    if (data.challenges) {
+      const localDemos = this.state.challenges.filter(c => c.id.startsWith('DEMO-'));
+      const incomingNonDemos = data.challenges.filter(c => !c.id.startsWith('DEMO-'));
+      // Keep all local DEMOs + non-DEMO from API + any non-DEMO locals not in API
+      const incomingIds = new Set(incomingNonDemos.map(c => c.id));
+      const localNonDemosNotInApi = this.state.challenges.filter(c => !c.id.startsWith('DEMO-') && !incomingIds.has(c.id));
+      finalChallenges = [...localDemos, ...incomingNonDemos, ...localNonDemosNotInApi];
+    }
+
     this.persist({
       ...this.state,
-      challenges: data.challenges ?? this.state.challenges,
+      challenges: finalChallenges,
       projects: data.projects ?? this.state.projects,
       proposals: data.proposals ?? this.state.proposals,
     });
@@ -159,30 +172,40 @@ class WorkflowStore {
       return { duplicate: true, existing };
     }
 
-    // Try API first, fall back to local
-    try {
-      const apiRes = await apiClient.createChallenge(challenge as Omit<Challenge, 'id' | 'createdAt' | 'updatedAt'>);
-      if (apiRes.ok && apiRes.data) {
-        const serverChallenge = apiRes.data as Challenge;
-        const challenges = [serverChallenge, ...this.state.challenges];
-        this.persist({ ...this.state, challenges });
-        return { created: serverChallenge };
-      }
-    } catch (e) {
-      console.warn('API createChallenge failed, using local fallback:', e);
-    }
-    
-    // Fallback to local persistence
+    // ── OPTIMISTIC LOCAL-FIRST PERSIST ──────────────────────────────────
+    // Persist to localStorage immediately and return, so the citizen's report
+    // is NEVER lost and the UI transitions to success in milliseconds. The
+    // backend sync runs in the background (fire-and-forget) and can never
+    // block the submit. Previously the local save awaited
+    // `apiClient.createChallenge` FIRST — a large base64 photo payload could
+    // stall against nginx/Express 1MB body limits (or the response-body read
+    // hang), leaving the UI stuck on 'submitting' with the report never
+    // written to the store. The background sync below is what actually pushes
+    // the record to the backend for the GovPortal's API poll to pick up.
     const now = new Date().toISOString();
     const newChallenge: Challenge = {
       ...challenge,
-      id: challenge.id || `CH-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      id: challenge.id || challenge.reportId || `CH-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      reportId: challenge.reportId || challenge.id || `JH-2026-NIV-${Math.floor(1000 + Math.random() * 9000)}`,
       createdAt: challenge.createdAt || now,
       updatedAt: now,
     };
-    
+
     const challenges = [newChallenge, ...this.state.challenges];
     this.persist({ ...this.state, challenges });
+
+    // Background best-effort backend sync (non-blocking).
+    (async () => {
+      try {
+        const apiRes = await apiClient.createChallenge(newChallenge as Omit<Challenge, 'id' | 'createdAt' | 'updatedAt'>);
+        if (!apiRes.ok) {
+          console.warn('[workflowStore] Backend sync skipped:', apiRes.error?.code, apiRes.error?.message);
+        }
+      } catch (e) {
+        console.warn('[workflowStore] Backend sync failed (non-fatal):', e);
+      }
+    })();
+
     return { created: newChallenge };
   }
 
@@ -357,8 +380,14 @@ class WorkflowStore {
   // ── Timeline ────────────────────────────────────────────────────────────────
 
   public getTimelineEvents(entityId: string): TimelineEvent[] {
+    const challenge = this.findChallengeByIdOrReportId(entityId);
+    const validIds = new Set<string>([entityId]);
+    if (challenge) {
+      if (challenge.id) validIds.add(challenge.id);
+      if (challenge.reportId) validIds.add(challenge.reportId);
+    }
     return this.state.timelineEvents
-      .filter((e) => e.entityId === entityId)
+      .filter((e) => validIds.has(e.entityId))
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }
 

@@ -387,12 +387,13 @@ export interface ChallengeDoc {
   estimatedResolutionCost?: number;
 }
 
-export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'>) => {
+export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'> & { id?: string }) => {
   // 1. Primary: Save to local workflowStore immediately so UI responds in 0ms
-  const legacyChallenge: ChallengeDoc = { ...challenge };
+  const targetId = challenge.id || challenge.reportId || `CH-${Date.now()}`;
+  const legacyChallenge: ChallengeDoc = { ...challenge, id: targetId, reportId: challenge.reportId || targetId };
   const { workflowStore } = await import('./workflowStore');
   const result = await workflowStore.addChallenge(toWorkflowChallenge(legacyChallenge));
-  const newId = result.created?.id || result.existing?.id || `CH-${Date.now()}`;
+  const newId = result.created?.id || result.existing?.id || targetId;
 
   // 2. Secondary: Background non-blocking sync to API and Firestore
   (async () => {
@@ -430,18 +431,46 @@ export const subscribeToChallenges = (callback: (challenges: ChallengeDoc[]) => 
   // Listen to workflowStore updates
   window.addEventListener(STORE_EVENT, notifyStore);
 
-  // Poll API for backend challenges every 5 seconds
+  // Poll API for backend challenges every 10 seconds.
+  // FIX: Previously this called callback() directly with raw Prisma objects
+  // mapped through toLegacyChallengeDoc, but Prisma returns snake_case fields
+  // (district_code, created_at) while toLegacyChallengeDoc expects camelCase
+  // workflow Challenge fields (district, createdAt). This mangled every
+  // challenge and overwrote local state with garbage — causing user-submitted
+  // challenges to vanish and be replaced by seed data.
+  // FIX2: Now we properly convert via toWorkflowChallengeFromApi, then merge
+  // into the local store (which triggers STORE_EVENT for React re-renders).
   const apiInterval = setInterval(async () => {
     try {
       const { apiClient } = await import('../api/client');
+      const { toWorkflowChallengeFromApi } = await import('./workflowAdapters');
       const res = await apiClient.getChallenges();
-      if (res.ok && res.data && res.data.length > 0) {
-        callback(res.data.map((c: any) => toLegacyChallengeDoc(c as any)));
+      if (res.ok && res.data && Array.isArray(res.data) && res.data.length > 0) {
+        const localChallenges = workflowStore.getChallenges();
+        // Properly convert API (Prisma) data to workflow Challenge format
+        const serverChallenges = res.data.map((item: any) => toWorkflowChallengeFromApi(item));
+        // IMPORTANT: Never let server data overwrite local DEMO seed challenges.
+        // DEMO challenges have curated assignedHEI values that must be preserved.
+        // Only merge in non-DEMO (real user-submitted) challenges from the API.
+        const realServerChallenges = serverChallenges.filter((c: any) => !c.id?.startsWith('DEMO-'));
+        const serverIds = new Set([
+          ...realServerChallenges.map((c: any) => c.id).filter(Boolean),
+          ...realServerChallenges.map((c: any) => c.reportId).filter(Boolean),
+        ]);
+        // Real server challenges update/add; local entries (including DEMOs) are preserved
+        const merged = [
+          ...localChallenges.filter((c: any) => !serverIds.has(c.id) && !serverIds.has(c.reportId)),
+          ...realServerChallenges,
+        ];
+        // Only persist if something actually changed (avoids infinite loop)
+        if (merged.length !== localChallenges.length || merged.some((c, i) => c.id !== localChallenges[i]?.id)) {
+          workflowStore.loadFromApi({ challenges: merged });
+        }
       }
     } catch {
       // Keep using local store
     }
-  }, 5000);
+  }, 10000);
 
   // Firestore (optional secondary)
   let unsubscribeFirestore = () => {};
