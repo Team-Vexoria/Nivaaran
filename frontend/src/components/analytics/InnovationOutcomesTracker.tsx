@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   Lightbulb, Award, Rocket, FileCheck, ExternalLink, 
-  Plus, Download, Sparkles 
+  Plus, Download, Printer, X, CheckCircle2, ShieldCheck, 
+  Building2
 } from 'lucide-react';
 
 export interface PatentRecord {
@@ -174,6 +175,11 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
   const [transfers] = useState<TechTransferRecord[]>(SEED_TRANSFERS);
   const [showAddModal, setShowAddModal] = useState(false);
 
+  // Selected records for official modals
+  const [viewingTransfer, setViewingTransfer] = useState<TechTransferRecord | null>(null);
+  const [viewingPatent, setViewingPatent] = useState<PatentRecord | null>(null);
+  const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
+
   // New Patent Form State
   const [newTitle, setNewTitle] = useState('');
   const [newHEI, setNewHEI] = useState(defaultHEI);
@@ -203,9 +209,100 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
     setNewAbstract('');
   };
 
+  const handleDownloadTransferDoc = (tt: TechTransferRecord) => {
+    const docText = [
+      "==========================================================================",
+      "OFFICIAL MEMORANDUM OF TECHNOLOGY TRANSFER & INDUSTRIAL COMMERCIALIZATION",
+      "GOVERNMENT OF JHARKHAND : DEPARTMENT OF HIGHER & TECHNICAL EDUCATION",
+      "==========================================================================",
+      `Agreement Docket ID: ${tt.id}`,
+      `Technology: ${tt.technologyTitle}`,
+      `Originating Institute: ${tt.originatingHEI}`,
+      `Industry Licensee Partner: ${tt.industryLicensee}`,
+      `License Classification: ${tt.transferType}`,
+      `Commercial & Royalty Terms: ${tt.royaltyOrGrant}`,
+      `Execution Date: ${tt.agreementDate}`,
+      `Sign-off Statutory Body: ${tt.signoffAuthority}`,
+      "",
+      "TERMS OF TECHNOLOGY COMMERCIALIZATION:",
+      "1. The originating HEI grants non-exclusive deployment rights to the industry partner.",
+      "2. Field installations must service designated rural Gram Panchayats across Jharkhand.",
+      "3. 70% of ongoing commercial royalties shall be credited directly to the student innovator research pool.",
+      "4. Compliant with Government Financial Rules (GFR 2017) and Startup India Guidelines.",
+      "",
+      "Digitally Certified by Director of Technical Education, Govt of Jharkhand.",
+      "SHA-256 Audit Hash: 0x88B12C44901EEA820194881A2D09FE",
+      "==========================================================================",
+    ].join('\n');
+
+    const blob = new Blob([docText], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Tech_Transfer_Agreement_${tt.id}.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setDownloadNotice(`Agreement ${tt.id} downloaded successfully.`);
+    setTimeout(() => setDownloadNotice(null), 3500);
+  };
+
+  const handleDownloadPatentDoc = (p: PatentRecord) => {
+    const docText = [
+      "==========================================================================",
+      "PATENT APPLICATION FORM 1 (FIRST SCHEDULE)",
+      "INDIAN PATENT OFFICE (IPO), GOVERNMENT OF INDIA",
+      "==========================================================================",
+      `Application Number: ${p.applicationNumber}`,
+      `Title of Invention: ${p.title}`,
+      `Applicant Institute: ${p.hei}`,
+      `Academic Department: ${p.department}`,
+      `Inventors Roster: ${p.inventors.join(', ')}`,
+      `Official Filing Date: ${p.filingDate}`,
+      `Statutory Status: ${p.status}`,
+      `Technical Domain: ${p.domain}`,
+      `Linked Civic Docket: ${p.challengeReportId}`,
+      "",
+      "ABSTRACT & DISCLOSURE OF INVENTION:",
+      p.abstract,
+      "",
+      "Certified as verified under Jharkhand State Innovation & IP Gateway.",
+      "Controller General of Patents, Designs and Trade Marks Reference: IN-IP-2026-JH",
+      "==========================================================================",
+    ].join('\n');
+
+    const blob = new Blob([docText], { type: 'text/plain;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Patent_Form1_${p.id}.txt`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setDownloadNotice(`Patent filing docket for ${p.applicationNumber} downloaded.`);
+    setTimeout(() => setDownloadNotice(null), 3500);
+  };
+
   return (
     <div className="space-y-6 text-left">
       
+      {/* Download Alert Notice */}
+      {downloadNotice && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-xl text-xs font-bold flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{downloadNotice}</span>
+          </div>
+          <button onClick={() => setDownloadNotice(null)} className="text-emerald-700 hover:text-emerald-950 font-bold">
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Top Banner & KPI Strip */}
       <div className="bg-gradient-to-br from-[#2C6E49]/10 via-[#FAF8F4] to-[#C98A2C]/10 border border-[#E4DDD1] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -248,11 +345,11 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
 
           <div className="bg-white border border-[#E4DDD1] p-3.5 rounded-xl shadow-2xs">
             <div className="flex items-center justify-between text-[#6A6155] text-[11px] font-semibold">
-              <span>Startups Incubated</span>
+              <span>DeepTech Startups</span>
               <Rocket className="w-4 h-4 text-[#C98A2C]" />
             </div>
             <p className="text-2xl font-black text-[#201C18] font-heading mt-1">{startups.length}</p>
-            <p className="text-[10px] text-[#C98A2C] font-bold">HEI Incubators in Ranchi & Dhanbad</p>
+            <p className="text-[10px] text-[#C98A2C] font-bold">Active in State Incubators</p>
           </div>
 
           <div className="bg-white border border-[#E4DDD1] p-3.5 rounded-xl shadow-2xs">
@@ -261,22 +358,22 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
               <FileCheck className="w-4 h-4 text-blue-600" />
             </div>
             <p className="text-2xl font-black text-[#201C18] font-heading mt-1">{transfers.length}</p>
-            <p className="text-[10px] text-blue-700 font-bold">Tata Steel & JSP CSR Licensed</p>
+            <p className="text-[10px] text-blue-700 font-bold">Corporate Licensors Active</p>
           </div>
 
           <div className="bg-white border border-[#E4DDD1] p-3.5 rounded-xl shadow-2xs">
             <div className="flex items-center justify-between text-[#6A6155] text-[11px] font-semibold">
-              <span>Commercial Value</span>
-              <Sparkles className="w-4 h-4 text-purple-600" />
+              <span>Committed Grants</span>
+              <ShieldCheck className="w-4 h-4 text-purple-600" />
             </div>
-            <p className="text-2xl font-black text-[#201C18] font-heading mt-1">₹69.5 L</p>
-            <p className="text-[10px] text-purple-700 font-bold">Grants & Co-Financing Mobilized</p>
+            <p className="text-2xl font-black text-[#201C18] font-heading mt-1">₹84.5 L</p>
+            <p className="text-[10px] text-purple-700 font-bold">R&D & Royalty Outlay</p>
           </div>
         </div>
       </div>
 
-      {/* Navigation Filter Tabs */}
-      <div className="flex items-center gap-1.5 border-b border-[#E4DDD1] pb-2 text-xs overflow-x-auto">
+      {/* Tabs Filter */}
+      <div className="flex items-center gap-1.5 border-b border-[#E4DDD1] pb-2 text-xs">
         <button
           onClick={() => setActiveTab('all')}
           className={`px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer ${
@@ -296,7 +393,7 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
               : 'text-[#6A6155] hover:text-[#201C18] hover:bg-[#EAE4D8]'
           }`}
         >
-          Patents & IP Filings ({patents.length})
+          IPO Patents ({patents.length})
         </button>
 
         <button
@@ -379,7 +476,7 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
                   <span className="text-[#8A7F72]">Filing Date: {p.filingDate}</span>
                   <button
                     type="button"
-                    onClick={() => alert(`Patent Application Dossier (${p.applicationNumber}) verified under Department of Higher & Technical Education repository.`)}
+                    onClick={() => setViewingPatent(p)}
                     className="text-[#2C6E49] hover:underline font-bold flex items-center gap-1 cursor-pointer"
                   >
                     <span>View IPO Filing Form 1</span>
@@ -480,11 +577,12 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
                   </div>
                   <button
                     type="button"
-                    onClick={() => alert(`Technology Transfer Agreement ${tt.id} confirmed on State Blockchain Ledger.`)}
-                    className="p-2 rounded-lg bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#201C18] border border-[#E4DDD1] text-xs font-bold transition-colors cursor-pointer"
-                    title="Download Transfer Memorandum"
+                    onClick={() => setViewingTransfer(tt)}
+                    className="px-3 py-2 rounded-xl bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#201C18] border border-[#E4DDD1] text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                    title="View & Download Official Transfer Memorandum"
                   >
-                    <Download className="w-4 h-4 text-[#2C6E49]" />
+                    <Download className="w-3.5 h-3.5 text-[#2C6E49]" />
+                    <span>Transfer Memo</span>
                   </button>
                 </div>
               </div>
@@ -493,10 +591,240 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
         </div>
       )}
 
+      {/* Official Tech Transfer Agreement Memorandum Modal */}
+      {viewingTransfer && (
+        <div className="fixed inset-0 z-[350] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white print:static">
+          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-[#D5CDBF] overflow-hidden flex flex-col my-4 max-h-[90vh] print:max-h-none print:shadow-none print:border-none print:w-full">
+            
+            {/* Header : Hidden in Print */}
+            <div className="bg-[#1C2C24] text-white px-6 py-4 flex items-center justify-between print:hidden border-b border-[#2C4236]">
+              <div className="flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-[#A3E635]" />
+                <h3 className="font-black text-sm">Official Technology Commercialization Memorandum</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownloadTransferDoc(viewingTransfer)}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 border border-white/10 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#A3E635]" />
+                  <span>Download Text Docket</span>
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="px-3 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print Agreement (PDF)</span>
+                </button>
+                <button
+                  onClick={() => setViewingTransfer(null)}
+                  className="p-1 rounded-lg text-slate-300 hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Document Content */}
+            <div className="p-6 sm:p-8 space-y-5 text-xs text-[#201C18] overflow-y-auto print:overflow-visible">
+              
+              {/* Document Header */}
+              <div className="border-b-2 border-[#201C18] pb-4 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#5A5247]">GOVERNMENT OF JHARKHAND</span>
+                  <h2 className="text-base font-black font-heading text-[#201C18]">DEPARTMENT OF HIGHER & TECHNICAL EDUCATION</h2>
+                  <p className="text-xs font-bold text-[#2C6E49]">State Intellectual Property & University Commercialization Directorate</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold text-[#8A7F72] block">MEMORANDUM REF:</span>
+                  <span className="font-mono text-xs font-black text-[#201C18]">{viewingTransfer.id}-EXEC-2026</span>
+                  <span className="text-[10px] text-[#5A5247] block">Signed: {viewingTransfer.agreementDate}</span>
+                </div>
+              </div>
+
+              {/* Title & Terms Card */}
+              <div className="bg-[#FAF8F4] border border-[#E4DDD1] p-4 rounded-xl space-y-2">
+                <span className="text-[10px] font-black uppercase text-[#2C6E49] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  {viewingTransfer.transferType}
+                </span>
+                <h3 className="text-sm font-black text-[#201C18]">{viewingTransfer.technologyTitle}</h3>
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-[#E4DDD1]">
+                  <div>
+                    <span className="text-[#8A7F72] block">Originating HEI Research Team:</span>
+                    <strong className="text-[#201C18]">{viewingTransfer.originatingHEI}</strong>
+                  </div>
+                  <div>
+                    <span className="text-[#8A7F72] block">Industrial CSR / Licensee Partner:</span>
+                    <strong className="text-[#201C18]">{viewingTransfer.industryLicensee}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial & Royalty Structure */}
+              <div className="border border-[#E4DDD1] rounded-xl p-4 bg-white space-y-2">
+                <span className="text-[10px] font-black uppercase text-[#5A5247] block tracking-wider">
+                  Commercial Royalty & Fabrication Outlay Structure
+                </span>
+                <div className="text-sm font-black text-[#2C6E49] font-mono">
+                  {viewingTransfer.royaltyOrGrant}
+                </div>
+                <p className="text-[11px] text-[#6A6155] leading-relaxed">
+                  The commercialization grant is disbursed in accordance with GFR 2017 norms to fund continuous manufacturing of field prototypes, testbed calibrations, and long-term community maintenance across 82 target Gram Panchayats.
+                </p>
+              </div>
+
+              {/* Statutory Sign-off Details */}
+              <div className="border-t border-[#E4DDD1] pt-4 flex items-center justify-between text-[11px]">
+                <div>
+                  <span className="text-[#8A7F72] block">Approving Authority:</span>
+                  <strong className="text-[#201C18]">{viewingTransfer.signoffAuthority}</strong>
+                  <span className="text-[9px] font-mono text-[#2C6E49] block">Status: Legally Executed on State Blockchain</span>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-1 text-[#2C6E49] font-bold justify-end">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>GFR 2017 Certified</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-[#8A7F72]">SHA: 0x88B12C44901EEA82019488</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="bg-[#FAF8F4] border-t border-[#E4DDD1] px-6 py-3 flex justify-end print:hidden">
+              <button
+                onClick={() => setViewingTransfer(null)}
+                className="px-4 py-1.5 text-xs font-bold text-white bg-[#2C6E49] hover:bg-[#23583a] rounded-xl cursor-pointer"
+              >
+                Close Memorandum
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Official IPO Patent Application Form 1 Modal */}
+      {viewingPatent && (
+        <div className="fixed inset-0 z-[350] bg-black/75 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto print:p-0 print:bg-white print:static">
+          <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl border border-[#D5CDBF] overflow-hidden flex flex-col my-4 max-h-[90vh] print:max-h-none print:shadow-none print:border-none print:w-full">
+            
+            {/* Header : Hidden in Print */}
+            <div className="bg-[#1C2C24] text-white px-6 py-4 flex items-center justify-between print:hidden border-b border-[#2C4236]">
+              <div className="flex items-center gap-2">
+                <Award className="w-4 h-4 text-[#A3E635]" />
+                <h3 className="font-black text-sm">Indian Patent Office (IPO) Form 1 Application</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownloadPatentDoc(viewingPatent)}
+                  className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 border border-white/10 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5 text-[#A3E635]" />
+                  <span>Download Filing Docket</span>
+                </button>
+                <button
+                  onClick={() => window.print()}
+                  className="px-3 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white rounded-xl text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Print Form 1 (PDF)</span>
+                </button>
+                <button
+                  onClick={() => setViewingPatent(null)}
+                  className="p-1 rounded-lg text-slate-300 hover:text-white cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Document Content */}
+            <div className="p-6 sm:p-8 space-y-5 text-xs text-[#201C18] overflow-y-auto print:overflow-visible">
+              
+              {/* IPO Header */}
+              <div className="border-b-2 border-[#201C18] pb-4 flex items-center justify-between">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[#5A5247]">THE PATENTS ACT 1970 (39 OF 1970)</span>
+                  <h2 className="text-base font-black font-heading text-[#201C18]">PATENT APPLICATION FORM 1 (RULE 8)</h2>
+                  <p className="text-xs font-bold text-[#2C6E49]">Controller General of Patents, Designs & Trade Marks (IPO Kolkata)</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold text-[#8A7F72] block">APPLICATION NUMBER:</span>
+                  <span className="font-mono text-xs font-black text-[#201C18]">{viewingPatent.applicationNumber}</span>
+                  <span className="text-[10px] text-[#5A5247] block">Date: {viewingPatent.filingDate}</span>
+                </div>
+              </div>
+
+              {/* Title & Status */}
+              <div className="bg-[#FAF8F4] border border-[#E4DDD1] p-4 rounded-xl space-y-1.5">
+                <span className="text-[10px] font-black uppercase text-[#2C6E49] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Status: {viewingPatent.status}
+                </span>
+                <h3 className="text-sm font-black text-[#201C18]">{viewingPatent.title}</h3>
+                <p className="text-[11px] text-[#5A5247]">Domain: <strong>{viewingPatent.domain}</strong> • Linked Challenge: <strong className="font-mono text-[#2C6E49]">{viewingPatent.challengeReportId}</strong></p>
+              </div>
+
+              {/* Applicant & Inventors Roster */}
+              <div className="grid grid-cols-2 gap-3 text-[11px] border border-[#E4DDD1] p-3.5 rounded-xl bg-white">
+                <div>
+                  <span className="text-[#8A7F72] block font-bold">Applicant Institution:</span>
+                  <strong className="text-[#201C18]">{viewingPatent.hei}</strong>
+                  <span className="text-[10px] text-[#5A5247] block">{viewingPatent.department}</span>
+                </div>
+                <div>
+                  <span className="text-[#8A7F72] block font-bold">Registered Inventors:</span>
+                  <strong className="text-[#201C18]">{viewingPatent.inventors.join(', ')}</strong>
+                </div>
+              </div>
+
+              {/* Abstract */}
+              <div className="border border-[#E4DDD1] rounded-xl p-4 bg-white space-y-1.5">
+                <span className="text-[10px] font-black uppercase text-[#5A5247] block tracking-wider">
+                  Technical Abstract & Novelty Claims (Section 10)
+                </span>
+                <p className="text-xs text-[#4A433B] leading-relaxed">
+                  {viewingPatent.abstract}
+                </p>
+              </div>
+
+              {/* Statutory Sign-off */}
+              <div className="border-t border-[#E4DDD1] pt-3 flex items-center justify-between text-[11px]">
+                <div>
+                  <span className="text-[#8A7F72]">Filing Registry: Kolkata Patent Office (Eastern Zone)</span>
+                  <span className="text-[9px] font-mono text-[#2C6E49] block">IP India Digital Application Hash: 0x948201AB9894220</span>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-1 text-[#2C6E49] font-bold justify-end">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>IPO Verified</span>
+                  </div>
+                  <span className="text-[9px] text-[#8A7F72]">Digitally Endorsed by GoJ R&D Cell</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer */}
+            <div className="bg-[#FAF8F4] border-t border-[#E4DDD1] px-6 py-3 flex justify-end print:hidden">
+              <button
+                onClick={() => setViewingPatent(null)}
+                className="px-4 py-1.5 text-xs font-bold text-white bg-[#2C6E49] hover:bg-[#23583a] rounded-xl cursor-pointer"
+              >
+                Close Form 1
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
       {/* Patent Registration Modal */}
       {showAddModal && (
         <div className="fixed inset-0 z-[350] bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-[#E4DDD1] rounded-2xl max-w-lg w-full p-5 space-y-4 shadow-2xl text-left">
+          <div className="bg-white border border-[#E4DDD1] rounded-2xl max-w-lg w-full p-5 shadow-2xl space-y-4 text-left">
             <div className="flex items-center justify-between border-b border-[#E4DDD1] pb-2">
               <div className="flex items-center gap-2">
                 <Award className="w-4 h-4 text-[#2C6E49]" />

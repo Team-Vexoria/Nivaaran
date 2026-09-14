@@ -539,8 +539,7 @@ export const PFMSDisbursementLedger: React.FC<PFMSDisbursementLedgerProps> = ({
             <div className="flex justify-end pt-2">
               <button
                 onClick={() => {
-                  alert(`Official Sanction Order ${viewingSanctionDoc.sanctionNumber} downloaded to your system.`);
-                  setViewingSanctionDoc(null);
+                  window.print();
                 }}
                 className="bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer"
               >

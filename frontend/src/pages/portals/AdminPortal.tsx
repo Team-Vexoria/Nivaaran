@@ -353,20 +353,20 @@ export const AdminPortal: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#FAF8F4] flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#1A1612] text-white px-4 sm:px-6 py-3 border-b border-[#2E2820] shadow-lg">
+      <header className="sticky top-0 z-40 bg-[#FAF8F4] text-[#201C18] px-4 sm:px-6 py-2.5 border-b border-[#E4DDD1] shadow-2xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center space-x-3 shrink-0">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#B5502D] to-red-600 rounded-xl flex items-center justify-center font-black text-lg text-white shadow-md shrink-0">
-              ⚡
-            </div>
+            <img src="/logo.png" alt="NIVAARAN Logo" className="h-8 sm:h-9 w-auto object-contain shrink-0" />
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-base font-black font-heading tracking-tight leading-none text-white">NIVAARAN</span>
-                <span className="text-[10px] font-extrabold bg-[#B5502D]/30 text-[#E8845E] px-2 py-0.5 rounded-full uppercase tracking-wider border border-[#B5502D]/50">
+                <span className="text-base sm:text-lg font-black font-heading tracking-tight leading-none text-[#201C18]">
+                  NIVAARAN
+                </span>
+                <span className="text-[10px] font-extrabold bg-[#FFF8EC] text-[#B5502D] px-2 py-0.5 rounded-full uppercase tracking-wider border border-[#F0D99A]">
                   Super Admin Command Matrix
                 </span>
               </div>
-              <span className="text-[10px] text-[#8A7F72] font-semibold block">
+              <span className="text-[10px] text-[#5A5247] font-semibold block">
                 State-Wide Incident Traceability, HEI Labs & Emergency Broadcast
               </span>
             </div>
@@ -383,7 +383,7 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={() => setIsBriefingOpen(true)}
-              className="flex items-center space-x-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="flex items-center space-x-1.5 text-xs bg-[#B5502D] hover:bg-[#9E4223] text-white font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>DM Dossier (PDF)</span>
@@ -391,7 +391,7 @@ export const AdminPortal: React.FC = () => {
 
             <button
               onClick={async () => { await logout(); window.location.href = '/'; }}
-              className="flex items-center space-x-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-1.5 rounded-xl transition-colors cursor-pointer border border-slate-700"
+              className="flex items-center space-x-1.5 text-xs bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#5A5247] hover:text-[#201C18] font-bold px-3 py-1.5 rounded-xl transition-colors cursor-pointer border border-[#E4DDD1]"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Sign Out</span>
@@ -400,7 +400,7 @@ export const AdminPortal: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="max-w-7xl mx-auto mt-2.5 flex items-center space-x-1 border-t border-white/10 pt-2 overflow-x-auto">
+        <div className="max-w-7xl mx-auto mt-2 flex items-center space-x-1 border-t border-[#E4DDD1] pt-2 overflow-x-auto">
           {([
             { id: 'matrix', label: 'Master Case Matrix', icon: Layers },
             { id: 'overview', label: 'Platform KPIs & Pipeline', icon: BarChart3 },
@@ -413,8 +413,8 @@ export const AdminPortal: React.FC = () => {
               onClick={() => setActiveTab(tab.id)}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shrink-0 cursor-pointer ${
                 activeTab === tab.id
-                  ? 'bg-white/20 text-white font-black shadow-xs'
-                  : 'text-white/60 hover:text-white hover:bg-white/10'
+                  ? 'bg-[#B5502D] text-white font-black shadow-xs'
+                  : 'text-[#5A5247] hover:text-[#201C18] hover:bg-[#EAE4D8]'
               }`}
             >
               <tab.icon className="w-3.5 h-3.5" />
@@ -436,7 +436,7 @@ export const AdminPortal: React.FC = () => {
                   State-Wide Master Traceability Matrix
                 </h2>
                 <p className="text-xs text-[#6A6155] mt-0.5">
-                  Full lifecycle visibility connecting Citizen Grievances $\leftrightarrow$ AI Priority $\leftrightarrow$ Assigned HEI Labs $\leftrightarrow$ CSR Sponsors $\leftrightarrow$ Tranche Grants.
+                  Full lifecycle visibility connecting Citizen Grievances → AI Priority → Assigned HEI Labs → CSR Sponsors → Tranche Grants.
                 </p>
               </div>
 
@@ -759,7 +759,7 @@ export const AdminPortal: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
                 <h2 className="text-base font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-indigo-700" />
+                  <FileText className="w-5 h-5 text-[#B5502D]" />
                   District Magistrate (DM) Disaster Situation Dossier (SITREP)
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -769,7 +769,7 @@ export const AdminPortal: React.FC = () => {
 
               <button
                 onClick={() => setIsBriefingOpen(true)}
-                className="px-5 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-colors"
+                className="px-5 py-2.5 bg-[#B5502D] hover:bg-[#9E4223] text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-colors"
               >
                 <Printer className="w-4 h-4" />
                 <span>Open Printable Official Dossier</span>

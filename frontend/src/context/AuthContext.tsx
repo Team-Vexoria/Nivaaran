@@ -49,11 +49,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // Official pre-assigned accounts mapping
 const OFFICIAL_ROLE_MAP: Record<string, UserRole> = {
   'nivaaran@gov.in': 'Government Department',
-  'admin@bitmesra.in': 'University Admin',
-  'bitmesera@nivaaran.com': 'University Admin',
-  'bitmesra@nivaaran.com': 'University Admin',
-  'iitism@nivaaran.com': 'University Admin',
-  'nitjsr@nivaaran.com': 'University Admin',
+  'admin@bitmesra.in': 'Faculty / Mentor',
+  'bitmesera@nivaaran.com': 'Faculty / Mentor',
+  'bitmesra@nivaaran.com': 'Faculty / Mentor',
+  'iitism@nivaaran.com': 'Faculty / Mentor',
+  'nitjsr@nivaaran.com': 'Faculty / Mentor',
   'faculty@bitmesra.in': 'Faculty / Mentor',
   'student@bitmesra.in': 'Student',
   'partner@tatasteel.com': 'Industry / MSME',
@@ -68,11 +68,11 @@ const OFFICIAL_ROLE_MAP: Record<string, UserRole> = {
 
 const OFFICIAL_NAME_MAP: Record<string, string> = {
   'nivaaran@gov.in': 'Jharkhand State Nodal Officer',
-  'admin@bitmesra.in': 'BIT Mesra Academic Admin',
-  'bitmesera@nivaaran.com': 'BIT Mesra Academic Admin',
-  'bitmesra@nivaaran.com': 'BIT Mesra Academic Admin',
-  'iitism@nivaaran.com': 'IIT (ISM) Dhanbad Academic Admin',
-  'nitjsr@nivaaran.com': 'NIT Jamshedpur Academic Admin',
+  'admin@bitmesra.in': 'BIT Mesra Faculty Lead',
+  'bitmesera@nivaaran.com': 'BIT Mesra Faculty Lead',
+  'bitmesra@nivaaran.com': 'BIT Mesra Faculty Lead',
+  'iitism@nivaaran.com': 'IIT (ISM) Dhanbad Faculty Lead',
+  'nitjsr@nivaaran.com': 'NIT Jamshedpur Faculty Lead',
   'faculty@bitmesra.in': 'Prof. Alok Sharma',
   'student@bitmesra.in': 'Pooja Kumari',
   'partner@tatasteel.com': 'Tata Steel Innovation Lead',
@@ -117,7 +117,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               if (!res.ok) console.warn('[AuthSync] sync failed');
             } catch (e) { console.warn('[AuthSync] error:', e); }
             const userEmail = fbUser.email?.toLowerCase() || '';
-            const mappedOfficialRole = OFFICIAL_ROLE_MAP[userEmail];
+            const matchedUni = getUniversityByEmail(userEmail);
+            const isStudent = userEmail.includes('student') || OFFICIAL_ROLE_MAP[userEmail] === 'Student';
+            const mappedOfficialRole = OFFICIAL_ROLE_MAP[userEmail] || (matchedUni ? (isStudent ? 'Student' : 'Faculty / Mentor') : undefined);
             const savedRole = mappedOfficialRole || (localStorage.getItem(`nivaaran_role_${fbUser.uid}`) as UserRole) || 'Citizen';
             
             setCurrentUser({
@@ -125,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: fbUser.email,
               displayName: fbUser.displayName || OFFICIAL_NAME_MAP[userEmail] || fbUser.email?.split('@')[0] || 'NIVAARAN User',
               role: savedRole,
+              institution: matchedUni ? matchedUni.name : undefined,
             });
           } else if (!demoData) {
             setCurrentUser(null);
@@ -172,8 +175,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const createLocalUser = (email: string, role: UserRole, customName?: string): UserProfile => {
     const cleanEmail = email.toLowerCase().trim();
     const matchedUni = getUniversityByEmail(cleanEmail);
-    const assignedRole = matchedUni ? 'University Admin' : (OFFICIAL_ROLE_MAP[cleanEmail] || role);
-    const name = customName || (matchedUni ? `${matchedUni.shortName} Admin` : OFFICIAL_NAME_MAP[cleanEmail]) || cleanEmail.split('@')[0];
+    const isStudent = role === 'Student' || cleanEmail.includes('student') || OFFICIAL_ROLE_MAP[cleanEmail] === 'Student';
+    const assignedRole: UserRole = isStudent ? 'Student' : (OFFICIAL_ROLE_MAP[cleanEmail] || (matchedUni ? 'Faculty / Mentor' : role));
+    const name = customName || OFFICIAL_NAME_MAP[cleanEmail] || (matchedUni ? (isStudent ? `${matchedUni.shortName} Student Lead` : `${matchedUni.shortName} Faculty Lead`) : cleanEmail.split('@')[0]);
     const userProfile: UserProfile = {
       uid: 'user_' + cleanEmail.replace(/[^a-zA-Z0-9]/g, '_'),
       email: cleanEmail,
@@ -204,14 +208,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await signInWithEmailAndPassword(auth, email, pass);
       const userEmail = (res.user.email || email).toLowerCase();
-      const assignedRole = OFFICIAL_ROLE_MAP[userEmail] || role;
+      const matchedUni = getUniversityByEmail(userEmail);
+      const isStudent = role === 'Student' || userEmail.includes('student') || OFFICIAL_ROLE_MAP[userEmail] === 'Student';
+      const assignedRole = isStudent ? 'Student' : (OFFICIAL_ROLE_MAP[userEmail] || (matchedUni ? 'Faculty / Mentor' : role));
 
       const userProfile: UserProfile = {
         uid: res.user.uid,
         email: res.user.email,
-        displayName: res.user.displayName || OFFICIAL_NAME_MAP[userEmail] || email.split('@')[0],
+        displayName: res.user.displayName || OFFICIAL_NAME_MAP[userEmail] || (matchedUni ? (isStudent ? `${matchedUni.shortName} Student Lead` : `${matchedUni.shortName} Faculty Lead`) : email.split('@')[0]),
         role: assignedRole,
+        institution: matchedUni ? matchedUni.name : undefined,
       };
+      if (matchedUni) {
+        localStorage.setItem('nivaaran_active_university_id', matchedUni.id);
+      }
       localStorage.setItem(`nivaaran_role_${res.user.uid}`, assignedRole);
       localStorage.removeItem('nivaaran_demo_user');
       setCurrentUser(userProfile);
@@ -248,14 +258,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await createUserWithEmailAndPassword(auth, email, pass);
       const userEmail = (res.user.email || email).toLowerCase();
-      const assignedRole = OFFICIAL_ROLE_MAP[userEmail] || role;
+      const matchedUni = getUniversityByEmail(userEmail);
+      const isStudent = role === 'Student' || userEmail.includes('student') || OFFICIAL_ROLE_MAP[userEmail] === 'Student';
+      const assignedRole = isStudent ? 'Student' : (OFFICIAL_ROLE_MAP[userEmail] || (matchedUni ? 'Faculty / Mentor' : role));
 
       const userProfile: UserProfile = {
         uid: res.user.uid,
         email: res.user.email,
-        displayName: name || email.split('@')[0],
+        displayName: name || OFFICIAL_NAME_MAP[userEmail] || (matchedUni ? (isStudent ? `${matchedUni.shortName} Student Lead` : `${matchedUni.shortName} Faculty Lead`) : email.split('@')[0]),
         role: assignedRole,
+        institution: matchedUni ? matchedUni.name : undefined,
       };
+      if (matchedUni) {
+        localStorage.setItem('nivaaran_active_university_id', matchedUni.id);
+      }
       localStorage.setItem(`nivaaran_role_${res.user.uid}`, assignedRole);
       localStorage.removeItem('nivaaran_demo_user');
       setCurrentUser(userProfile);

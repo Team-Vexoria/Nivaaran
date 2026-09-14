@@ -3,7 +3,7 @@ import {
   GraduationCap, Award, CheckCircle2, ExternalLink, ChevronRight, 
   FlaskConical, Map, ClipboardCheck, Upload, ShieldCheck, Cpu, Layers, 
   FileCode, DollarSign, Check, Radio, 
-  FileText, Users, Building2, Terminal, PlayCircle
+  FileText, Users, Building2, Terminal, PlayCircle, Eye
 } from 'lucide-react';
 import { UniversityDoc, StudentRosterItem } from '../../services/universityData';
 import { 
@@ -14,6 +14,7 @@ import {
 } from '../../services/firebaseService';
 import { CertificateModal } from '../CertificateModal';
 import { IoTSensorTelemetryCard } from '../telemetry/IoTSensorTelemetryCard';
+import { ChallengeDetailModal } from '../ChallengeDetailModal';
 import { getStageForStatus } from '../../services/workflowLifecycle';
 import { workflowStore } from '../../services/workflowStore';
 import { ChallengeStatus } from '../../services/workflowTypes';
@@ -123,6 +124,7 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
   const [advancingStage, setAdvancingStage] = useState<number | null>(null);
   const [isAbcModalOpen, setIsAbcModalOpen] = useState<boolean>(false);
   const [abcId] = useState<string>('ABC-9821-4432-1190');
+  const [viewingChallenge, setViewingChallenge] = useState<ChallengeDoc | null>(null);
 
   useEffect(() => {
     const unsubscribeProjects = subscribeToProjects(setProjects);
@@ -439,8 +441,7 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
             <div className="flex justify-end gap-2 pt-2">
               <button
                 onClick={() => {
-                  alert(`Official DigiLocker ABC Transcript for ${currentStudent.name} (ABC ID: ${abcId}) downloaded.`);
-                  setIsAbcModalOpen(false);
+                  window.print();
                 }}
                 className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
               >
@@ -637,18 +638,31 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
 
         {assignedProject ? (
           <div className="space-y-3">
-            <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col sm:flex-row sm:items-start gap-4">
+            <div 
+              onClick={() => {
+                if (assignedChallenge) setViewingChallenge(assignedChallenge);
+              }}
+              className="bg-slate-50 border border-slate-200 p-4 rounded-xl flex flex-col sm:flex-row sm:items-start gap-4 hover:border-emerald-500 hover:shadow-xs transition-all cursor-pointer group"
+            >
               {(assignedChallenge?.evidenceUrl || (assignedChallenge?.evidenceUrls && assignedChallenge.evidenceUrls[0])) && (
                 <img
                   src={assignedChallenge.evidenceUrl || (assignedChallenge.evidenceUrls && assignedChallenge.evidenceUrls[0])}
                   alt={assignedProject.challengeTitle}
                   onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                  className="w-full sm:w-44 h-28 object-cover rounded-xl border border-slate-200 shrink-0 shadow-2xs"
+                  className="w-full sm:w-44 h-28 object-cover rounded-xl border border-slate-200 shrink-0 shadow-2xs group-hover:scale-[1.02] transition-transform"
                 />
               )}
               <div className="min-w-0 flex-1 space-y-1">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Project Title</span>
-                <p className="font-extrabold text-slate-900 text-sm">{assignedProject.challengeTitle}</p>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Project Title</span>
+                  {assignedChallenge && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg group-hover:bg-emerald-200 transition-colors">
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Click to view full civic docket</span>
+                    </span>
+                  )}
+                </div>
+                <p className="font-extrabold text-slate-900 text-sm group-hover:text-emerald-700 transition-colors">{assignedProject.challengeTitle}</p>
                 <p className="text-xs text-slate-600">
                   Faculty Mentor: <strong className="font-bold text-slate-900">{assignedProject.facultyMentorName || 'Dr. Arvind Sinha'}</strong> · District: <strong className="font-bold text-slate-900">{assignedProject.district || 'Ranchi'}</strong>
                 </p>
@@ -1277,6 +1291,14 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
         voucherCode="JH-HEI-REWARD-9482"
         issueDate="28th August 2026"
         role={`Student Researcher · ${currentStudent.year}`}
+      />
+
+      {/* Challenge Inspection Modal */}
+      <ChallengeDetailModal
+        isOpen={!!viewingChallenge}
+        challenge={viewingChallenge}
+        onClose={() => setViewingChallenge(null)}
+        portalRole="university"
       />
 
     </div>
