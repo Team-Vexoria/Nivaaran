@@ -37,11 +37,23 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
     return bitMesra || JHARKHAND_UNIVERSITIES[0];
   });
 
-  const [userRole, setUserRole] = useState<UserRoleType>('admin');
-  const [activeTab, setActiveTab] = useState<UniversityTab>('intake-queue');
+  const isStudentUser = currentUser?.role === 'Student' || !!currentUser?.email?.toLowerCase().includes('student');
+
+  const [userRole, setUserRole] = useState<UserRoleType>(() => isStudentUser ? 'student' : 'faculty');
+  const [activeTab, setActiveTab] = useState<UniversityTab>(() => isStudentUser ? 'student-workspace' : 'intake-queue');
   const [activeChallengeForTeam, setActiveChallengeForTeam] = useState<ChallengeDoc | null>(null);
   const [selectedDeptForTeam, setSelectedDeptForTeam] = useState<DepartmentInfo | null>(null);
   const [activeProposalChallengeId, setActiveProposalChallengeId] = useState<string>('');
+
+  useEffect(() => {
+    if (currentUser) {
+      const isStudent = currentUser.role === 'Student' || !!currentUser.email?.toLowerCase().includes('student');
+      if (isStudent) {
+        setUserRole('student');
+        setActiveTab('student-workspace');
+      }
+    }
+  }, [currentUser?.role, currentUser?.email]);
 
   useEffect(() => {
     if (currentUser?.email) {

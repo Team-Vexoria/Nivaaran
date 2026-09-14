@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Building2, UserCheck, GraduationCap, CheckCircle2, Layers, FileText, 
+  Building2, GraduationCap, CheckCircle2, Layers, FileText, 
   Users, Award, LogOut, Handshake, FlaskConical, Search, Copy, Check, X, ShieldCheck,
   MessageSquare, IndianRupee
 } from 'lucide-react';
@@ -113,25 +113,16 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
           {/* Role Switcher Pill */}
           <div className="hidden sm:flex items-center bg-[#EAE4D8] p-1 rounded-xl border border-[#E4DDD1] text-xs">
             <button
-              onClick={() => onRoleChange('admin')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${
-                userRole === 'admin' ? 'bg-[#2C6E49] text-white shadow-2xs' : 'text-[#4A433B] hover:text-[#201C18]'
-              }`}
-            >
-              <UserCheck className="w-3 h-3" />
-              <span>Admin</span>
-            </button>
-            <button
               onClick={() => {
                 onRoleChange('faculty');
                 // Faculty: keep current tab unless on student-workspace, jump to intake
                 if (activeTab === 'student-workspace') onTabChange('intake-queue');
               }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${
-                userRole === 'faculty' ? 'bg-[#2C6E49] text-white shadow-2xs' : 'text-[#4A433B] hover:text-[#201C18]'
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
+                userRole === 'faculty' || userRole === 'admin' ? 'bg-[#2C6E49] text-white shadow-2xs' : 'text-[#4A433B] hover:text-[#201C18]'
               }`}
             >
-              <Building2 className="w-3 h-3" />
+              <Building2 className="w-3.5 h-3.5" />
               <span>Faculty</span>
             </button>
             <button
@@ -139,11 +130,11 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
                 onRoleChange('student');
                 onTabChange('student-workspace');
               }}
-              className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
                 userRole === 'student' ? 'bg-[#2C6E49] text-white shadow-2xs' : 'text-[#4A433B] hover:text-[#201C18]'
               }`}
             >
-              <GraduationCap className="w-3 h-3" />
+              <GraduationCap className="w-3.5 h-3.5" />
               <span>Student</span>
             </button>
           </div>

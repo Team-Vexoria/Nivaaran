@@ -3,7 +3,7 @@ import {
   Handshake, Building2, Search, Compass, FileCheck, Activity,
   ShieldCheck, Award, CheckCircle2,
   MapPin, Clock, Layers, LogOut, Download,
-  Check, MessageSquareText, Send, Wrench, History, Filter, BarChart3, TrendingUp, IndianRupee, Users2
+  Check, MessageSquareText, Send, Wrench, History, Filter, BarChart3, TrendingUp, IndianRupee, Users2, Eye
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -25,6 +25,7 @@ import {
 import { getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { NotificationBellDropdown } from '../../components/notifications/NotificationBellDropdown';
 import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
+import { ChallengeDetailModal } from '../../components/ChallengeDetailModal';
 
 type IndustryTab = 'discovery' | 'my-requests' | 'active' | 'compliance' | 'certificates' | 'opportunities' | 'history' | 'dashboard' | 'messages';
 
@@ -73,6 +74,7 @@ export const IndustryPortal: React.FC = () => {
 
   // Wizard state
   const [wizardChallenge, setWizardChallenge] = useState<ChallengeDoc | null>(null);
+  const [inspectingChallenge, setInspectingChallenge] = useState<ChallengeDoc | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
   // Legacy offer modal & history state
@@ -470,7 +472,11 @@ export const IndustryPortal: React.FC = () => {
                 );
 
                 return (
-                  <div key={ch.id || ch.reportId} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-[#2C6E49]/40 transition-all">
+                  <div 
+                    key={ch.id || ch.reportId} 
+                    onClick={() => setInspectingChallenge(ch)}
+                    className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-[#2C6E49] hover:shadow-md transition-all cursor-pointer group"
+                  >
                     <div className="space-y-3">
                       
                       {/* Top Badges */}
@@ -490,14 +496,14 @@ export const IndustryPortal: React.FC = () => {
                             src={ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])}
                             alt={ch.title}
                             onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           />
                         </div>
                       )}
 
                       {/* Title & Summary */}
                       <div>
-                        <h3 className="text-sm font-extrabold text-[#201C18] line-clamp-2 leading-snug">
+                        <h3 className="text-sm font-extrabold text-[#201C18] line-clamp-2 leading-snug group-hover:text-[#2C6E49] transition-colors">
                           {ch.title}
                         </h3>
                         <p className="text-xs text-[#6A6155] mt-1.5 line-clamp-3 leading-relaxed">
@@ -537,21 +543,54 @@ export const IndustryPortal: React.FC = () => {
 
                     </div>
 
-                    {/* Bottom Action Button */}
-                    <div className="pt-2 border-t border-[#F0EBE0]">
+                    {/* Bottom Action Buttons */}
+                    <div className="pt-2 border-t border-[#F0EBE0] space-y-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setInspectingChallenge(ch);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#201C18] border border-[#E4DDD1] text-xs font-bold rounded-xl transition-all cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5 text-[#2C6E49]" />
+                          <span>View Full Docket</span>
+                        </button>
+                      </div>
+
                       {isUnderCollab ? (
                         <div className="flex items-center justify-between text-xs text-[#2C6E49] bg-[#F0FAF4] p-2 rounded-xl font-extrabold">
                           <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> Active MoU Partnered</span>
-                          <button onClick={() => setActiveTab('active')} className="text-[10px] underline cursor-pointer">View Workspace</button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTab('active');
+                            }} 
+                            className="text-[10px] underline cursor-pointer"
+                          >
+                            View Workspace
+                          </button>
                         </div>
                       ) : hasExistingRequest ? (
                         <div className="flex items-center justify-between text-xs text-[#C98A2C] bg-[#FFF8EC] p-2 rounded-xl font-extrabold">
                           <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> Request Under Review</span>
-                          <button onClick={() => setActiveTab('my-requests')} className="text-[10px] underline cursor-pointer">Track Status</button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTab('my-requests');
+                            }} 
+                            className="text-[10px] underline cursor-pointer"
+                          >
+                            Track Status
+                          </button>
                         </div>
                       ) : (
                         <button
-                          onClick={() => setWizardChallenge(ch)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setWizardChallenge(ch);
+                          }}
                           className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-extrabold rounded-xl transition-all shadow-2xs cursor-pointer active:scale-95"
                         >
                           <Handshake className="w-4 h-4" />
@@ -1054,6 +1093,19 @@ export const IndustryPortal: React.FC = () => {
       </main>
 
       {selectedProject && <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"><div className="bg-white rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl"><div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3"><div><span className="text-[10px] uppercase tracking-wider font-bold text-[#B5502D]">Phase 3 collaboration offer</span><h3 className="text-lg font-black text-[#16293F] mt-1">{selectedProject.challenge?.title || selectedProject.challengeTitle}</h3></div><button onClick={() => { setSelectedProject(null); setModalError(''); }} className="text-slate-400 hover:text-slate-800 text-xl">×</button></div><div className="grid sm:grid-cols-2 gap-3 text-xs"><label className="space-y-1"><span className="font-bold text-slate-700">Partner type</span><select value={partnerType} onChange={(e) => setPartnerType(e.target.value as CollaborationPartnerType)} className="w-full px-3 py-2 border border-slate-300 rounded-lg">{PARTNER_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label><label className="space-y-1"><span className="font-bold text-slate-700">Support type</span><select value={supportType} onChange={(e) => setSupportType(e.target.value as CollaborationSupportType)} className="w-full px-3 py-2 border border-slate-300 rounded-lg">{SUPPORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label></div><label className="space-y-1 block text-xs"><span className="font-bold text-slate-700">Offer details</span><textarea rows={4} value={message} onChange={(e) => { setMessage(e.target.value); if(modalError) setModalError(''); }} className={`w-full px-3 py-2 border rounded-lg ${modalError ? 'border-rose-500 focus:ring-rose-200' : 'border-slate-300'}`} placeholder="Explain what your organization can provide." /></label>{modalError && <p className="text-xs font-bold text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">{modalError}</p>}<div className="flex justify-end gap-2 pt-2 border-t border-slate-100"><button onClick={() => { setSelectedProject(null); setModalError(''); }} className="px-4 py-2 text-xs font-bold text-slate-600">Cancel</button><button onClick={handleOffer} className="px-4 py-2 bg-[#16293F] hover:bg-[#243D5A] text-white text-xs font-black rounded-lg flex items-center gap-1.5"><Send className="w-3.5 h-3.5" /> Submit offer</button></div></div></div>}
+
+      {/* Challenge Inspection Modal */}
+      <ChallengeDetailModal
+        isOpen={!!inspectingChallenge}
+        challenge={inspectingChallenge}
+        onClose={() => setInspectingChallenge(null)}
+        portalRole="industry"
+        actionButtonLabel="Collaborate / Propose Grant"
+        onActionClick={(c) => {
+          setInspectingChallenge(null);
+          setWizardChallenge(c);
+        }}
+      />
     </div>
   );
 };

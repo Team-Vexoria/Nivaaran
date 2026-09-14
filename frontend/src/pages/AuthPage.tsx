@@ -18,16 +18,16 @@ const ROLE_CONFIGS: Record<UserRole, RoleEmailConfig> = {
     hint: 'Official Gov Account: nivaaran@gov.in (Pass: nivaaran@123)',
   },
   'University Admin': {
-    placeholder: 'admin@bitmesra.in',
-    hint: 'Official Academic Account: admin@bitmesra.in (Pass: admin@123)',
+    placeholder: 'faculty@bitmesra.in',
+    hint: 'Official Faculty / Mentor Account: faculty@bitmesra.in (Pass: admin@123)',
   },
   'Faculty / Mentor': {
-    placeholder: 'admin@bitmesra.in',
-    hint: 'Faculty / Mentor Account: admin@bitmesra.in (Pass: admin@123)',
+    placeholder: 'faculty@bitmesra.in',
+    hint: 'Official Faculty / Mentor Account: faculty@bitmesra.in (Pass: admin@123)',
   },
   'Student': {
-    placeholder: 'student.nivaaran@gmail.com or admin@bitmesra.in',
-    hint: 'Students can register with personal email or institutional account.',
+    placeholder: 'student@bitmesra.in',
+    hint: 'Official Student Account: student@bitmesra.in (Pass: admin@123)',
   },
   'Industry / MSME': {
     placeholder: 'partner@tatasteel.com',
@@ -142,16 +142,15 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
             >
               <option value="Citizen">1. Citizen & Community Org (NGO/PRI/ULB)</option>
               <option value="Government Department">2. Government Department Officer</option>
-              <option value="University Admin">3. University Admin</option>
-              <option value="Faculty / Mentor">4. Faculty / Mentor</option>
-              <option value="Student">5. Student</option>
-              <option value="Industry / MSME">6. Industry / MSME / Startup</option>
-              <option value="CSR Organization">7. CSR Organization</option>
-              <option value="Platform Super Admin">8. Platform Super Admin</option>
-              <option value="Community / NGO">9. Community / NGO</option>
-              <option value="PRI (Panchayat)">10. PRI (Panchayat)</option>
-              <option value="ULB (Urban Local Body)">11. ULB (Urban Local Body)</option>
-              <option value="Research Lab / Industry Lab">12. Research Lab / Industry Lab</option>
+              <option value="Faculty / Mentor">3. University Faculty / Mentor</option>
+              <option value="Student">4. Student Researcher</option>
+              <option value="Industry / MSME">5. Industry / MSME / Startup</option>
+              <option value="CSR Organization">6. CSR Organization</option>
+              <option value="Platform Super Admin">7. Platform Super Admin</option>
+              <option value="Community / NGO">8. Community / NGO</option>
+              <option value="PRI (Panchayat)">9. PRI (Panchayat)</option>
+              <option value="ULB (Urban Local Body)">10. ULB (Urban Local Body)</option>
+              <option value="Research Lab / Industry Lab">11. Research Lab / Industry Lab</option>
             </select>
           </div>
 
@@ -257,22 +256,7 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
               </button>
             </div>
 
-            {/* 2. University Admin */}
-            <div className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-between transition-colors">
-              <div>
-                <span className="font-bold text-slate-900 block">🎓 University Admin</span>
-                <code className="text-[11px] text-emerald-700 font-mono font-bold">admin@bitmesra.in</code> · <span className="text-[10px] text-slate-500">admin@123</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => fillOfficialCredentials('admin@bitmesra.in', 'admin@123', 'University Admin')}
-                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded text-[11px] shrink-0"
-              >
-                Auto-Fill
-              </button>
-            </div>
-
-            {/* 3. Faculty Mentor */}
+            {/* 2. Faculty Mentor */}
             <div className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-between transition-colors">
               <div>
                 <span className="font-bold text-slate-900 block">👨‍🏫 Faculty Mentor</span>
