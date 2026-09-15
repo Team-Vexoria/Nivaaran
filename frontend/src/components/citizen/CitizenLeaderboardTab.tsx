@@ -74,18 +74,18 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
       
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-6 sm:p-8 rounded-2xl shadow-md space-y-3">
-        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-xs font-bold border border-emerald-500/30">
-          <Trophy className="w-4 h-4 text-emerald-400" />
+      <div className="bg-gradient-to-br from-[#FAF8F4] via-[#FDFBF7] to-[#F5EFEB] border border-[#E4DDD1] p-6 sm:p-8 rounded-3xl shadow-xs space-y-3 text-left">
+        <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-bold border border-amber-300">
+          <Trophy className="w-4 h-4 text-amber-700" />
           <span>{tr('Gamified Citizen Rewards Program', currentLang)}</span>
         </div>
 
-        <h2 className="text-2xl sm:text-4xl font-extrabold font-heading tracking-tight">
-          {t.leaderboard?.title || 'Jharkhand Citizen Guardians Leaderboard'}
+        <h2 className="text-2xl sm:text-3xl font-black font-heading text-[#201C18] tracking-tight">
+          {t.leaderboard?.title || 'Citizen Impact Leaderboard & Eco-Rewards'}
         </h2>
 
-        <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-          {t.leaderboard?.subtitle || 'Report verified community problems, earn impact points, and get rewarded with free native tree saplings (Sal, Mango, Neem) distributed via the Department of Forest & Environment, Government of Jharkhand.'}
+        <p className="text-xs sm:text-sm text-[#5A5247] max-w-2xl leading-relaxed font-medium">
+          {t.leaderboard?.subtitle || 'Earn Green Points and Government Tree Plantation Vouchers by submitting verified community problems.'}
         </p>
       </div>
 
@@ -170,9 +170,9 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
                     </p>
                   </div>
 
-                  <div className="bg-slate-900 text-white px-3.5 py-1.5 rounded-xl text-center shrink-0">
+                  <div className="bg-amber-50 border border-amber-300/80 text-amber-900 px-3.5 py-1.5 rounded-xl text-center shrink-0">
                     <span className="text-xs font-black block">{guardian.points}</span>
-                    <span className="text-[9px] text-slate-300 uppercase tracking-wider font-semibold">{tr('pts', currentLang)}</span>
+                    <span className="text-[9px] text-amber-700 uppercase tracking-wider font-semibold">{tr('pts', currentLang)}</span>
                   </div>
                 </div>
               </div>

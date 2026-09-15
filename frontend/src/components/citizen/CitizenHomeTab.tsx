@@ -163,7 +163,7 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
                 Report via Toll Free IVR Helpline or WhatsApp Chatbot
               </h3>
               <p className="text-xs text-emerald-100 max-w-2xl leading-relaxed">
-                Call Toll Free 1800 345 NIVAARAN (1800 345 6482) or WhatsApp +91 98351 24982 with automatic Hindi and Santhali voice recording.
+                Call Toll Free <a href="tel:1070" className="underline font-bold text-white hover:text-amber-300 transition-colors">1070 (State Disaster Management)</a> / <a href="tel:18003456555" className="underline font-bold text-white hover:text-amber-300 transition-colors">1800 345 6555 (Jan Samvad)</a> or WhatsApp Desk <button onClick={() => setIsIvrModalOpen(true)} className="underline font-bold text-white hover:text-amber-300 transition-colors cursor-pointer bg-transparent p-0 border-0">+91 651 2446 070</button> with automatic Hindi and Santhali voice recording.
               </p>
             </div>
           </div>

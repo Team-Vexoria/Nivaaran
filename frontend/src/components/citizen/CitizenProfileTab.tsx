@@ -30,7 +30,7 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
   const [district, setDistrict] = useState('Ranchi');
   const [block, setBlock] = useState('Kanke Block');
   const village = 'Hutup Panchayat';
-  const [phone, setPhone] = useState('+91 98351 40912');
+  const [phone, setPhone] = useState('+91 94311 00000');
   const [isEditing, setIsEditing] = useState(false);
 
   // Live challenge data for stats

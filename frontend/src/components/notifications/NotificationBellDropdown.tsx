@@ -31,7 +31,7 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
   const [isOpen, setIsOpen] = useState(false);
   const [activeFilter, setActiveFilter] = useState<'all' | 'updates' | 'dispatches'>('all');
   const [showSimModal, setShowSimModal] = useState(false);
-  const [simContact, setSimContact] = useState('+91 98351 24982');
+  const [simContact, setSimContact] = useState('+91 94311 00000');
   const [simType, setSimType] = useState<'sms' | 'email'>('sms');
   const [simNote, setSimNote] = useState('Challenge stage advanced to Stage 12: Panchayat Ground Trial complete.');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -300,7 +300,7 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
                     type="button"
                     onClick={() => {
                       setSimType('sms');
-                      setSimContact('+91 98351 24982');
+                      setSimContact('+91 94311 00000');
                     }}
                     className={`py-1.5 rounded-lg border font-bold text-center transition-all ${
                       simType === 'sms' ? 'bg-[#2C6E49] text-white border-[#2C6E49]' : 'bg-[#FAF8F4] border-[#E4DDD1] text-[#6A6155]'

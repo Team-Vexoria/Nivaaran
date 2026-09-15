@@ -974,15 +974,15 @@ export const GovPortal: React.FC = () => {
         </div>
 
         {/* Tab bar */}
-        <div className="max-w-7xl mx-auto flex items-center gap-1 border-t border-[#E4DDD1] pt-2 mt-2">
+        <div className="max-w-7xl mx-auto flex items-center gap-1.5 border-t border-[#E4DDD1] pt-2.5 mt-2 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap px-1 pb-1">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
                 activeTab === t.id
-                  ? 'bg-[#2C6E49] text-white'
-                  : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                  ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                  : 'text-[#5A5247] hover:text-[#201C18] hover:bg-[#EAE4D8]'
               }`}
             >
               {t.icon}

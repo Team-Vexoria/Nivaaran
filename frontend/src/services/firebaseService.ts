@@ -381,6 +381,9 @@ export interface ChallengeDoc {
   communityUpvotes?: number;
   extractedMetadata?: import('./dataExtractionService').IncidentExtractedData;
   translations?: Record<string, any>;
+  reporterId?: string;
+  reporterEmail?: string;
+  reporterName?: string;
   createdAt?: any;
   affectedPopulation?: number;
   economicValueEstimate?: number;

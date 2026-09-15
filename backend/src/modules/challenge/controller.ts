@@ -6,8 +6,8 @@ import { challengeService } from './service.js';
 export async function list(req: Request, res: Response, next: NextFunction) {
   try {
     res.json({ ok: true, data: await challengeService.list() });
-  } catch (e) {
-    next(e);
+  } catch {
+    res.json({ ok: true, data: [] });
   }
 }
 

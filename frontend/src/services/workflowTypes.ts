@@ -149,6 +149,9 @@ export interface Challenge {
   // Metadata
   submittedBy?: string;
   submittedByRole?: string;
+  reporterId?: string;
+  reporterEmail?: string;
+  reporterName?: string;
   createdAt: string;              // ISO timestamp
   updatedAt: string;              // ISO timestamp
 }

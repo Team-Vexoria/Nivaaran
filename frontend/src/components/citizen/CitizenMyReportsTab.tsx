@@ -6,6 +6,7 @@ import { CHALLENGE_STATUS_OPTIONS, LIFECYCLE_STAGES, getStageForStatus, getPubli
 import { workflowStore } from '../../services/workflowStore';
 import type { TimelineEvent } from '../../services/workflowTypes';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
 
@@ -45,6 +46,7 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
   currentLang = 'en'
 }) => {
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [selectedReport, setSelectedReport] = useState<ChallengeDoc | null>(null);
   const [reports, setReports] = useState<ChallengeDoc[]>([]);
@@ -56,11 +58,55 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
 
   useEffect(() => {
     const unsubscribe = subscribeToChallenges((incomingDocs) => {
-      setReports(incomingDocs);
+      const userKey = `nivaaran_my_reports_${currentUser?.uid || currentUser?.email || 'guest'}`;
+      let mySubmittedIds: string[] = [];
+      try {
+        mySubmittedIds = JSON.parse(localStorage.getItem(userKey) || '[]');
+      } catch (e) {
+        mySubmittedIds = [];
+      }
+
+      // Filter to ONLY reports submitted by the logged-in user
+      const userReports = incomingDocs.filter((doc) => {
+        const docId = doc.id || '';
+        const reportId = doc.reportId || '';
+
+        // Exclude all system pre-seeded demonstration challenges
+        if (
+          docId.startsWith('DEMO-CH-') ||
+          reportId.startsWith('NIV-2026-00') ||
+          (doc as any).isSeed === true
+        ) {
+          return false;
+        }
+
+        // 1. Direct reporterId match
+        if (currentUser?.uid && (doc as any).reporterId && (doc as any).reporterId === currentUser.uid) {
+          return true;
+        }
+
+        // 2. Direct reporterEmail match
+        if (
+          currentUser?.email &&
+          (doc as any).reporterEmail &&
+          (doc as any).reporterEmail.toLowerCase() === currentUser.email.toLowerCase()
+        ) {
+          return true;
+        }
+
+        // 3. Match against user's submitted report IDs stored in this browser session
+        if (mySubmittedIds.includes(docId) || mySubmittedIds.includes(reportId)) {
+          return true;
+        }
+
+        return false;
+      });
+
+      setReports(userReports);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [currentUser?.uid, currentUser?.email]);
 
   // Query workflowStore when a report is opened in the tracking modal
   useEffect(() => {
@@ -97,6 +143,12 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
       try {
         await deleteChallengeDoc(reportId);
         workflowStore.deleteChallenge(reportId);
+        const userKey = `nivaaran_my_reports_${currentUser?.uid || currentUser?.email || 'guest'}`;
+        try {
+          const myIds: string[] = JSON.parse(localStorage.getItem(userKey) || '[]');
+          const updated = myIds.filter(id => id !== reportId);
+          localStorage.setItem(userKey, JSON.stringify(updated));
+        } catch (err) {}
         setReports(prev => prev.filter(r => r.id !== reportId && r.reportId !== reportId));
         if (selectedReport && (selectedReport.id === reportId || selectedReport.reportId === reportId)) {
           setSelectedReport(null);

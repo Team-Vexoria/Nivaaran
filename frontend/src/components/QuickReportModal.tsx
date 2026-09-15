@@ -7,6 +7,7 @@ import {
 import { submitChallengeToFirestore, submitFeedPostToFirestore, uploadEvidenceAudio } from '../services/firebaseService';
 import { runAITriageEngineAsync, runAITriageEngine, AITriageResult } from '../services/aiTriageEngine';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { formatStageName, getStageForStatus } from '../services/workflowLifecycle';
 import { workflowStore } from '../services/workflowStore';
 import { findSimilarChallenges, mergeWithPrimaryChallenge, getDistrictCentroid, type MergeResult } from '../services/deduplicationService';
@@ -85,6 +86,7 @@ const JHARKHAND_ISSUE_PRESETS = [
 ];
 
 export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const { currentUser } = useAuth();
   const { t, currentLang } = useLanguage();
   const [step, setStep] = useState<'form' | 'submitting' | 'success' | 'forensic_rejected' | 'dedup_merged'>('form');
 const [affectedPopulation, setAffectedPopulation] = useState<number | undefined>(undefined);
@@ -648,7 +650,22 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
         affectedPopulation,
         economicValueEstimate,
         estimatedResolutionCost,
+        reporterId: currentUser?.uid,
+        reporterEmail: currentUser?.email || undefined,
+        reporterName: currentUser?.displayName || 'Citizen Resident',
       });
+
+      // Track this report as created by the current user
+      try {
+        const userKey = `nivaaran_my_reports_${currentUser?.uid || currentUser?.email || 'guest'}`;
+        const myIds: string[] = JSON.parse(localStorage.getItem(userKey) || '[]');
+        if (!myIds.includes(generatedId)) {
+          myIds.unshift(generatedId);
+          localStorage.setItem(userKey, JSON.stringify(myIds));
+        }
+      } catch (err) {
+        console.warn('Failed to record user report ID locally', err);
+      }
 
       submitFeedPostToFirestore({
         author: 'Citizen Resident',

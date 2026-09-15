@@ -96,6 +96,9 @@ export function toWorkflowChallenge(doc: ChallengeDoc): Challenge {
     assignedHEI: doc.assignedHEI,
     assignedDept: doc.assignedDept,
     csrSponsor: doc.csrSponsor,
+    reporterId: doc.reporterId,
+    reporterEmail: doc.reporterEmail,
+    reporterName: doc.reporterName,
     createdAt: doc.createdAt?.toString() || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -148,6 +151,9 @@ export function toLegacyChallengeDoc(challenge: Challenge): ChallengeDoc {
     economicValueEstimate: challenge.economicValueEstimate || (challenge as any).economicValueEstimate,
     estimatedResolutionCost: challenge.estimatedResolutionCost || (challenge as any).estimatedResolutionCost,
     research: challenge.research || (challenge as any).research,
+    reporterId: challenge.reporterId,
+    reporterEmail: challenge.reporterEmail,
+    reporterName: challenge.reporterName,
     createdAt: challenge.createdAt || new Date().toISOString(),
   };
 }

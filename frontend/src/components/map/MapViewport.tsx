@@ -183,16 +183,34 @@ export const MapViewport: React.FC<MapViewportProps> = ({
     disasterZonesLayerRef.current = L.layerGroup().addTo(map);
     mapRef.current = map;
 
+    const resizeObserver = new ResizeObserver(() => {
+      map.invalidateSize();
+    });
+    if (mapDivRef.current) {
+      resizeObserver.observe(mapDivRef.current);
+    }
+
+    const handleWindowResize = () => {
+      map.invalidateSize();
+    };
+    window.addEventListener('resize', handleWindowResize);
+
     const resizeTimer1 = setTimeout(() => {
       map.invalidateSize();
     }, 100);
     const resizeTimer2 = setTimeout(() => {
       map.invalidateSize();
     }, 350);
+    const resizeTimer3 = setTimeout(() => {
+      map.invalidateSize();
+    }, 800);
 
     return () => {
+      window.removeEventListener('resize', handleWindowResize);
+      resizeObserver.disconnect();
       clearTimeout(resizeTimer1);
       clearTimeout(resizeTimer2);
+      clearTimeout(resizeTimer3);
       map.remove();
       mapRef.current = null;
     };
@@ -274,30 +292,31 @@ export const MapViewport: React.FC<MapViewportProps> = ({
 
         layer.on('mouseover', (e) => {
           (e.target as L.Path).setStyle({ weight: 2.5, color: '#1E3A8A' });
-          let tooltipContent = `<strong>${distName} District</strong><br/>`;
-          if (showRiskHeatmap && riskProfile) {
-            tooltipContent += `
-              <div class="text-[11px] leading-tight pt-1">
-                <span class="font-bold text-red-700">Threat: ${riskProfile.primaryThreat}</span><br/>
-                <span>Flood Risk: <strong>${riskProfile.floodScore}/100</strong> | Drought Risk: <strong>${riskProfile.droughtScore}/100</strong></span><br/>
-                <span>Rainfall Anomaly: <strong>${riskProfile.monsoonRainfallAnomalyPct > 0 ? '+' : ''}${riskProfile.monsoonRainfallAnomalyPct}%</strong></span>
-              </div>`;
-          } else {
-            const tooltipText = (t.map.districtTooltip || '{distName}: {count} reports')
-              .replace('{distName}', distName)
-              .replace('{count}', String(stat?.total ?? 0));
-            tooltipContent += `${tooltipText}`;
-          }
-
-          const tooltip = L.tooltip({ permanent: false, direction: 'center', className: 'nivaaran-district-tooltip' })
-            .setContent(tooltipContent)
-            .setLatLng((layer as L.Polygon).getBounds().getCenter());
-          map.openTooltip(tooltip);
         });
 
         layer.on('mouseout', (e) => {
           geoJsonLayerRef.current?.resetStyle(e.target as L.Path);
-          map.closeTooltip();
+        });
+
+        let tooltipContent = `<strong>${distName} District</strong><br/>`;
+        if (showRiskHeatmap && riskProfile) {
+          tooltipContent += `
+            <div class="text-[11px] leading-tight pt-1">
+              <span class="font-bold text-red-700">Threat: ${riskProfile.primaryThreat}</span><br/>
+              <span>Flood Risk: <strong>${riskProfile.floodScore}/100</strong> | Drought Risk: <strong>${riskProfile.droughtScore}/100</strong></span><br/>
+              <span>Rainfall Anomaly: <strong>${riskProfile.monsoonRainfallAnomalyPct > 0 ? '+' : ''}${riskProfile.monsoonRainfallAnomalyPct}%</strong></span>
+            </div>`;
+        } else {
+          const tooltipText = (t.map.districtTooltip || '{distName}: {count} reports')
+            .replace('{distName}', distName)
+            .replace('{count}', String(stat?.total ?? 0));
+          tooltipContent += `${tooltipText}`;
+        }
+
+        layer.bindTooltip(tooltipContent, {
+          sticky: true,
+          direction: 'center',
+          className: 'nivaaran-district-tooltip',
         });
       },
     }).addTo(map);

@@ -178,7 +178,7 @@ export const PFMSDisbursementLedger: React.FC<PFMSDisbursementLedgerProps> = ({
       });
 
       notificationService.sendSimulatedSMS(
-        '+91 98351 24982',
+        '+91 94311 00000',
         `PFMS GOVT OF JHARKHAND: Rs ${(selectedOrderForDisbursal.amountRupees / 100000).toFixed(2)}L disbursed to ${selectedOrderForDisbursal.heiName} Account ${selectedOrderForDisbursal.accountNumberMasked}. Txn: ${txRef}`,
         selectedOrderForDisbursal.challengeReportId
       );

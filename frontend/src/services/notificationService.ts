@@ -41,13 +41,13 @@ const SEED_NOTIFICATIONS: AppNotification[] = [
   {
     id: 'NOTIF-002',
     title: 'SMS Dispatched to Citizen',
-    message: 'Alert sent to +91-9835124982: "Your report JH-2026-RNC-001 has advanced to Stage 12. Panchayat validation verified."',
+    message: 'Alert sent to +91-9431100000: "Your report JH-2026-RNC-001 has advanced to Stage 12. Panchayat validation verified."',
     timestamp: '25 minutes ago',
     read: false,
     type: 'sms_dispatched',
     reportId: 'JH-2026-RNC-001',
     channel: 'sms',
-    recipientContact: '+91-9835124982',
+    recipientContact: '+91-9431100000',
   },
   {
     id: 'NOTIF-003',

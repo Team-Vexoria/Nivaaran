@@ -204,7 +204,7 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPaused, totalSlides]);
+  }, [isPaused, totalSlides, activeSlide]);
 
   const handlePrev = () => {
     setActiveSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
@@ -225,8 +225,6 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
     <section 
       aria-label="NIVAARAN Showcase Carousel"
       className="relative w-full bg-[#FAF8F4] text-[#201C18] border-b border-[#E4DDD1] overflow-hidden py-4 sm:py-6 px-3 sm:px-6"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
     >
       {/* Subtle National Ribbon at Top Border */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#2C6E49] via-[#C98A2C] to-[#B5502D]" />

@@ -233,7 +233,7 @@ export const CrossPortalMessagingHub: React.FC<CrossPortalMessagingHubProps> = (
 
     if (broadcastSMS) {
       notificationService.sendSimulatedSMS(
-        '+91 98351 24982',
+        '+91 94311 00000',
         `NIVAARAN [${activeThread.challengeReportId}] New message from ${selectedRole}: ${inputMessage.slice(0, 60)}`,
         activeThread.challengeReportId
       );
