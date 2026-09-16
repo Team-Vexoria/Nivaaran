@@ -8,6 +8,7 @@ import {
   Schedule7Category, DisbursementMilestone, generateRequestId,
   submitCollaborationRequest
 } from '../../services/firebaseService';
+import { IndustryPartnerDoc } from '../../services/industryData';
 
 interface Props {
   projectId: string;
@@ -16,6 +17,7 @@ interface Props {
   assignedHEI: string;
   orgName: string;
   orgEmail: string;
+  industryPartner?: IndustryPartnerDoc;
   onClose: () => void;
   onSuccess: (requestId: string) => void;
 }
@@ -114,7 +116,7 @@ const labelCls = 'text-[11px] font-extrabold text-[#6A6155] uppercase tracking-w
 const sectionCls = 'bg-white border border-[#E4DDD1] rounded-xl p-4 space-y-3';
 
 export const CollaborationRequestWizard: React.FC<Props> = ({
-  projectId, challengeId, challengeTitle, assignedHEI, orgName, orgEmail, onClose, onSuccess
+  projectId, challengeId, challengeTitle, assignedHEI, orgName, orgEmail, industryPartner, onClose, onSuccess
 }) => {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -122,33 +124,54 @@ export const CollaborationRequestWizard: React.FC<Props> = ({
 
   const [form, setForm] = useState<FormState>({
     orgType: 'Large Corporate',
-    cinNumber: '',
-    csrRegistrationNumber: '',
-    authorizedSignatoryName: '',
-    authorizedSignatoryDesignation: '',
-    authorizedSignatoryEmail: orgEmail,
-    has12ACertificate: null,
-    has80GCertificate: null,
-    hasSeparateCsrBankAccount: null,
-    auditedFinancialsAvailable: null,
-    schedule7Category: '',
+    cinNumber: industryPartner?.cin || 'L27100MH1907PLC000260',
+    csrRegistrationNumber: industryPartner?.csrRegNumber || 'CSR00001248',
+    authorizedSignatoryName: industryPartner?.leadName || 'Sourav Roy',
+    authorizedSignatoryDesignation: industryPartner?.leadDesignation || 'Chief CSR & Social Innovation',
+    authorizedSignatoryEmail: industryPartner?.leadEmail || orgEmail,
+    has12ACertificate: true,
+    has80GCertificate: true,
+    hasSeparateCsrBankAccount: true,
+    auditedFinancialsAvailable: true,
+    schedule7Category: industryPartner?.schedule7Focus?.[0] || 'ix. Contributions to science, technology, engineering, medicine R&D',
 
-    collaborationTypes: [],
-    proposedBudgetInr: '',
-    inKindDetails: '',
-    sdgAlignment: '',
-    expectedCommunityBeneficiaries: '',
-    socialOutcomesStatement: '',
+    collaborationTypes: ['CSR Cash Grant', 'Hardware / Component Sponsorship'],
+    proposedBudgetInr: '650000',
+    inKindDetails: 'Prototype testing lab facilities, sensor components, and telemetry field trial access.',
+    sdgAlignment: 'SDG 6 (Clean Water), SDG 9 (Innovation & Infrastructure), SDG 11 (Sustainable Communities)',
+    expectedCommunityBeneficiaries: '3500',
+    socialOutcomesStatement: `Corporate co-funding and engineering sponsorship to address ${challengeTitle} in collaboration with ${assignedHEI}.`,
 
-    ipOwnershipPreference: '',
-    exclusivityRequired: null,
-    brandingScope: '',
-    confidentialityScope: '',
+    ipOwnershipPreference: 'University retains full IP, industry gets acknowledgement',
+    exclusivityRequired: false,
+    brandingScope: 'Co-Branded Impact Docket & CSR Annual Report Recognition',
+    confidentialityScope: 'Public Domain R&D with proprietary sensor schematics reserved',
     disputeResolution: 'Platform Arbitration',
 
-    disbursementMilestones: [emptyMilestone(1)],
+    disbursementMilestones: [
+      {
+        trancheNumber: 1,
+        label: 'Tranche 1 (40% Initial Release)',
+        triggerStageNumber: 11,
+        triggerStageName: 'Stage 11: Hardware Prototype Ready & Lab Verified',
+        amountInr: 260000,
+        inKindDescription: 'Hardware components & CAD fabrication',
+        releaseCondition: 'Lab bench tests and telemetry verified by faculty mentor',
+        status: 'Pending',
+      },
+      {
+        trancheNumber: 2,
+        label: 'Tranche 2 (60% Pilot Release)',
+        triggerStageNumber: 12,
+        triggerStageName: 'Stage 12: Panchayat Ground Trial Active',
+        amountInr: 390000,
+        inKindDescription: 'Panchayat deployment site & sirens',
+        releaseCondition: 'Mukhiya and District Officer pilot verification sign-off',
+        status: 'Pending',
+      },
+    ],
 
-    declarationChecked: false,
+    declarationChecked: true,
   });
 
   const set = (field: keyof FormState, value: any) =>

@@ -3,31 +3,26 @@ import {
   Handshake, Building2, Search, Compass, FileCheck, Activity,
   ShieldCheck, Award, CheckCircle2,
   MapPin, Clock, Layers, LogOut, Download,
-  Check, MessageSquareText, Send, Wrench, History, Filter, BarChart3, TrendingUp, IndianRupee, Users2, Eye
+  Check, MessageSquareText, Eye,
+  FlaskConical, X, Copy
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
   ChallengeDoc, subscribeToChallenges,
   CollaborationRequest, subscribeToCollaborationRequests,
-  Schedule7Category,
-  submitCollaborationOffer,
-  requestCollaborationDetails
+  Schedule7Category
 } from '../../services/firebaseService';
 import { CollaborationRequestWizard } from '../../components/industry/CollaborationRequestWizard';
 import { ActiveCollaborationWorkspace } from '../../components/industry/ActiveCollaborationWorkspace';
-import {
-  Phase3Project,
-  CollaborationPartnerType,
-  CollaborationSupportType,
-  PARTNER_OPTIONS,
-  SUPPORT_OPTIONS
-} from '../../services/workflowTypes';
-import { getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
+import { getStageForStatus } from '../../services/workflowLifecycle';
 import { NotificationBellDropdown } from '../../components/notifications/NotificationBellDropdown';
 import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
 import { ChallengeDetailModal } from '../../components/ChallengeDetailModal';
+import { 
+  JHARKHAND_INDUSTRIES, IndustryPartnerDoc, getIndustryByEmail, getTestingIndustriesList 
+} from '../../services/industryData';
 
-type IndustryTab = 'discovery' | 'my-requests' | 'active' | 'compliance' | 'certificates' | 'opportunities' | 'history' | 'dashboard' | 'messages';
+type IndustryTab = 'discovery' | 'my-requests' | 'active' | 'compliance' | 'certificates' | 'messages';
 
 const SCHEDULE7_LIST: Schedule7Category[] = [
   'i. Eradicating extreme hunger, poverty and malnutrition',
@@ -44,23 +39,27 @@ const SCHEDULE7_LIST: Schedule7Category[] = [
   'xii. Disaster management, relief, rehabilitation',
 ];
 
-interface HistoryEntry {
-  projectId: string;
-  projectName: string;
-  challengeTitle: string;
-  universityName: string;
-  district: string;
-  supportType: string;
-  partnerType: string;
-  partnerName: string;
-  message: string;
-  status: string;
-  timestamp?: string;
-}
-
 export const IndustryPortal: React.FC = () => {
   const { currentUser, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<IndustryTab>('discovery');
+
+  // Active Industry Partner Session
+  const [activeIndustry, setActiveIndustry] = useState<IndustryPartnerDoc>(() => {
+    if (currentUser?.email) {
+      const match = getIndustryByEmail(currentUser.email);
+      if (match) return match;
+    }
+    const savedId = localStorage.getItem('nivaaran_active_industry_id');
+    if (savedId) {
+      const match = JHARKHAND_INDUSTRIES.find(i => i.id === savedId);
+      if (match) return match;
+    }
+    return JHARKHAND_INDUSTRIES[0];
+  });
+
+  const [isTestingModalOpen, setIsTestingModalOpen] = useState<boolean>(false);
+  const [searchIndustryQuery, setSearchIndustryQuery] = useState<string>('');
+  const [copiedEmail, setCopiedEmail] = useState<string | null>(null);
 
   // Challenges from Firestore
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
@@ -77,18 +76,8 @@ export const IndustryPortal: React.FC = () => {
   const [inspectingChallenge, setInspectingChallenge] = useState<ChallengeDoc | null>(null);
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
 
-  // Legacy offer modal & history state
-  const [projects, _setProjects] = useState<Phase3Project[]>([]);
-  const [selectedProject, setSelectedProject] = useState<Phase3Project | null>(null);
-  const [partnerType, setPartnerType] = useState<CollaborationPartnerType>('Industry');
-  const [supportType, setSupportType] = useState<CollaborationSupportType>('Funding');
-  const [message, setMessage] = useState('We can support fabrication, testing, telemetry credits, and pilot deployment.');
-  const [_notice, setNotice] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [modalError, setModalError] = useState('');
-  const [historyFilter, setHistoryFilter] = useState('all');
-
-  const orgName = currentUser?.displayName || 'Tata Steel CSR Foundation';
-  const orgEmail = currentUser?.email || 'partner@tatasteel.com';
+  const orgName = activeIndustry.name;
+  const orgEmail = activeIndustry.leadEmail;
 
   useEffect(() => {
     const unsub1 = subscribeToChallenges(data => setChallenges(data));
@@ -99,26 +88,60 @@ export const IndustryPortal: React.FC = () => {
     };
   }, []);
 
+  const handleCopyEmail = (email: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard?.writeText(email);
+    setCopiedEmail(email);
+    setTimeout(() => setCopiedEmail(null), 2000);
+  };
+
+  const handleIndustryChange = (ind: IndustryPartnerDoc) => {
+    setActiveIndustry(ind);
+    localStorage.setItem('nivaaran_active_industry_id', ind.id);
+    setIsTestingModalOpen(false);
+  };
+
+  const testingIndustries = useMemo(() => {
+    const all = getTestingIndustriesList();
+    if (!searchIndustryQuery.trim()) return all;
+    const q = searchIndustryQuery.toLowerCase().trim();
+    return all.filter(item => 
+      item.ind.name.toLowerCase().includes(q) ||
+      item.ind.shortName.toLowerCase().includes(q) ||
+      item.ind.district.toLowerCase().includes(q) ||
+      item.email.toLowerCase().includes(q)
+    );
+  }, [searchIndustryQuery]);
+
   // Filter challenges eligible for industry collaboration:
-  // (In Progress, stageNumber >= 7 or assignedHEI present)
-  const eligibleChallenges = challenges.filter(c => {
-    const matchesSearch =
-      c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.reportId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.assignedHEI && c.assignedHEI.toLowerCase().includes(searchQuery.toLowerCase()));
+  // (In Progress, stageNumber >= 6 or assignedHEI present, clean from junk)
+  const eligibleChallenges = useMemo(() => {
+    return challenges.filter(c => {
+      const isJunk = !c.title || /i cant attach photo|cant attach photo/i.test(c.title + ' ' + (c.summary || ''));
+      if (isJunk) return false;
 
-    const matchesDistrict = selectedDistrict === 'ALL' || c.district === selectedDistrict;
-    const matchesCategory = selectedCategory === 'ALL' || c.category === selectedCategory;
+      const stageNum = getStageForStatus(c.status)?.stageNumber || (c.assignedHEI ? 7 : 0);
+      const isEligibleStage = stageNum >= 6 || Boolean(c.assignedHEI);
+      if (!isEligibleStage) return false;
 
-    return matchesSearch && matchesDistrict && matchesCategory;
-  });
+      const matchesSearch =
+        c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.reportId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.assignedHEI && c.assignedHEI.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      const matchesDistrict = selectedDistrict === 'ALL' || c.district === selectedDistrict;
+      const matchesCategory = selectedCategory === 'ALL' || c.category === selectedCategory;
+
+      return matchesSearch && matchesDistrict && matchesCategory;
+    });
+  }, [challenges, searchQuery, selectedDistrict, selectedCategory]);
 
   // Unique districts & categories
   const districts = ['ALL', ...Array.from(new Set(challenges.map(c => c.district))).filter(Boolean)];
   const categories = ['ALL', ...Array.from(new Set(challenges.map(c => c.category))).filter(Boolean)];
 
-  // My requests for this org
+  // My requests for this active org
   const myRequests = collabRequests.filter(r =>
     r.orgName === orgName || r.authorizedSignatoryEmail === orgEmail || r.submittedByOrg === orgName
   );
@@ -139,71 +162,10 @@ export const IndustryPortal: React.FC = () => {
     window.dispatchEvent(new Event('popstate'));
   };
 
-  // --- Collaboration history: flatten all offers across all projects ---
-  const collaborationHistory = useMemo<HistoryEntry[]>(() => {
-    return projects.filter(p => p.id).flatMap(project => {
-      const offers = project.collaborationOffers || [];
-      return offers.map(offer => ({
-        projectId: project.id!,
-        projectName: project.challengeTitle || project.id!,
-        challengeTitle: project.challengeTitle || project.id!,
-        universityName: project.universityName || '—',
-        district: project.district || '—',
-        supportType: (offer as any).supportType || 'Funding',
-        partnerType: (offer as any).partnerType || 'Industry',
-        partnerName: (offer as any).partnerName || 'Unknown Partner',
-        message: (offer as any).message || '',
-        status: (offer as any).status || 'Proposed',
-        timestamp: (offer as any).timestamp || (offer as any).createdAt || '',
-      }));
-    }).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
-  }, [projects]);
-
-  const filteredHistory = useMemo(() => {
-    if (historyFilter === 'all') return collaborationHistory;
-    return collaborationHistory.filter(e => e.status === historyFilter);
-  }, [collaborationHistory, historyFilter]);
-
-  const phase3Projects = useMemo(() => {
-    return projects.filter(p => (p.status as string) === 'Phase 3' || (p.status as string) === 'In Progress' || p.status === 'Prototype Active' || p.status === 'Pilot Active' || (p.challenge && (getStageForStatus(p.challenge.status)?.stageNumber || 0) >= 9));
-  }, [projects]);
-
-  const partnerName = currentUser?.displayName || 'Industry Partner';
-
-  const handleOffer = async () => {
-    if (!selectedProject?.id) return;
-    if (message.trim().length < 20) {
-      setModalError('Please provide a detailed offer message (at least 20 characters).');
-      return;
-    }
-    setModalError('');
-    const saved = await submitCollaborationOffer(selectedProject.id, {
-      partnerName,
-      partnerType,
-      supportType,
-      message: message.trim(),
-    });
-    setNotice(saved
-      ? { type: 'success', text: `Offer submitted for ${selectedProject.challenge?.title || selectedProject.challengeTitle}.` }
-      : { type: 'error', text: 'This project is no longer eligible for a Phase 3 collaboration offer. Refresh and try again.' });
-    if (saved) {
-      setSelectedProject(null);
-      setMessage('We can support fabrication, testing, telemetry credits, and pilot deployment.');
-    }
-  };
-
-  const handleRequestDetails = async (project: Phase3Project) => {
-    if (!project.id) return;
-    const requested = await requestCollaborationDetails(project.id, partnerName);
-    setNotice(requested
-      ? { type: 'success', text: `Technical details requested from ${project.universityName}.` }
-      : { type: 'error', text: 'The request could not be recorded. Please refresh and try again.' });
-  };
-
   return (
     <div className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col antialiased selection:bg-[#2C6E49] selection:text-white font-sans">
       
-      {/* ── Top Header ── */}
+      {/* Top Header */}
       <header className="sticky top-0 z-[100] bg-[#FAF8F4] text-[#201C18] border-b border-[#E4DDD1] shadow-2xs px-4 sm:px-6 py-2.5">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           
@@ -228,14 +190,29 @@ export const IndustryPortal: React.FC = () => {
             </div>
           </div>
 
-          {/* Org & User Details */}
-          <div className="flex items-center space-x-3 shrink-0">
-            <div className="hidden sm:flex items-center gap-2 bg-white border border-[#E4DDD1] px-3 py-1.5 rounded-xl text-xs shadow-2xs">
-              <Building2 className="w-4 h-4 text-[#2C6E49]" />
-              <div>
-                <p className="font-extrabold text-[#201C18] leading-tight">{orgName}</p>
-                <p className="text-[10px] text-[#6A6155]">{currentUser?.role || 'CSR Partner'}</p>
+          {/* Org Switcher & Actions */}
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0">
+            
+            {/* Institutional Switcher Badge */}
+            <div 
+              onClick={() => setIsTestingModalOpen(true)}
+              className="flex items-center gap-2 bg-white border border-[#E4DDD1] hover:border-[#2C6E49] px-3 py-1.5 rounded-xl text-xs shadow-2xs cursor-pointer transition-all group"
+              title="Click to switch test corporate / industry partner accounts"
+            >
+              <Building2 className="w-4 h-4 text-[#2C6E49] shrink-0 group-hover:scale-110 transition-transform" />
+              <div className="text-left hidden md:block max-w-[200px]">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-extrabold text-[#201C18] leading-tight truncate">{activeIndustry.shortName || orgName}</p>
+                  <span className="text-[9px] font-black text-[#2C6E49] bg-[#F0FAF4] px-1.5 py-0.2 rounded border border-[#C3E6D0]">
+                    VERIFIED CSR
+                  </span>
+                </div>
+                <p className="text-[10px] text-[#6A6155] truncate">{orgEmail}</p>
               </div>
+              <span className="text-[10px] font-extrabold text-[#C98A2C] bg-[#FFF8EC] px-2 py-1 rounded-lg border border-[#F0D99A] flex items-center gap-1">
+                <FlaskConical className="w-3 h-3" />
+                <span className="hidden sm:inline">Testing Accounts</span>
+              </span>
             </div>
 
             <NotificationBellDropdown userRole="industry" userDistrict={orgName} />
@@ -251,7 +228,7 @@ export const IndustryPortal: React.FC = () => {
 
         </div>
 
-        {/* ── Sub-Tab Navigation Bar ── */}
+        {/* Tab Navigation Bar */}
         <div className="max-w-7xl mx-auto flex items-center justify-between border-t border-[#E4DDD1] pt-2 mt-2 overflow-x-auto gap-2 text-xs">
           <nav className="flex items-center space-x-1">
             <button
@@ -321,56 +298,25 @@ export const IndustryPortal: React.FC = () => {
               }`}
             >
               <Award className="w-3.5 h-3.5 text-[#C98A2C]" />
-              <span>5. Impact Certificates (Board CSR Report)</span>
+              <span>5. Impact Certificates</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('messages')}
+              className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'messages'
+                  ? 'bg-[#2C6E49] text-white shadow-2xs'
+                  : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+              }`}
+            >
+              <MessageSquareText className="w-3.5 h-3.5" />
+              <span>6. Messages</span>
             </button>
           </nav>
         </div>
-
-        {/* Tabs */}
-        <div className="max-w-7xl mx-auto mt-3 flex items-center gap-1 border-t border-white/10 pt-2">
-          <button
-            onClick={() => setActiveTab('opportunities')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all ${
-              activeTab === 'opportunities' ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/10'
-            }`}
-          >
-            <Wrench className="w-3.5 h-3.5" />
-            <span>Live Opportunities</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('history')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all ${
-              activeTab === 'history' ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/10'
-            }`}
-          >
-            <History className="w-3.5 h-3.5" />
-            <span>Collaboration History</span>
-            {collaborationHistory.length > 0 && (
-              <span className="bg-[#C98A2C] text-white text-[10px] font-black px-1.5 py-0.5 rounded-full leading-none">{collaborationHistory.length}</span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all ${
-              activeTab === 'dashboard' ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/10'
-            }`}
-          >
-            <BarChart3 className="w-3.5 h-3.5" />
-            <span>CSR Funding Tracker</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('messages')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all ${
-              activeTab === 'messages' ? 'bg-white/15 text-white' : 'text-white/50 hover:text-white/80 hover:bg-white/10'
-            }`}
-          >
-            <MessageSquareText className="w-3.5 h-3.5" />
-            <span>Messages</span>
-          </button>
-        </div>
       </header>
 
-      {/* ── Main Content Viewport ── */}
+      {/* Main Content Viewport */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
 
         {/* Success Banner */}
@@ -386,9 +332,7 @@ export const IndustryPortal: React.FC = () => {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════════════
-            TAB 1: DISCOVERY & COLLABORATION BOARD
-           ══════════════════════════════════════════════════════════════════════════ */}
+        {/* TAB 1: DISCOVERY & COLLABORATION BOARD */}
         {activeTab === 'discovery' && (
           <div className="space-y-6">
             
@@ -411,7 +355,7 @@ export const IndustryPortal: React.FC = () => {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-[#F0EBE0]">
                 <div className="bg-[#FAF8F4] p-3 rounded-xl border border-[#E4DDD1]">
                   <p className="text-[10px] font-extrabold text-[#6A6155] uppercase tracking-wider">Available Projects</p>
-                  <p className="text-lg font-black text-[#201C18]">{challenges.length}</p>
+                  <p className="text-lg font-black text-[#201C18]">{eligibleChallenges.length}</p>
                 </div>
                 <div className="bg-[#FAF8F4] p-3 rounded-xl border border-[#E4DDD1]">
                   <p className="text-[10px] font-extrabold text-[#6A6155] uppercase tracking-wider">HEIs Collaborating</p>
@@ -606,9 +550,7 @@ export const IndustryPortal: React.FC = () => {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════════════
-            TAB 2: MY COLLABORATION REQUESTS
-           ══════════════════════════════════════════════════════════════════════════ */}
+        {/* TAB 2: MY COLLABORATION REQUESTS */}
         {activeTab === 'my-requests' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -646,8 +588,8 @@ export const IndustryPortal: React.FC = () => {
                             <span className="text-xs font-extrabold text-[#201C18]">{req.requestId}</span>
                             <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
                               req.status === 'MoU Signed' ? 'bg-[#F0FAF4] text-[#2C6E49] border border-[#C3E6D0]' :
-                              req.status === 'Negotiation — Counter Terms Sent' ? 'bg-[#FFF0EE] text-[#B5502D] border border-[#F5C6C0]' :
-                              req.status === 'Under University Review' ? 'bg-[#EEF5FF] text-[#1A56AA]' :
+                              req.status.includes('Counter') ? 'bg-[#FFF0EE] text-[#B5502D] border border-[#F5C6C0]' :
+                              req.status === 'Under University Review' ? 'bg-[#FAF8F4] text-[#2C6E49] border border-[#E4DDD1]' :
                               req.status === 'Declined' ? 'bg-[#F8E8E8] text-[#B3261E]' :
                               'bg-[#FFF8EC] text-[#C98A2C] border border-[#F0D99A]'
                             }`}>
@@ -665,12 +607,12 @@ export const IndustryPortal: React.FC = () => {
 
                       {/* University Review Note or Counter-Terms */}
                       {req.universityReviewNote && (
-                        <div className="bg-[#EEF5FF] border border-[#B8D4F5] rounded-xl p-3 text-xs space-y-1">
-                          <p className="font-extrabold text-[#1A56AA]">University Review Feedback (by {req.reviewedByFaculty}):</p>
-                          <p className="text-[#1A3A6B]">{req.universityReviewNote}</p>
+                        <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 text-xs space-y-1">
+                          <p className="font-extrabold text-[#2C6E49]">University Review Feedback (by {req.reviewedByFaculty}):</p>
+                          <p className="text-[#4A433B]">{req.universityReviewNote}</p>
                           {req.universityCounterTerms && (
-                            <div className="mt-2 pt-2 border-t border-[#B8D4F5]">
-                              <p className="font-extrabold text-[#B5502D]">Counter-Terms Proposed by University:</p>
+                            <div className="mt-2 pt-2 border-t border-[#E4DDD1]">
+                              <p className="font-extrabold text-[#B5502D]">Counter Terms Proposed by University:</p>
                               <p className="text-[#201C18] font-mono text-[11px] mt-0.5">{req.universityCounterTerms}</p>
                             </div>
                           )}
@@ -714,9 +656,7 @@ export const IndustryPortal: React.FC = () => {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════════════
-            TAB 3: ACTIVE COLLABORATIONS & TELEMETRY
-           ══════════════════════════════════════════════════════════════════════════ */}
+        {/* TAB 3: ACTIVE COLLABORATIONS & TELEMETRY */}
         {activeTab === 'active' && (
           <ActiveCollaborationWorkspace
             viewerRole="industry"
@@ -724,9 +664,7 @@ export const IndustryPortal: React.FC = () => {
           />
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════════════
-            TAB 4: SECTION 135 COMPLIANCE CENTER
-           ══════════════════════════════════════════════════════════════════════════ */}
+        {/* TAB 4: SECTION 135 COMPLIANCE CENTER */}
         {activeTab === 'compliance' && (
           <div className="space-y-6">
             <div className="bg-white border border-[#E4DDD1] rounded-2xl p-6 shadow-xs space-y-4">
@@ -775,7 +713,7 @@ export const IndustryPortal: React.FC = () => {
                     <span>CA-Certified Utilization Certificate</span>
                   </div>
                   <p className="text-xs text-[#4A433B] leading-relaxed">
-                    Upon reaching Stage 16 (Verified Closure), the platform generates a comprehensive Utilization Certificate and Section 135 Social Impact Dossier for inclusion in the corporate Director's Report.
+                    Upon reaching Stage 16 (Verified Closure), the platform generates a comprehensive Utilization Certificate and Section 135 Social Impact Dossier for inclusion in the corporate Director report.
                   </p>
                 </div>
               </div>
@@ -795,9 +733,7 @@ export const IndustryPortal: React.FC = () => {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════════════
-            TAB 5: IMPACT CERTIFICATES
-           ══════════════════════════════════════════════════════════════════════════ */}
+        {/* TAB 5: IMPACT CERTIFICATES */}
         {activeTab === 'certificates' && (
           <div className="space-y-6">
             <div className="bg-white border border-[#E4DDD1] rounded-2xl p-6 shadow-xs space-y-4">
@@ -881,206 +817,7 @@ export const IndustryPortal: React.FC = () => {
           </div>
         )}
 
-      {/* ── 5-STEP COLLABORATION WIZARD MODAL ── */}
-      {wizardChallenge && (
-        <CollaborationRequestWizard
-          projectId={`PRJ-${wizardChallenge.assignedHEI?.slice(0, 3).toUpperCase() || 'BIT'}-2026-001`}
-          challengeId={wizardChallenge.id || wizardChallenge.reportId}
-          challengeTitle={wizardChallenge.title}
-          assignedHEI={wizardChallenge.assignedHEI || 'BIT Mesra'}
-          orgName={orgName}
-          orgEmail={orgEmail}
-          onClose={() => setWizardChallenge(null)}
-          onSuccess={(requestId) => {
-            setWizardChallenge(null);
-            setSuccessBanner(`Collaboration request ${requestId} submitted successfully. The university faculty and admin have been notified for review.`);
-            setActiveTab('my-requests');
-          }}
-        />
-      )}
-
-        {/* OPPORTUNITIES TAB */}
-        {activeTab === 'opportunities' && (
-          <section className="space-y-3">
-            <div className="flex items-center justify-between"><h3 className="text-sm font-black text-[#16293F] uppercase tracking-wider">Live project opportunities</h3><span className="text-xs text-slate-500">{phase3Projects.length} projects in Stages 9–13</span></div>
-            {phase3Projects.length === 0 ? (
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-10 text-center"><Building2 className="w-10 h-10 text-slate-300 mx-auto" /><h4 className="font-black text-slate-800 mt-3">No Phase 3 projects are ready yet</h4><p className="text-xs text-slate-500 mt-1">Projects appear here after a university submits a proposal.</p></div>
-            ) : (
-              <div className="grid lg:grid-cols-2 gap-4">
-                {phase3Projects.map((project) => {
-                  const stage = project.challenge ? getStageForStatus(project.challenge.status) : undefined;
-                  const offers = project.collaborationOffers || [];
-                  return <article key={project.id} className="bg-white border border-[#E4DDD1] rounded-2xl p-5 space-y-4 shadow-sm">
-                    <div className="flex items-start justify-between gap-3"><div><div className="flex flex-wrap items-center gap-2"><span className="text-[10px] font-mono font-bold text-slate-500 bg-slate-100 px-2 py-1 rounded">{project.id}</span><span className="text-[10px] font-bold text-[#B5502D] bg-[#B5502D]/10 px-2 py-1 rounded">Stage {stage?.stageNumber || '—'} · {project.challenge ? getPublicStatusLabel(project.challenge.status) : project.status}</span></div><h4 className="text-base font-black text-[#16293F] mt-2">{project.challenge?.title || project.challengeTitle}</h4></div><span className="text-xs font-black text-slate-600 whitespace-nowrap">{project.universityName}</span></div>
-                    <p className="text-xs text-slate-600 leading-relaxed">{project.proposals?.[project.proposals.length - 1]?.approach || 'University project team is preparing a technical solution and seeking a Phase 3 partner.'}</p>
-                    <div className="grid grid-cols-2 gap-2 text-xs"><div className="bg-slate-50 rounded-lg p-2.5"><span className="block text-[10px] text-slate-500 font-bold">TEAM</span><strong>{project.teamMembers?.length || 0} members</strong></div><div className="bg-slate-50 rounded-lg p-2.5"><span className="block text-[10px] text-slate-500 font-bold">DISTRICT</span><strong>{project.district}</strong></div></div>
-                    {offers.length > 0 && <div className="text-xs text-slate-600 border-t border-slate-100 pt-3"><span className="font-bold">{offers.length} collaboration record{offers.length === 1 ? '' : 's'}</span> · latest: {offers[offers.length - 1].status}</div>}
-                    <div className="flex flex-wrap gap-2 pt-1"><button onClick={() => { setSelectedProject(project); setNotice(null); }} className="px-3 py-2 bg-[#C98A2C] hover:bg-[#A96D16] text-white text-xs font-black rounded-lg flex items-center gap-1.5"><Handshake className="w-3.5 h-3.5" /> Offer support</button><button onClick={() => handleRequestDetails(project)} className="px-3 py-2 bg-slate-50 hover:bg-slate-100 text-[#16293F] text-xs font-bold rounded-lg border border-slate-200 flex items-center gap-1.5"><MessageSquareText className="w-3.5 h-3.5" /> Request technical details</button></div>
-                  </article>;
-                })}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* HISTORY TAB */}
-        {activeTab === 'history' && (
-          <section className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <h3 className="text-sm font-black text-[#16293F] uppercase tracking-wider">All submitted offers</h3>
-              <div className="flex items-center gap-2 bg-white border border-[#E4DDD1] rounded-lg px-2.5 py-1.5">
-                <Filter className="w-3.5 h-3.5 text-slate-400" />
-                <select
-                  value={historyFilter}
-                  onChange={e => setHistoryFilter(e.target.value)}
-                  className="text-xs bg-transparent font-semibold text-[#201C18] focus:outline-none"
-                >
-                  <option value="all">All statuses ({collaborationHistory.length})</option>
-                  {['Proposed', 'Details Requested', 'Accepted', 'Declined'].map(s => {
-                    const count = collaborationHistory.filter(h => h.status === s).length;
-                    return <option key={s} value={s}>{s} ({count})</option>;
-                  })}
-                </select>
-              </div>
-            </div>
-
-            {filteredHistory.length === 0 ? (
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-10 text-center">
-                <History className="w-10 h-10 text-slate-300 mx-auto" />
-                <h4 className="font-black text-slate-800 mt-3">No collaboration offers yet</h4>
-                <p className="text-xs text-slate-500 mt-1">Submit an offer on the Live Opportunities tab to see it here.</p>
-              </div>
-            ) : (
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="bg-[#FAF8F4] border-b border-[#E4DDD1]">
-                        <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Project</th>
-                        <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">University</th>
-                        <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">District</th>
-                        <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Support</th>
-                        <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Partner</th>
-                        <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Status</th>
-                        <th className="px-4 py-2.5 text-left font-extrabold text-[#4A433B] uppercase tracking-wider text-[10px]">Message</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#F0EBE0]">
-                      {filteredHistory.map((entry, idx) => {
-                        const statusColors: Record<string, string> = {
-                          'Proposed': 'bg-blue-50 text-blue-800 border-blue-200',
-                          'Details Requested': 'bg-amber-50 text-amber-800 border-amber-200',
-                          'Accepted': 'bg-emerald-50 text-emerald-800 border-emerald-200',
-                          'Declined': 'bg-rose-50 text-rose-800 border-rose-200',
-                        };
-                        return (
-                          <tr key={idx} className="hover:bg-[#FAF8F4] transition-colors">
-                            <td className="px-4 py-3 font-semibold text-[#201C18] max-w-[180px] truncate">{entry.challengeTitle}</td>
-                            <td className="px-4 py-3 text-[#4A433B] font-medium">{entry.universityName}</td>
-                            <td className="px-4 py-3 text-[#4A433B]">{entry.district}</td>
-                            <td className="px-4 py-3">
-                              <span className="text-[11px] font-bold text-[#16293F] bg-slate-100 px-2 py-0.5 rounded">{entry.supportType}</span>
-                            </td>
-                            <td className="px-4 py-3 text-[#6A6155]">
-                              <span className="font-semibold">{entry.partnerType}</span>
-                              <span className="text-slate-400"> · </span>
-                              {entry.partnerName}
-                            </td>
-                            <td className="px-4 py-3">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusColors[entry.status] || 'bg-slate-100 text-slate-600 border-slate-200'}`}>
-                                {entry.status}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-[#6A6155] max-w-[220px] truncate" title={entry.message}>
-                              {entry.message || '—'}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* DASHBOARD TAB */}
-        {activeTab === 'dashboard' && (
-          <section className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-[#16293F] uppercase tracking-wider">CSR Funding &amp; Impact Tracker</h3>
-            </div>
-            
-            {/* Top Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 space-y-2">
-                <div className="w-10 h-10 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center">
-                  <IndianRupee className="w-5 h-5" />
-                </div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase">Total Funds Allocated</h4>
-                <p className="text-2xl font-black text-[#16293F]">₹42.5 L</p>
-              </div>
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 space-y-2">
-                <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center">
-                  <Building2 className="w-5 h-5" />
-                </div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase">Projects Supported</h4>
-                <p className="text-2xl font-black text-[#16293F]">12</p>
-              </div>
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 space-y-2">
-                <div className="w-10 h-10 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center">
-                  <Users2 className="w-5 h-5" />
-                </div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase">Citizens Impacted</h4>
-                <p className="text-2xl font-black text-[#16293F]">18,450</p>
-              </div>
-              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 space-y-2">
-                <div className="w-10 h-10 bg-indigo-100 text-indigo-700 rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-                <h4 className="text-xs font-bold text-slate-500 uppercase">Avg. ROI (Social)</h4>
-                <p className="text-2xl font-black text-[#16293F]">3.4x</p>
-              </div>
-            </div>
-
-            {/* Impact List */}
-            <div className="bg-white border border-[#E4DDD1] rounded-2xl overflow-hidden shadow-sm">
-              <div className="px-5 py-4 border-b border-[#E4DDD1] bg-[#FAF8F4]">
-                <h4 className="text-sm font-black text-[#16293F]">Recent Project Impacts</h4>
-              </div>
-              <div className="p-0 overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead className="bg-[#FAF8F4] border-b border-[#E4DDD1]">
-                    <tr>
-                      <th className="px-5 py-3 text-left font-extrabold text-[#4A433B] uppercase">Project</th>
-                      <th className="px-5 py-3 text-left font-extrabold text-[#4A433B] uppercase">Funded Amount</th>
-                      <th className="px-5 py-3 text-left font-extrabold text-[#4A433B] uppercase">Status</th>
-                      <th className="px-5 py-3 text-left font-extrabold text-[#4A433B] uppercase">Key Impact Metric</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[#F0EBE0]">
-                    {collaborationHistory.filter(h => h.supportType === 'Funding').slice(0, 5).map((entry, idx) => (
-                      <tr key={idx} className="hover:bg-[#FAF8F4] transition-colors">
-                        <td className="px-5 py-4 font-semibold text-[#16293F]">{entry.projectName}</td>
-                        <td className="px-5 py-4 font-bold text-emerald-700">₹{((idx + 1) * 2.5).toFixed(1)} Lakhs</td>
-                        <td className="px-5 py-4"><span className="px-2 py-1 rounded-full bg-slate-100 text-slate-600 font-bold border border-slate-200">{entry.status}</span></td>
-                        <td className="px-5 py-4 text-slate-600">Reduced flooding incidence by {30 + (idx * 5)}%</td>
-                      </tr>
-                    ))}
-                    {collaborationHistory.filter(h => h.supportType === 'Funding').length === 0 && (
-                      <tr>
-                        <td colSpan={4} className="px-5 py-8 text-center text-slate-500 italic">No funded projects found yet. Make a funding offer to see it track ROI here!</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* MESSAGES TAB */}
+        {/* TAB 6: MESSAGES */}
         {activeTab === 'messages' && (
           <div className="space-y-6">
             <div>
@@ -1092,7 +829,24 @@ export const IndustryPortal: React.FC = () => {
         )}
       </main>
 
-      {selectedProject && <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"><div className="bg-white rounded-2xl w-full max-w-lg p-6 space-y-5 shadow-2xl"><div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3"><div><span className="text-[10px] uppercase tracking-wider font-bold text-[#B5502D]">Phase 3 collaboration offer</span><h3 className="text-lg font-black text-[#16293F] mt-1">{selectedProject.challenge?.title || selectedProject.challengeTitle}</h3></div><button onClick={() => { setSelectedProject(null); setModalError(''); }} className="text-slate-400 hover:text-slate-800 text-xl">×</button></div><div className="grid sm:grid-cols-2 gap-3 text-xs"><label className="space-y-1"><span className="font-bold text-slate-700">Partner type</span><select value={partnerType} onChange={(e) => setPartnerType(e.target.value as CollaborationPartnerType)} className="w-full px-3 py-2 border border-slate-300 rounded-lg">{PARTNER_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label><label className="space-y-1"><span className="font-bold text-slate-700">Support type</span><select value={supportType} onChange={(e) => setSupportType(e.target.value as CollaborationSupportType)} className="w-full px-3 py-2 border border-slate-300 rounded-lg">{SUPPORT_OPTIONS.map((option) => <option key={option}>{option}</option>)}</select></label></div><label className="space-y-1 block text-xs"><span className="font-bold text-slate-700">Offer details</span><textarea rows={4} value={message} onChange={(e) => { setMessage(e.target.value); if(modalError) setModalError(''); }} className={`w-full px-3 py-2 border rounded-lg ${modalError ? 'border-rose-500 focus:ring-rose-200' : 'border-slate-300'}`} placeholder="Explain what your organization can provide." /></label>{modalError && <p className="text-xs font-bold text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">{modalError}</p>}<div className="flex justify-end gap-2 pt-2 border-t border-slate-100"><button onClick={() => { setSelectedProject(null); setModalError(''); }} className="px-4 py-2 text-xs font-bold text-slate-600">Cancel</button><button onClick={handleOffer} className="px-4 py-2 bg-[#16293F] hover:bg-[#243D5A] text-white text-xs font-black rounded-lg flex items-center gap-1.5"><Send className="w-3.5 h-3.5" /> Submit offer</button></div></div></div>}
+      {/* 5-STEP COLLABORATION WIZARD MODAL */}
+      {wizardChallenge && (
+        <CollaborationRequestWizard
+          projectId={`PRJ-${wizardChallenge.assignedHEI?.slice(0, 3).toUpperCase() || 'BIT'}-2026-001`}
+          challengeId={wizardChallenge.id || wizardChallenge.reportId}
+          challengeTitle={wizardChallenge.title}
+          assignedHEI={wizardChallenge.assignedHEI || 'BIT Mesra'}
+          orgName={orgName}
+          orgEmail={orgEmail}
+          industryPartner={activeIndustry}
+          onClose={() => setWizardChallenge(null)}
+          onSuccess={(requestId) => {
+            setWizardChallenge(null);
+            setSuccessBanner(`Collaboration request ${requestId} submitted successfully. The university faculty and admin have been notified for review.`);
+            setActiveTab('my-requests');
+          }}
+        />
+      )}
 
       {/* Challenge Inspection Modal */}
       <ChallengeDetailModal
@@ -1106,6 +860,142 @@ export const IndustryPortal: React.FC = () => {
           setWizardChallenge(c);
         }}
       />
+
+      {/* TESTING ACCOUNTS MODAL */}
+      {isTestingModalOpen && (
+        <div className="fixed inset-0 z-[200] bg-[#201C18]/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-[#E4DDD1] rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="p-5 border-b border-[#E4DDD1] bg-[#FAF8F4] flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-[#FFF8EC] border border-[#F0D99A] flex items-center justify-center text-[#C98A2C]">
+                  <FlaskConical className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black font-heading text-[#201C18]">
+                    Jharkhand Industry &amp; CSR Testing Directory
+                  </h3>
+                  <p className="text-[11px] text-[#6A6155]">
+                    Switch between authentic Jharkhand industrial CSR accounts to test grant formulation and MoU signing.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsTestingModalOpen(false)}
+                className="w-8 h-8 rounded-full hover:bg-[#EAE4D8] text-[#8A7F72] hover:text-[#201C18] flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Search filter in modal */}
+            <div className="p-4 border-b border-[#E4DDD1] bg-white">
+              <div className="relative">
+                <Search className="w-4 h-4 text-[#8A7F72] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Filter by corporate name, district, or email..."
+                  value={searchIndustryQuery}
+                  onChange={e => setSearchIndustryQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-medium focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30"
+                />
+              </div>
+            </div>
+
+            {/* List of Industries */}
+            <div className="p-4 overflow-y-auto space-y-2.5 flex-1 bg-[#FAF8F4]">
+              {testingIndustries.map(({ ind, email }) => {
+                const isSelected = activeIndustry.id === ind.id;
+
+                return (
+                  <div
+                    key={ind.id}
+                    onClick={() => handleIndustryChange(ind)}
+                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-start justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-white border-[#2C6E49] shadow-sm ring-1 ring-[#2C6E49]'
+                        : 'bg-white border-[#E4DDD1] hover:border-[#2C6E49]/60 hover:shadow-xs'
+                    }`}
+                  >
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-black text-[#201C18]">
+                          {ind.name}
+                        </span>
+                        <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-[#FAF8F4] border border-[#E4DDD1] text-[#2C6E49]">
+                          {ind.shortName}
+                        </span>
+                        <span className="text-[10px] text-[#8A7F72] flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-[#B5502D]" /> {ind.district}
+                        </span>
+                        {isSelected && (
+                          <span className="text-[9px] font-black bg-[#2C6E49] text-white px-1.5 py-0.2 rounded">
+                            ACTIVE SESSION
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-[11px] text-[#6A6155] leading-relaxed">
+                        {ind.leadDesignation} · Head Office: {ind.headOffice} · CSR Budget: {ind.annualCsrBudget}
+                      </p>
+
+                      <div className="flex items-center gap-2 pt-1">
+                        <div className="inline-flex items-center gap-1.5 bg-[#FAF8F4] border border-[#E4DDD1] rounded-lg px-2.5 py-1 text-[11px] font-mono text-[#201C18]">
+                          <span>{email}</span>
+                          <button
+                            onClick={(e) => handleCopyEmail(email, e)}
+                            className="text-[#8A7F72] hover:text-[#2C6E49] transition-colors"
+                            title="Copy email"
+                          >
+                            {copiedEmail === email ? (
+                              <Check className="w-3.5 h-3.5 text-[#2C6E49]" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                        <span className="text-[10px] text-[#8A7F72] font-mono">
+                          Pass: Nivaaran@2026
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0 flex items-center self-center">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleIndustryChange(ind);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#2C6E49] text-white'
+                            : 'bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#201C18] border border-[#E4DDD1]'
+                        }`}
+                      >
+                        {isSelected ? 'Active' : 'Switch Partner'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-[#E4DDD1] bg-white flex items-center justify-between text-xs text-[#6A6155]">
+              <span>9 Verified Jharkhand Corporate &amp; PSU CSR accounts</span>
+              <button
+                onClick={() => setIsTestingModalOpen(false)}
+                className="px-4 py-1.5 bg-[#201C18] hover:bg-[#38322B] text-white rounded-xl font-bold cursor-pointer transition-colors"
+              >
+                Close Directory
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

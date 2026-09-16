@@ -63,9 +63,12 @@ class WorkflowStore {
         if (this.isWorkflowState(parsed)) {
           // Merge stored challenges with seed data, preserving all stored modifications and progress.
           const seed = createSeedData();
-          const storedIds = new Set(parsed.challenges.map((c: any) => c.id || c.reportId));
+          const cleanParsedChallenges = parsed.challenges.filter((c: any) => 
+            c.title && !/i cant attach photo|cant attach photo/i.test(c.title + ' ' + (c.description || ''))
+          );
+          const storedIds = new Set(cleanParsedChallenges.map((c: any) => c.id || c.reportId));
           const missingSeedChallenges = seed.challenges.filter((c: any) => !storedIds.has(c.id) && !storedIds.has(c.reportId));
-          const mergedChallenges = [...parsed.challenges, ...missingSeedChallenges];
+          const mergedChallenges = [...cleanParsedChallenges, ...missingSeedChallenges];
           
           const finalState: WorkflowState = {
             ...parsed,
