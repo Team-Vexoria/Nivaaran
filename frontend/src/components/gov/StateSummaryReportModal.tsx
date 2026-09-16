@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { 
   Printer, FileText, X, CheckCircle2, 
-  ShieldCheck, AlertTriangle, Building2, MapPin, 
+  AlertTriangle, Building2, MapPin, 
   FileSpreadsheet, Check
 } from 'lucide-react';
 
@@ -108,26 +108,26 @@ export const StateSummaryReportModal: React.FC<StateSummaryReportModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-[250] bg-black/75 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:p-0 print:bg-white print:static">
+    <div className="fixed inset-0 z-[250] bg-stone-900/40 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:p-0 print:bg-white print:static">
       
       <div className="bg-white rounded-3xl max-w-4xl w-full shadow-2xl border border-[#D5CDBF] overflow-hidden flex flex-col my-4 max-h-[92vh] print:max-h-none print:my-0 print:shadow-none print:border-none print:w-full print:max-w-none">
         
         {/* Action Header Bar : Hidden in Print */}
-        <div className="bg-[#1C2C24] text-white px-5 sm:px-7 py-3.5 flex flex-wrap items-center justify-between gap-3 print:hidden border-b border-[#2C4236] shrink-0">
+        <div className="bg-[#FAF8F4] text-[#201C18] px-5 sm:px-7 py-3.5 flex flex-wrap items-center justify-between gap-3 print:hidden border-b border-[#E4DDD1] shrink-0">
           <div className="flex items-center space-x-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#2C6E49] flex items-center justify-center text-white shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-[#2C6E49]/10 border border-[#2C6E49]/20 flex items-center justify-center text-[#2C6E49] shrink-0">
               <FileText className="w-4.5 h-4.5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-black uppercase tracking-wider text-[#A3E635] bg-white/10 px-2 py-0.5 rounded">
+                <span className="text-[10px] font-black uppercase tracking-wider text-[#2C6E49] bg-[#2C6E49]/10 px-2 py-0.5 rounded border border-[#2C6E49]/20">
                   Official Gazette
                 </span>
-                <span className="text-[10px] text-slate-300 font-mono">
+                <span className="text-[10px] text-[#8A7F72] font-mono">
                   {reportDocketId}
                 </span>
               </div>
-              <h3 className="font-black text-sm text-white">
+              <h3 className="font-black text-sm text-[#201C18]">
                 Jharkhand State Summary Report Document
               </h3>
             </div>
@@ -136,16 +136,16 @@ export const StateSummaryReportModal: React.FC<StateSummaryReportModalProps> = (
           <div className="flex items-center space-x-2">
             <button
               onClick={handleDownloadCSV}
-              className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors border border-white/15 cursor-pointer shadow-xs"
+              className="px-3 py-1.5 bg-white hover:bg-[#FAF8F4] text-[#201C18] rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors border border-[#E4DDD1] cursor-pointer shadow-2xs"
               title="Download raw dataset in Excel compatible CSV format"
             >
-              {downloadedCsv ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <FileSpreadsheet className="w-3.5 h-3.5 text-amber-300" />}
+              {downloadedCsv ? <Check className="w-3.5 h-3.5 text-[#2C6E49]" /> : <FileSpreadsheet className="w-3.5 h-3.5 text-[#C98A2C]" />}
               <span>{downloadedCsv ? 'CSV Downloaded!' : 'Download CSV Dataset'}</span>
             </button>
 
             <button
               onClick={handlePrint}
-              className="px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white rounded-xl text-xs font-black flex items-center space-x-1.5 transition-colors shadow-xs cursor-pointer"
+              className="px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white rounded-xl text-xs font-black flex items-center space-x-1.5 transition-colors shadow-2xs cursor-pointer"
               title="Print directly or save as PDF via system print dialog"
             >
               <Printer className="w-3.5 h-3.5" />
@@ -154,7 +154,7 @@ export const StateSummaryReportModal: React.FC<StateSummaryReportModalProps> = (
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+              className="p-1.5 rounded-xl text-[#8A7F72] hover:text-[#201C18] hover:bg-[#EAE4D8] transition-colors cursor-pointer"
               title="Close report viewer"
             >
               <X className="w-5 h-5" />
@@ -168,10 +168,11 @@ export const StateSummaryReportModal: React.FC<StateSummaryReportModalProps> = (
           {/* Official Letterhead */}
           <div className="border-b-2 border-[#201C18] pb-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-[#FAF8F4] border-2 border-[#2C6E49] flex flex-col items-center justify-center p-2 text-[#2C6E49] shadow-xs shrink-0">
-                <ShieldCheck className="w-8 h-8 text-[#2C6E49]" />
-                <span className="text-[7px] font-black uppercase tracking-tighter">JHARKHAND</span>
-              </div>
+              <img
+                src="/jharkhand_govt_seal.png"
+                alt="Government of Jharkhand"
+                className="w-16 h-16 object-contain shrink-0"
+              />
               <div>
                 <p className="text-[10px] font-black tracking-widest uppercase text-[#5A5247]">
                   GOVERNMENT OF JHARKHAND

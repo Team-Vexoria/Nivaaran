@@ -89,14 +89,8 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
             }}
           >
             
-            {/* Watermark Govt Seal in Background */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-[0.045] pointer-events-none select-none">
-              <img 
-                src="/jharkhand_govt_seal.png" 
-                alt="Government Watermark" 
-                className="w-96 h-96 object-contain"
-              />
-            </div>
+            {/* Watermark Pattern in Background */}
+            <div className="absolute inset-0 bg-[radial-gradient(#C29B38_1px,transparent_1px)] [background-size:16px_16px] opacity-[0.08] pointer-events-none select-none" />
 
             {/* Ornamental Inner Gold Border Line */}
             <div className="border border-[#C29B38]/60 p-6 sm:p-8 rounded relative space-y-6">
@@ -219,12 +213,11 @@ export const CertificateModal: React.FC<CertificateModalProps> = ({
 
                 {/* Center Seal Stamp Icon */}
                 <div className="flex flex-col items-center justify-center shrink-0 px-2">
-                  <img 
-                    src="/jharkhand_govt_seal.png" 
-                    alt="Govt of Jharkhand Stamp" 
-                    className="w-16 h-16 object-contain filter drop-shadow-md"
-                  />
-                  <span className="text-[8px] font-extrabold text-[#8C6D34] uppercase tracking-wider mt-0.5">
+                  <div className="w-14 h-14 rounded-full border-2 border-[#C29B38] bg-[#FAF8F4] flex flex-col items-center justify-center shadow-xs">
+                    <Award className="w-6 h-6 text-[#8C6D34]" />
+                    <span className="text-[7px] font-black text-[#8C6D34] uppercase tracking-tighter">AUTHENTIC</span>
+                  </div>
+                  <span className="text-[8px] font-extrabold text-[#8C6D34] uppercase tracking-wider mt-1">
                     Official State Stamp
                   </span>
                 </div>

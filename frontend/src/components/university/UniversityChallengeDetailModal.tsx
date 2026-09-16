@@ -4,7 +4,7 @@ import {
   ArrowRight, FileText, Printer, Sparkles, 
   Layers
 } from 'lucide-react';
-import { ChallengeDoc } from '../../services/firebaseService';
+import { ChallengeDoc, updateChallengeUniversityAcceptance } from '../../services/firebaseService';
 import { UniversityDoc, DepartmentInfo } from '../../services/universityData';
 import { HEIMatchResult } from '../../services/heiMatchingEngine';
 import { getStatusPillClass } from '../../services/mapDataService';
@@ -40,7 +40,14 @@ export const UniversityChallengeDetailModal: React.FC<UniversityChallengeDetailM
     window.print();
   };
 
-  const handleProceed = () => {
+  const handleProceed = async () => {
+    if (!isAcceptedByThisUni) {
+      await updateChallengeUniversityAcceptance(
+        challenge.id || challenge.reportId,
+        university.name,
+        chosenDept.name
+      );
+    }
     onAcceptAndProceedToTeam(challenge, chosenDept);
     onClose();
   };

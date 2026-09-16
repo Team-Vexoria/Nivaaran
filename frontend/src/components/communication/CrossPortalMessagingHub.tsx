@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MessageSquare, Send, Smartphone 
 } from 'lucide-react';
@@ -150,11 +150,14 @@ const INITIAL_THREADS: ConversationThread[] = [
   },
 ];
 
-interface CrossPortalMessagingHubProps {
+import { ChallengeDoc } from '../../services/firebaseService';
+
+export interface CrossPortalMessagingHubProps {
   currentRole?: string;
   userName?: string;
   currentUserName?: string;
   userHEI?: string;
+  activeChallenge?: ChallengeDoc | null;
 }
 
 export const CrossPortalMessagingHub: React.FC<CrossPortalMessagingHubProps> = ({
@@ -162,6 +165,7 @@ export const CrossPortalMessagingHub: React.FC<CrossPortalMessagingHubProps> = (
   userName = 'Officer in Charge',
   currentUserName,
   userHEI: _userHEI,
+  activeChallenge,
 }) => {
   const effectiveUser = currentUserName || userName;
   const [threads, setThreads] = useState<ConversationThread[]>(() => {
@@ -178,6 +182,66 @@ export const CrossPortalMessagingHub: React.FC<CrossPortalMessagingHubProps> = (
   });
 
   const [activeThreadId, setActiveThreadId] = useState<string>(threads[0]?.id || 'THREAD-RNC-01');
+
+  useEffect(() => {
+    if (!activeChallenge) return;
+    const challengeKey = `THREAD-${activeChallenge.reportId}`;
+    setThreads(prev => {
+      const exists = prev.some(t => t.challengeReportId === activeChallenge.reportId || t.challengeTitle === activeChallenge.title);
+      if (exists) return prev;
+
+      const isAgri = /agri|lac|kusum|crop|tree/i.test(activeChallenge.title + ' ' + (activeChallenge.summary || ''));
+      const isMining = /mine|mining|coal/i.test(activeChallenge.title + ' ' + (activeChallenge.summary || ''));
+
+      const newThread: ConversationThread = {
+        id: challengeKey,
+        challengeReportId: activeChallenge.reportId,
+        challengeTitle: activeChallenge.title,
+        district: activeChallenge.district,
+        lastUpdated: 'Just now',
+        stakeholders: [
+          'State Nodal Officer (Gov)',
+          `${_userHEI || 'University'} Faculty Mentor`,
+          isAgri ? 'JASCOLAMPF CSR Partner' : isMining ? 'BCCL Safety Liaison' : 'Tata Steel CSR',
+          'Student Team Lead',
+          'Gram Panchayat Mukhiya'
+        ],
+        unreadCount: 1,
+        messages: [
+          {
+            id: 'msg-init-1',
+            senderName: 'Gram Panchayat Mukhiya',
+            senderRole: 'PRI Member',
+            text: isAgri
+              ? 'Local tribal farmers in Ormanjhi reported early fungal blight signs on Kusum tree branches. Immediate canopy humidity checks and botanical spray trials needed.'
+              : `Ground situation reported from ${activeChallenge.district}. Requesting university laboratory assessment and field inspection.`,
+            timestamp: 'Yesterday at 3:15 PM',
+            avatarBg: 'bg-emerald-600',
+          },
+          {
+            id: 'msg-init-2',
+            senderName: 'State Nodal Officer',
+            senderRole: 'Government Officer',
+            text: `Problem report verified under Stage 3 triage. Assigned to ${_userHEI || 'Birsa Agricultural University'} for prototype development and field pilot testing.`,
+            timestamp: 'Yesterday at 5:00 PM',
+            avatarBg: 'bg-amber-600',
+          },
+          {
+            id: 'msg-init-3',
+            senderName: `${_userHEI || 'University'} Mentor`,
+            senderRole: 'University Mentor',
+            text: 'Our student team has deployed the field sensor node and submitted telemetry calibration data. Ground pilot trials are progressing as scheduled.',
+            timestamp: 'Today at 09:30 AM',
+            avatarBg: 'bg-emerald-700',
+          }
+        ]
+      };
+
+      return [newThread, ...prev];
+    });
+
+    setActiveThreadId(challengeKey);
+  }, [activeChallenge, _userHEI]);
   const [inputMessage, setInputMessage] = useState('');
   const [selectedRole, setSelectedRole] = useState<StakeholderMessage['senderRole']>(
     (currentRole.includes('Univ') ? 'University Mentor' : 

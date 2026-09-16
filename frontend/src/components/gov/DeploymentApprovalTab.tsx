@@ -17,7 +17,11 @@ export const DeploymentApprovalTab: React.FC<DeploymentApprovalTabProps> = ({ of
     return () => window.removeEventListener(STORE_EVENT, handler);
   }, []);
 
-  const candidates = challenges.filter(c => c.status === 'Outcome Audit');
+  const candidates = challenges.filter(c => 
+    c.status === 'Outcome Audit' || 
+    c.status === 'Pilot Active' ||
+    (c.stageNumber && c.stageNumber >= 12 && c.status !== 'Resolved' && c.status !== 'Closed')
+  );
   const approved = challenges.filter(c => c.status === 'Resolved' || c.status === 'Closed');
 
   const handleApprove = async (challenge: Challenge) => {
@@ -34,7 +38,7 @@ export const DeploymentApprovalTab: React.FC<DeploymentApprovalTabProps> = ({ of
       if (proj) {
         workflowStore.updateProject(proj.id, { status: 'Completed' });
       }
-      showToast(`✓ Deployment approved — "${challenge.title}" is now Resolved.`);
+      showToast(`✓ Deployment approved: "${challenge.title}" is now Resolved.`);
     } else {
       showToast(`Unable to approve deployment: ${res.reason}`, 'warning');
     }
@@ -45,10 +49,10 @@ export const DeploymentApprovalTab: React.FC<DeploymentApprovalTabProps> = ({ of
       <div>
         <h2 className="text-lg font-black text-[#201C18] flex items-center gap-2">
           <Rocket className="w-5 h-5 text-[#2C6E49]" />
-          Deployment Approval — Stage 14
+          Deployment Approval: Stage 14
         </h2>
         <p className="text-xs text-[#6A6155]">
-          Review validated outcome audits and grant final field-deployment clearance. Approved solutions are marked{' '}
+          Review validated outcome audits and grant final field deployment clearance. Approved solutions are marked{' '}
           <strong className="text-[#B3261E]">Resolved</strong>.
         </p>
       </div>

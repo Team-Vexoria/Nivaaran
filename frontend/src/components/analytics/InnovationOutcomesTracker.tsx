@@ -160,20 +160,76 @@ const SEED_TRANSFERS: TechTransferRecord[] = [
   },
 ];
 
+import { ChallengeDoc } from '../../services/firebaseService';
+
 export interface InnovationOutcomesTrackerProps {
-  userRole?: string;
+  userRole?: 'gov' | 'university' | 'industry';
   defaultHEI?: string;
+  activeChallenge?: ChallengeDoc | null;
 }
 
 export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps> = ({
   userRole: _userRole,
   defaultHEI = 'BIT Mesra',
+  activeChallenge,
 }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'patents' | 'startups' | 'transfers'>('all');
   const [patents, setPatents] = useState<PatentRecord[]>(SEED_PATENTS);
   const [startups] = useState<StartupRecord[]>(SEED_STARTUPS);
   const [transfers] = useState<TechTransferRecord[]>(SEED_TRANSFERS);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  const effectivePatents = React.useMemo(() => {
+    if (!activeChallenge) return patents;
+    const hasMatch = patents.some(p => p.challengeReportId === activeChallenge.reportId || p.title === activeChallenge.title);
+    if (hasMatch) return patents;
+
+    const isAgri = /agri|lac|kusum|crop|tree/i.test(activeChallenge.title + ' ' + (activeChallenge.summary || ''));
+    const isMining = /mine|mining|coal/i.test(activeChallenge.title + ' ' + (activeChallenge.summary || ''));
+
+    const dynamicPatent: PatentRecord = {
+      id: `PAT-${activeChallenge.reportId}`,
+      applicationNumber: `2026310${Math.floor(10000 + Math.random() * 90000)} (IPO Kolkata)`,
+      title: isAgri
+        ? 'Eco Friendly Botanical Nanofluid Formulation & Canopy Telemetry for Kusum Tree Lac Protection'
+        : isMining
+        ? 'Geotechnical Borehole Thermal Venting & Subsidence Telemetry Sensor Core'
+        : `Autonomous Low Power Civic Early Warning Telemetry Node: ${activeChallenge.title}`,
+      hei: defaultHEI,
+      department: isAgri ? 'Department of Agricultural Entomology and Agro Forestry' : isMining ? 'Department of Mining Engineering' : 'Department of Electronics and Communication',
+      inventors: ['Faculty Research Lead', 'Student Project Lead', 'Field Technical Officer'],
+      filingDate: '12 March 2026',
+      status: 'Provisional Filed',
+      domain: isAgri ? 'Agro Forestry and Tribal Livelihoods' : isMining ? 'Mining Safety' : 'Civic Disaster Telemetry',
+      challengeReportId: activeChallenge.reportId,
+      abstract: `Provisional patent docket generated following Stage 11 to 13 prototyping, lab calibration and field trial in ${activeChallenge.district} district.`,
+    };
+
+    return [dynamicPatent, ...patents];
+  }, [patents, activeChallenge, defaultHEI]);
+
+  const effectiveStartups = React.useMemo(() => {
+    if (!activeChallenge) return startups;
+    const hasMatch = startups.some(s => s.derivedChallengeId === activeChallenge.reportId);
+    if (hasMatch) return startups;
+
+    const isAgri = /agri|lac|kusum|crop|tree/i.test(activeChallenge.title + ' ' + (activeChallenge.summary || ''));
+
+    const dynamicStartup: StartupRecord = {
+      id: `ST-${activeChallenge.reportId}`,
+      name: isAgri ? 'Jharkhand LacTech BioSolutions' : `${defaultHEI.split(' ')[0]} CivicTech Innovations`,
+      incubator: isAgri ? 'Agri Business Incubation Centre, Birsa Agricultural University' : `Technology Business Incubator, ${defaultHEI}`,
+      foundingTeam: ['Lead Student Researcher', 'Co-Founder Technical Lead'],
+      incorporationYear: '2026',
+      domain: isAgri ? 'Agri Biotechnology & Organic Pest Defense' : 'Civic Disaster Automation',
+      valuationOrFunding: '₹15,00,000 DST NIDHI PRAYAS Grant',
+      stage: 'Prototype Deployed',
+      derivedChallengeId: activeChallenge.reportId,
+      description: `Student founded deep tech venture incubated to scale solutions for ${activeChallenge.title}.`,
+    };
+
+    return [dynamicStartup, ...startups];
+  }, [startups, activeChallenge, defaultHEI]);
 
   // Selected records for official modals
   const [viewingTransfer, setViewingTransfer] = useState<TechTransferRecord | null>(null);
@@ -303,6 +359,37 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
         </div>
       )}
 
+      {/* Active Problem Innovation & IP Docket Banner */}
+      {activeChallenge && (
+        <div className="bg-gradient-to-r from-[#FDFBF7] via-[#F7F2E8] to-[#EFE7D8] border-2 border-[#D8C7B0] p-5 rounded-2xl shadow-xs space-y-2.5">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono font-bold bg-[#2C6E49] text-white px-2.5 py-0.5 rounded-full">
+                {activeChallenge.reportId}
+              </span>
+              <span className="text-xs font-black text-[#201C18] uppercase tracking-wider">
+                Active Problem Innovation & IP Docket
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-[#2C6E49] bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
+              {defaultHEI} · {activeChallenge.district}
+            </span>
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-[#201C18]">{activeChallenge.title}</h3>
+            <p className="text-xs text-[#5C5549] mt-1 line-clamp-2">{activeChallenge.summary}</p>
+          </div>
+          <div className="flex items-center gap-4 pt-2 border-t border-[#D8C7B0] text-[11px] text-[#5C5549] flex-wrap">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#2C6E49]" />
+              Provisional Patent Status: <strong className="text-[#2C6E49]">Draft Filed (IPO Kolkata)</strong>
+            </span>
+            <span>·</span>
+            <span>Incubator: <strong className="text-[#201C18]">Agri Business Incubation Centre</strong></span>
+          </div>
+        </div>
+      )}
+
       {/* Top Banner & KPI Strip */}
       <div className="bg-gradient-to-br from-[#2C6E49]/10 via-[#FAF8F4] to-[#C98A2C]/10 border border-[#E4DDD1] rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -427,11 +514,11 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
               <Award className="w-3.5 h-3.5 text-[#2C6E49]" />
               <span>Patents Filed with Indian Patent Office (IPO)</span>
             </h3>
-            <span className="text-[11px] text-[#8A7F72] font-semibold">{patents.length} filings recorded</span>
+            <span className="text-[11px] text-[#8A7F72] font-semibold">{effectivePatents.length} filings recorded</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {patents.map((p) => (
+            {effectivePatents.map((p) => (
               <div key={p.id} className="bg-white border border-[#E4DDD1] rounded-xl p-4 space-y-3 shadow-2xs hover:border-[#C4BDB0] transition-all">
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-0.5">
@@ -446,7 +533,7 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
                     p.status === 'Published' 
                       ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
                       : p.status === 'Examination'
-                      ? 'bg-purple-50 text-purple-800 border-purple-200'
+                      ? 'bg-amber-50 text-amber-800 border-amber-200'
                       : 'bg-amber-50 text-amber-800 border-amber-200'
                   }`}>
                     {p.status}
@@ -497,11 +584,11 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
               <Rocket className="w-3.5 h-3.5 text-[#C98A2C]" />
               <span>DeepTech Startups Incubated from Student Prototypes</span>
             </h3>
-            <span className="text-[11px] text-[#8A7F72] font-semibold">{startups.length} ventures active</span>
+            <span className="text-[11px] text-[#8A7F72] font-semibold">{effectiveStartups.length} ventures active</span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-            {startups.map((st) => (
+            {effectiveStartups.map((st) => (
               <div key={st.id} className="bg-white border border-[#E4DDD1] rounded-xl p-4 space-y-3 shadow-2xs hover:border-[#C4BDB0] transition-all flex flex-col justify-between">
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -513,7 +600,7 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
                         {st.name}
                       </h4>
                     </div>
-                    <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 shrink-0">
+                    <span className="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 shrink-0">
                       {st.stage}
                     </span>
                   </div>
@@ -547,7 +634,7 @@ export const InnovationOutcomesTracker: React.FC<InnovationOutcomesTrackerProps>
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-black uppercase tracking-wider text-[#6A6155] flex items-center gap-1.5">
-              <FileCheck className="w-3.5 h-3.5 text-blue-600" />
+              <FileCheck className="w-3.5 h-3.5 text-[#2C6E49]" />
               <span>Technology Transfer & Industrial Commercialization Agreements</span>
             </h3>
             <span className="text-[11px] text-[#8A7F72] font-semibold">{transfers.length} executed agreements</span>

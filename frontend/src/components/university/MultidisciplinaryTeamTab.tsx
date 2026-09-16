@@ -59,12 +59,12 @@ export const MultidisciplinaryTeamTab: React.FC<MultidisciplinaryTeamTabProps> =
     setSelectedMembers(selectedMembers.map(m => m.studentId === studentId ? { ...m, role: newRole } : m));
   };
 
-  const handleSaveTeam = () => {
+  const handleSaveTeam = async () => {
     if (!activeChallenge) return;
     setSaveError('');
     const faculty = university.faculty.find(f => f.id === selectedFacultyId) || university.faculty[0];
 
-    const saved = saveProjectTeamToStore({
+    const saved = await saveProjectTeamToStore({
       challengeId: activeChallenge.id || activeChallenge.reportId,
       challengeTitle: activeChallenge.title,
       category: activeChallenge.category,
@@ -84,7 +84,7 @@ export const MultidisciplinaryTeamTab: React.FC<MultidisciplinaryTeamTabProps> =
     });
 
     if (!saved) {
-      setSaveError('The team could not be saved because the challenge is no longer at the university acceptance stage. Return to the intake queue and refresh.');
+      setSaveError('The team could not be saved. Please refresh and try again.');
       return;
     }
 

@@ -9,11 +9,13 @@ import { UniversityChallengeDetailModal } from './UniversityChallengeDetailModal
 interface UniversityIntakeTabProps {
   university: UniversityDoc;
   onAcceptAndProceedToTeam: (challenge: ChallengeDoc, selectedDept: DepartmentInfo) => void;
+  onNavigateToStage?: (stageNumber: number, challenge: ChallengeDoc) => void;
 }
 
 export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
   university,
   onAcceptAndProceedToTeam,
+  onNavigateToStage,
 }) => {
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
   const [selectedChallengeMatch, setSelectedChallengeMatch] = useState<{ challenge: ChallengeDoc; match: HEIMatchResult } | null>(null);
@@ -64,19 +66,19 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
     }
   };
 
-  const handleConfirmAcceptance = () => {
+  const handleConfirmAcceptance = async () => {
     if (!selectedChallengeMatch) return;
     const { challenge } = selectedChallengeMatch;
     const targetDept = university.departments.find(d => d.id === selectedDepartmentId) || university.departments[0];
     
     if (challenge.id || challenge.reportId) {
-      const accepted = updateChallengeUniversityAcceptance(
+      const accepted = await updateChallengeUniversityAcceptance(
         challenge.id || challenge.reportId,
         university.name,
         targetDept.name
       );
       if (!accepted) {
-        setAcceptanceError('This challenge could not be accepted because its lifecycle stage has changed. Refresh the queue and try again.');
+        setAcceptanceError('This challenge could not be accepted. Please refresh the queue and try again.');
         return;
       }
     }
@@ -116,16 +118,15 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
       {/* Matched Challenges List */}
       <div className="grid gap-4">
         {matchedChallenges.map(({ challenge, match }) => {
-          const isAcceptedByThisUni = isAssignedToThisUniversity(challenge.assignedHEI);
-          const isAcceptedByOther = false; // If it's in matchedChallenges, it's assigned to THIS uni
+          const stageNum = getStageForStatus(challenge.status)?.stageNumber || (challenge.assignedHEI ? 8 : 7);
 
           return (
             <div 
               key={challenge.id || challenge.reportId}
               onClick={() => setInspectingItem({ challenge, match })}
               className={`bg-white rounded-2xl border p-5 transition-all shadow-2xs space-y-4 cursor-pointer hover:border-emerald-400 hover:shadow-md ${
-                isAcceptedByThisUni 
-                  ? 'border-emerald-300 bg-emerald-50/30' 
+                stageNum >= 8
+                  ? 'border-emerald-300 bg-emerald-50/20' 
                   : 'border-slate-200/90 hover:border-slate-300'
               }`}
             >
@@ -146,6 +147,9 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
                       </span>
                       <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded border border-slate-200">
                         {challenge.category}
+                      </span>
+                      <span className="text-xs font-bold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded border border-emerald-200">
+                        Stage {stageNum}: {challenge.status}
                       </span>
                       {match.districtMatch && (
                         <span className="text-xs font-bold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded border border-emerald-200">
@@ -202,7 +206,7 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={(e) => {
@@ -214,22 +218,7 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
                     View Details
                   </button>
 
-                  {isAcceptedByThisUni ? (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onAcceptAndProceedToTeam(challenge, match.recommendedDepartment || university.departments[0]);
-                      }}
-                      className="px-4 py-2 bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-emerald-800 transition-all flex items-center space-x-1.5 cursor-pointer"
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      <span>Accepted · Build Team →</span>
-                    </button>
-                  ) : isAcceptedByOther ? (
-                    <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
-                      Assigned to {challenge.assignedHEI}
-                    </span>
-                  ) : (
+                  {stageNum < 8 ? (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -240,6 +229,63 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
                       <span>Review & Accept</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
+                  ) : stageNum === 8 ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAcceptAndProceedToTeam(challenge, match.recommendedDepartment || university.departments[0]);
+                      }}
+                      className="px-4 py-2 bg-emerald-700 text-white font-extrabold text-xs rounded-xl shadow-xs hover:bg-emerald-800 transition-all flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>Accepted · Build Team →</span>
+                    </button>
+                  ) : stageNum === 9 ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onNavigateToStage) {
+                          onNavigateToStage(9, challenge);
+                        } else {
+                          onAcceptAndProceedToTeam(challenge, match.recommendedDepartment || university.departments[0]);
+                        }
+                      }}
+                      className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <span>Proposal Phase · View Proposal →</span>
+                    </button>
+                  ) : stageNum === 10 ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onNavigateToStage) {
+                          onNavigateToStage(10, challenge);
+                        } else {
+                          onAcceptAndProceedToTeam(challenge, match.recommendedDepartment || university.departments[0]);
+                        }
+                      }}
+                      className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <span>CSR Phase · View Collab →</span>
+                    </button>
+                  ) : stageNum >= 11 && stageNum <= 13 ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (onNavigateToStage) {
+                          onNavigateToStage(11, challenge);
+                        } else {
+                          onAcceptAndProceedToTeam(challenge, match.recommendedDepartment || university.departments[0]);
+                        }
+                      }}
+                      className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1.5 cursor-pointer"
+                    >
+                      <span>R&D Lab · Student Workspace →</span>
+                    </button>
+                  ) : (
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200">
+                      ✓ Solution Deployed
+                    </span>
                   )}
                 </div>
               </div>

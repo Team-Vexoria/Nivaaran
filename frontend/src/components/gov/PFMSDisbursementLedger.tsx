@@ -105,14 +105,18 @@ const SEED_SANCTIONS: PFMSSanctionOrder[] = [
   },
 ];
 
+import { ChallengeDoc } from '../../services/firebaseService';
+
 export interface PFMSDisbursementLedgerProps {
   userRole?: 'gov' | 'university';
   defaultHEI?: string;
+  activeChallenge?: ChallengeDoc | null;
 }
 
 export const PFMSDisbursementLedger: React.FC<PFMSDisbursementLedgerProps> = ({
   userRole = 'gov',
   defaultHEI,
+  activeChallenge,
 }) => {
   const [orders, setOrders] = useState<PFMSSanctionOrder[]>(SEED_SANCTIONS);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -122,7 +126,35 @@ export const PFMSDisbursementLedger: React.FC<PFMSDisbursementLedgerProps> = ({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [viewingSanctionDoc, setViewingSanctionDoc] = useState<PFMSSanctionOrder | null>(null);
 
-  const filteredOrders = orders.filter(ord => {
+  const effectiveOrders = React.useMemo(() => {
+    if (!activeChallenge) return orders;
+    const hasMatch = orders.some(o => o.challengeReportId === activeChallenge.reportId || o.projectTitle === activeChallenge.title);
+    if (hasMatch) return orders;
+
+    const dynamicOrder: PFMSSanctionOrder = {
+      id: `SANCT-${activeChallenge.reportId}`,
+      sanctionNumber: `PFMS/JH/2026/${defaultHEI ? defaultHEI.split(' ')[0].toUpperCase() : 'HEI'}-09`,
+      projectTitle: activeChallenge.title,
+      challengeReportId: activeChallenge.reportId,
+      heiName: defaultHEI || 'Birsa Agricultural University',
+      nodalLead: 'Faculty Research Lead',
+      bankName: 'State Bank of India (University Campus Branch)',
+      accountNumberMasked: 'XXXX XXXX 8812',
+      ifscCode: 'SBIN0004918',
+      trancheNumber: 2,
+      totalTranches: 3,
+      tranchePhase: 'Phase 2: IoT Prototype Assembly and Panchayat Field Pilot',
+      amountRupees: 1500000,
+      status: 'Disbursed',
+      transactionReference: `DBT-JH-2026-${activeChallenge.reportId.replace(/[^A-Z0-9]/gi, '')}-SBI`,
+      sanctionDate: '08 March 2026',
+      utilizationCertificateStatus: 'Verified GFR 12-A',
+    };
+
+    return [dynamicOrder, ...orders];
+  }, [orders, activeChallenge, defaultHEI]);
+
+  const filteredOrders = effectiveOrders.filter(ord => {
     if (defaultHEI && !ord.heiName.toLowerCase().includes(defaultHEI.toLowerCase()) && !defaultHEI.toLowerCase().includes(ord.heiName.toLowerCase())) {
       return true;
     }
@@ -140,10 +172,10 @@ export const PFMSDisbursementLedger: React.FC<PFMSDisbursementLedgerProps> = ({
   });
 
   const totalAllocated = 125000000;
-  const totalDisbursed = orders
+  const totalDisbursed = effectiveOrders
     .filter(o => o.status === 'Disbursed')
     .reduce((sum, o) => sum + o.amountRupees, 0);
-  const pendingRelease = orders
+  const pendingRelease = effectiveOrders
     .filter(o => o.status === 'Approved Pending Release')
     .reduce((sum, o) => sum + o.amountRupees, 0);
   const treasuryBalance = totalAllocated - totalDisbursed;
@@ -216,6 +248,36 @@ export const PFMSDisbursementLedger: React.FC<PFMSDisbursementLedgerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Active Problem PFMS Grant Docket Banner */}
+      {activeChallenge && (
+        <div className="bg-gradient-to-r from-[#FDFBF7] via-[#F7F2E8] to-[#EFE7D8] border-2 border-[#D8C7B0] p-5 rounded-2xl shadow-xs space-y-2.5">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono font-bold bg-[#2C6E49] text-white px-2.5 py-0.5 rounded-full">
+                {activeChallenge.reportId}
+              </span>
+              <span className="text-xs font-black text-[#201C18] uppercase tracking-wider">
+                Active Problem PFMS Treasury Grant Sanction
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-[#2C6E49] bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg">
+              {defaultHEI || 'HEI'} · Tranche 2 Disbursed
+            </span>
+          </div>
+          <div>
+            <h3 className="text-sm font-black text-[#201C18]">{activeChallenge.title}</h3>
+            <p className="text-xs text-[#5C5549] mt-1 line-clamp-2">{activeChallenge.summary}</p>
+          </div>
+          <div className="flex items-center gap-4 pt-2 border-t border-[#D8C7B0] text-[11px] text-[#5C5549] flex-wrap">
+            <span>Disbursed Amount: <strong className="text-[#2C6E49] font-black">₹15,00,000 (Tranche 2 of 3)</strong></span>
+            <span>·</span>
+            <span>Utilization Certificate: <strong className="text-[#2C6E49]">Verified GFR 12-A</strong></span>
+            <span>·</span>
+            <span>DBT Settlement: <strong className="text-[#201C18]">Direct Bank Transfer to University R&D Account</strong></span>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 shadow-2xs space-y-1">

@@ -6,7 +6,10 @@ import { UniversityIntakeTab } from '../../components/university/UniversityIntak
 import { MultidisciplinaryTeamTab } from '../../components/university/MultidisciplinaryTeamTab';
 import { ProposalManagerTab } from '../../components/university/ProposalManagerTab';
 import { StudentWorkspaceTab } from '../../components/university/StudentWorkspaceTab';
-import { ChallengeDoc } from '../../services/firebaseService';
+import { 
+  ChallengeDoc, ProjectDoc, 
+  subscribeToChallenges, subscribeToProjects 
+} from '../../services/firebaseService';
 
 import { CollaborationReviewPanel } from '../../components/university/CollaborationReviewPanel';
 import { InnovationOutcomesTracker } from '../../components/analytics/InnovationOutcomesTracker';
@@ -37,13 +40,45 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
     return bitMesra || JHARKHAND_UNIVERSITIES[0];
   });
 
+  const [projects, setProjects] = useState<ProjectDoc[]>([]);
+  const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
+
+  const [selectedChallengeId, setSelectedChallengeId] = useState<string>(() => {
+    return localStorage.getItem('nivaaran_active_challenge_id') || '';
+  });
+
+  useEffect(() => {
+    const unsubProjects = subscribeToProjects(setProjects);
+    const unsubChallenges = subscribeToChallenges(setChallenges);
+    return () => {
+      unsubProjects();
+      unsubChallenges();
+    };
+  }, []);
+
+  const assignedProject: ProjectDoc | null =
+    projects.find(p => p.universityId === selectedUniversity.id || p.universityName === selectedUniversity.name) || null;
+
   const isStudentUser = currentUser?.role === 'Student' || !!currentUser?.email?.toLowerCase().includes('student');
 
   const [userRole, setUserRole] = useState<UserRoleType>(() => isStudentUser ? 'student' : 'faculty');
   const [activeTab, setActiveTab] = useState<UniversityTab>(() => isStudentUser ? 'student-workspace' : 'intake-queue');
   const [activeChallengeForTeam, setActiveChallengeForTeam] = useState<ChallengeDoc | null>(null);
   const [selectedDeptForTeam, setSelectedDeptForTeam] = useState<DepartmentInfo | null>(null);
-  const [activeProposalChallengeId, setActiveProposalChallengeId] = useState<string>('');
+  const [activeProposalChallengeId, setActiveProposalChallengeId] = useState<string>(() => selectedChallengeId);
+
+  const assignedChallenge: ChallengeDoc | null = React.useMemo(() => {
+    if (selectedChallengeId) {
+      const match = challenges.find(c => c.id === selectedChallengeId || c.reportId === selectedChallengeId);
+      if (match) return match;
+    }
+    if (activeChallengeForTeam) return activeChallengeForTeam;
+    if (assignedProject) {
+      const match = challenges.find(c => c.id === assignedProject.challengeId || c.reportId === assignedProject.challengeId);
+      if (match) return match;
+    }
+    return challenges.find(c => c.assignedHEI === selectedUniversity.name) || null;
+  }, [challenges, selectedChallengeId, activeChallengeForTeam, assignedProject, selectedUniversity.name]);
 
   useEffect(() => {
     if (currentUser) {
@@ -87,12 +122,35 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
   };
 
   const handleAcceptAndProceedToTeam = (challenge: ChallengeDoc, dept: DepartmentInfo) => {
+    const id = challenge.id || challenge.reportId;
+    setSelectedChallengeId(id);
+    localStorage.setItem('nivaaran_active_challenge_id', id);
     setActiveChallengeForTeam(challenge);
     setSelectedDeptForTeam(dept);
     setActiveTab('team-builder');
   };
 
+  const handleNavigateToStage = (stageNumber: number, challenge: ChallengeDoc) => {
+    const id = challenge.id || challenge.reportId;
+    setSelectedChallengeId(id);
+    localStorage.setItem('nivaaran_active_challenge_id', id);
+    setActiveChallengeForTeam(challenge);
+
+    if (stageNumber <= 8) {
+      setActiveTab('team-builder');
+    } else if (stageNumber === 9) {
+      setActiveProposalChallengeId(id);
+      setActiveTab('proposals');
+    } else if (stageNumber === 10) {
+      setActiveTab('industry-collab');
+    } else if (stageNumber >= 11) {
+      setActiveTab('student-workspace');
+    }
+  };
+
   const handleProceedToProposal = (challengeId: string) => {
+    setSelectedChallengeId(challengeId);
+    localStorage.setItem('nivaaran_active_challenge_id', challengeId);
     setActiveProposalChallengeId(challengeId);
     setActiveTab('proposals');
   };
@@ -122,13 +180,14 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
           <UniversityIntakeTab
             university={selectedUniversity}
             onAcceptAndProceedToTeam={handleAcceptAndProceedToTeam}
+            onNavigateToStage={handleNavigateToStage}
           />
         )}
 
         {activeTab === 'team-builder' && (
           <MultidisciplinaryTeamTab
             university={selectedUniversity}
-            activeChallenge={activeChallengeForTeam}
+            activeChallenge={assignedChallenge}
             selectedDept={selectedDeptForTeam}
             onProceedToProposal={handleProceedToProposal}
           />
@@ -137,7 +196,7 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
         {activeTab === 'proposals' && (
           <ProposalManagerTab
             university={selectedUniversity}
-            activeChallengeId={activeProposalChallengeId}
+            activeChallengeId={selectedChallengeId || activeProposalChallengeId}
             onProposalSubmitted={handleProposalSubmitted}
           />
         )}
@@ -145,17 +204,22 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
         {activeTab === 'student-workspace' && (
           <StudentWorkspaceTab
             university={selectedUniversity}
+            activeChallengeId={selectedChallengeId}
           />
         )}
 
         {activeTab === 'industry-collab' && (
-          <CollaborationReviewPanel />
+          <CollaborationReviewPanel 
+            activeChallenge={assignedChallenge}
+            university={selectedUniversity}
+          />
         )}
 
         {activeTab === 'outcomes' && (
           <InnovationOutcomesTracker
             userRole="university"
             defaultHEI={selectedUniversity.name}
+            activeChallenge={assignedChallenge}
           />
         )}
 
@@ -164,6 +228,7 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
             currentRole="university"
             currentUserName={`${selectedUniversity.shortName} Nodal Officer`}
             userHEI={selectedUniversity.name}
+            activeChallenge={assignedChallenge}
           />
         )}
 
@@ -171,6 +236,7 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
           <PFMSDisbursementLedger
             userRole="university"
             defaultHEI={selectedUniversity.name}
+            activeChallenge={assignedChallenge}
           />
         )}
       </main>

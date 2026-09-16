@@ -245,7 +245,8 @@ export const updateCollaborationRequestStatus = async (
   status: CollaborationStatus,
   note: string,
   reviewerName: string,
-  counterTerms?: string
+  counterTerms?: string,
+  fallbackFullDoc?: CollaborationRequest
 ): Promise<boolean> => {
   const updates: Partial<CollaborationRequest> = {
     status,
@@ -264,6 +265,9 @@ export const updateCollaborationRequestStatus = async (
     const idx = existing.findIndex(r => r.id === requestId || r.requestId === requestId);
     if (idx >= 0) {
       existing[idx] = { ...existing[idx], ...updates };
+      localStorage.setItem('nivaaran_collab_requests', JSON.stringify(existing));
+    } else if (fallbackFullDoc) {
+      existing.unshift({ ...fallbackFullDoc, ...updates });
       localStorage.setItem('nivaaran_collab_requests', JSON.stringify(existing));
     }
   } catch (err) {
@@ -962,7 +966,7 @@ export const submitPrototypeUpdate = async (
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
   if (currentStage < 9 || currentStage > 12) return false;
-  if (!advanceChallengeIfNeeded(challenge.id, 'Prototype Active', update.submittedBy, 'University / Project Team', 'Prototype progress submitted.')) return false;
+  if (!await advanceChallengeIfNeeded(challenge.id, 'Prototype Active', update.submittedBy, 'University / Project Team', 'Prototype progress submitted.')) return false;
   return updateProjectForPhase3(project.id, {
     status: currentStage <= 11 ? 'Prototype Active' : project.status,
     prototypeUpdate: { ...update, submittedAt: new Date().toISOString() },
@@ -977,7 +981,7 @@ export const submitPilotReport = async (
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
   if (currentStage < 11 || currentStage > 12) return false;
-  if (!advanceChallengeIfNeeded(challenge.id, 'Pilot Active', report.submittedBy, 'University / Project Team', 'Pilot field report submitted.')) return false;
+  if (!await advanceChallengeIfNeeded(challenge.id, 'Pilot Active', report.submittedBy, 'University / Project Team', 'Pilot field report submitted.')) return false;
   return updateProjectForPhase3(project.id, {
     status: 'Pilot Active',
     pilotReport: { ...report, submittedAt: new Date().toISOString() },
@@ -992,7 +996,7 @@ export const submitOutcomeAudit = async (
   if (!project || !challenge) return false;
   const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
   if (currentStage < 12 || currentStage > 13) return false;
-  if (!advanceChallengeIfNeeded(challenge.id, 'Outcome Audit', audit.verifiedBy, 'Government / Community Auditor', 'Technical and community outcome audit submitted.')) return false;
+  if (!await advanceChallengeIfNeeded(challenge.id, 'Outcome Audit', audit.verifiedBy, 'Government / Community Auditor', 'Technical and community outcome audit submitted.')) return false;
   return updateProjectForPhase3(project.id, {
     status: 'Outcome Audit',
     outcomeAudit: audit,
@@ -1062,12 +1066,11 @@ export const updateChallengeUniversityAcceptance = async (
   }
 };
 
-// ΓöÇΓöÇ Government Proposal Review (Sprint 2 ┬╖ Feature 2) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// Government Proposal Review
 // Government officers review university-submitted technical proposals (Stage 9).
-//   Approve          ΓåÆ challenge advances to Prototype Active (Stage 11)
-//   Request Revision ΓåÆ challenge stays at Proposal Submitted (Stage 9)
-//   Reject           ΓåÆ challenge reverts to In Progress (Stage 8) so the team
-//                      can refine and resubmit.
+//   Approve: challenge advances to Prototype Active (Stage 11)
+//   Request Revision: challenge stays at Proposal Submitted (Stage 9)
+//   Reject: challenge reverts to In Progress (Stage 8) so the team can refine and resubmit.
 export const govApproveProposal = async (
   projectId: string,
   proposalId: string,
@@ -1082,7 +1085,7 @@ export const govApproveProposal = async (
     : p);
 
   const note = officerNote || `Proposal approved by Government Officer (${officerName}). Solution work initiated.`;
-  const advanced = advanceChallengeIfNeeded(
+  const advanced = await advanceChallengeIfNeeded(
     challenge.id,
     'Prototype Active',
     officerName,

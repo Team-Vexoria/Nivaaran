@@ -40,7 +40,7 @@ export const ProposalManagerTab: React.FC<ProposalManagerTabProps> = ({
 
   const currentProject = projects.find(p => p.id === selectedProjectId) || (projects.length > 0 ? projects[0] : null);
 
-  const handleSubmitProposal = () => {
+  const handleSubmitProposal = async () => {
     if (!currentProject) return;
 
     const proposalId = `PROP-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -65,7 +65,7 @@ export const ProposalManagerTab: React.FC<ProposalManagerTabProps> = ({
       ],
     };
 
-    const saved = saveProjectTeamToStore(updated);
+    const saved = await saveProjectTeamToStore(updated);
     if (!saved) return;
     setIsSubmittedSuccess(true);
     setTimeout(() => {
@@ -93,7 +93,7 @@ export const ProposalManagerTab: React.FC<ProposalManagerTabProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-xs font-mono font-extrabold text-blue-800 bg-blue-50 px-2.5 py-0.5 rounded border border-blue-200">
+              <span className="text-xs font-mono font-extrabold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded border border-amber-200">
                 Stage 9: Technical Proposal
               </span>
               <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">

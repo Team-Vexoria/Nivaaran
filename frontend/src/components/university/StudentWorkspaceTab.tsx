@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   GraduationCap, Award, CheckCircle2, ExternalLink, ChevronRight, 
   FlaskConical, Map, ClipboardCheck, Upload, ShieldCheck, Cpu, Layers, 
-  FileCode, DollarSign, Check, Radio, 
-  FileText, Users, Building2, Terminal, PlayCircle, Eye
+  FileCode, DollarSign, Check, 
+  FileText, Users, Building2, Eye
 } from 'lucide-react';
 import { UniversityDoc, StudentRosterItem } from '../../services/universityData';
 import { 
@@ -13,7 +13,6 @@ import {
   subscribeToChallenges, subscribeToProjects 
 } from '../../services/firebaseService';
 import { CertificateModal } from '../CertificateModal';
-import { IoTSensorTelemetryCard } from '../telemetry/IoTSensorTelemetryCard';
 import { ChallengeDetailModal } from '../ChallengeDetailModal';
 import { getStageForStatus } from '../../services/workflowLifecycle';
 import { workflowStore } from '../../services/workflowStore';
@@ -21,6 +20,7 @@ import { ChallengeStatus } from '../../services/workflowTypes';
 
 interface StudentWorkspaceTabProps {
   university: UniversityDoc;
+  activeChallengeId?: string;
 }
 
 // Full Stages 8 to 13 definitions for the University Lab & Student Milestone Tracker
@@ -28,12 +28,15 @@ const LAB_WORKFLOW_STAGES = [
   { num: 8,  key: 'TEAM_FORMATION',                  label: 'Team Formation',    desc: 'Lab Allocation & Roster',        icon: Users },
   { num: 9,  key: 'PROPOSAL',                        label: 'Proposal & BOM',    desc: 'System Architecture',            icon: FileText },
   { num: 10, key: 'INDUSTRY_CSR_COLLABORATION',     label: 'CSR Grant',         desc: 'Industry Co-Funding',            icon: Building2 },
-  { num: 11, key: 'PROTOTYPE',                       label: 'IoT Prototype',     desc: 'CAD, Schematics & Telemetry',    icon: FlaskConical },
+  { num: 11, key: 'PROTOTYPE',                       label: 'IoT Prototype',     desc: 'CAD, Schematics & Hardware',     icon: FlaskConical },
   { num: 12, key: 'PILOT',                           label: 'Panchayat Pilot',   desc: 'Ground Field Trials',            icon: Map },
   { num: 13, key: 'TECHNICAL_COMMUNITY_VALIDATION',  label: 'Outcome Audit',     desc: 'Govt Deployment Clearance',      icon: ClipboardCheck },
 ];
 
-export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ university }) => {
+export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ 
+  university,
+  activeChallengeId,
+}) => {
   const currentStudent: StudentRosterItem = university.students[0] || {
     id: 'STU-BIT-101',
     name: 'Ayush Kumar Singh',
@@ -48,17 +51,21 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
   const [projects, setProjects] = useState<ProjectDoc[]>([]);
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
 
-  const assignedProject: ProjectDoc | null =
-    projects.find(p => p.universityId === university.id || p.universityName === university.name) || null;
+  const universityProjects = projects.filter(p => p.universityId === university.id || p.universityName === university.name);
+
+  const assignedProject: ProjectDoc | null = activeChallengeId
+    ? (universityProjects.find(p => p.challengeId === activeChallengeId) || universityProjects[0] || null)
+    : (universityProjects[0] || null);
+
   const assignedChallenge = assignedProject
     ? challenges.find(c => c.id === assignedProject.challengeId || c.reportId === assignedProject.challengeId)
-    : undefined;
+    : (activeChallengeId ? challenges.find(c => c.id === activeChallengeId || c.reportId === activeChallengeId) : undefined);
   
   // Calculate current stage number (default to stage 11 if active prototype project)
   const currentStage = assignedChallenge ? (getStageForStatus(assignedChallenge.status)?.stageNumber || 11) : 11;
 
   // Active view tab for Stages 8-13
-  const [selectedStageTab, setSelectedStageTab] = useState<number>(11);
+  const [selectedStageTab, setSelectedStageTab] = useState<number>(() => Math.min(Math.max(currentStage, 8), 13));
 
   // Prototype (Stage 11) Form States
   const [hardwareSpec, setHardwareSpec] = useState<string>(
@@ -67,20 +74,12 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
   const [githubUrl, setGithubUrl] = useState<string>('https://github.com/nivaaran-hei/iot-flood-telemetry-node');
   const [githubBranch, setGithubBranch] = useState<string>('main');
   const [cadModelName, setCadModelName] = useState<string>('JSN-SR04T_SolarNode_Enclosure_IP67_v2.step');
-  const [telemetryLogs, setTelemetryLogs] = useState<string>(
-    `[${new Date().toLocaleTimeString()}] TX LoRa: Freq=865.2MHz SF=7 BW=125kHz RSSI=-71dBm SNR=9.8dB\n` +
-    `[${new Date().toLocaleTimeString()}] SENS_WATER_DEPTH: raw_cm=142.0, calculated_level=4.20m [NORMAL]\n` +
-    `[${new Date().toLocaleTimeString()}] BATT_ADC_VOLTS: 3.96V (88%) | SOLAR_IN: 5.15V @ 210mA\n` +
-    `[${new Date().toLocaleTimeString()}] STATUS: OK | PAYLOAD_HASH=0x9A4E2B | PANCHAYAT_GATEWAY_ACK=RECVD`
+  const [telemetryLogs] = useState<string>(
+    'Lab verified firmware flash and hardware sensor bench tests completed successfully.'
   );
   const [testingResults, setTestingResults] = useState<string>(
     'Lab tested: ±0.8cm ultrasonic accuracy across 0.2m - 5.0m range. LoRaWAN transmission range verified up to 8.4 km line-of-sight.'
   );
-
-  // Live Telemetry Simulation States
-  const [simWaterLevel, setSimWaterLevel] = useState<number>(4.2);
-  const [simBattery, setSimBattery] = useState<number>(88);
-  const [isSimulatingPulse, setIsSimulatingPulse] = useState<boolean>(false);
 
   // Pilot (Stage 12) Form States
   const [panchayatLocation, setPanchayatLocation] = useState<string>('Hesag Gram Panchayat, Namkum Block, Ranchi');
@@ -143,19 +142,6 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
     }
   }, [assignedProject]);
 
-  // Inject a live sensor test pulse
-  const handleTriggerSimPulse = () => {
-    setIsSimulatingPulse(true);
-    const newLevel = Number((simWaterLevel + 0.6).toFixed(2));
-    setSimWaterLevel(newLevel);
-    setSimBattery(prev => Math.max(prev - 1, 10));
-    const nowTime = new Date().toLocaleTimeString();
-    const newLogLine = `[${nowTime}] !!! WATER LEVEL SURGE ALERT: level=${newLevel}m (Threshold: 5.5m) | LORA_TX_BURST=OK\n` + telemetryLogs;
-    setTelemetryLogs(newLogLine);
-    setTimeout(() => {
-      setIsSimulatingPulse(false);
-    }, 1500);
-  };
 
   const handleLogProgress = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -297,28 +283,28 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
     <div className="space-y-6">
 
       {/* Student Profile Identity Card */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-6 rounded-2xl shadow-md border border-slate-700 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div className="bg-gradient-to-r from-[#F7F2E7] via-[#F2ECE0] to-[#EBE2D2] text-[#2A231B] p-6 rounded-2xl shadow-sm border-2 border-[#D4C3A3] flex flex-col lg:flex-row lg:items-center justify-between gap-5">
         <div className="flex items-center space-x-3.5">
-          <div className="w-14 h-14 bg-gradient-to-br from-emerald-400 to-teal-600 text-slate-950 font-black rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-lg shadow-emerald-900/30">
+          <div className="w-14 h-14 bg-gradient-to-br from-[#2C6E49] to-[#1E4E33] text-amber-100 font-black rounded-2xl flex items-center justify-center text-2xl shrink-0 shadow-md border-2 border-[#F7F2E7]">
             {currentStudent.name.charAt(0)}
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-xl font-black font-heading text-white">{currentStudent.name}</h2>
-              <span className="text-[10px] font-bold bg-emerald-900/80 text-emerald-300 border border-emerald-600/60 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" />
+              <h2 className="text-xl font-black font-heading text-[#2A231B]">{currentStudent.name}</h2>
+              <span className="text-[10px] font-bold bg-[#2C6E49] text-white px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-2xs">
+                <ShieldCheck className="w-3 h-3 text-white" />
                 Verified HEI Student Lead
               </span>
-              <span className="text-[10px] font-mono bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded">
+              <span className="text-[10px] font-mono bg-[#E2D8C3] text-[#4A3F33] border border-[#CBBDA3] px-2 py-0.5 rounded font-bold">
                 UID: {currentStudent.id}
               </span>
             </div>
-            <p className="text-xs text-slate-300 font-medium mt-1">
-              Roll No: <strong className="font-mono text-white">{currentStudent.rollNumber}</strong> · {currentStudent.year} · {university.name}
+            <p className="text-xs text-[#5C4F3F] font-semibold mt-1">
+              Roll No: <strong className="font-mono text-[#2A231B]">{currentStudent.rollNumber}</strong> · {currentStudent.year} · {university.name}
             </p>
             <div className="flex flex-wrap gap-1.5 mt-2">
               {currentStudent.skills.map((skill, idx) => (
-                <span key={idx} className="text-[10px] bg-slate-800/80 text-teal-300 border border-teal-800/40 px-2 py-0.5 rounded-md font-medium">
+                <span key={idx} className="text-[10px] bg-[#E8DEC9] text-[#2C6E49] border border-[#C5B597] px-2.5 py-0.5 rounded-md font-bold">
                   {skill}
                 </span>
               ))}
@@ -327,52 +313,54 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
         </div>
 
         <div className="flex items-center gap-3 shrink-0 flex-wrap">
-          <div className="bg-slate-800/90 border border-slate-700/80 px-4 py-3 rounded-xl text-center space-y-0.5 shadow-xs">
-            <span className="text-[11px] text-slate-400 font-semibold block uppercase tracking-wider">Academic Credits</span>
-            <span className="text-xl font-black text-emerald-400 font-heading">{currentStudent.creditsEarned} + 4 Credits</span>
+          <div className="bg-white/85 backdrop-blur-xs border border-[#C5B496] px-4 py-3 rounded-xl text-center space-y-0.5 shadow-xs">
+            <span className="text-[10px] text-[#5C4F3F] font-black uppercase tracking-wider block">Academic Credits</span>
+            <span className="text-xl font-black text-[#2C6E49] font-heading">{currentStudent.creditsEarned} + 4 Credits</span>
           </div>
-          <div className="bg-slate-800/90 border border-slate-700/80 px-4 py-3 rounded-xl text-center space-y-0.5 shadow-xs">
-            <span className="text-[11px] text-slate-400 font-semibold block uppercase tracking-wider">CGPA Score</span>
-            <span className="text-xl font-black text-amber-400 font-heading">{currentStudent.cgpa}</span>
+          <div className="bg-white/85 backdrop-blur-xs border border-[#C5B496] px-4 py-3 rounded-xl text-center space-y-0.5 shadow-xs">
+            <span className="text-[10px] text-[#5C4F3F] font-black uppercase tracking-wider block">CGPA Score</span>
+            <span className="text-xl font-black text-[#C98A2C] font-heading">{currentStudent.cgpa}</span>
           </div>
-          <div className="bg-slate-800/90 border border-slate-700/80 px-4 py-3 rounded-xl text-center space-y-0.5 shadow-xs">
-            <span className="text-[11px] text-slate-400 font-semibold block uppercase tracking-wider">Lab Station</span>
-            <span className="text-xs font-bold text-teal-300 font-heading block">IoT Node #04 Active</span>
+          <div className="bg-white/85 backdrop-blur-xs border border-[#C5B496] px-4 py-3 rounded-xl text-center space-y-0.5 shadow-xs">
+            <span className="text-[10px] text-[#5C4F3F] font-black uppercase tracking-wider block">Lab Station</span>
+            <span className="text-xs font-black text-[#2A231B] font-heading block">IoT Node #04 Active</span>
           </div>
         </div>
       </div>
 
       {/* DigiLocker and Academic Bank of Credits (ABC) Verification Card */}
-      <div className="bg-gradient-to-r from-emerald-900 via-slate-900 to-teal-950 border border-emerald-500/30 rounded-2xl p-5 shadow-md text-white">
+      <div className="bg-gradient-to-r from-[#E3EFE6] via-[#EBF5EE] to-[#DDF0E3] border-2 border-[#9EC7AB] rounded-2xl p-5 shadow-sm text-[#143522]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
+          <div className="flex items-start space-x-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#2C6E49] text-white flex items-center justify-center shrink-0 shadow-sm border border-[#23583a]">
+              <ShieldCheck className="w-6 h-6 text-white" />
             </div>
-            <div className="space-y-0.5">
+            <div className="space-y-1">
               <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-[#2C6E49] text-white px-2.5 py-0.5 rounded-md shadow-2xs">
                   National Academic Depository (NAD)
                 </span>
-                <span className="text-[10px] text-emerald-400 font-bold">DigiLocker Certified</span>
+                <span className="text-[10px] text-[#1E5235] font-black tracking-wide">
+                  DigiLocker Certified
+                </span>
               </div>
-              <h3 className="text-base font-black font-heading text-white">
+              <h3 className="text-base font-black font-heading text-[#143522]">
                 Academic Bank of Credits (ABC) : 4 UGC Credits Awarded
               </h3>
-              <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
+              <p className="text-xs text-[#2E4F39] font-medium leading-relaxed max-w-2xl">
                 Official NEP 2020 experiential learning credits verified for active technical problem solving on Jharkhand civic challenges.
               </p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto">
-            <div className="text-right hidden md:block">
-              <span className="text-[10px] text-slate-400 uppercase font-bold block">ABC Account ID</span>
-              <span className="font-mono text-xs font-bold text-teal-300">{abcId}</span>
+            <div className="bg-white/90 backdrop-blur-xs px-3.5 py-2 rounded-xl border border-[#9EC7AB] shadow-2xs text-right hidden md:block">
+              <span className="text-[9px] text-[#3D6B4D] uppercase font-black tracking-wider block">ABC Account ID</span>
+              <span className="font-mono text-xs font-black text-[#143522]">{abcId}</span>
             </div>
             <button
               onClick={() => setIsAbcModalOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs px-4 py-2 rounded-xl transition-all shadow-sm cursor-pointer flex items-center gap-1.5"
+              className="bg-[#2C6E49] hover:bg-[#205236] text-white font-black text-xs px-4 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 border border-[#1E4E33]"
             >
               <ExternalLink className="w-3.5 h-3.5" />
               <span>Verify ABC Credential</span>
@@ -383,57 +371,57 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
 
       {/* DigiLocker ABC Modal */}
       {isAbcModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-[250] p-4 text-left">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-start justify-between border-b border-slate-100 pb-3">
+        <div className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs flex items-center justify-center z-[250] p-4 text-left">
+          <div className="bg-white border border-[#E4DDD1] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-start justify-between border-b border-[#E4DDD1] pb-3">
               <div>
-                <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                <span className="text-[10px] font-black uppercase text-[#2C6E49] bg-[#F0FAF4] px-2 py-0.5 rounded border border-[#C3E6D0]">
                   Ministry of Education : Govt of India
                 </span>
-                <h3 className="text-base font-black text-slate-900 mt-1">Official Academic Bank of Credits Transcript</h3>
-                <p className="text-xs text-slate-500">Verified via DigiLocker IndiaStack Gateway</p>
+                <h3 className="text-base font-black text-[#201C18] mt-1">Official Academic Bank of Credits Transcript</h3>
+                <p className="text-xs text-[#8A7F72]">Verified via DigiLocker IndiaStack Gateway</p>
               </div>
               <button 
                 onClick={() => setIsAbcModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 text-sm font-bold"
+                className="text-[#8A7F72] hover:text-[#201C18] text-sm font-bold"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 text-xs">
-              <div className="flex justify-between border-b border-slate-200 pb-1.5">
-                <span className="text-slate-500 font-bold">Student Name:</span>
-                <span className="font-bold text-slate-900">{currentStudent.name}</span>
+            <div className="p-4 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl space-y-2.5 text-xs">
+              <div className="flex justify-between border-b border-[#E4DDD1] pb-1.5">
+                <span className="text-[#6A6155] font-bold">Student Name:</span>
+                <span className="font-bold text-[#201C18]">{currentStudent.name}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-200 pb-1.5">
-                <span className="text-slate-500 font-bold">Institutional Roll:</span>
-                <span className="font-mono text-slate-900">{currentStudent.rollNumber}</span>
+              <div className="flex justify-between border-b border-[#E4DDD1] pb-1.5">
+                <span className="text-[#6A6155] font-bold">Institutional Roll:</span>
+                <span className="font-mono text-[#201C18]">{currentStudent.rollNumber}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-200 pb-1.5">
-                <span className="text-slate-500 font-bold">Institution:</span>
-                <span className="font-semibold text-slate-900">{university.name}</span>
+              <div className="flex justify-between border-b border-[#E4DDD1] pb-1.5">
+                <span className="text-[#6A6155] font-bold">Institution:</span>
+                <span className="font-semibold text-[#201C18]">{university.name}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-200 pb-1.5">
-                <span className="text-slate-500 font-bold">Permanent ABC ID:</span>
-                <span className="font-mono font-bold text-emerald-700">{abcId}</span>
+              <div className="flex justify-between border-b border-[#E4DDD1] pb-1.5">
+                <span className="text-[#6A6155] font-bold">Permanent ABC ID:</span>
+                <span className="font-mono font-bold text-[#2C6E49]">{abcId}</span>
               </div>
-              <div className="flex justify-between border-b border-slate-200 pb-1.5">
-                <span className="text-slate-500 font-bold">Course Category:</span>
-                <span className="font-semibold text-slate-900">Societal Innovation and Experiential Field Deployment</span>
+              <div className="flex justify-between border-b border-[#E4DDD1] pb-1.5">
+                <span className="text-[#6A6155] font-bold">Course Category:</span>
+                <span className="font-semibold text-[#201C18]">Societal Innovation and Experiential Field Deployment</span>
               </div>
               <div className="flex justify-between pt-1">
-                <span className="text-slate-900 font-bold">UGC Credits Deposited:</span>
-                <span className="font-black text-emerald-600 text-sm">4.0 Academic Credits</span>
+                <span className="text-[#201C18] font-bold">UGC Credits Deposited:</span>
+                <span className="font-black text-[#2C6E49] text-sm">4.0 Academic Credits</span>
               </div>
             </div>
 
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-[11px] text-emerald-800 space-y-1">
+            <div className="p-3 bg-[#F0FAF4] border border-[#C3E6D0] rounded-xl text-[11px] text-[#2C6E49] space-y-1">
               <p className="font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-[#2C6E49]" />
                 <span>Digitally Signed and Authenticated by DigiLocker Authority</span>
               </p>
-              <p className="font-mono text-[9px] text-emerald-700">
+              <p className="font-mono text-[9px] text-[#2C6E49]">
                 Signature SHA256: 0x98FA2B019CC47D8E21098AA7C5E941
               </p>
             </div>
@@ -443,7 +431,7 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
                 onClick={() => {
                   window.print();
                 }}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-sm"
+                className="bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-bold px-4 py-2 rounded-xl transition-all cursor-pointer shadow-2xs"
               >
                 Download Verified Transcript (PDF)
               </button>
@@ -813,7 +801,7 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
         </div>
       )}
 
-      {/* ── STAGE 11: PROTOTYPE & LIVE IOT TELEMETRY WORKSPACE ── */}
+      {/* ── STAGE 11: PROTOTYPE & HARDWARE DOCUMENTATION WORKSPACE ── */}
       {selectedStageTab === 11 && (
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -821,24 +809,12 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
               <Cpu className="w-5 h-5 text-emerald-600 shrink-0" />
               <div>
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider font-heading">
-                  Stage 11 · Hardware CAD Prototype & Live Telemetry Stream
+                  Stage 11 · Hardware CAD Prototype & Engineering Documentation
                 </h3>
                 <p className="text-[11px] text-slate-500">
-                  Upload CAD/firmware schematics, monitor real-time sensor node telemetry, and log test runs.
+                  Upload CAD/firmware schematics, system specifications, and test bench verification logs.
                 </p>
               </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleTriggerSimPulse}
-                disabled={isSimulatingPulse}
-                className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-              >
-                <PlayCircle className={`w-3.5 h-3.5 ${isSimulatingPulse ? 'animate-spin' : ''}`} />
-                <span>{isSimulatingPulse ? 'Injecting Surge…' : 'Simulate Flood Ping'}</span>
-              </button>
             </div>
           </div>
 
@@ -926,47 +902,6 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
               />
             </div>
 
-            {/* Live Visual Telemetry Monitor Card */}
-            <div className="pt-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  <Radio className="w-4 h-4 text-emerald-600 animate-pulse" />
-                  Live Field Node Telemetry Visualizer
-                </span>
-                <span className="text-[10px] font-mono text-slate-500">
-                  Node R1 · Hesag Culvert [23.3441° N, 85.3096° E]
-                </span>
-              </div>
-
-              <IoTSensorTelemetryCard
-                stationName={`Panchayat Sensor Station — ${assignedProject?.challengeTitle || 'Ranchi Flood Early Warning'}`}
-                hardwareNode={hardwareSpec}
-                waterLevelMeters={simWaterLevel}
-                dangerThresholdMeters={5.5}
-                batteryPct={simBattery}
-                signalBars={4}
-                lastSyncedText="Real-time · Stream active"
-                rawLogs={telemetryLogs}
-              />
-            </div>
-
-            {/* Telemetry Log Stream Area */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="font-bold text-slate-800 flex items-center gap-1.5">
-                  <Terminal className="w-3.5 h-3.5 text-amber-600" />
-                  Live LoRaWAN Telemetry Stream Log:
-                </label>
-                <span className="text-[10px] font-mono text-emerald-600 font-bold">● 115200 BAUD UART</span>
-              </div>
-              <textarea 
-                rows={3}
-                value={telemetryLogs}
-                onChange={(e) => setTelemetryLogs(e.target.value)}
-                className="w-full p-3 bg-slate-900 border border-slate-800 rounded-xl font-mono text-emerald-400 text-[11px]"
-              />
-            </div>
-
             {isLoggedSuccess && (
               <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-emerald-900 font-bold flex items-center space-x-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -977,10 +912,10 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
             <div className="flex items-center justify-between pt-2 border-t border-slate-100 flex-wrap gap-2">
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2.5 bg-[#2C6E49] hover:bg-[#1E4D34] text-white font-bold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
               >
                 <Upload className="w-3.5 h-3.5" />
-                <span>Update Stage 11 IoT Prototype & Telemetry</span>
+                <span>Update Stage 11 IoT Prototype Milestone</span>
               </button>
 
               {/* Advance to Stage 12 Button */}
@@ -992,7 +927,7 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
                   className="flex items-center gap-1.5 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs cursor-pointer"
                 >
                   {advancingStage === 11 ? 'Advancing to Pilot…' : (
-                    <>Advance to Stage 12 — Ground Pilot <ChevronRight className="w-3.5 h-3.5" /></>
+                    <>Advance to Stage 12: Ground Pilot <ChevronRight className="w-3.5 h-3.5" /></>
                   )}
                 </button>
               )}
@@ -1185,75 +1120,75 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({ univer
         </div>
       )}
 
-      {/* ── FACULTY MENTOR DIGITAL REVIEW & SIGN-OFF GATE ── */}
-      <div className="bg-slate-900 text-white p-5 rounded-2xl border border-slate-800 shadow-md space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+      {/* Faculty Mentor Digital Review & Sign-Off Gate */}
+      <div className="bg-gradient-to-br from-[#FDFBF7] via-[#F7F2E8] to-[#EFE7D8] text-[#201C18] p-5 rounded-2xl border-2 border-[#D8C7B0] shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#D8C7B0] pb-3">
           <div className="flex items-center space-x-2.5">
-            <div className="w-9 h-9 rounded-xl bg-teal-500/20 border border-teal-500/40 text-teal-400 flex items-center justify-center font-bold">
+            <div className="w-9 h-9 rounded-xl bg-[#2C6E49]/10 border border-[#2C6E49]/30 text-[#2C6E49] flex items-center justify-center font-bold">
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-black text-white uppercase tracking-wider font-heading">
-                Faculty Mentor Digital Sign-Off & Stage Advancement Gate
+              <h3 className="text-sm font-black text-[#201C18] uppercase tracking-wider font-heading">
+                Faculty Mentor Digital Sign Off & Stage Advancement Gate
               </h3>
-              <p className="text-[11px] text-slate-400">
-                Authorized Faculty: <strong className="text-teal-300">{assignedProject?.facultyMentorName || 'Dr. Arvind Sinha (Professor & Head, IoT Lab)'}</strong>
+              <p className="text-[11px] text-[#5C5549]">
+                Authorized Faculty: <strong className="text-[#2C6E49]">{assignedProject?.facultyMentorName || 'Dr. Arvind Sinha (Professor & Head, IoT Lab)'}</strong>
               </p>
             </div>
           </div>
 
-          <span className="text-[10px] font-mono bg-slate-800 text-teal-400 border border-slate-700 px-2.5 py-1 rounded-lg">
-            SHA-256 e-Sign Active
+          <span className="text-[10px] font-mono bg-[#EFE8DC] text-[#2C6E49] border border-[#D8C7B0] px-2.5 py-1 rounded-lg font-bold">
+            SHA 256 e Sign Active
           </span>
         </div>
 
         {/* Review Rubric */}
         <div className="grid sm:grid-cols-3 gap-3 text-xs">
-          <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-1">
-            <span className="text-[10px] text-slate-400 font-bold block uppercase">Hardware & Circuit Design</span>
-            <span className="text-emerald-400 font-black text-sm">9.5 / 10 · Approved</span>
+          <div className="bg-white/90 p-3 rounded-xl border border-[#D8C7B0] space-y-1 shadow-2xs">
+            <span className="text-[10px] text-[#5C5549] font-bold block uppercase">Hardware & Circuit Design</span>
+            <span className="text-[#2C6E49] font-black text-sm">9.5 / 10 · Approved</span>
           </div>
-          <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-1">
-            <span className="text-[10px] text-slate-400 font-bold block uppercase">LoRaWAN Telemetry Reliability</span>
-            <span className="text-emerald-400 font-black text-sm">9.8 / 10 · Verified</span>
+          <div className="bg-white/90 p-3 rounded-xl border border-[#D8C7B0] space-y-1 shadow-2xs">
+            <span className="text-[10px] text-[#5C5549] font-bold block uppercase">LoRaWAN Telemetry Reliability</span>
+            <span className="text-[#2C6E49] font-black text-sm">9.8 / 10 · Verified</span>
           </div>
-          <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700 space-y-1">
-            <span className="text-[10px] text-slate-400 font-bold block uppercase">Panchayat Field Safety</span>
-            <span className="text-emerald-400 font-black text-sm">10.0 / 10 · Certified</span>
+          <div className="bg-white/90 p-3 rounded-xl border border-[#D8C7B0] space-y-1 shadow-2xs">
+            <span className="text-[10px] text-[#5C5549] font-bold block uppercase">Panchayat Field Safety</span>
+            <span className="text-[#2C6E49] font-black text-sm">10.0 / 10 · Certified</span>
           </div>
         </div>
 
         {/* Faculty Remarks Field */}
         <div className="space-y-1 text-xs">
-          <label className="font-bold text-slate-300 block">Faculty Evaluation Remarks & Endorsement:</label>
+          <label className="font-bold text-[#201C18] block">Faculty Evaluation Remarks & Endorsement:</label>
           <textarea
             rows={2}
             value={facultyRemarks}
             onChange={(e) => setFacultyRemarks(e.target.value)}
-            className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-100 text-xs font-medium"
+            className="w-full p-2.5 bg-white border border-[#D8C7B0] rounded-xl text-[#201C18] text-xs font-medium focus:outline-hidden focus:border-[#2C6E49]"
           />
         </div>
 
         {facultySignOffSuccess && (
-          <div className="bg-emerald-950/80 border border-emerald-500 p-3 rounded-xl text-emerald-200 text-xs font-bold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Digital Sign-Off Recorded! Challenge stage successfully advanced in Workflow Engine.</span>
+          <div className="bg-emerald-50 border border-emerald-300 p-3 rounded-xl text-emerald-950 text-xs font-bold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <span>Digital Sign Off Recorded! Challenge stage successfully advanced in Workflow Engine.</span>
           </div>
         )}
 
         <div className="flex items-center justify-between pt-1 flex-wrap gap-2">
-          <span className="text-[10px] text-slate-400 font-mono">
-            Digital Signature: <span className="text-slate-300">BIT-MESRA/FAC-SIGN/2026/08</span>
+          <span className="text-[10px] text-[#5C5549] font-mono">
+            Digital Signature: <span className="text-[#201C18] font-semibold">BIT-MESRA/FAC-SIGN/2026/08</span>
           </span>
 
           <button
             type="button"
             disabled={isSigningOff}
             onClick={() => handleFacultySignOffAndAdvance(currentStage)}
-            className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2"
+            className="px-5 py-2.5 bg-[#2C6E49] hover:bg-[#1E4D34] text-white font-black text-xs rounded-xl shadow-xs transition-all cursor-pointer flex items-center gap-2"
           >
             <ShieldCheck className="w-4 h-4" />
-            <span>{isSigningOff ? 'Recording Digital Sign-Off…' : `Faculty Digital Sign-Off & Advance Stage ${currentStage}`}</span>
+            <span>{isSigningOff ? 'Recording Digital Sign Off…' : `Faculty Digital Sign Off & Advance Stage ${currentStage}`}</span>
           </button>
         </div>
       </div>

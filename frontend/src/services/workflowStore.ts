@@ -61,16 +61,15 @@ class WorkflowStore {
       if (stored) {
         const parsed: unknown = JSON.parse(stored);
         if (this.isWorkflowState(parsed)) {
-          // Always refresh DEMO challenges from the latest seed data.
-          // This ensures any seed corrections (e.g. assignedHEI fixes) take effect immediately.
-          // User-submitted challenges (non-DEMO) are always preserved.
+          // Merge stored challenges with seed data, preserving all stored modifications and progress.
           const seed = createSeedData();
-          const userChallenges = parsed.challenges.filter((c: any) => !c.id.startsWith('DEMO-'));
-          const freshDemoChallenges = seed.challenges.filter((c: any) => c.id.startsWith('DEMO-'));
-          const merged = [...freshDemoChallenges, ...userChallenges];
+          const storedIds = new Set(parsed.challenges.map((c: any) => c.id || c.reportId));
+          const missingSeedChallenges = seed.challenges.filter((c: any) => !storedIds.has(c.id) && !storedIds.has(c.reportId));
+          const mergedChallenges = [...parsed.challenges, ...missingSeedChallenges];
+          
           const finalState: WorkflowState = {
             ...parsed,
-            challenges: merged,
+            challenges: mergedChallenges,
           };
           this.persist(finalState);
           return finalState;

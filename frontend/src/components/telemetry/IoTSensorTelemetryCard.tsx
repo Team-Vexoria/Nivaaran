@@ -11,6 +11,11 @@ export interface IoTSensorTelemetryProps {
   lastSyncedText?: string;
   rawLogs?: string;
   compact?: boolean;
+  metricTitle?: string;
+  metricUnit?: string;
+  metricValue?: number;
+  metricThreshold?: number;
+  metricSubtext?: string;
 }
 
 export const IoTSensorTelemetryCard: React.FC<IoTSensorTelemetryProps> = ({
@@ -25,15 +30,26 @@ export const IoTSensorTelemetryCard: React.FC<IoTSensorTelemetryProps> = ({
 [08:42:19.145] SENS_WATER_ULTRASONIC: distance_cm=420.4, calculated_level=4.20m [NORMAL]
 [08:42:19.180] BATT_ADC_VOLTS: 3.94V (85%) | SOLAR_IN: 5.10V @ 180mA
 [08:42:19.210] STATUS: OK | PAYLOAD_HASH=0x7F2A9B | PANCHAYAT_GATEWAY_ACK=RECVD`,
-  compact = false
+  compact = false,
+  metricTitle,
+  metricUnit,
+  metricValue,
+  metricThreshold,
+  metricSubtext
 }) => {
   const [showRawLogs, setShowRawLogs] = useState(false);
 
-  // Compute fill percentage for water tube (clamped 0-100%)
-  const maxScale = Math.max(dangerThresholdMeters * 1.3, 7.0);
-  const fillPct = Math.min(Math.max((waterLevelMeters / maxScale) * 100, 5), 100);
-  const thresholdPct = Math.min(Math.max((dangerThresholdMeters / maxScale) * 100, 5), 100);
-  const isDanger = waterLevelMeters >= dangerThresholdMeters;
+  const displayTitle = metricTitle || 'WATER LEVEL';
+  const displayUnit = metricUnit || 'm';
+  const displayVal = metricValue !== undefined ? metricValue : waterLevelMeters;
+  const displayThreshold = metricThreshold !== undefined ? metricThreshold : dangerThresholdMeters;
+  const displaySubtext = metricSubtext || 'Current Level';
+
+  // Compute fill percentage for tube gauge (clamped 0-100%)
+  const maxScale = Math.max(displayThreshold * 1.3, 7.0);
+  const fillPct = Math.min(Math.max((displayVal / maxScale) * 100, 5), 100);
+  const thresholdPct = Math.min(Math.max((displayThreshold / maxScale) * 100, 5), 100);
+  const isDanger = displayVal >= displayThreshold;
 
   return (
     <div className={`bg-white border border-[#E4DDD1] rounded-2xl overflow-hidden shadow-sm flex flex-col ${compact ? 'max-w-md w-full' : 'w-full'}`}>
@@ -62,9 +78,9 @@ export const IoTSensorTelemetryCard: React.FC<IoTSensorTelemetryProps> = ({
         {/* Metrics Row: Water Level & Battery / Signal */}
         <div className="grid grid-cols-2 gap-3">
           
-          {/* Water Level Tube Visualizer */}
+          {/* Primary Metric Tube Visualizer */}
           <div className="bg-[#FAF8F4] rounded-xl p-3 border border-[#E4DDD1] flex flex-col items-center justify-between relative">
-            <span className="text-[10px] font-extrabold text-[#6A6155] tracking-wider uppercase">WATER LEVEL</span>
+            <span className="text-[10px] font-extrabold text-[#6A6155] tracking-wider uppercase text-center">{displayTitle}</span>
             
             <div className="relative w-10 sm:w-12 h-28 bg-[#EAE4D8] rounded-full overflow-hidden border border-[#D5CDBF] my-1">
               {/* Danger Threshold Line */}
@@ -76,10 +92,10 @@ export const IoTSensorTelemetryCard: React.FC<IoTSensorTelemetryProps> = ({
                 className="absolute left-1 text-[8px] text-[#B3261E] font-black z-10 drop-shadow-xs"
                 style={{ bottom: `${thresholdPct + 2}%` }}
               >
-                {dangerThresholdMeters}m
+                {displayThreshold}{displayUnit}
               </span>
 
-              {/* Water Fill */}
+              {/* Liquid / Fill */}
               <div 
                 className={`absolute bottom-0 left-0 w-full transition-all duration-1000 ease-in-out ${
                   isDanger ? 'bg-[#B3261E]' : 'bg-[#2C6E49]'
@@ -90,9 +106,9 @@ export const IoTSensorTelemetryCard: React.FC<IoTSensorTelemetryProps> = ({
 
             <div className="text-center">
               <span className={`text-base font-black ${isDanger ? 'text-[#B3261E]' : 'text-[#2C6E49]'}`}>
-                {waterLevelMeters.toFixed(1)}m
+                {typeof displayVal === 'number' ? displayVal.toFixed(1) : displayVal}{displayUnit}
               </span>
-              <span className="text-[9px] text-[#8A7F72] block">Current Height</span>
+              <span className="text-[9px] text-[#8A7F72] block">{displaySubtext}</span>
             </div>
           </div>
 
@@ -177,14 +193,14 @@ export const IoTSensorTelemetryCard: React.FC<IoTSensorTelemetryProps> = ({
           </div>
 
           {showRawLogs && (
-            <div className="bg-[#1F1B17] text-[#ADF2C3] font-mono text-[10px] p-3 rounded-xl overflow-x-auto max-h-36 border border-[#34302B] space-y-1 shadow-inner">
-              <div className="flex items-center justify-between text-[#8A7F72] border-b border-white/10 pb-1 mb-1 text-[9px]">
+            <div className="bg-[#FAF8F4] text-[#2C6E49] font-mono text-[10px] p-3 rounded-xl overflow-x-auto max-h-36 border border-[#E4DDD1] space-y-1 shadow-2xs">
+              <div className="flex items-center justify-between text-[#8A7F72] border-b border-[#E4DDD1] pb-1 mb-1 text-[9px]">
                 <span>STREAM: /dev/ttyUSB0 @ 115200 BAUD</span>
-                <span className="text-[#92D5A8] flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#92D5A8] animate-ping" /> LIVE
+                <span className="text-[#2C6E49] font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2C6E49] animate-ping" /> LIVE
                 </span>
               </div>
-              <pre className="whitespace-pre-wrap leading-relaxed">{rawLogs}</pre>
+              <pre className="whitespace-pre-wrap leading-relaxed text-[#201C18]">{rawLogs}</pre>
             </div>
           )}
 
