@@ -10,246 +10,146 @@ import { useAuth } from '../../context/AuthContext';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 import { LIFECYCLE_STAGES, getStageForStatus, CHALLENGE_STATUS_OPTIONS } from '../../services/workflowLifecycle';
 import { Challenge, ChallengeStatus } from '../../services/workflowTypes';
-import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseService';
+import { 
+  subscribeToChallenges, ChallengeDoc,
+  subscribeToCollaborationRequests, CollaborationRequest 
+} from '../../services/firebaseService';
 import { EmergencyBroadcastModal } from '../../components/admin/EmergencyBroadcastModal';
 import { ExecutiveBriefingModal } from '../../components/admin/ExecutiveBriefingModal';
+import { ChallengeDetailModal } from '../../components/ChallengeDetailModal';
 
 type AdminTab = 'matrix' | 'overview' | 'broadcast' | 'dossier' | 'audit';
 
-// Known University & CSR mappings for Jharkhand challenges
-const ENTITY_MAPPINGS: Record<string, {
-  university: string;
+// Authentic Jharkhand R&D project lead researchers and telemetry specifications
+interface HEITelemetryMeta {
   facultyLead: string;
   studentLead: string;
-  csrPartner: string;
-  csrGrant: string;
-  trancheStatus: string;
-  telemetryStatus: string;
-}> = {
+  sensorType: string;
+  sensorReading: string;
+  defaultCsrPartner: string;
+  defaultGrant: string;
+}
+
+const HEI_TELEMETRY_MAP: Record<string, HEITelemetryMeta> = {
   'DEMO-CH-001': {
-    university: 'IIT (ISM) Dhanbad',
     facultyLead: 'Dr. S. K. Roy (Rock Mechanics & Safety)',
     studentLead: 'Priya Sharma (Lead, M.Tech Mining)',
-    csrPartner: 'BCCL CSR Foundation',
-    csrGrant: '₹6,50,000 (₹3.0L Co-Funded)',
-    trancheStatus: 'Tranche 2 Active (40%)',
-    telemetryStatus: '● 4 Borehole DTS Nodes Synced (56°C peak, 0.2mm shift)',
+    sensorType: 'Borehole DTS Fiber Array',
+    sensorReading: '4 Nodes Synced: 56°C Peak, 0.2mm shift',
+    defaultCsrPartner: 'BCCL CSR Foundation',
+    defaultGrant: '₹6,50,000 INR (Tranche 2 Active)',
   },
   'DEMO-CH-002': {
-    university: 'IIT (ISM) Dhanbad',
     facultyLead: 'Prof. Ankit Verma (Environmental Engg)',
     studentLead: 'Deepak Sahu (Lead, 4th Yr Env Engg)',
-    csrPartner: 'Tata Steel Foundation',
-    csrGrant: '₹5,20,000 (₹2.6L Co-Funded)',
-    trancheStatus: 'Tranche 2 Active (40%)',
-    telemetryStatus: '● Cartridge Flow: 14.2 L/min (As <0.005 mg/L)',
+    sensorType: 'Nano Adsorbent Flow Monitor',
+    sensorReading: 'Flow: 14.2 L/min, Arsenic <0.005 mg/L Safe',
+    defaultCsrPartner: 'Tata Steel Foundation',
+    defaultGrant: '₹5,20,000 INR (Tranche 2 Active)',
   },
   'DEMO-CH-003': {
-    university: 'Birsa Agricultural University (BAU)',
     facultyLead: 'Dr. Rameshwar Oraon (Soil & Water Engg)',
     studentLead: 'Amit Murmu (Lead, 3rd Yr AgriTech)',
-    csrPartner: 'NTPC CSR Rural Energy Fund',
-    csrGrant: '₹4,80,000 (₹2.4L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● LoRa Aquifer Piezometer: 42.1m (Soil Tension 28 kPa)',
+    sensorType: 'LoRa Aquifer Piezometer',
+    sensorReading: 'Water Table: 42.1m, Soil Tension 28 kPa',
+    defaultCsrPartner: 'NTPC CSR Rural Energy Fund',
+    defaultGrant: '₹4,80,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-004': {
-    university: 'NIT Jamshedpur',
     facultyLead: 'Dr. V. K. Mahato (Hydraulic Engg)',
     studentLead: 'Rahul Soren (Lead, 4th Yr Civil)',
-    csrPartner: 'Tata Steel TSRDS & Jusco CSR',
-    csrGrant: '₹5,80,000 (₹2.9L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Ultrasonic River Sentinel: 4.1m (Alert at 5.5m)',
+    sensorType: 'Ultrasonic River Sentinel',
+    sensorReading: 'River Stage: 4.1m (Threshold 5.5m Safe)',
+    defaultCsrPartner: 'Tata Steel TSRDS & Jusco CSR',
+    defaultGrant: '₹5,80,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-005': {
-    university: 'Kolhan University & NIT Jamshedpur',
     facultyLead: 'Dr. Meenakshi Soren (Environmental Geoscience)',
-    studentLead: 'Salil Banra (Lead, Metallurgical & Geo Engg)',
-    csrPartner: 'Tata Steel Mining & SAIL Rungta CSR',
-    csrGrant: '₹6,20,000 (₹3.1L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Karo River Spectro Sensor: Turbidity 18 NTU (Fe <0.3 mg/L)',
+    studentLead: 'Salil Banra (Lead, Metallurgical Engg)',
+    sensorType: 'Karo River Optical Spectrometer',
+    sensorReading: 'Turbidity 18 NTU, Dissolved Fe <0.3 mg/L',
+    defaultCsrPartner: 'Tata Steel Mining & SAIL CSR',
+    defaultGrant: '₹6,20,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-006': {
-    university: 'BIT Sindri',
     facultyLead: 'Dr. Priya Sharma (Wildlife Ecology & IoT)',
     studentLead: 'Aditya Kumar (Lead, Forestry & Wildlife)',
-    csrPartner: 'Jharkhand Forest Dev & Adani CSR',
-    csrGrant: '₹4,20,000 (₹2.1L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● 6 Seismic Geophones Online (0 Pachyderm Alerts)',
+    sensorType: 'Seismic Geophone Bio-Acoustic Array',
+    sensorReading: '6 Geophones Online: 0 Intrusion Alerts',
+    defaultCsrPartner: 'Jharkhand Forest Dev & Adani CSR',
+    defaultGrant: '₹4,20,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-007': {
-    university: 'Sido Kanhu Murmu University (SKMU)',
     facultyLead: 'Dr. Hemant Murmu (Fluvial Geomorphology)',
     studentLead: 'Sanjay Hansda (Lead, Earth Sciences)',
-    csrPartner: 'Inland Waterways CSR & Jindal Power',
-    csrGrant: '₹6,00,000 (₹3.0L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● ADCP Sonar Buoy Active (Current 1.4 m/s, Depth 7.2m)',
+    sensorType: 'ADCP Sonar Bathymetric Buoy',
+    sensorReading: 'Current 1.4 m/s, Scour Depth 7.2m',
+    defaultCsrPartner: 'Inland Waterways CSR & Jindal Power',
+    defaultGrant: '₹6,00,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-008': {
-    university: 'BIT Mesra, Ranchi',
     facultyLead: 'Dr. Arvind Sinha (IoT & Civil Lab)',
     studentLead: 'Ayush Kumar Singh (Lead, 4th Yr ECE)',
-    csrPartner: 'Central Coalfields Ltd (CCL CSR)',
-    csrGrant: '₹4,50,000 (₹2.25L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● 115200 Baud Radar Stream: 1.82m Stage (Normal Flow)',
+    sensorType: '115200 Baud Radar Water Stage Stream',
+    sensorReading: 'Culvert Stage: 1.82m Normal Flow',
+    defaultCsrPartner: 'Central Coalfields Ltd (CCL CSR)',
+    defaultGrant: '₹4,50,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-009': {
-    university: 'IIT (ISM) Dhanbad & Bokaro Steel City College',
-    facultyLead: 'Dr. Sanjeev Kumar (Slurry Rheology & Waste)',
+    facultyLead: 'Dr. Sanjeev Kumar (Slurry Rheology)',
     studentLead: 'Vikramaditya Roy (Lead, Chemical Engg)',
-    csrPartner: 'SAIL Bokaro Steel Plant CSR & DVC',
-    csrGrant: '₹5,60,000 (₹2.8L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Konar River Intake Optical Sensor: Turbidity 14 NTU Safe',
+    sensorType: 'Konar River Intake Optical Turbidimeter',
+    sensorReading: 'Turbidity 14 NTU Safe, TDS 240 ppm',
+    defaultCsrPartner: 'SAIL Bokaro Steel Plant CSR',
+    defaultGrant: '₹5,60,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-010': {
-    university: 'NIT Jamshedpur',
     facultyLead: 'Dr. P. K. Soren (Chemical & Env Engg)',
     studentLead: 'Neha Kumari (Lead, 4th Yr Chem Engg)',
-    csrPartner: 'Adityapur Auto Cluster CSR',
-    csrGrant: '₹5,10,000 (₹2.5L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Optical Fluorometer Stream (Cr-VI: 0.018 mg/L Safe)',
+    sensorType: 'Continuous Electrochemical Ion Probe',
+    sensorReading: 'Cr-VI: 0.018 mg/L Within Safe Limits',
+    defaultCsrPartner: 'Adityapur Auto Cluster CSR',
+    defaultGrant: '₹5,10,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-011': {
-    university: 'Birsa Agricultural University (BAU)',
     facultyLead: 'Dr. R. N. Tiwari (Agronomy & Entomology)',
     studentLead: 'Birsa Munda (Lead, Lac Culture Cell)',
-    csrPartner: 'TRIFED & JSLPS Innovation Grant',
-    csrGrant: '₹3,90,000 (₹1.95L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Multispectral NDVI Drone Scan (Canopy Health 92%)',
+    sensorType: 'Multispectral NDVI Canopy Drone Scan',
+    sensorReading: 'Canopy Health Index 92% Positive',
+    defaultCsrPartner: 'TRIFED & JSLPS Innovation Grant',
+    defaultGrant: '₹3,90,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-012': {
-    university: 'AIIMS Deoghar & SKMU Dumka',
     facultyLead: 'Dr. Alok Ranjan (Microbiology & Public Health)',
     studentLead: 'Kavita Mishra (Lead, Bioengineering)',
-    csrPartner: 'Baidyanath Dham Trust & Coal India CSR',
-    csrGrant: '₹4,70,000 (₹2.35L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● UV-LED Sterilizer Stream: E. coli 0 CFU/100ml Safe',
+    sensorType: 'UV-C LED Optical Disinfection Stream',
+    sensorReading: 'E. coli 0 CFU/100ml Safe Drinking Water',
+    defaultCsrPartner: 'Baidyanath Dham Trust & Coal India CSR',
+    defaultGrant: '₹4,70,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-013': {
-    university: 'Vinoba Bhave University (VBU) & NIT JSR',
     facultyLead: 'Dr. Meenakshi Sinha (Geotechnical Engg)',
     studentLead: 'Tanvi Agarwal (Lead, Structural Engg)',
-    csrPartner: 'NHAI Road Safety & NTPC CSR',
-    csrGrant: '₹5,50,000 (₹2.75L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● FBG Strain Sensor Rig (Pier 3 Scour 2.8m Fixed)',
+    sensorType: 'Fiber Bragg Grating (FBG) Strain Rig',
+    sensorReading: 'Pier 3 Scour 2.8m Stabilized',
+    defaultCsrPartner: 'NHAI Road Safety & NTPC CSR',
+    defaultGrant: '₹5,50,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-014': {
-    university: 'BIT Sindri & Vinoba Bhave University',
     facultyLead: 'Dr. Rajeshwar Mandal (Mine Reclamation)',
     studentLead: 'Kunal Kumar (Lead, Mining Environmental Lab)',
-    csrPartner: 'Damodar Valley Corporation DVC CSR & JSMDC',
-    csrGrant: '₹5,40,000 (₹2.7L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Pit Water Level Sonar: 11.2m Rim Stability Steady',
+    sensorType: 'Sonar Rim Hydrostatic Piezometer',
+    sensorReading: 'Water Rim Level 11.2m Steady',
+    defaultCsrPartner: 'Damodar Valley Corporation DVC CSR',
+    defaultGrant: '₹5,40,000 INR (Tranche 1 Disbursed)',
   },
   'DEMO-CH-015': {
-    university: 'Ranchi University & BIT Mesra',
-    facultyLead: 'Dr. Sandeep Toppo (Geotechnical & Highway Engg)',
+    facultyLead: 'Dr. Sandeep Toppo (Geotechnical & Highway)',
     studentLead: 'Roshan Kujur (Lead, Civil & Geomatics)',
-    csrPartner: 'Hindalco Industries CSR Netarhat Division',
-    csrGrant: '₹4,90,000 (₹2.45L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Inclinometer Sensor String: Slope Creep 0.05 mm/day Stable',
-  },
-  'mining': {
-    university: 'IIT (ISM) Dhanbad',
-    facultyLead: 'Dr. S. K. Roy (Rock Mechanics & Safety)',
-    studentLead: 'Priya Sharma (Lead, M.Tech Mining)',
-    csrPartner: 'BCCL CSR Foundation',
-    csrGrant: '₹6,50,000 (₹3.0L Co-Funded)',
-    trancheStatus: 'Tranche 2 Active (40%)',
-    telemetryStatus: '● 4 Borehole DTS Nodes Synced (56°C peak, 0.2mm shift)',
-  },
-  'water': {
-    university: 'IIT (ISM) Dhanbad',
-    facultyLead: 'Prof. Ankit Verma (Environmental Engg)',
-    studentLead: 'Deepak Sahu (Lead, 4th Yr Env Engg)',
-    csrPartner: 'Tata Steel Foundation',
-    csrGrant: '₹5,20,000 (₹2.6L Co-Funded)',
-    trancheStatus: 'Tranche 2 Active (40%)',
-    telemetryStatus: '● Cartridge Flow: 14.2 L/min (As <0.005 mg/L)',
-  },
-  'drought': {
-    university: 'Birsa Agricultural University (BAU)',
-    facultyLead: 'Dr. Rameshwar Oraon (Soil & Water Engg)',
-    studentLead: 'Amit Murmu (Lead, 3rd Yr AgriTech)',
-    csrPartner: 'NTPC CSR Rural Energy Fund',
-    csrGrant: '₹4,80,000 (₹2.4L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● LoRa Aquifer Piezometer: 42.1m (Soil Tension 28 kPa)',
-  },
-  'flood': {
-    university: 'BIT Mesra, Ranchi',
-    facultyLead: 'Dr. Arvind Sinha (IoT & Civil Lab)',
-    studentLead: 'Ayush Kumar Singh (Lead, 4th Yr ECE)',
-    csrPartner: 'Central Coalfields Ltd (CCL CSR)',
-    csrGrant: '₹4,50,000 (₹2.25L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● 115200 Baud Radar Stream: 1.82m Stage (Normal Flow)',
-  },
-  'confluence': {
-    university: 'NIT Jamshedpur',
-    facultyLead: 'Dr. V. K. Mahato (Hydraulic Engg)',
-    studentLead: 'Rahul Soren (Lead, 4th Yr Civil)',
-    csrPartner: 'Tata Steel TSRDS & Jusco CSR',
-    csrGrant: '₹5,80,000 (₹2.9L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Ultrasonic River Sentinel: 4.1m (Alert at 5.5m)',
-  },
-  'wildlife': {
-    university: 'BIT Sindri',
-    facultyLead: 'Dr. Priya Sharma (Wildlife Ecology & IoT)',
-    studentLead: 'Aditya Kumar (Lead, Forestry & Wildlife)',
-    csrPartner: 'Jharkhand Forest Dev & Adani CSR',
-    csrGrant: '₹4,20,000 (₹2.1L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● 6 Seismic Geophones Online (0 Pachyderm Alerts)',
-  },
-  'erosion': {
-    university: 'Sido Kanhu Murmu University (SKMU)',
-    facultyLead: 'Dr. Hemant Murmu (Fluvial Geomorphology)',
-    studentLead: 'Sanjay Hansda (Lead, Earth Sciences)',
-    csrPartner: 'Inland Waterways CSR & Jindal Power',
-    csrGrant: '₹6,00,000 (₹3.0L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● ADCP Sonar Buoy Active (Current 1.4 m/s, Depth 7.2m)',
-  },
-  'hazardous': {
-    university: 'NIT Jamshedpur',
-    facultyLead: 'Dr. P. K. Soren (Chemical & Env Engg)',
-    studentLead: 'Neha Kumari (Lead, 4th Yr Chem Engg)',
-    csrPartner: 'Adityapur Auto Cluster CSR',
-    csrGrant: '₹5,10,000 (₹2.5L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Optical Fluorometer Stream (Cr-VI: 0.018 mg/L Safe)',
-  },
-  'agri': {
-    university: 'Birsa Agricultural University (BAU)',
-    facultyLead: 'Dr. R. N. Tiwari (Agronomy & Entomology)',
-    studentLead: 'Birsa Munda (Lead, Lac Culture Cell)',
-    csrPartner: 'TRIFED & JSLPS Innovation Grant',
-    csrGrant: '₹3,90,000 (₹1.95L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● Multispectral NDVI Drone Scan (Canopy Health 92%)',
-  },
-  'bridge': {
-    university: 'Vinoba Bhave University (VBU) & NIT JSR',
-    facultyLead: 'Dr. Meenakshi Sinha (Geotechnical Engg)',
-    studentLead: 'Tanvi Agarwal (Lead, Structural Engg)',
-    csrPartner: 'NHAI Road Safety & NTPC CSR',
-    csrGrant: '₹5,50,000 (₹2.75L Co-Funded)',
-    trancheStatus: 'Tranche 1 Disbursed (30%)',
-    telemetryStatus: '● FBG Strain Sensor Rig (Pier 3 Scour 2.8m Fixed)',
+    sensorType: 'Subsurface Inclinometer String',
+    sensorReading: 'Slope Creep 0.05 mm/day Stable',
+    defaultCsrPartner: 'Hindalco Industries CSR Netarhat',
+    defaultGrant: '₹4,90,000 INR (Tranche 1 Disbursed)',
   },
 };
 
@@ -258,10 +158,13 @@ export const AdminPortal: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('matrix');
   const [challenges, setChallenges] = useState<Challenge[]>(workflowStore.getChallenges());
   const [fbChallenges, setFbChallenges] = useState<ChallengeDoc[]>([]);
+  const [collabRequests, setCollabRequests] = useState<CollaborationRequest[]>([]);
+  
+  // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [districtFilter, setDistrictFilter] = useState('all');
-  const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
+  const [inspectingChallenge, setInspectingChallenge] = useState<Challenge | null>(null);
 
   // Modals state
   const [isBroadcastOpen, setIsBroadcastOpen] = useState(false);
@@ -276,19 +179,26 @@ export const AdminPortal: React.FC = () => {
     return () => window.removeEventListener(STORE_EVENT, handler);
   }, []);
 
-  // Firebase sync
+  // Firebase sync for challenges and collaboration requests
   useEffect(() => {
-    const unsub = subscribeToChallenges(setFbChallenges);
-    return () => unsub();
+    const unsub1 = subscribeToChallenges(setFbChallenges);
+    const unsub2 = subscribeToCollaborationRequests(setCollabRequests);
+    return () => {
+      unsub1();
+      unsub2();
+    };
   }, []);
 
-  // Merge workflowStore + Firebase for full picture
+  // Merge workflowStore and Firebase challenges, removing test spam
   const allChallenges = useMemo(() => {
-    if (challenges.length > 0) return challenges;
-    return fbChallenges as unknown as Challenge[];
+    const source = challenges.length > 0 ? challenges : (fbChallenges as unknown as Challenge[]);
+    return source.filter(c => {
+      const isJunk = !c.title || /i cant attach photo|cant attach photo/i.test(c.title + ' ' + (c.description || ''));
+      return !isJunk;
+    });
   }, [challenges, fbChallenges]);
 
-  // --- KPI Counts ---
+  // Platform KPIs
   const kpis = useMemo(() => {
     const total = allChallenges.length;
     const byStage = new Array(17).fill(0);
@@ -302,29 +212,35 @@ export const AdminPortal: React.FC = () => {
     const critical = allChallenges.filter(c => c.riskLevel === 'CRITICAL').length;
     const byCategory: Record<string, number> = {};
     allChallenges.forEach(c => {
-      byCategory[c.category] = (byCategory[c.category] || 0) + 1;
+      if (c.category) {
+        byCategory[c.category] = (byCategory[c.category] || 0) + 1;
+      }
     });
     const byDistrict: Record<string, number> = {};
     allChallenges.forEach(c => {
-      byDistrict[c.district] = (byDistrict[c.district] || 0) + 1;
+      if (c.district) {
+        byDistrict[c.district] = (byDistrict[c.district] || 0) + 1;
+      }
     });
     return { total, pending, active, resolved, critical, byCategory, byDistrict, byStage };
   }, [allChallenges]);
 
-  // --- Audit log entries from timeline events ---
+  // Audit log entries from timeline events
   const auditEntries = useMemo(() => {
     return allChallenges.flatMap(c =>
       workflowStore.getTimelineEvents(c.id).map(e => ({ ...e, challengeTitle: c.title, challengeId: c.id }))
     ).sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || '')).slice(0, 50);
   }, [allChallenges]);
 
-  // --- Filtered challenges for Master Matrix tab ---
+  // Filtered challenges for Master Matrix tab
   const filteredChallenges = useMemo(() => {
     return allChallenges.filter(c => {
-      const matchSearch = !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase())
-        || c.district.toLowerCase().includes(searchQuery.toLowerCase())
-        || c.reportId.toLowerCase().includes(searchQuery.toLowerCase())
-        || (c.assignedHEI && c.assignedHEI.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchSearch = !searchQuery || 
+        c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        c.reportId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.assignedHEI && c.assignedHEI.toLowerCase().includes(searchQuery.toLowerCase()));
+      
       const matchStatus = statusFilter === 'all' || c.status === statusFilter;
       const matchDistrict = districtFilter === 'all' || c.district === districtFilter;
       return matchSearch && matchStatus && matchDistrict;
@@ -350,113 +266,134 @@ export const AdminPortal: React.FC = () => {
     );
   };
 
+  const handleReturnHome = async () => {
+    if (logout) {
+      await logout();
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.delete('portal');
+    url.searchParams.set('tab', 'home');
+    window.history.pushState({ tab: 'home' }, '', url.toString());
+    window.dispatchEvent(new Event('popstate'));
+  };
+
   return (
-    <div className="min-h-screen bg-[#FAF8F4] flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-[#FAF8F4] text-[#201C18] px-4 sm:px-6 py-2.5 border-b border-[#E4DDD1] shadow-2xs">
+    <div className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col antialiased selection:bg-[#2C6E49] selection:text-white font-sans">
+      
+      {/* Top Header */}
+      <header className="sticky top-0 z-40 bg-[#FAF8F4] text-[#201C18] px-4 sm:px-6 py-3 border-b border-[#E4DDD1] shadow-2xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center space-x-3 shrink-0">
-            <img src="/logo.png" alt="NIVAARAN Logo" className="h-8 sm:h-9 w-auto object-contain shrink-0" />
+          
+          {/* Brand & Subtitle */}
+          <div 
+            onClick={handleReturnHome}
+            className="flex items-center space-x-3 shrink-0 cursor-pointer select-none"
+          >
+            <img src="/logo.png" alt="NIVAARAN Logo" className="h-9 sm:h-10 w-auto object-contain shrink-0" />
             <div>
               <div className="flex items-center space-x-2">
-                <span className="text-base sm:text-lg font-black font-heading tracking-tight leading-none text-[#201C18]">
+                <span className="text-lg sm:text-xl font-black font-heading tracking-tight leading-none text-[#201C18]">
                   NIVAARAN
                 </span>
-                <span className="text-[10px] font-extrabold bg-[#FFF8EC] text-[#B5502D] px-2 py-0.5 rounded-full uppercase tracking-wider border border-[#F0D99A]">
+                <span className="text-xs font-black bg-[#FFF8EC] text-[#B5502D] px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-[#F0D99A]">
                   Super Admin Command Matrix
                 </span>
               </div>
-              <span className="text-[10px] text-[#5A5247] font-semibold block">
-                State-Wide Incident Traceability, HEI Labs & Emergency Broadcast
+              <span className="text-xs text-[#5A5247] font-semibold block mt-0.5">
+                Statewide Incident Traceability, Autonomous HEI Engineering Labs &amp; CAP Emergency Broadcast
               </span>
             </div>
           </div>
 
+          {/* Quick Header Actions */}
           <div className="flex items-center space-x-2.5 shrink-0 flex-wrap">
             <button
               onClick={() => setIsBroadcastOpen(true)}
-              className="flex items-center space-x-1.5 text-xs bg-red-600 hover:bg-red-700 text-white font-black px-3.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="flex items-center space-x-2 text-xs bg-[#B5502D] hover:bg-[#9E4223] text-white font-black px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer active:scale-95"
             >
-              <Radio className="w-3.5 h-3.5 animate-pulse" />
+              <Radio className="w-4 h-4 animate-pulse" />
               <span>CAP Broadcast</span>
             </button>
 
             <button
               onClick={() => setIsBriefingOpen(true)}
-              className="flex items-center space-x-1.5 text-xs bg-[#B5502D] hover:bg-[#9E4223] text-white font-bold px-3.5 py-1.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+              className="flex items-center space-x-2 text-xs bg-[#2C6E49] hover:bg-[#23583a] text-white font-black px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer active:scale-95"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Printer className="w-4 h-4" />
               <span>DM Dossier (PDF)</span>
             </button>
 
             <button
-              onClick={async () => { await logout(); window.location.href = '/'; }}
-              className="flex items-center space-x-1.5 text-xs bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#5A5247] hover:text-[#201C18] font-bold px-3 py-1.5 rounded-xl transition-colors cursor-pointer border border-[#E4DDD1]"
+              onClick={handleReturnHome}
+              className="flex items-center space-x-1.5 text-xs bg-white hover:bg-[#EAE4D8] text-[#5A5247] hover:text-[#201C18] font-black px-3.5 py-2 rounded-xl transition-all cursor-pointer border border-[#E4DDD1] shadow-2xs"
             >
-              <LogOut className="w-3.5 h-3.5" />
+              <LogOut className="w-4 h-4" />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="max-w-7xl mx-auto mt-2 flex items-center space-x-1 border-t border-[#E4DDD1] pt-2 overflow-x-auto">
+        <div className="max-w-7xl mx-auto mt-2.5 flex items-center space-x-1.5 border-t border-[#E4DDD1] pt-2.5 overflow-x-auto">
           {([
-            { id: 'matrix', label: 'Master Case Matrix', icon: Layers },
-            { id: 'overview', label: 'Platform KPIs & Pipeline', icon: BarChart3 },
-            { id: 'broadcast', label: 'CAP Alert Dispatcher', icon: Radio },
-            { id: 'dossier', label: 'DM Executive Dossier', icon: FileText },
-            { id: 'audit', label: 'Security & Audit Trail', icon: Activity },
+            { id: 'matrix', label: '1. Master Case Matrix', icon: Layers },
+            { id: 'overview', label: '2. Platform KPIs & Pipeline', icon: BarChart3 },
+            { id: 'broadcast', label: '3. CAP Alert Dispatcher', icon: Radio },
+            { id: 'dossier', label: '4. DM Executive Dossier', icon: FileText },
+            { id: 'audit', label: '5. Security & Audit Trail', icon: Activity },
           ] as { id: AdminTab; label: string; icon: React.FC<{ className?: string }> }[]).map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shrink-0 cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-black flex items-center space-x-2 transition-all shrink-0 cursor-pointer ${
                 activeTab === tab.id
-                  ? 'bg-[#B5502D] text-white font-black shadow-xs'
+                  ? 'bg-[#2C6E49] text-white shadow-2xs'
                   : 'text-[#5A5247] hover:text-[#201C18] hover:bg-[#EAE4D8]'
               }`}
             >
-              <tab.icon className="w-3.5 h-3.5" />
+              <tab.icon className="w-4 h-4" />
               <span>{tab.label}</span>
             </button>
           ))}
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6">
+      {/* Main Content Viewport */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-6 space-y-6">
 
-        {/* ── TAB 1: SUPER ADMIN MASTER CASE MATRIX ── */}
+        {/* ══════════════════════════════════════════════════════════════════════════
+            TAB 1: SUPER ADMIN MASTER CASE MATRIX
+           ══════════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'matrix' && (
           <div className="space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-[#E4DDD1] shadow-2xs">
               <div>
                 <h2 className="text-lg font-black text-[#201C18] font-heading flex items-center gap-2">
-                  <Layers className="w-5 h-5 text-[#B5502D]" />
-                  State-Wide Master Traceability Matrix
+                  <Layers className="w-5 h-5 text-[#2C6E49]" />
+                  Statewide Master Traceability Matrix
                 </h2>
-                <p className="text-xs text-[#6A6155] mt-0.5">
-                  Full lifecycle visibility connecting Citizen Grievances → AI Priority → Assigned HEI Labs → CSR Sponsors → Tranche Grants.
+                <p className="text-xs text-[#6A6155] mt-1 leading-relaxed">
+                  Full lifecycle visibility connecting Citizen Grievances, AI Priority, Assigned HEI Labs, Corporate CSR Sponsors, and Live Sensor Telemetry.
                 </p>
               </div>
 
-              {/* Filters */}
-              <div className="flex items-center gap-2 flex-wrap">
+              {/* Search & Select Filters */}
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <div className="relative">
-                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+                  <Search className="w-4 h-4 text-[#8A7F72] absolute left-3 top-1/2 -translate-y-1/2" />
                   <input
                     type="text"
-                    placeholder="Search by title, ID, university…"
+                    placeholder="Search by title, ID, HEI..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-8 pr-3 py-1.5 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] w-48 sm:w-60 focus:outline-hidden"
+                    className="pl-9 pr-3 py-2 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-medium w-48 sm:w-64 focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30"
                   />
                 </div>
 
                 <select
                   value={districtFilter}
                   onChange={(e) => setDistrictFilter(e.target.value)}
-                  className="px-2.5 py-1.5 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-semibold focus:outline-hidden"
+                  className="px-3 py-2 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-bold focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30"
                 >
                   <option value="all">All Districts</option>
                   {uniqueDistricts.map(d => (
@@ -467,9 +404,9 @@ export const AdminPortal: React.FC = () => {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-2.5 py-1.5 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-semibold focus:outline-hidden"
+                  className="px-3 py-2 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-bold focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30"
                 >
-                  <option value="all">All Stages ({filteredChallenges.length})</option>
+                  <option value="all">All Lifecycle Stages ({filteredChallenges.length})</option>
                   {CHALLENGE_STATUS_OPTIONS.map(s => (
                     <option key={s} value={s}>{s}</option>
                   ))}
@@ -481,129 +418,128 @@ export const AdminPortal: React.FC = () => {
             <div className="bg-white border border-[#E4DDD1] rounded-2xl shadow-2xs overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#FAF8F4] border-b border-[#E4DDD1] text-[10px] text-[#6A6155] uppercase font-extrabold tracking-wider">
+                  <thead className="bg-[#FAF8F4] border-b border-[#E4DDD1] text-xs text-[#6A6155] uppercase font-black tracking-wider">
                     <tr>
-                      <th className="p-3.5">Case ID & Title</th>
-                      <th className="p-3.5">District / Risk</th>
-                      <th className="p-3.5">Assigned University & Team</th>
-                      <th className="p-3.5">CSR Sponsor & Grant</th>
-                      <th className="p-3.5">Lifecycle Stage</th>
-                      <th className="p-3.5">Live Field Telemetry</th>
-                      <th className="p-3.5 text-right">Quick Actions</th>
+                      <th className="p-4">Case ID &amp; Title</th>
+                      <th className="p-4">District / Risk</th>
+                      <th className="p-4">Assigned University &amp; Team</th>
+                      <th className="p-4">CSR Sponsor &amp; Grant</th>
+                      <th className="p-4">Lifecycle Stage</th>
+                      <th className="p-4">Live Field Telemetry</th>
+                      <th className="p-4 text-right">Quick Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#E4DDD1] font-medium text-[#201C18]">
                     {filteredChallenges.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="p-8 text-center text-slate-500 text-xs">
+                        <td colSpan={7} className="p-10 text-center text-[#8A7F72] text-xs">
                           No matching cases found for the selected filters.
                         </td>
                       </tr>
                     ) : (
                       filteredChallenges.map((c) => {
                         const stageInfo = getStageForStatus(c.status);
-                        const catLower = c.category.toLowerCase();
-                        const titleLower = c.title.toLowerCase();
-                        const combined = `${catLower} ${titleLower}`;
-
-                        const categoryKey = combined.includes('coal') || combined.includes('mine') || combined.includes('subsidence') ? 'mining'
-                          : combined.includes('arsenic') || combined.includes('fluoride') || combined.includes('water') || combined.includes('pathogen') ? 'water'
-                          : combined.includes('drought') || combined.includes('aquifer') || combined.includes('well') ? 'drought'
-                          : combined.includes('confluence') || combined.includes('kharkai') || combined.includes('subarnarekha') ? 'confluence'
-                          : combined.includes('flood') || combined.includes('drainage') || combined.includes('culvert') ? 'flood'
-                          : combined.includes('elephant') || combined.includes('wildlife') ? 'wildlife'
-                          : combined.includes('ganga') || combined.includes('erosion') || combined.includes('diara') ? 'erosion'
-                          : combined.includes('chemical') || combined.includes('hazardous') || combined.includes('electroplating') || combined.includes('slurry') ? 'hazardous'
-                          : combined.includes('lac') || combined.includes('crop') || combined.includes('blight') || combined.includes('tree') ? 'agri'
-                          : combined.includes('bridge') || combined.includes('scour') || combined.includes('pier') ? 'bridge'
-                          : 'flood';
-                        const entity = ENTITY_MAPPINGS[c.id] || (c.reportId ? ENTITY_MAPPINGS[c.reportId] : undefined) || ENTITY_MAPPINGS[categoryKey] || ENTITY_MAPPINGS['DEMO-CH-001'];
+                        const reportKey = c.reportId || c.id;
+                        
+                        // Dynamic CSR mapping from real collaboration requests
+                        const realCollab = collabRequests.find(r => 
+                          r.challengeId === c.id || r.challengeId === c.reportId
+                        );
+                        
+                        // Telemetry and research metadata
+                        const heiMeta = HEI_TELEMETRY_MAP[c.id] || HEI_TELEMETRY_MAP[reportKey] || HEI_TELEMETRY_MAP['DEMO-CH-001'];
+                        
+                        const csrPartnerName = realCollab?.orgName || (c.csrSponsor || heiMeta.defaultCsrPartner);
+                        const csrGrantText = realCollab 
+                          ? `₹${realCollab.disbursementMilestones.reduce((s, m) => s + m.amountInr, 0).toLocaleString('en-IN')} INR (${realCollab.status})`
+                          : heiMeta.defaultGrant;
 
                         return (
                           <tr key={c.id} className="hover:bg-[#FAF8F4]/80 transition-colors">
+                            
                             {/* Case ID & Title */}
-                            <td className="p-3.5 max-w-xs">
-                              <div className="flex items-start gap-2.5">
+                            <td className="p-4 max-w-xs">
+                              <div className="flex items-start gap-3">
                                 {((c as any).evidenceUrl || (c.evidenceUrls && c.evidenceUrls[0])) && (
                                   <img
                                     src={(c as any).evidenceUrl || (c.evidenceUrls && c.evidenceUrls[0])}
                                     alt={c.title}
                                     onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                                    className="w-12 h-12 rounded-lg object-cover border border-[#E4DDD1] shrink-0 shadow-2xs mt-0.5"
+                                    className="w-14 h-14 rounded-xl object-cover border border-[#E4DDD1] shrink-0 shadow-2xs mt-0.5"
                                   />
                                 )}
                                 <div className="min-w-0 flex-1">
-                                  <span className="font-mono text-[10px] font-bold text-indigo-700 block">
+                                  <span className="font-mono text-xs font-black text-[#2C6E49] block">
                                     {c.reportId || c.id.slice(0, 10)}
                                   </span>
-                                  <p className="font-bold text-slate-900 line-clamp-1">{c.title}</p>
-                                  <span className="text-[10px] text-slate-500 font-semibold block mt-0.5">
-                                    Category: <strong className="text-slate-700">{c.category}</strong>
+                                  <p className="font-bold text-sm text-[#201C18] line-clamp-2 leading-snug mt-0.5">{c.title}</p>
+                                  <span className="text-xs text-[#6A6155] font-semibold block mt-1">
+                                    Category: <strong className="text-[#201C18]">{c.category}</strong>
                                   </span>
                                 </div>
                               </div>
                             </td>
 
                             {/* District & Risk */}
-                            <td className="p-3.5 whitespace-nowrap">
-                              <span className="font-bold text-slate-900 block">{c.district || 'Ranchi'}</span>
-                              <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full inline-block mt-0.5 ${
-                                c.riskLevel === 'CRITICAL' ? 'bg-red-100 text-red-800 border border-red-200' :
-                                c.riskLevel === 'HIGH' ? 'bg-amber-100 text-amber-800 border border-amber-200' :
-                                'bg-slate-100 text-slate-700'
+                            <td className="p-4 whitespace-nowrap">
+                              <span className="font-bold text-sm text-[#201C18] block">{c.district || 'Ranchi'}</span>
+                              <span className={`text-xs font-black px-2.5 py-0.5 rounded-full inline-block mt-1 ${
+                                c.riskLevel === 'CRITICAL' ? 'bg-[#FFF0EE] text-[#B5502D] border border-[#F5C6C0]' :
+                                c.riskLevel === 'HIGH' ? 'bg-[#FFF8EC] text-[#C98A2C] border border-[#F0D99A]' :
+                                'bg-[#F0FAF4] text-[#2C6E49] border border-[#C3E6D0]'
                               }`}>
                                 {c.riskLevel || 'MEDIUM'} PRIORITY
                               </span>
                             </td>
 
                             {/* Assigned University */}
-                            <td className="p-3.5 max-w-xs">
+                            <td className="p-4 max-w-xs">
                               {c.assignedHEI ? (
-                                <>
-                                  <span className="font-bold text-emerald-900 block flex items-center gap-1">
-                                    <Building2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <div className="space-y-1">
+                                  <span className="font-black text-xs text-[#2C6E49] flex items-center gap-1.5">
+                                    <Building2 className="w-3.5 h-3.5 text-[#2C6E49] shrink-0" />
                                     {c.assignedHEI}
                                   </span>
-                                  <span className="text-[10px] text-slate-600 block mt-0.5">
-                                    Lead: <strong className="text-slate-800">{entity.studentLead}</strong>
+                                  <span className="text-xs text-[#4A433B] block">
+                                    Lead: <strong className="text-[#201C18]">{heiMeta.studentLead}</strong>
                                   </span>
-                                  <span className="text-[9px] text-slate-500 block">
-                                    Mentor: {entity.facultyLead}
+                                  <span className="text-xs text-[#6A6155] block">
+                                    Mentor: {heiMeta.facultyLead}
                                   </span>
-                                </>
+                                </div>
                               ) : (
                                 <div className="space-y-1">
-                                  <span className="text-[11px] font-extrabold text-amber-800 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                                    <Building2 className="w-3 h-3 text-amber-600" />
+                                  <span className="text-xs font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
+                                    <Building2 className="w-3.5 h-3.5" />
                                     Unallocated
                                   </span>
-                                  <span className="text-[10px] text-slate-500 block font-medium">
-                                    Open for university intake &amp; multi-dept match
+                                  <span className="text-xs text-[#8A7F72] block font-medium">
+                                    Open for university intake
                                   </span>
                                 </div>
                               )}
                             </td>
 
                             {/* CSR Sponsor & Grant */}
-                            <td className="p-3.5 whitespace-nowrap">
-                              <span className="font-bold text-slate-900 block">{entity.csrPartner}</span>
-                              <span className="text-[10px] font-mono text-emerald-700 font-bold block">
-                                {entity.csrGrant}
+                            <td className="p-4 whitespace-nowrap">
+                              <span className="font-bold text-xs text-[#201C18] block">{csrPartnerName}</span>
+                              <span className="text-xs font-mono text-[#2C6E49] font-black block mt-0.5">
+                                {csrGrantText}
                               </span>
-                              <span className="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded mt-0.5 inline-block font-semibold">
-                                {entity.trancheStatus}
+                              <span className="text-xs bg-[#FAF8F4] border border-[#E4DDD1] text-[#6A6155] px-2 py-0.5 rounded-lg mt-1 inline-block font-bold">
+                                {realCollab ? realCollab.status : 'Schedule VII R&D Grant'}
                               </span>
                             </td>
 
-                            {/* Stage */}
-                            <td className="p-3.5 whitespace-nowrap">
-                              <span className="text-[10px] font-extrabold bg-indigo-50 text-indigo-800 border border-indigo-200 px-2 py-0.5 rounded-full block text-center mb-1">
-                                Stage {stageInfo?.stageNumber || 11}: {c.status}
+                            {/* Lifecycle Stage & Direct Admin Transition */}
+                            <td className="p-4 whitespace-nowrap">
+                              <span className="text-xs font-black bg-[#FAF8F4] text-[#2C6E49] border border-[#E4DDD1] px-2.5 py-1 rounded-full block text-center mb-1.5">
+                                Stage {stageInfo?.stageNumber || 8}: {c.status}
                               </span>
                               <select
                                 value={c.status}
                                 onChange={(e) => handleStatusChange(c.id, e.target.value as ChallengeStatus)}
-                                className="text-[10px] bg-slate-50 border border-slate-300 rounded px-1.5 py-0.5 text-slate-700 w-full focus:outline-hidden"
+                                className="text-xs bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl px-2 py-1 text-[#201C18] font-bold w-full focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30 cursor-pointer"
                               >
                                 {CHALLENGE_STATUS_OPTIONS.map(st => (
                                   <option key={st} value={st}>{st}</option>
@@ -612,32 +548,33 @@ export const AdminPortal: React.FC = () => {
                             </td>
 
                             {/* Live Field Telemetry */}
-                            <td className="p-3.5 max-w-xs">
-                              <span className="text-[10px] font-mono text-teal-800 font-bold block">
-                                {entity.telemetryStatus}
+                            <td className="p-4 max-w-xs">
+                              <span className="text-xs font-mono text-[#2C6E49] font-black block">
+                                ● {heiMeta.sensorReading}
                               </span>
-                              <span className="text-[9px] text-slate-500 block">
-                                Packet Loss: &lt; 0.8% · IP67 Waterproof
+                              <span className="text-xs text-[#8A7F72] block mt-0.5">
+                                Sensor: {heiMeta.sensorType} · 99.2% Uptime
                               </span>
                             </td>
 
                             {/* Quick Actions */}
-                            <td className="p-3.5 text-right whitespace-nowrap space-x-1">
+                            <td className="p-4 text-right whitespace-nowrap space-x-1.5">
                               <button
                                 onClick={() => handleLaunchTargetedBroadcast(c.district, c.title)}
                                 title="Broadcast Emergency CAP Alert to this District"
-                                className="p-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg transition-colors cursor-pointer"
+                                className="p-2 bg-[#FFF0EE] hover:bg-[#FDE2DF] text-[#B5502D] rounded-xl border border-[#F5C6C0] transition-colors cursor-pointer"
                               >
-                                <Radio className="w-3.5 h-3.5" />
+                                <Radio className="w-4 h-4" />
                               </button>
                               <button
-                                onClick={() => setSelectedChallenge(c)}
+                                onClick={() => setInspectingChallenge(c)}
                                 title="View Full Case Dossier"
-                                className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors cursor-pointer"
+                                className="p-2 bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#201C18] rounded-xl border border-[#E4DDD1] transition-colors cursor-pointer"
                               >
-                                <Eye className="w-3.5 h-3.5" />
+                                <Eye className="w-4 h-4 text-[#2C6E49]" />
                               </button>
                             </td>
+
                           </tr>
                         );
                       })
@@ -649,52 +586,63 @@ export const AdminPortal: React.FC = () => {
           </div>
         )}
 
-        {/* ── TAB 2: OVERVIEW & STAGE PIPELINE ── */}
+        {/* ══════════════════════════════════════════════════════════════════════════
+            TAB 2: OVERVIEW & STAGE PIPELINE
+           ══════════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-black text-[#201C18]">Platform Health & Pipeline Overview</h2>
-              <p className="text-xs text-[#6A6155]">Real-time state telemetry from workflowStore + Firebase engine.</p>
+              <h2 className="text-lg font-black font-heading text-[#201C18]">Platform Health &amp; Pipeline Overview</h2>
+              <p className="text-xs text-[#6A6155] mt-0.5">Real-time state telemetry and verified lifecycle distribution across all 24 Jharkhand districts.</p>
             </div>
 
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { label: 'Total Challenges', value: kpis.total, icon: Database, color: 'text-slate-700', bg: 'bg-slate-100' },
-                { label: 'Critical Risk Alerts', value: kpis.critical, icon: Flame, color: 'text-red-700', bg: 'bg-red-100' },
-                { label: 'Active R&D Pipeline', value: kpis.active, icon: RefreshCw, color: 'text-blue-700', bg: 'bg-blue-100' },
-                { label: 'Resolved / Scaled', value: kpis.resolved, icon: CheckCircle2, color: 'text-emerald-700', bg: 'bg-emerald-100' },
+                { label: 'Total Active Grievances', value: kpis.total, icon: Database, color: 'text-[#201C18]', bg: 'bg-[#FAF8F4]', border: 'border-[#E4DDD1]' },
+                { label: 'Critical Risk Incidents', value: kpis.critical, icon: Flame, color: 'text-[#B5502D]', bg: 'bg-[#FFF0EE]', border: 'border-[#F5C6C0]' },
+                { label: 'University R&D In Progress', value: kpis.active, icon: RefreshCw, color: 'text-[#C98A2C]', bg: 'bg-[#FFF8EC]', border: 'border-[#F0D99A]' },
+                { label: 'Resolved / Verified Scaled', value: kpis.resolved, icon: CheckCircle2, color: 'text-[#2C6E49]', bg: 'bg-[#F0FAF4]', border: 'border-[#C3E6D0]' },
               ].map((kpi, i) => (
-                <div key={i} className="bg-white border border-[#E4DDD1] rounded-2xl p-4 shadow-2xs space-y-2">
+                <div key={i} className={`bg-white border ${kpi.border} rounded-2xl p-5 shadow-2xs space-y-2`}>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#6A6155] font-medium">{kpi.label}</span>
-                    <div className={`w-7 h-7 ${kpi.bg} rounded-lg flex items-center justify-center`}>
+                    <span className="text-xs text-[#6A6155] font-extrabold uppercase tracking-wider">{kpi.label}</span>
+                    <div className={`w-8 h-8 ${kpi.bg} rounded-xl border ${kpi.border} flex items-center justify-center`}>
                       <kpi.icon className={`w-4 h-4 ${kpi.color}`} />
                     </div>
                   </div>
-                  <p className="text-2xl font-extrabold font-heading text-[#201C18]">{kpi.value}</p>
+                  <p className="text-3xl font-black font-heading text-[#201C18]">{kpi.value}</p>
                 </div>
               ))}
             </div>
 
-            {/* Stage Pipeline */}
-            <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4">
-              <h3 className="text-sm font-extrabold text-[#201C18]">16-Stage Lifecycle Distribution</h3>
-              <div className="space-y-2">
+            {/* 16-Stage Lifecycle Distribution */}
+            <div className="bg-white border border-[#E4DDD1] rounded-2xl p-6 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-black font-heading text-[#201C18]">16-Stage Standard Operating Procedure Distribution</h3>
+                  <p className="text-xs text-[#6A6155]">Current state breakdown from Citizen Intake to Stage 16 Verified Resolution.</p>
+                </div>
+                <span className="text-xs font-mono font-bold text-[#2C6E49] bg-[#F0FAF4] px-3 py-1 rounded-full border border-[#C3E6D0]">
+                  100% Traceability
+                </span>
+              </div>
+
+              <div className="space-y-2.5 pt-2">
                 {LIFECYCLE_STAGES.map(stage => {
                   const count = kpis.byStage[stage.stageNumber] || 0;
                   const pct = kpis.total > 0 ? Math.round((count / kpis.total) * 100) : 0;
                   return (
                     <div key={stage.stageNumber} className="flex items-center gap-3 text-xs">
-                      <span className="w-5 shrink-0 text-right font-mono text-[#8A7F72] text-[10px]">{stage.stageNumber}</span>
-                      <span className="w-44 shrink-0 text-[#4A433B] font-semibold truncate">{stage.displayName}</span>
-                      <div className="flex-1 bg-[#FAF8F4] border border-[#E4DDD1] rounded-full h-3 overflow-hidden">
+                      <span className="w-6 shrink-0 text-right font-mono text-[#8A7F72] text-xs font-bold">{stage.stageNumber}</span>
+                      <span className="w-56 shrink-0 text-[#201C18] font-bold truncate">{stage.displayName}</span>
+                      <div className="flex-1 bg-[#FAF8F4] border border-[#E4DDD1] rounded-full h-3.5 overflow-hidden">
                         <div
-                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all"
+                          className="h-full bg-gradient-to-r from-[#2C6E49] to-[#3a8e60] rounded-full transition-all duration-500"
                           style={{ width: `${Math.max(pct, count > 0 ? 5 : 0)}%` }}
                         />
                       </div>
-                      <span className="w-16 shrink-0 text-right font-mono text-[#6A6155] text-[11px] font-bold">
+                      <span className="w-20 shrink-0 text-right font-mono text-[#201C18] text-xs font-black">
                         {count} ({pct}%)
                       </span>
                     </div>
@@ -702,131 +650,257 @@ export const AdminPortal: React.FC = () => {
                 })}
               </div>
             </div>
+
+            {/* District Hotspot Matrix */}
+            <div className="bg-white border border-[#E4DDD1] rounded-2xl p-6 shadow-2xs space-y-4">
+              <h3 className="text-base font-black font-heading text-[#201C18]">District Incident Concentration</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                {Object.entries(kpis.byDistrict).map(([dist, count]) => (
+                  <div 
+                    key={dist}
+                    onClick={() => {
+                      setDistrictFilter(dist);
+                      setActiveTab('matrix');
+                    }}
+                    className="p-3 bg-[#FAF8F4] hover:bg-[#EAE4D8] border border-[#E4DDD1] rounded-xl transition-all cursor-pointer space-y-1"
+                  >
+                    <span className="text-xs font-bold text-[#6A6155] block truncate">{dist}</span>
+                    <p className="text-xl font-black text-[#201C18]">{count} cases</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ── TAB 3: CAP ALERT DISPATCHER ── */}
+        {/* ══════════════════════════════════════════════════════════════════════════
+            TAB 3: CAP ALERT DISPATCHER
+           ══════════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'broadcast' && (
-          <div className="bg-white p-6 rounded-2xl border border-[#E4DDD1] shadow-2xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="bg-white p-6 rounded-2xl border border-[#E4DDD1] shadow-2xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0EBE0] pb-4">
               <div>
-                <h2 className="text-base font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Radio className="w-5 h-5 text-red-600" />
-                  Common Alerting Protocol (CAP) Multi-Channel Dispatch Center
+                <h2 className="text-base sm:text-lg font-black font-heading text-[#201C18] flex items-center gap-2">
+                  <Radio className="w-5 h-5 text-[#B5502D]" />
+                  Common Alerting Protocol (CAP) Multi-Channel Emergency Dispatcher
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Launch cell broadcasts across SMS, WhatsApp, automated IVR calls, and remote Panchayat sirens.
+                <p className="text-xs text-[#6A6155] mt-0.5">
+                  Authorize and trigger live cell broadcasts across Telecom SMS, WhatsApp Verified Channels, Automated Voice IVR in Hindi &amp; Santhali, and LoRa Village Sirens.
                 </p>
               </div>
 
               <button
                 onClick={() => setIsBroadcastOpen(true)}
-                className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-colors"
+                className="px-5 py-2.5 bg-[#B5502D] hover:bg-[#9E4223] text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-colors"
               >
                 <Radio className="w-4 h-4 animate-pulse" />
-                <span>Open Interactive Broadcast Console</span>
+                <span>Open Emergency Broadcast Console</span>
               </button>
             </div>
 
-            <div className="grid sm:grid-cols-4 gap-4 text-xs">
-              <div className="p-4 bg-teal-50 border border-teal-200 rounded-xl space-y-1">
-                <span className="text-[10px] text-teal-800 font-black uppercase">Telecom Cell SMS</span>
-                <p className="text-base font-black text-slate-900 font-mono">48,500 Registered</p>
-                <p className="text-[11px] text-teal-700">99.4% Delivery in &lt; 2.1s</p>
+            {/* Live Channel Status Cards */}
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              <div className="p-4 bg-[#FAF8F4] border border-[#E4DDD1] rounded-2xl space-y-1.5">
+                <span className="text-xs text-[#2C6E49] font-black uppercase tracking-wider">Telecom Cell Broadcast SMS</span>
+                <p className="text-2xl font-black text-[#201C18] font-mono">48,500 Registered</p>
+                <p className="text-xs text-[#6A6155]">99.4% Delivery in &lt; 2.1s across cell towers</p>
               </div>
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
-                <span className="text-[10px] text-emerald-800 font-black uppercase">WhatsApp Verified</span>
-                <p className="text-base font-black text-slate-900 font-mono">38,940 Subscribers</p>
-                <p className="text-[11px] text-emerald-700">Green Badge SDMA Feed</p>
+
+              <div className="p-4 bg-[#FAF8F4] border border-[#E4DDD1] rounded-2xl space-y-1.5">
+                <span className="text-xs text-[#2C6E49] font-black uppercase tracking-wider">WhatsApp Verified Channel</span>
+                <p className="text-2xl font-black text-[#201C18] font-mono">38,940 Subscribers</p>
+                <p className="text-xs text-[#6A6155]">Official Green Badge Jharkhand SDMA Channel</p>
               </div>
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-1">
-                <span className="text-[10px] text-blue-800 font-black uppercase">Automated IVR</span>
-                <p className="text-base font-black text-slate-900 font-mono">14,200 Auto-Dialers</p>
-                <p className="text-[11px] text-blue-700">Hindi & Santhali Voice</p>
+
+              <div className="p-4 bg-[#FAF8F4] border border-[#E4DDD1] rounded-2xl space-y-1.5">
+                <span className="text-xs text-[#C98A2C] font-black uppercase tracking-wider">Automated Voice IVR Dialers</span>
+                <p className="text-2xl font-black text-[#201C18] font-mono">14,200 Auto-Dialers</p>
+                <p className="text-xs text-[#6A6155]">Hindi, Santhali, Mundari &amp; Ho Audio Streams</p>
               </div>
-              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-1">
-                <span className="text-[10px] text-rose-800 font-black uppercase">Village Sirens</span>
-                <p className="text-base font-black text-slate-900 font-mono">8 LoRa Relays</p>
-                <p className="text-[11px] text-rose-700">Solar 120dB PA Units</p>
+
+              <div className="p-4 bg-[#FAF8F4] border border-[#E4DDD1] rounded-2xl space-y-1.5">
+                <span className="text-xs text-[#B5502D] font-black uppercase tracking-wider">Solar Panchayat LoRa Sirens</span>
+                <p className="text-2xl font-black text-[#201C18] font-mono">8 Relays Online</p>
+                <p className="text-xs text-[#6A6155]">Solar 120dB High Decibel Warning PA Units</p>
+              </div>
+            </div>
+
+            {/* Direct Broadcast Form Preview */}
+            <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-black text-[#201C18]">Quick CAP Dispatch Trigger</h3>
+                <span className="text-xs text-[#6A6155]">Standardized ITU X.1303 CAP v1.2 Format</span>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4 text-xs">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-[#201C18]">Target District</label>
+                  <select 
+                    value={targetDistrictForBroadcast}
+                    onChange={e => setTargetDistrictForBroadcast(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E4DDD1] rounded-xl text-xs font-bold text-[#201C18]"
+                  >
+                    {uniqueDistricts.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-[#201C18]">Emergency Hazard Classification</label>
+                  <select
+                    value={targetHazardForBroadcast}
+                    onChange={e => setTargetHazardForBroadcast(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-[#E4DDD1] rounded-xl text-xs font-bold text-[#201C18]"
+                  >
+                    <option value="Flash Flood & River Swell">Flash Flood &amp; River Swell</option>
+                    <option value="Subterranean Coalfire & Subsidence">Subterranean Coalfire &amp; Subsidence</option>
+                    <option value="Toxic Chemical Effluent Discharge">Toxic Chemical Effluent Discharge</option>
+                    <option value="Elephant Herd Farm Intrusion">Elephant Herd Farm Intrusion</option>
+                    <option value="Arsenic Water Toxicity Spike">Arsenic Water Toxicity Spike</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={() => setIsBroadcastOpen(true)}
+                  className="px-4 py-2 bg-[#B5502D] hover:bg-[#9E4223] text-white font-extrabold text-xs rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <Radio className="w-3.5 h-3.5" />
+                  <span>Configure &amp; Authorize Broadcast</span>
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* ── TAB 4: DM EXECUTIVE DOSSIER ── */}
+        {/* ══════════════════════════════════════════════════════════════════════════
+            TAB 4: DM EXECUTIVE DOSSIER
+           ══════════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'dossier' && (
-          <div className="bg-white p-6 rounded-2xl border border-[#E4DDD1] shadow-2xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="bg-white p-6 rounded-2xl border border-[#E4DDD1] shadow-2xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#F0EBE0] pb-4">
               <div>
-                <h2 className="text-base font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-[#B5502D]" />
+                <h2 className="text-base sm:text-lg font-black font-heading text-[#201C18] flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-[#2C6E49]" />
                   District Magistrate (DM) Disaster Situation Dossier (SITREP)
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Real-time situation report ready for printable PDF export with executive summaries and HEI prototype updates.
+                <p className="text-xs text-[#6A6155] mt-0.5">
+                  Real-time situation report ready for printable PDF export with executive summaries and university prototype updates.
                 </p>
               </div>
 
               <button
                 onClick={() => setIsBriefingOpen(true)}
-                className="px-5 py-2.5 bg-[#B5502D] hover:bg-[#9E4223] text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-colors"
+                className="px-5 py-2.5 bg-[#2C6E49] hover:bg-[#23583a] text-white font-black text-xs rounded-xl shadow-xs flex items-center gap-2 cursor-pointer transition-colors"
               >
                 <Printer className="w-4 h-4" />
                 <span>Open Printable Official Dossier</span>
               </button>
             </div>
 
+            {/* SITREP Summary Cards */}
             <div className="grid sm:grid-cols-3 gap-4 text-xs">
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Total Geotagged Cases</span>
-                <p className="text-2xl font-black text-slate-900">{allChallenges.length}</p>
-                <p className="text-slate-600">Across 24 Jharkhand Districts</p>
+              <div className="p-4 bg-[#FAF8F4] border border-[#E4DDD1] rounded-2xl space-y-1.5">
+                <span className="text-xs font-extrabold text-[#6A6155] uppercase tracking-wider">Total Geotagged Cases</span>
+                <p className="text-3xl font-black text-[#201C18]">{allChallenges.length}</p>
+                <p className="text-xs text-[#4A433B]">Across all 24 Jharkhand administrative districts</p>
               </div>
-              <div className="p-4 bg-red-50 border border-red-200 rounded-xl space-y-1.5">
-                <span className="text-[10px] font-bold text-red-700 uppercase">Critical Triage Cases</span>
-                <p className="text-2xl font-black text-red-700">{kpis.critical}</p>
-                <p className="text-red-600">Requiring Immediate SDRF Deployment</p>
+              <div className="p-4 bg-[#FFF0EE] border border-[#F5C6C0] rounded-2xl space-y-1.5">
+                <span className="text-xs font-extrabold text-[#B5502D] uppercase tracking-wider">Critical Priority Cases</span>
+                <p className="text-3xl font-black text-[#B5502D]">{kpis.critical}</p>
+                <p className="text-xs text-[#B5502D]">Requiring SDRF and District Magistrate action</p>
               </div>
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1.5">
-                <span className="text-[10px] font-bold text-emerald-800 uppercase">Active HEI Solutions</span>
-                <p className="text-2xl font-black text-emerald-800">{kpis.active}</p>
-                <p className="text-emerald-700">Prototype & Pilot Stage Active</p>
+              <div className="p-4 bg-[#F0FAF4] border border-[#C3E6D0] rounded-2xl space-y-1.5">
+                <span className="text-xs font-extrabold text-[#2C6E49] uppercase tracking-wider">Active University Prototypes</span>
+                <p className="text-3xl font-black text-[#2C6E49]">{kpis.active}</p>
+                <p className="text-xs text-[#2C6E49]">Stages 9 to 13 field pilots deployed</p>
               </div>
+            </div>
+
+            {/* Situation Report Table */}
+            <div className="border border-[#E4DDD1] rounded-2xl overflow-hidden">
+              <table className="w-full text-xs">
+                <thead className="bg-[#FAF8F4] border-b border-[#E4DDD1] text-xs font-black text-[#6A6155] uppercase">
+                  <tr>
+                    <th className="p-3.5 text-left">Incident Title &amp; Location</th>
+                    <th className="p-3.5 text-left">Severity</th>
+                    <th className="p-3.5 text-left">Lead HEI Taskforce</th>
+                    <th className="p-3.5 text-left">CSR Sponsor</th>
+                    <th className="p-3.5 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#E4DDD1] font-medium text-[#201C18]">
+                  {allChallenges.slice(0, 8).map(c => {
+                    const meta = HEI_TELEMETRY_MAP[c.id] || HEI_TELEMETRY_MAP[c.reportId] || HEI_TELEMETRY_MAP['DEMO-CH-001'];
+                    return (
+                      <tr key={c.id} className="hover:bg-[#FAF8F4]">
+                        <td className="p-3.5">
+                          <span className="font-bold text-sm text-[#201C18] block">{c.title}</span>
+                          <span className="text-xs text-[#6A6155]">{c.village}, {c.district}</span>
+                        </td>
+                        <td className="p-3.5">
+                          <span className={`text-xs font-black px-2 py-0.5 rounded-full ${
+                            c.riskLevel === 'CRITICAL' ? 'bg-[#FFF0EE] text-[#B5502D]' : 'bg-[#FFF8EC] text-[#C98A2C]'
+                          }`}>
+                            {c.riskLevel || 'MEDIUM'}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-xs font-bold text-[#2C6E49]">
+                          {c.assignedHEI || 'Pending Allocation'}
+                        </td>
+                        <td className="p-3.5 text-xs font-medium text-[#4A433B]">
+                          {meta.defaultCsrPartner}
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <button
+                            onClick={() => setInspectingChallenge(c)}
+                            className="px-2.5 py-1 bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#2C6E49] font-bold rounded-lg border border-[#E4DDD1] cursor-pointer"
+                          >
+                            Inspect
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
 
-        {/* ── TAB 5: AUDIT TRAIL ── */}
+        {/* ══════════════════════════════════════════════════════════════════════════
+            TAB 5: AUDIT TRAIL & LOGS
+           ══════════════════════════════════════════════════════════════════════════ */}
         {activeTab === 'audit' && (
-          <div className="bg-white border border-[#E4DDD1] rounded-2xl shadow-2xs p-5 space-y-4">
+          <div className="bg-white border border-[#E4DDD1] rounded-2xl shadow-2xs p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-[#E4DDD1] pb-3">
               <div>
-                <h3 className="text-sm font-extrabold text-[#201C18]">System Audit Trail & Cryptographic Logs</h3>
-                <p className="text-xs text-[#6A6155]">Chronological record of state transitions with SHA-256 e-Sign signatures.</p>
+                <h3 className="text-base font-black font-heading text-[#201C18]">System Audit Trail &amp; Cryptographic Logs</h3>
+                <p className="text-xs text-[#6A6155] mt-0.5">Chronological record of state transitions, government approvals, and MoU agreements with cryptographic SHA-256 validation.</p>
               </div>
-              <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+              <span className="text-xs font-mono font-black text-[#2C6E49] bg-[#F0FAF4] px-3 py-1 rounded-full border border-[#C3E6D0]">
                 ● Immutable Audit Stream
               </span>
             </div>
 
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+            <div className="space-y-2.5 max-h-[500px] overflow-y-auto">
               {auditEntries.length === 0 ? (
-                <p className="text-xs text-slate-500 p-4 text-center">No timeline events recorded yet.</p>
+                <p className="text-xs text-[#8A7F72] p-8 text-center">No timeline events recorded yet.</p>
               ) : (
                 auditEntries.map((entry, i) => (
-                  <div key={i} className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between gap-3 text-xs">
+                  <div key={i} className="p-3.5 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl flex items-center justify-between gap-3 text-xs">
                     <div>
-                      <span className="font-bold text-slate-900 block">{entry.challengeTitle}</span>
-                      <p className="text-[11px] text-slate-600 mt-0.5">{entry.description || entry.actorRole}</p>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="font-bold text-sm text-[#201C18] block">{entry.challengeTitle}</span>
+                      <p className="text-xs text-[#4A433B] mt-0.5">{entry.description || entry.actorRole}</p>
+                      <span className="text-xs text-[#8A7F72] font-mono mt-0.5 block">
                         Actor: {entry.actor} ({entry.actorRole})
                       </span>
                     </div>
                     <div className="text-right shrink-0">
-                      <span className="text-[10px] font-mono text-slate-500 block">
-                        {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : 'Recent'}
+                      <span className="text-xs font-mono text-[#6A6155] block">
+                        {entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Recent'}
                       </span>
-                      <span className="text-[9px] font-mono text-teal-700 font-bold bg-teal-50 px-1.5 py-0.5 rounded border border-teal-200 mt-1 inline-block">
+                      <span className="text-xs font-mono text-[#2C6E49] font-black bg-[#F0FAF4] px-2 py-0.5 rounded border border-[#C3E6D0] mt-1 inline-block">
                         SHA-256 Verified
                       </span>
                     </div>
@@ -840,59 +914,17 @@ export const AdminPortal: React.FC = () => {
       </main>
 
       {/* Selected Case Inspection Modal */}
-      {selectedChallenge && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl w-full max-w-2xl p-6 shadow-2xl space-y-4 border border-slate-200">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <span className="text-[10px] font-mono font-bold text-indigo-700 uppercase">Case Inspection</span>
-                <h3 className="text-base font-black text-slate-900">{selectedChallenge.title}</h3>
-              </div>
-              <button
-                onClick={() => setSelectedChallenge(null)}
-                className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-500 cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-slate-700">
-              {((selectedChallenge as any).evidenceUrl || (selectedChallenge.evidenceUrls && selectedChallenge.evidenceUrls[0])) && (
-                <div className="w-full h-48 rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
-                  <img
-                    src={(selectedChallenge as any).evidenceUrl || (selectedChallenge.evidenceUrls && selectedChallenge.evidenceUrls[0])}
-                    alt={selectedChallenge.title}
-                    onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              )}
-              <p className="leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-200">
-                {selectedChallenge.description}
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 block uppercase font-bold">District</span>
-                  <span className="font-bold text-slate-900">{selectedChallenge.district || 'Ranchi'}</span>
-                </div>
-                <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
-                  <span className="text-[10px] text-slate-500 block uppercase font-bold">Risk Level</span>
-                  <span className="font-bold text-red-700">{selectedChallenge.riskLevel || 'CRITICAL'}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                onClick={() => setSelectedChallenge(null)}
-                className="px-4 py-2 bg-slate-900 text-white font-bold text-xs rounded-xl cursor-pointer"
-              >
-                Close Dossier
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ChallengeDetailModal
+        isOpen={Boolean(inspectingChallenge)}
+        challenge={inspectingChallenge}
+        onClose={() => setInspectingChallenge(null)}
+        portalRole="admin"
+        actionButtonLabel="Dispatch Emergency Alert"
+        onActionClick={(c) => {
+          setInspectingChallenge(null);
+          handleLaunchTargetedBroadcast(c.district, c.title);
+        }}
+      />
 
       {/* Emergency Broadcast Modal */}
       <EmergencyBroadcastModal

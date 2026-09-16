@@ -13,9 +13,18 @@ export interface IndustryPartnerDoc {
   leadEmail: string;
   leadPhone: string;
   annualCsrBudget: string;
+  operatingDistricts: string[];
   focusAreas: string[];
+  relevantCategories: string[];
+  matchKeywords: string[];
   schedule7Focus: Schedule7Category[];
   badge: string;
+}
+
+export interface MatchDetails {
+  isRelevant: boolean;
+  matchScore: number;
+  matchReasons: string[];
 }
 
 export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
@@ -32,6 +41,19 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'partner@tatasteel.com',
     leadPhone: '+91 657 664 4444',
     annualCsrBudget: '₹315.40 Cr',
+    operatingDistricts: ['East Singhbhum', 'Saraikela Kharsawan', 'West Singhbhum', 'Ramgarh', 'Dhanbad'],
+    relevantCategories: [
+      'Flood Management & Urban Drainage',
+      'Flooding & Drainage',
+      'Industrial Mining Effluent & River Contamination',
+      'Hazardous Industrial Chemical Effluent',
+      'Water Quality & Contamination',
+      'Mining & Coalfire Disaster',
+    ],
+    matchKeywords: [
+      'subarnarekha', 'kharkai', 'flood', 'drainage', 'effluent', 'hematite', 'slurry', 
+      'electroplating', 'jamshedpur', 'bagbera', 'adityapur', 'steel', 'water', 'arsenic', 'karo'
+    ],
     focusAreas: ['IoT Flood & Water Telemetry', 'Tribal Livelihood', 'Rural Health Systems', 'Environmental Engineering'],
     schedule7Focus: [
       'ix. Contributions to science, technology, engineering, medicine R&D',
@@ -53,6 +75,18 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'csr@centralcoalfields.in',
     leadPhone: '+91 651 236 0123',
     annualCsrBudget: '₹142.80 Cr',
+    operatingDistricts: ['Dhanbad', 'Ranchi', 'Bokaro', 'Ramgarh', 'Hazaribagh', 'Chatra', 'Giridih'],
+    relevantCategories: [
+      'Mining & Coalfire Disaster',
+      'Ground Subsidence & Coal Seam Fires',
+      'Thermal Power Industrial Pollution',
+      'Industrial Mining Effluent & River Contamination',
+      'Water Quality & Contamination',
+    ],
+    matchKeywords: [
+      'coal', 'coalfire', 'subsidence', 'lodna', 'jharia', 'pit', 'colliery', 'mine', 
+      'fly ash', 'slurry', 'methane', 'venting', 'konar', 'arsenic', 'fluoride'
+    ],
     focusAreas: ['Mine Water Purification', 'Slope Stability Telemetry', 'Clean Energy', 'Community Sanitation'],
     schedule7Focus: [
       'ix. Contributions to science, technology, engineering, medicine R&D',
@@ -74,6 +108,18 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'csr@sail-bokaro.com',
     leadPhone: '+91 6542 240 100',
     annualCsrBudget: '₹88.50 Cr',
+    operatingDistricts: ['Bokaro', 'Dhanbad', 'Giridih', 'Ramgarh'],
+    relevantCategories: [
+      'Thermal Power Industrial Pollution',
+      'Hazardous Industrial Chemical Effluent',
+      'Water Quality & Contamination',
+      'Flooding & Drainage',
+      'Industrial Mining Effluent & River Contamination',
+    ],
+    matchKeywords: [
+      'fly ash', 'bokaro', 'konar', 'effluent', 'slurry', 'water quality', 
+      'arsenic', 'fluoride', 'tisri', 'phusro', 'industrial', 'stream'
+    ],
     focusAreas: ['Industrial Effluent Sensor Arrays', 'Community Education', 'Rural Solar Infrastructure'],
     schedule7Focus: [
       'ix. Contributions to science, technology, engineering, medicine R&D',
@@ -95,6 +141,18 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'csr@jindalsteel.com',
     leadPhone: '+91 6553 275 400',
     annualCsrBudget: '₹74.20 Cr',
+    operatingDistricts: ['Ramgarh', 'Ranchi', 'Dumka', 'Godda', 'Khunti', 'Palamu'],
+    relevantCategories: [
+      'Drought & Aquifer Depletion',
+      'Agro Forestry & Tribal Livelihood',
+      'Rural Water & Solar Microgrids',
+      'Flooding & Drainage',
+      'Water Quality & Contamination',
+    ],
+    matchKeywords: [
+      'drought', 'aquifer', 'paddy', 'irrigation', 'farming', 'agronomy', 'patratu', 
+      'ramgarh', 'microgrid', 'solar', 'agro forestry', 'lac', 'kanke', 'hutup', 'palamu', 'north koel'
+    ],
     focusAreas: ['Agro Forestry Tech', 'Watershed Harvesting', 'Tribal Women Artisans', 'Biomass Briquettes'],
     schedule7Focus: [
       'x. Rural development projects',
@@ -116,6 +174,17 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'csr@eslsteel.com',
     leadPhone: '+91 6542 284 300',
     annualCsrBudget: '₹46.00 Cr',
+    operatingDistricts: ['Bokaro', 'Dhanbad', 'Deoghar', 'Giridih', 'West Singhbhum'],
+    relevantCategories: [
+      'Industrial Mining Effluent & River Contamination',
+      'Water Quality & Contamination',
+      'Ground Subsidence & Coal Seam Fires',
+      'Hazardous Industrial Chemical Effluent',
+    ],
+    matchKeywords: [
+      'slag', 'hematite', 'slurry', 'arsenic', 'fluoride', 'tisri', 'karo', 
+      'river contamination', 'bokaro', 'siyaljori', 'effluent', 'water quality'
+    ],
     focusAreas: ['Slag Recycling Tech', 'Rural Micro-Irrigation', 'Smart Village Testbeds'],
     schedule7Focus: [
       'ix. Contributions to science, technology, engineering, medicine R&D',
@@ -136,6 +205,17 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'csr@ushamartin.com',
     leadPhone: '+91 651 305 1400',
     annualCsrBudget: '₹28.40 Cr',
+    operatingDistricts: ['Ranchi', 'Saraikela Kharsawan', 'East Singhbhum', 'Khunti', 'Latehar'],
+    relevantCategories: [
+      'Flooding & Drainage',
+      'Wildlife Conservation & Conflict',
+      'Hazardous Industrial Chemical Effluent',
+      'Agro Forestry & Tribal Livelihood',
+    ],
+    matchKeywords: [
+      'hutup', 'kanke', 'school road', 'drainage', 'tatisilwai', 'ranchi', 
+      'adityapur', 'kharkai', 'elephant', 'betla', 'torpa', 'lac'
+    ],
     focusAreas: ['Tribal Youth Skilling', 'Water Quality Monitoring', 'Renewable Microgrids'],
     schedule7Focus: [
       'ii. Promoting education, employment, livelihood',
@@ -157,6 +237,17 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'csr@adani.com',
     leadPhone: '+91 6422 280 200',
     annualCsrBudget: '₹52.60 Cr',
+    operatingDistricts: ['Godda', 'Sahibganj', 'Pakur', 'Dumka', 'Deoghar'],
+    relevantCategories: [
+      'Riverbank Erosion & Disaster Inundation',
+      'Flood Management & Urban Drainage',
+      'Water Quality & Contamination',
+      'Thermal Power Industrial Pollution',
+    ],
+    matchKeywords: [
+      'ganga', 'erosion', 'rajmahal', 'kankjol', 'diara', 'godda', 'sahibganj', 
+      'riverbank', 'thermal', 'wetland', 'submergence'
+    ],
     focusAreas: ['Solar Pumping & Drip Irrigation', 'Santhal Heritage Craft Hubs', 'Village Flood Barriers'],
     schedule7Focus: [
       'iv. Ensuring environmental sustainability',
@@ -164,6 +255,38 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
       'x. Rural development projects',
     ],
     badge: 'Infrastructure CSR Partner',
+  },
+  {
+    id: 'IND-NTPC-KARANPURA',
+    name: 'NTPC North Karanpura CSR Foundation',
+    shortName: 'NTPC Karanpura',
+    cin: 'L40101DL1975GOI007966',
+    csrRegNumber: 'CSR00005519',
+    district: 'Hazaribagh',
+    headOffice: 'Tandwa, Hazaribagh',
+    leadName: 'V.K. Pandey',
+    leadDesignation: 'Chief General Manager (CSR & Community Affairs)',
+    leadEmail: 'csr@ntpc-karanpura.co.in',
+    leadPhone: '+91 6546 220 300',
+    annualCsrBudget: '₹62.10 Cr',
+    operatingDistricts: ['Hazaribagh', 'Chatra', 'Ramgarh', 'Latehar', 'Palamu'],
+    relevantCategories: [
+      'Drought & Aquifer Depletion',
+      'Thermal Power Industrial Pollution',
+      'Wildlife Conservation & Conflict',
+      'Water Quality & Contamination',
+    ],
+    matchKeywords: [
+      'drought', 'palamu', 'chhatarpur', 'north koel', 'karanpura', 'betla', 
+      'elephant', 'hazaribagh', 'chatra', 'aquifer', 'borewell', 'thermal'
+    ],
+    focusAreas: ['Ash Dyke Stability Telemetry', 'Clean Potable Water Networks', 'Rural Electrification', 'Biodiversity Conservation'],
+    schedule7Focus: [
+      'ix. Contributions to science, technology, engineering, medicine R&D',
+      'iv. Ensuring environmental sustainability',
+      'x. Rural development projects',
+    ],
+    badge: 'PSU Maharatna Partner',
   },
   {
     id: 'IND-JASCOLAMPF',
@@ -178,6 +301,17 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'contact@jascolampf.gov.in',
     leadPhone: '+91 651 221 4455',
     annualCsrBudget: '₹18.90 Cr',
+    operatingDistricts: ['Khunti', 'Gumla', 'Simdega', 'Latehar', 'West Singhbhum', 'Ranchi', 'Giridih'],
+    relevantCategories: [
+      'Agro Forestry & Tribal Livelihood',
+      'Wildlife Conservation & Conflict',
+      'Water Quality & Contamination',
+      'Drought & Aquifer Depletion',
+    ],
+    matchKeywords: [
+      'lac', 'kusum', 'torpa', 'fungal', 'moth', 'tribal', 'betla', 'elephant', 
+      'forest', 'munda', 'tisri', 'santhal', 'fluoride', 'khunti', 'gumla', 'livelihood'
+    ],
     focusAreas: ['Lac Host Tree Parasite Protection', 'Minor Forest Produce Processing', 'Tribal Farmer Cooperatives'],
     schedule7Focus: [
       'x. Rural development projects',
@@ -203,4 +337,50 @@ export function getTestingIndustriesList(): Array<{ ind: IndustryPartnerDoc; ema
     ind,
     email: ind.leadEmail,
   }));
+}
+
+export function evaluateChallengeRelevance(
+  challenge: { title?: string; summary?: string; district?: string; category?: string; assignedHEI?: string },
+  industry: IndustryPartnerDoc
+): MatchDetails {
+  if (!industry) {
+    return { isRelevant: true, matchScore: 100, matchReasons: ['General Statewide Project'] };
+  }
+
+  const reasons: string[] = [];
+  let score = 0;
+
+  const chDistrict = (challenge.district || '').toLowerCase().trim();
+  const chCategory = (challenge.category || '').toLowerCase().trim();
+  const textBody = `${challenge.title || ''} ${challenge.summary || ''} ${challenge.district || ''} ${challenge.category || ''}`.toLowerCase();
+
+  // 1. Operating District Match
+  const districtMatched = industry.operatingDistricts.some(d => d.toLowerCase().trim() === chDistrict);
+  if (districtMatched) {
+    score += 40;
+    reasons.push(`Operating Territory: ${challenge.district} District`);
+  }
+
+  // 2. Thematic Category Match
+  const categoryMatched = industry.relevantCategories.some(c => c.toLowerCase().trim() === chCategory);
+  if (categoryMatched) {
+    score += 35;
+    reasons.push(`CSR Focus Sector: ${challenge.category}`);
+  }
+
+  // 3. Keyword / Domain alignment
+  const matchedKeywords = industry.matchKeywords.filter(kw => textBody.includes(kw.toLowerCase()));
+  if (matchedKeywords.length > 0) {
+    score += Math.min(25, matchedKeywords.length * 10);
+    reasons.push(`Domain Alignment: ${matchedKeywords.slice(0, 2).join(', ')}`);
+  }
+
+  // A challenge is considered relevant if it matches the operating district OR category OR has high keyword overlap
+  const isRelevant = districtMatched || categoryMatched || matchedKeywords.length >= 2;
+
+  return {
+    isRelevant,
+    matchScore: Math.min(100, score),
+    matchReasons: reasons.length > 0 ? reasons : ['General Statewide Mandate'],
+  };
 }

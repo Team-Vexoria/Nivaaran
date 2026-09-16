@@ -4,7 +4,7 @@ import {
   ShieldCheck, Award, CheckCircle2,
   MapPin, Clock, Layers, LogOut, Download,
   Check, MessageSquareText, Eye,
-  FlaskConical, X, Copy
+  FlaskConical, X, Copy, Target, Sparkles
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -19,7 +19,8 @@ import { NotificationBellDropdown } from '../../components/notifications/Notific
 import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
 import { ChallengeDetailModal } from '../../components/ChallengeDetailModal';
 import { 
-  JHARKHAND_INDUSTRIES, IndustryPartnerDoc, getIndustryByEmail, getTestingIndustriesList 
+  JHARKHAND_INDUSTRIES, IndustryPartnerDoc, getIndustryByEmail, getTestingIndustriesList,
+  evaluateChallengeRelevance
 } from '../../services/industryData';
 
 type IndustryTab = 'discovery' | 'my-requests' | 'active' | 'compliance' | 'certificates' | 'messages';
@@ -65,6 +66,9 @@ export const IndustryPortal: React.FC = () => {
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
   // Collaboration Requests from Firestore
   const [collabRequests, setCollabRequests] = useState<CollaborationRequest[]>([]);
+
+  // Mandate scope filter mode (defaults to mandate-only for logical segregation)
+  const [mandateScopeMode, setMandateScopeMode] = useState<'mandate_only' | 'all'>('mandate_only');
 
   // Search & Filter in Discovery
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,16 +117,38 @@ export const IndustryPortal: React.FC = () => {
     );
   }, [searchIndustryQuery]);
 
-  // Filter challenges eligible for industry collaboration:
-  // (In Progress, stageNumber >= 6 or assignedHEI present, clean from junk)
-  const eligibleChallenges = useMemo(() => {
+  // Clean raw challenges (exclude junk)
+  const cleanBaseChallenges = useMemo(() => {
     return challenges.filter(c => {
       const isJunk = !c.title || /i cant attach photo|cant attach photo/i.test(c.title + ' ' + (c.summary || ''));
       if (isJunk) return false;
 
       const stageNum = getStageForStatus(c.status)?.stageNumber || (c.assignedHEI ? 7 : 0);
       const isEligibleStage = stageNum >= 6 || Boolean(c.assignedHEI);
-      if (!isEligibleStage) return false;
+      return isEligibleStage;
+    });
+  }, [challenges]);
+
+  // Evaluate match details for all valid challenges against the active industry
+  const evaluatedChallenges = useMemo(() => {
+    return cleanBaseChallenges.map(c => {
+      const match = evaluateChallengeRelevance(c, activeIndustry);
+      return {
+        challenge: c,
+        match,
+      };
+    });
+  }, [cleanBaseChallenges, activeIndustry]);
+
+  const totalStatewideCount = evaluatedChallenges.length;
+  const mandateMatchedCount = evaluatedChallenges.filter(ec => ec.match.isRelevant).length;
+
+  // Filter challenges eligible for industry collaboration based on mandate scope & search
+  const displayedChallenges = useMemo(() => {
+    return evaluatedChallenges.filter(({ challenge: c, match }) => {
+      if (mandateScopeMode === 'mandate_only' && !match.isRelevant) {
+        return false;
+      }
 
       const matchesSearch =
         c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -135,11 +161,11 @@ export const IndustryPortal: React.FC = () => {
 
       return matchesSearch && matchesDistrict && matchesCategory;
     });
-  }, [challenges, searchQuery, selectedDistrict, selectedCategory]);
+  }, [evaluatedChallenges, mandateScopeMode, searchQuery, selectedDistrict, selectedCategory]);
 
   // Unique districts & categories
-  const districts = ['ALL', ...Array.from(new Set(challenges.map(c => c.district))).filter(Boolean)];
-  const categories = ['ALL', ...Array.from(new Set(challenges.map(c => c.category))).filter(Boolean)];
+  const districts = ['ALL', ...Array.from(new Set(cleanBaseChallenges.map(c => c.district))).filter(Boolean)];
+  const categories = ['ALL', ...Array.from(new Set(cleanBaseChallenges.map(c => c.category))).filter(Boolean)];
 
   // My requests for this active org
   const myRequests = collabRequests.filter(r =>
@@ -347,205 +373,294 @@ export const IndustryPortal: React.FC = () => {
                   University R&D Projects Seeking Industry Collaboration
                 </h1>
                 <p className="text-xs text-[#6A6155] leading-relaxed">
-                  Discover validated civic challenges adopted by Jharkhand Higher Education Institutions (IIT ISM Dhanbad, BIT Mesra, NIT Jamshedpur, Birsa Agricultural University). Partner through CSR grants, hardware testing, cloud credits, or pilot deployment.
+                  Discover validated civic challenges adopted by Jharkhand Higher Education Institutions. Feed is tailored to <strong>{activeIndustry.name}</strong> based on operating territory and CSR charter alignment.
                 </p>
               </div>
 
               {/* Stat Highlights */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-[#F0EBE0]">
                 <div className="bg-[#FAF8F4] p-3 rounded-xl border border-[#E4DDD1]">
-                  <p className="text-[10px] font-extrabold text-[#6A6155] uppercase tracking-wider">Available Projects</p>
-                  <p className="text-lg font-black text-[#201C18]">{eligibleChallenges.length}</p>
+                  <p className="text-[10px] font-extrabold text-[#6A6155] uppercase tracking-wider">Mandate Matched</p>
+                  <p className="text-lg font-black text-[#2C6E49]">{mandateMatchedCount} Projects</p>
                 </div>
                 <div className="bg-[#FAF8F4] p-3 rounded-xl border border-[#E4DDD1]">
-                  <p className="text-[10px] font-extrabold text-[#6A6155] uppercase tracking-wider">HEIs Collaborating</p>
-                  <p className="text-lg font-black text-[#2C6E49]">6 Autonomous HEIs</p>
+                  <p className="text-[10px] font-extrabold text-[#6A6155] uppercase tracking-wider">Operating Territory</p>
+                  <p className="text-xs font-black text-[#201C18] mt-1 truncate" title={activeIndustry.operatingDistricts.join(', ')}>
+                    {activeIndustry.operatingDistricts.slice(0, 3).join(', ')}{activeIndustry.operatingDistricts.length > 3 ? ` +${activeIndustry.operatingDistricts.length - 3}` : ''}
+                  </p>
+                </div>
+                <div className="bg-[#FAF8F4] p-3 rounded-xl border border-[#E4DDD1]">
+                  <p className="text-[10px] font-extrabold text-[#6A6155] uppercase tracking-wider">Annual CSR Pool</p>
+                  <p className="text-xs font-black text-[#C98A2C] mt-1">{activeIndustry.annualCsrBudget}</p>
                 </div>
                 <div className="bg-[#FAF8F4] p-3 rounded-xl border border-[#E4DDD1]">
                   <p className="text-[10px] font-extrabold text-[#6A6155] uppercase tracking-wider">Legal Framework</p>
-                  <p className="text-xs font-black text-[#C98A2C] mt-1">Companies Act §135</p>
-                </div>
-                <div className="bg-[#FAF8F4] p-3 rounded-xl border border-[#E4DDD1]">
-                  <p className="text-[10px] font-extrabold text-[#6A6155] uppercase tracking-wider">State Mandate</p>
-                  <p className="text-xs font-black text-[#201C18] mt-1">Govt of Jharkhand</p>
+                  <p className="text-xs font-black text-[#201C18] mt-1">Companies Act §135</p>
                 </div>
               </div>
             </div>
 
-            {/* Search & Filter Bar */}
-            <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row gap-3 items-center justify-between">
-              <div className="relative flex-1 w-full">
-                <Search className="w-4 h-4 text-[#8A7F72] absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search by challenge title, report ID, HEI, or district..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="w-full pl-9 pr-3 py-2 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-medium focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30 placeholder:text-[#B0A89E]"
-                />
-              </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
-                <select
-                  value={selectedDistrict}
-                  onChange={e => setSelectedDistrict(e.target.value)}
-                  className="px-3 py-2 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-bold focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30"
-                >
-                  {districts.map(d => <option key={d} value={d}>{d === 'ALL' ? 'All Districts' : d}</option>)}
-                </select>
+            {/* Mandate Scope & Search Filter Bar */}
+            <div className="bg-white border border-[#E4DDD1] rounded-2xl p-4 shadow-2xs space-y-3">
+              
+              {/* Scope Switcher Tabs */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#F0EBE0]">
+                <div className="flex items-center gap-1.5 bg-[#FAF8F4] p-1 rounded-xl border border-[#E4DDD1]">
+                  <button
+                    onClick={() => setMandateScopeMode('mandate_only')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                      mandateScopeMode === 'mandate_only'
+                        ? 'bg-[#2C6E49] text-white shadow-2xs'
+                        : 'text-[#6A6155] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                    }`}
+                  >
+                    <Target className="w-3.5 h-3.5" />
+                    <span>My CSR Mandate Projects ({mandateMatchedCount})</span>
+                  </button>
 
-                <select
-                  value={selectedCategory}
-                  onChange={e => setSelectedCategory(e.target.value)}
-                  className="px-3 py-2 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-bold focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30"
-                >
-                  {categories.map(c => <option key={c} value={c}>{c === 'ALL' ? 'All Sectors' : c}</option>)}
-                </select>
+                  <button
+                    onClick={() => setMandateScopeMode('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
+                      mandateScopeMode === 'all'
+                        ? 'bg-[#2C6E49] text-white shadow-2xs'
+                        : 'text-[#6A6155] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                    }`}
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>All Statewide Projects ({totalStatewideCount})</span>
+                  </button>
+                </div>
+
+                <div className="text-[11px] text-[#6A6155]">
+                  {mandateScopeMode === 'mandate_only' ? (
+                    <span className="flex items-center gap-1 font-semibold text-[#2C6E49]">
+                      <Sparkles className="w-3.5 h-3.5 text-[#C98A2C]" />
+                      Filtered by <strong>{activeIndustry.shortName}</strong> operational districts and focus domains.
+                    </span>
+                  ) : (
+                    <span className="text-[#8A7F72]">
+                      Showing all state university proposals across all 24 districts.
+                    </span>
+                  )}
+                </div>
               </div>
+
+              {/* Search Inputs */}
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                <div className="relative flex-1 w-full">
+                  <Search className="w-4 h-4 text-[#8A7F72] absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search by challenge title, report ID, HEI, or district..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-medium focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30 placeholder:text-[#B0A89E]"
+                  />
+                </div>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                  <select
+                    value={selectedDistrict}
+                    onChange={e => setSelectedDistrict(e.target.value)}
+                    className="px-3 py-2 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-bold focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30"
+                  >
+                    {districts.map(d => <option key={d} value={d}>{d === 'ALL' ? 'All Districts' : d}</option>)}
+                  </select>
+
+                  <select
+                    value={selectedCategory}
+                    onChange={e => setSelectedCategory(e.target.value)}
+                    className="px-3 py-2 bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl text-xs text-[#201C18] font-bold focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30"
+                  >
+                    {categories.map(c => <option key={c} value={c}>{c === 'ALL' ? 'All Sectors' : c}</option>)}
+                  </select>
+                </div>
+              </div>
+
             </div>
 
             {/* Challenge Cards Grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {eligibleChallenges.map(ch => {
-                const isUnderCollab = collabRequests.some(r =>
-                  (r.challengeId === ch.id || r.challengeId === ch.reportId) &&
-                  (r.status === 'MoU Signed' || r.status === 'Active' || r.status === 'Completed')
-                );
-                const hasExistingRequest = collabRequests.some(r =>
-                  (r.challengeId === ch.id || r.challengeId === ch.reportId) &&
-                  (r.orgName === orgName)
-                );
+            {displayedChallenges.length === 0 ? (
+              <div className="bg-white border border-[#E4DDD1] rounded-2xl p-10 text-center space-y-3">
+                <Target className="w-10 h-10 text-[#D5CDBF] mx-auto" />
+                <h3 className="text-sm font-extrabold text-[#8A7F72]">No Projects Matched Current Filters</h3>
+                <p className="text-xs text-[#B0A89E] max-w-md mx-auto">
+                  No active challenges match the current filter criteria for {activeIndustry.name}. You can switch to All Statewide Projects to explore challenges from other districts.
+                </p>
+                <button
+                  onClick={() => {
+                    setMandateScopeMode('all');
+                    setSelectedDistrict('ALL');
+                    setSelectedCategory('ALL');
+                    setSearchQuery('');
+                  }}
+                  className="px-4 py-2 bg-[#2C6E49] text-white text-xs font-extrabold rounded-xl hover:bg-[#23583a] transition-colors cursor-pointer"
+                >
+                  View All Statewide Projects
+                </button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {displayedChallenges.map(({ challenge: ch, match }) => {
+                  const isUnderCollab = collabRequests.some(r =>
+                    (r.challengeId === ch.id || r.challengeId === ch.reportId) &&
+                    (r.status === 'MoU Signed' || r.status === 'Active' || r.status === 'Completed')
+                  );
+                  const hasExistingRequest = collabRequests.some(r =>
+                    (r.challengeId === ch.id || r.challengeId === ch.reportId) &&
+                    (r.orgName === orgName)
+                  );
 
-                return (
-                  <div 
-                    key={ch.id || ch.reportId} 
-                    onClick={() => setInspectingChallenge(ch)}
-                    className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-[#2C6E49] hover:shadow-md transition-all cursor-pointer group"
-                  >
-                    <div className="space-y-3">
-                      
-                      {/* Top Badges */}
-                      <div className="flex items-center justify-between flex-wrap gap-1">
-                        <span className="text-[10px] font-extrabold text-[#2C6E49] bg-[#F0FAF4] px-2 py-0.5 rounded-full border border-[#C3E6D0]">
-                          {ch.category || 'Civic Infrastructure'}
-                        </span>
-                        <span className="text-[10px] font-mono text-[#8A7F72]">
-                          {ch.reportId}
-                        </span>
-                      </div>
-
-                      {/* Evidence Photo Preview */}
-                      {(ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])) && (
-                        <div className="relative w-full h-36 rounded-xl overflow-hidden border border-[#E4DDD1] bg-[#FAF8F4]">
-                          <img
-                            src={ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])}
-                            alt={ch.title}
-                            onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-                      )}
-
-                      {/* Title & Summary */}
-                      <div>
-                        <h3 className="text-sm font-extrabold text-[#201C18] line-clamp-2 leading-snug group-hover:text-[#2C6E49] transition-colors">
-                          {ch.title}
-                        </h3>
-                        <p className="text-xs text-[#6A6155] mt-1.5 line-clamp-3 leading-relaxed">
-                          {ch.summary}
-                        </p>
-                      </div>
-
-                      {/* Location & HEI info */}
-                      <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-2.5 space-y-1.5 text-xs">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-[#8A7F72] flex items-center gap-1">
-                            <MapPin className="w-3 h-3 text-[#B5502D]" /> Location:
+                  return (
+                    <div 
+                      key={ch.id || ch.reportId} 
+                      onClick={() => setInspectingChallenge(ch)}
+                      className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-xs flex flex-col justify-between space-y-4 hover:border-[#2C6E49] hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <div className="space-y-3">
+                        
+                        {/* Top Badges & Match Indicator */}
+                        <div className="flex items-center justify-between flex-wrap gap-1">
+                          <span className="text-[10px] font-extrabold text-[#2C6E49] bg-[#F0FAF4] px-2 py-0.5 rounded-full border border-[#C3E6D0]">
+                            {ch.category || 'Civic Infrastructure'}
                           </span>
-                          <span className="font-bold text-[#201C18]">{ch.village}, {ch.block}, {ch.district}</span>
+                          <div className="flex items-center gap-1.5">
+                            {match.isRelevant && (
+                              <span className="text-[9px] font-black bg-[#FFF8EC] text-[#C98A2C] px-2 py-0.5 rounded-full border border-[#F0D99A] flex items-center gap-1">
+                                <Sparkles className="w-2.5 h-2.5" /> Mandate Match
+                              </span>
+                            )}
+                            <span className="text-[10px] font-mono text-[#8A7F72]">
+                              {ch.reportId}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-[#8A7F72] flex items-center gap-1">
-                            <Building2 className="w-3 h-3 text-[#2C6E49]" /> Lead HEI:
-                          </span>
-                          <span className="font-bold text-[#2C6E49] truncate max-w-[160px]">{ch.assignedHEI || 'BIT Mesra (Allocated)'}</span>
+
+                        {/* Evidence Photo Preview */}
+                        {(ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])) && (
+                          <div className="relative w-full h-36 rounded-xl overflow-hidden border border-[#E4DDD1] bg-[#FAF8F4]">
+                            <img
+                              src={ch.evidenceUrl || (ch.evidenceUrls && ch.evidenceUrls[0])}
+                              alt={ch.title}
+                              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        )}
+
+                        {/* Title & Summary */}
+                        <div>
+                          <h3 className="text-sm font-extrabold text-[#201C18] line-clamp-2 leading-snug group-hover:text-[#2C6E49] transition-colors">
+                            {ch.title}
+                          </h3>
+                          <p className="text-xs text-[#6A6155] mt-1.5 line-clamp-3 leading-relaxed">
+                            {ch.summary}
+                          </p>
                         </div>
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="text-[#8A7F72] flex items-center gap-1">
-                            <Layers className="w-3 h-3 text-[#C98A2C]" /> Lifecycle:
-                          </span>
-                          <span className="font-bold text-[#C98A2C]">{ch.stageName || `Stage ${ch.stageNumber || 9}`}</span>
+
+                        {/* Mandate Match Reasons Pill */}
+                        {match.matchReasons.length > 0 && (
+                          <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-2 text-[11px] text-[#4A433B] space-y-1">
+                            <div className="flex items-center gap-1 text-[10px] font-black text-[#2C6E49] uppercase tracking-wider">
+                              <Target className="w-3 h-3" /> CSR Mandate Alignment:
+                            </div>
+                            <p className="text-[#6A6155] leading-snug truncate" title={match.matchReasons.join(' · ')}>
+                              {match.matchReasons.join(' · ')}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Location & HEI info */}
+                        <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-2.5 space-y-1.5 text-xs">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-[#8A7F72] flex items-center gap-1">
+                              <MapPin className="w-3 h-3 text-[#B5502D]" /> Location:
+                            </span>
+                            <span className="font-bold text-[#201C18]">{ch.village}, {ch.block}, {ch.district}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-[#8A7F72] flex items-center gap-1">
+                              <Building2 className="w-3 h-3 text-[#2C6E49]" /> Lead HEI:
+                            </span>
+                            <span className="font-bold text-[#2C6E49] truncate max-w-[160px]">{ch.assignedHEI || 'BIT Mesra (Allocated)'}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-[#8A7F72] flex items-center gap-1">
+                              <Layers className="w-3 h-3 text-[#C98A2C]" /> Lifecycle:
+                            </span>
+                            <span className="font-bold text-[#C98A2C]">{ch.stageName || `Stage ${ch.stageNumber || 9}`}</span>
+                          </div>
                         </div>
+
+                        {/* Collaboration Needs Tag */}
+                        <div className="bg-[#FFF8EC] border border-[#F0D99A] rounded-xl p-2.5 text-xs text-[#7A5A1A]">
+                          <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1">Collaboration Needs</p>
+                          <p className="text-[11px] leading-snug">
+                            Seeking industry partner for hardware component sponsorship, testing laboratory facilities, and CSR pilot tranche disbursement.
+                          </p>
+                        </div>
+
                       </div>
 
-                      {/* Collaboration Needs Tag */}
-                      <div className="bg-[#FFF8EC] border border-[#F0D99A] rounded-xl p-2.5 text-xs text-[#7A5A1A]">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider mb-1">Collaboration Needs</p>
-                        <p className="text-[11px] leading-snug">
-                          Seeking industry partner for hardware component sponsorship, testing laboratory facilities, and CSR pilot tranche disbursement.
-                        </p>
-                      </div>
-
-                    </div>
-
-                    {/* Bottom Action Buttons */}
-                    <div className="pt-2 border-t border-[#F0EBE0] space-y-2">
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setInspectingChallenge(ch);
-                          }}
-                          className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#201C18] border border-[#E4DDD1] text-xs font-bold rounded-xl transition-all cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-[#2C6E49]" />
-                          <span>View Full Docket</span>
-                        </button>
-                      </div>
-
-                      {isUnderCollab ? (
-                        <div className="flex items-center justify-between text-xs text-[#2C6E49] bg-[#F0FAF4] p-2 rounded-xl font-extrabold">
-                          <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> Active MoU Partnered</span>
-                          <button 
+                      {/* Bottom Action Buttons */}
+                      <div className="pt-2 border-t border-[#F0EBE0] space-y-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setActiveTab('active');
-                            }} 
-                            className="text-[10px] underline cursor-pointer"
+                              setInspectingChallenge(ch);
+                            }}
+                            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#201C18] border border-[#E4DDD1] text-xs font-bold rounded-xl transition-all cursor-pointer"
                           >
-                            View Workspace
+                            <Eye className="w-3.5 h-3.5 text-[#2C6E49]" />
+                            <span>View Full Docket</span>
                           </button>
                         </div>
-                      ) : hasExistingRequest ? (
-                        <div className="flex items-center justify-between text-xs text-[#C98A2C] bg-[#FFF8EC] p-2 rounded-xl font-extrabold">
-                          <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> Request Under Review</span>
-                          <button 
+
+                        {isUnderCollab ? (
+                          <div className="flex items-center justify-between text-xs text-[#2C6E49] bg-[#F0FAF4] p-2 rounded-xl font-extrabold">
+                            <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4" /> Active MoU Partnered</span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveTab('active');
+                              }} 
+                              className="text-[10px] underline cursor-pointer"
+                            >
+                              View Workspace
+                            </button>
+                          </div>
+                        ) : hasExistingRequest ? (
+                          <div className="flex items-center justify-between text-xs text-[#C98A2C] bg-[#FFF8EC] p-2 rounded-xl font-extrabold">
+                            <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> Request Under Review</span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveTab('my-requests');
+                              }} 
+                              className="text-[10px] underline cursor-pointer"
+                            >
+                              Track Status
+                            </button>
+                          </div>
+                        ) : (
+                          <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              setActiveTab('my-requests');
-                            }} 
-                            className="text-[10px] underline cursor-pointer"
+                              setWizardChallenge(ch);
+                            }}
+                            className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-extrabold rounded-xl transition-all shadow-2xs cursor-pointer active:scale-95"
                           >
-                            Track Status
+                            <Handshake className="w-4 h-4" />
+                            <span>Express Interest &amp; Formulate Proposal</span>
                           </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setWizardChallenge(ch);
-                          }}
-                          className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-extrabold rounded-xl transition-all shadow-2xs cursor-pointer active:scale-95"
-                        >
-                          <Handshake className="w-4 h-4" />
-                          <span>Express Interest &amp; Formulate Proposal</span>
-                        </button>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
 
           </div>
         )}
@@ -556,7 +671,7 @@ export const IndustryPortal: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-extrabold text-[#201C18]">My Collaboration Requests</h2>
-                <p className="text-xs text-[#6A6155]">Track status of grant applications, counter-terms from universities, and draft MoUs.</p>
+                <p className="text-xs text-[#6A6155]">Track status of grant applications, counter terms from universities, and draft MoUs.</p>
               </div>
               <span className="text-xs font-extrabold text-[#8A7F72]">{myRequests.length} submitted requests</span>
             </div>
@@ -605,7 +720,7 @@ export const IndustryPortal: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* University Review Note or Counter-Terms */}
+                      {/* University Review Note or Counter Terms */}
                       {req.universityReviewNote && (
                         <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 text-xs space-y-1">
                           <p className="font-extrabold text-[#2C6E49]">University Review Feedback (by {req.reviewedByFaculty}):</p>

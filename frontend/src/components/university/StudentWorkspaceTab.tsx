@@ -14,6 +14,7 @@ import {
 } from '../../services/firebaseService';
 import { CertificateModal } from '../CertificateModal';
 import { ChallengeDetailModal } from '../ChallengeDetailModal';
+import { IoTSensorTelemetryCard } from '../telemetry/IoTSensorTelemetryCard';
 import { getStageForStatus } from '../../services/workflowLifecycle';
 import { workflowStore } from '../../services/workflowStore';
 import { ChallengeStatus } from '../../services/workflowTypes';
@@ -899,6 +900,15 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({
                 value={testingResults}
                 onChange={(e) => setTestingResults(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-slate-900"
+              />
+            </div>
+
+            {/* Live Bench Telemetry Preview */}
+            <div className="pt-2">
+              <IoTSensorTelemetryCard
+                stationName={`${university.shortName} Hardware Testbench · ${assignedProject?.challengeTitle || 'Telemetry Prototype'}`}
+                hardwareNode={hardwareSpec}
+                compact={true}
               />
             </div>
 
