@@ -25,9 +25,9 @@ interface PublicChallengeTrackerProps {
 const ALL_16_STAGES = [
   { num: 1, name: 'Submission', phase: 'Phase 1: Problem Intake & Triage', actor: 'Citizen / Community' },
   { num: 2, name: 'AI Understanding & Classification', phase: 'Phase 1: Problem Intake & Triage', actor: 'AI Engine' },
-  { num: 3, name: 'Government Validation', phase: 'Phase 1: Problem Intake & Triage', actor: 'State Nodal Officer' },
-  { num: 4, name: 'Semantic Deduplication & Cluster', phase: 'Phase 1: Problem Intake & Triage', actor: 'AI Engine' },
-  { num: 5, name: 'Severity Prioritization', phase: 'Phase 1: Problem Intake & Triage', actor: 'AI & Govt Officer' },
+  { num: 3, name: 'Semantic Deduplication & Cluster', phase: 'Phase 1: Problem Intake & Triage', actor: 'AI Engine' },
+  { num: 4, name: 'Severity Prioritization', phase: 'Phase 1: Problem Intake & Triage', actor: 'AI Engine' },
+  { num: 5, name: 'Government Validation', phase: 'Phase 1: Problem Intake & Triage', actor: 'State Nodal Officer' },
   { num: 6, name: 'Institution Matching', phase: 'Phase 2: Academic Allocation & Team', actor: 'AI Matchmaker' },
   { num: 7, name: 'University R&D Acceptance', phase: 'Phase 2: Academic Allocation & Team', actor: 'University Dean / HoD' },
   { num: 8, name: 'Multidisciplinary Team Formation', phase: 'Phase 2: Academic Allocation & Team', actor: 'Faculty Mentor' },
@@ -85,7 +85,7 @@ export const PublicChallengeTracker: React.FC<PublicChallengeTrackerProps> = ({
   const currentStageNum = selectedChallenge?.stageNumber || (
     selectedChallenge?.status === 'Resolved' ? 16 :
     selectedChallenge?.status === 'In Progress' ? 8 :
-    selectedChallenge?.status === 'Government Validated' ? 3 : 1
+    selectedChallenge?.status === 'Government Validated' ? 5 : 1
   );
 
   return (

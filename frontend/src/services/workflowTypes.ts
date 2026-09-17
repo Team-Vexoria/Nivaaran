@@ -11,9 +11,9 @@ export type ChallengeStatus =
   | 'Under Review'            // Stage 2: AI triage complete, awaiting govt review
   | 'Evidence Requested'      // Stage 2b: Govt officer requests more evidence
   | 'Rejected'                // Terminal: Govt officer rejects (does not meet criteria / duplicate)
-  | 'Government Validated'    // Stage 3: Govt validates & prioritizes
-  | 'Clustered'               // Stage 4: Similar challenges grouped
-  | 'Prioritized'             // Stage 5: Transparent priority assigned
+  | 'Clustered'               // Stage 3: Deduplication & similar challenges grouped
+  | 'Prioritized'             // Stage 4: Transparent priority & severity scoring assigned
+  | 'Government Validated'    // Stage 5: Govt officer validates after AI triage & prioritization
   | 'HEI Matched'             // Stage 5-6: AI matched to university
   | 'University Accepted'     // Stage 7: University accepts the challenge
   | 'In Progress'             // Stage 8-9: Team formed, work underway

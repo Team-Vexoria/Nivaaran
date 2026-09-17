@@ -218,8 +218,8 @@ export const SEED_CHALLENGES: Challenge[] = [
     locationCoords: { lat: 22.1854, lng: 85.3942 },
     formattedAddress: 'Saranda Forest Fringe, Gua, West Singhbhum, Jharkhand',
     status: 'Government Validated',
-    stageNumber: 3,
-    stageName: 'Stage 3: Government Validated & Prioritized',
+    stageNumber: 5,
+    stageName: 'Stage 5: Government Validated & Actionable',
     category: 'Industrial Mining Effluent & River Contamination',
     aiAnalysis: {
       category: 'Industrial Mining Effluent & River Contamination',
@@ -447,8 +447,8 @@ export const SEED_CHALLENGES: Challenge[] = [
     locationCoords: { lat: 22.7937, lng: 86.1345 },
     formattedAddress: 'Adityapur Industrial Area Phase 6, Saraikela Kharsawan, Jharkhand',
     status: 'Government Validated',
-    stageNumber: 3,
-    stageName: 'Stage 3: Government Validated & Prioritized',
+    stageNumber: 5,
+    stageName: 'Stage 5: Government Validated & Actionable',
     category: 'Hazardous Industrial Chemical Effluent',
     aiAnalysis: {
       category: 'Hazardous Industrial Chemical Effluent',
@@ -584,8 +584,8 @@ export const SEED_CHALLENGES: Challenge[] = [
     locationCoords: { lat: 24.3211, lng: 85.2415 },
     formattedAddress: 'Barakar River Crossing, Chouparan, Hazaribagh, Jharkhand',
     status: 'Government Validated',
-    stageNumber: 3,
-    stageName: 'Stage 3: Government Validated & Prioritized',
+    stageNumber: 5,
+    stageName: 'Stage 5: Government Validated & Actionable',
     category: 'Bridge Infrastructure & Transport Safety',
     aiAnalysis: {
       category: 'Bridge Infrastructure & Transport Safety',
