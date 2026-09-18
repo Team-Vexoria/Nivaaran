@@ -23,6 +23,7 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
     unread, 
     markAsRead, 
     markAllAsRead, 
+    deleteNotification,
     clearAll, 
     sendSimulatedSMS, 
     sendSimulatedEmail 
@@ -64,13 +65,13 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
       case 'sms_dispatched':
         return <Smartphone className="w-4 h-4 text-emerald-600" />;
       case 'email_dispatched':
-        return <Mail className="w-4 h-4 text-blue-600" />;
+        return <Mail className="w-4 h-4 text-amber-700" />;
       case 'deployment':
-        return <Rocket className="w-4 h-4 text-purple-600" />;
+        return <Rocket className="w-4 h-4 text-emerald-700" />;
       case 'allocation':
         return <Building2 className="w-4 h-4 text-amber-600" />;
       case 'proposal':
-        return <FileText className="w-4 h-4 text-indigo-600" />;
+        return <FileText className="w-4 h-4 text-amber-800" />;
       case 'evidence_request':
         return <ShieldAlert className="w-4 h-4 text-red-600" />;
       default:
@@ -210,7 +211,21 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
                       <p className={`text-xs truncate ${n.read ? 'font-semibold text-[#201C18]' : 'font-black text-[#201C18]'}`}>
                         {n.title}
                       </p>
-                      <span className="text-[9px] text-[#8A7F72] shrink-0 font-medium">{n.timestamp}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <span className="text-[9px] text-[#8A7F72] font-medium">{n.timestamp}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(n.id);
+                          }}
+                          className="p-1 text-[#8A7F72] hover:text-[#B3261E] rounded transition-colors cursor-pointer"
+                          title="Delete notification"
+                          aria-label="Delete notification"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </div>
 
                     <p className="text-[11px] text-[#5A5247] leading-tight line-clamp-2">
@@ -227,9 +242,7 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
                         <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded ${
                           n.channel === 'sms' 
                             ? 'bg-emerald-100 text-emerald-800' 
-                            : n.channel === 'email'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-amber-100 text-amber-800'
+                            : 'bg-amber-100 text-amber-900'
                         }`}>
                           {n.channel}
                         </span>

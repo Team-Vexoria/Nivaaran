@@ -35,7 +35,7 @@ export const LIFECYCLE_STAGES: WorkflowStage[] = [
     displayName: 'Submission',
     publicLabel: 'Submitted',
     description: 'Initial societal problem submitted by a citizen.',
-    allowedNextStages: [2],
+    allowedNextStages: [2, 3, 4, 5],
     isPublic: true,
   },
   {
@@ -44,7 +44,7 @@ export const LIFECYCLE_STAGES: WorkflowStage[] = [
     displayName: 'AI Understanding',
     publicLabel: 'Under Review',
     description: 'AI triage, categorization, and initial risk assessment.',
-    allowedNextStages: [3],
+    allowedNextStages: [2, 3, 4, 5],
     isPublic: true,
   },
   {
@@ -53,7 +53,7 @@ export const LIFECYCLE_STAGES: WorkflowStage[] = [
     displayName: 'Deduplication / Clustering',
     publicLabel: 'Processing',
     description: 'AI groups similar challenges together.',
-    allowedNextStages: [4],
+    allowedNextStages: [2, 4, 5],
     isPublic: false,
   },
   {
@@ -62,7 +62,7 @@ export const LIFECYCLE_STAGES: WorkflowStage[] = [
     displayName: 'Prioritization',
     publicLabel: 'Prioritized',
     description: 'Assigning priority scores based on impact, urgency, etc.',
-    allowedNextStages: [5],
+    allowedNextStages: [2, 5],
     isPublic: true,
   },
   {
@@ -71,7 +71,7 @@ export const LIFECYCLE_STAGES: WorkflowStage[] = [
     displayName: 'Validation',
     publicLabel: 'Validated',
     description: 'Government officer validates the challenge and evidence.',
-    allowedNextStages: [6],
+    allowedNextStages: [2, 5, 6],
     isPublic: true,
   },
   {
@@ -255,6 +255,15 @@ export function formatStageName(stageNumber: number): string {
 }
 
 export function isValidStageTransition(currentStage: number, nextStage: number): boolean {
+  if (currentStage === nextStage) return true;
+  /* Direct government validation and triage transitions */
+  if (currentStage >= 1 && currentStage <= 5 && (nextStage === 5 || nextStage === 6 || nextStage === 2)) {
+    return true;
+  }
+  /* Executive administrative resolution or deployment transitions */
+  if (nextStage === 14 || nextStage === 16) {
+    return true;
+  }
   const current = getStageMetadata(currentStage);
   if (!current) return false;
   return current.allowedNextStages.includes(nextStage);

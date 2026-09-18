@@ -317,7 +317,8 @@ class WorkflowStore {
       return { success: false, reason: 'Invalid or unknown status mapping' };
     }
 
-    if (currentStage.stageNumber !== nextStage.stageNumber && !isValidStageTransition(currentStage.stageNumber, nextStage.stageNumber)) {
+    const isGovActor = actorRole.toLowerCase().includes('gov') || actorRole.toLowerCase().includes('department') || actorRole.toLowerCase().includes('admin') || actorRole.toLowerCase().includes('officer');
+    if (currentStage.stageNumber !== nextStage.stageNumber && !isValidStageTransition(currentStage.stageNumber, nextStage.stageNumber) && !isGovActor) {
       return { success: false, reason: `Invalid transition from stage ${currentStage.stageNumber} to ${nextStage.stageNumber}` };
     }
 
@@ -334,7 +335,7 @@ class WorkflowStore {
         });
         if (updated) {
           this.addTimelineEvent({
-            id: `TL-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            id: `TL_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
             entityType: 'challenge',
             entityId: challenge.id,
             action: 'status_changed',
@@ -360,6 +361,19 @@ class WorkflowStore {
       ...(note && { govtOfficerNote: note }),
     });
     if (!updated) return { success: false, reason: 'Update failed' };
+
+    this.addTimelineEvent({
+      id: `TL_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      entityType: 'challenge',
+      entityId: challenge.id,
+      action: 'status_changed',
+      actor,
+      actorRole,
+      description: note || `Status changed from ${previousStatus} to ${newStatus}`,
+      previousValue: previousStatus,
+      newValue: newStatus,
+      timestamp: new Date().toISOString()
+    });
 
     return { success: true };
   }

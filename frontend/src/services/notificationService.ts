@@ -106,37 +106,81 @@ const SEED_NOTIFICATIONS: AppNotification[] = [
 ];
 
 let cachedNotifications: AppNotification[] = [];
+let initialized = false;
 const listeners: Array<(items: AppNotification[]) => void> = [];
 
 function loadStoredNotifications(): AppNotification[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
+    if (raw !== null) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         return parsed;
       }
     }
   } catch (e) {
     console.warn('[NotificationService] Failed to parse stored notifications:', e);
   }
-  return [...SEED_NOTIFICATIONS];
+  const initial = [...SEED_NOTIFICATIONS];
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(initial));
+  } catch (e) {
+    /* storage write skipped */
+  }
+  return initial;
 }
 
 function saveNotifications(items: AppNotification[]): void {
   cachedNotifications = items;
+  initialized = true;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nivaaran_notification_update', { detail: items }));
+    }
   } catch (e) {
     console.warn('[NotificationService] Failed to save notifications:', e);
   }
-  listeners.forEach(fn => fn(items));
+  listeners.forEach(fn => {
+    try {
+      fn(items);
+    } catch (err) {
+      console.warn('[NotificationService] Listener callback error:', err);
+    }
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY && e.newValue !== null) {
+      try {
+        const parsed = JSON.parse(e.newValue);
+        if (Array.isArray(parsed)) {
+          cachedNotifications = parsed;
+          initialized = true;
+          listeners.forEach(fn => fn(parsed));
+        }
+      } catch (err) {
+        /* storage parse error skipped */
+      }
+    }
+  });
+
+  window.addEventListener('nivaaran_notification_update', (e: Event) => {
+    const custom = e as CustomEvent<AppNotification[]>;
+    if (custom.detail && Array.isArray(custom.detail)) {
+      cachedNotifications = custom.detail;
+      initialized = true;
+      listeners.forEach(fn => fn(custom.detail));
+    }
+  });
 }
 
 export const notificationService = {
   getNotifications(): AppNotification[] {
-    if (cachedNotifications.length === 0) {
+    if (!initialized) {
       cachedNotifications = loadStoredNotifications();
+      initialized = true;
     }
     return cachedNotifications;
   },
@@ -146,8 +190,9 @@ export const notificationService = {
   },
 
   subscribe(listener: (items: AppNotification[]) => void): () => void {
-    if (cachedNotifications.length === 0) {
+    if (!initialized) {
       cachedNotifications = loadStoredNotifications();
+      initialized = true;
     }
     listeners.push(listener);
     listener(cachedNotifications);
@@ -169,6 +214,11 @@ export const notificationService = {
     saveNotifications(list);
   },
 
+  deleteNotification(id: string): void {
+    const list = this.getNotifications().filter(item => item.id !== id);
+    saveNotifications(list);
+  },
+
   clearAll(): void {
     saveNotifications([]);
   },
@@ -180,11 +230,12 @@ export const notificationService = {
   addNotification(item: Omit<AppNotification, 'id' | 'timestamp' | 'read'>): AppNotification {
     const full: AppNotification = {
       ...item,
-      id: `NOTIF-${Date.now().toString(36).toUpperCase()}`,
+      id: `NOTIF_${Date.now().toString(36).toUpperCase()}_${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
       timestamp: 'Just now',
       read: false,
     };
-    const updated = [full, ...this.getNotifications()];
+    const current = this.getNotifications();
+    const updated = [full, ...current];
     saveNotifications(updated);
     return full;
   },
@@ -229,6 +280,7 @@ export function useNotifications() {
     unread,
     markAsRead: (id: string) => notificationService.markAsRead(id),
     markAllAsRead: () => notificationService.markAllAsRead(),
+    deleteNotification: (id: string) => notificationService.deleteNotification(id),
     clearAll: () => notificationService.clearAll(),
     resetSeed: () => notificationService.resetSeed(),
     addNotification: (item: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => notificationService.addNotification(item),
