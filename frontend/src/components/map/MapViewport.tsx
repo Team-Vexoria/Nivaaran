@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { ChallengeDoc } from '../../services/firebaseService';
 import {
   DistrictStat,
+  DistrictRiskProfile,
   JHARKHAND_BOUNDS,
   JHARKHAND_CENTER,
   JHARKHAND_DISTRICT_CENTROIDS,
@@ -15,7 +16,7 @@ import {
 import { ChallengePopupCard } from './ChallengePopupCard';
 import ReactDOM from 'react-dom/client';
 import { useLanguage, LanguageProvider } from '../../context/LanguageContext';
-import { Layers, CloudRain, AlertTriangle, Building2, Droplets, Radio, ChevronDown } from 'lucide-react';
+import { Layers, CloudRain, AlertTriangle, Building2, Droplets, Radio, ChevronDown, RotateCcw } from 'lucide-react';
 
 // Fix default Leaflet icon broken by bundlers
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -73,10 +74,10 @@ function createHEILabIcon(): L.DivIcon {
     html: `
       <div style="
         width: 22px; height: 22px;
-        background: #1E3A8A;
-        border: 2px solid #60A5FA;
+        background: #065F46;
+        border: 2px solid #34D399;
         border-radius: 6px;
-        box-shadow: 0 3px 8px rgba(30,58,138,0.45);
+        box-shadow: 0 3px 8px rgba(6,95,70,0.45);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -130,14 +131,51 @@ export const MapViewport: React.FC<MapViewportProps> = ({
   const disasterZonesLayerRef = useRef<L.LayerGroup | null>(null);
   const weatherRadarLayerRef = useRef<L.TileLayer | null>(null);
   const [geoData, setGeoData] = useState<GeoJSON.FeatureCollection | null>(null);
+  const hoveredDistrictsRef = useRef<Set<string>>(new Set());
+  const lastGeoClickRef = useRef<string | null>(null);
+  const clearAllShadingRef = useRef<() => void>(() => {});
 
-  // ── GIS Interactive Layer Controls State ──
+  const [hoveredDistrictInfo, setHoveredDistrictInfo] = useState<{
+    name: string;
+    total: number;
+    critical: number;
+    high: number;
+    medium: number;
+    riskProfile?: DistrictRiskProfile;
+  } | null>(null);
+
+  const [hasShadedDistricts, setHasShadedDistricts] = useState(false);
+
+  // GIS Interactive Layer Controls State
   const [showIncidents, setShowIncidents] = useState(true);
   const [showHEILabs, setShowHEILabs] = useState(true);
   const [showDisasterZones, setShowDisasterZones] = useState(true);
   const [showWeatherRadar, setShowWeatherRadar] = useState(true);
   const [showRiskHeatmap, setShowRiskHeatmap] = useState(false);
   const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
+
+  // Clear all shaded district regions back to clean initial state
+  const clearAllShading = () => {
+    hoveredDistrictsRef.current.clear();
+    setHasShadedDistricts(false);
+    setHoveredDistrictInfo(null);
+    onDistrictSelect(null);
+    if (geoJsonLayerRef.current) {
+      geoJsonLayerRef.current.eachLayer((layer: any) => {
+        if (layer.setStyle) {
+          layer.setStyle({
+            fillColor: '#B0A89A',
+            fillOpacity: 0.02,
+            color: '#D6D3D1',
+            weight: 1,
+            opacity: 0.65,
+            dashArray: '3, 4',
+          });
+        }
+      });
+    }
+  };
+  clearAllShadingRef.current = clearAllShading;
 
   // Load GeoJSON once
   useEffect(() => {
@@ -177,6 +215,11 @@ export const MapViewport: React.FC<MapViewportProps> = ({
 
     map.fitBounds(JHARKHAND_BOUNDS);
 
+    // Clicking anywhere outside the shaded regions on the map canvas clears all shading
+    map.on('click', () => {
+      clearAllShadingRef.current();
+    });
+
     markersLayerRef.current = L.layerGroup().addTo(map);
     centroidLayerRef.current = L.layerGroup().addTo(map);
     heiLabsLayerRef.current = L.layerGroup().addTo(map);
@@ -206,6 +249,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
     }, 800);
 
     return () => {
+      map.off('click');
       window.removeEventListener('resize', handleWindowResize);
       resizeObserver.disconnect();
       clearTimeout(resizeTimer1);
@@ -229,7 +273,17 @@ export const MapViewport: React.FC<MapViewportProps> = ({
     }
   }, [showWeatherRadar]);
 
-  // Update GeoJSON choropleth layer (Incidents vs Risk Heatmap)
+  // Store latest state in refs for stable Leaflet event callbacks
+  const selectedDistrictRef = useRef<string | null>(selectedDistrict);
+  selectedDistrictRef.current = selectedDistrict;
+
+  const onDistrictSelectRef = useRef<(d: string | null) => void>(onDistrictSelect);
+  onDistrictSelectRef.current = onDistrictSelect;
+
+  const districtStatsRef = useRef<Record<string, DistrictStat>>(districtStats);
+  districtStatsRef.current = districtStats;
+
+  // Update GeoJSON choropleth layer
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !geoData) return;
@@ -238,89 +292,199 @@ export const MapViewport: React.FC<MapViewportProps> = ({
       geoJsonLayerRef.current.remove();
     }
 
-    const maxTotal = Math.max(...Object.values(districtStats).map(d => d.total), 1);
-
     geoJsonLayerRef.current = L.geoJSON(geoData, {
       style: (feature) => {
         const distName = feature?.properties?.district as string | undefined;
-        const stat = distName ? districtStats[distName] : undefined;
+        const stat = distName ? districtStatsRef.current[distName] : undefined;
         const count = stat?.total ?? 0;
-        const isSelected = distName === selectedDistrict;
+        const isSelected = distName === selectedDistrictRef.current;
+        const isHovered = distName ? hoveredDistrictsRef.current.has(distName) : false;
+        const isShaded = isSelected || isHovered;
         const riskProfile = distName ? JHARKHAND_DISTRICT_RISK_INDEX[distName] : undefined;
 
         if (showRiskHeatmap && riskProfile) {
-          // Color based on composite disaster risk score
           const riskColor =
             riskProfile.hazardLevel === 'CRITICAL' ? '#DC2626' :
             riskProfile.hazardLevel === 'HIGH'     ? '#EA580C' :
             riskProfile.hazardLevel === 'MODERATE' ? '#CA8A04' : '#16A34A';
           return {
             fillColor: riskColor,
-            fillOpacity: isSelected ? 0.65 : 0.38,
-            color: isSelected ? '#991B1B' : '#78350F',
-            weight: isSelected ? 2.5 : 1.2,
-            opacity: 0.9,
+            fillOpacity: isSelected ? 0.65 : isHovered ? 0.38 : 0.02,
+            color: isShaded ? (isSelected ? '#991B1B' : '#78350F') : '#D6D3D1',
+            weight: isSelected ? 2.5 : isHovered ? 1.8 : 1,
+            opacity: isShaded ? 1 : 0.65,
+            dashArray: isShaded ? undefined : '3, 4',
           };
         }
 
-        const opacity = count > 0 ? 0.08 + (count / maxTotal) * 0.37 : 0.04;
         const fillColor =
           (stat?.critical ?? 0) > 0 ? '#B3261E' :
           (stat?.high ?? 0) > 0     ? '#B45309' :
           (stat?.medium ?? 0) > 0   ? '#C98A2C' :
-          count > 0                  ? '#2C6E49' : '#B0A89A';
+          count > 0                 ? '#2C6E49' : '#B0A89A';
 
         return {
           fillColor,
-          fillOpacity: isSelected ? Math.min(opacity + 0.2, 0.65) : opacity,
-          color: isSelected ? '#2C6E49' : '#C4BDB0',
-          weight: isSelected ? 2.5 : 1,
-          opacity: 1,
+          fillOpacity: isSelected ? 0.42 : isHovered ? 0.32 : 0.02,
+          color: isShaded ? '#059669' : '#D6D3D1',
+          weight: isSelected ? 2.5 : isHovered ? 1.8 : 1,
+          opacity: isShaded ? 1 : 0.65,
+          dashArray: isShaded ? undefined : '3, 4',
         };
       },
       onEachFeature: (feature, layer) => {
         const distName = feature.properties?.district as string;
-        const stat = districtStats[distName];
-        const riskProfile = JHARKHAND_DISTRICT_RISK_INDEX[distName];
 
-        layer.on('click', () => {
+        layer.on('click', (e: L.LeafletMouseEvent) => {
+          L.DomEvent.stopPropagation(e);
           lastGeoClickRef.current = distName;
-          onDistrictSelect(distName === selectedDistrict ? null : distName);
-          const centroid = JHARKHAND_DISTRICT_CENTROIDS[distName];
-          if (centroid) map.flyTo([centroid.lat, centroid.lng], 9, { duration: 0.8 });
+          if (distName) {
+            hoveredDistrictsRef.current.add(distName);
+            setHasShadedDistricts(true);
+          }
+
+          if (distName === selectedDistrictRef.current) {
+            // Clicking currently focused district deselects it and clears all shaded regions
+            clearAllShadingRef.current();
+          } else {
+            onDistrictSelectRef.current(distName);
+            const centroid = JHARKHAND_DISTRICT_CENTROIDS[distName];
+            if (centroid) {
+              map.flyTo([centroid.lat, centroid.lng], 9, { duration: 0.6, easeLinearity: 0.25 });
+            }
+          }
         });
 
-        layer.on('mouseover', (e) => {
-          (e.target as L.Path).setStyle({ weight: 2.5, color: '#1E3A8A' });
+        // Hover animation: shades up district smoothly without annoying cursor tooltip
+        layer.on('mouseover', (e: L.LeafletMouseEvent) => {
+          const stat = distName ? districtStatsRef.current[distName] : undefined;
+          const riskProfile = distName ? JHARKHAND_DISTRICT_RISK_INDEX[distName] : undefined;
+          const isSelected = distName === selectedDistrictRef.current;
+
+          if (distName) {
+            hoveredDistrictsRef.current.add(distName);
+            setHasShadedDistricts(true);
+            setHoveredDistrictInfo({
+              name: distName,
+              total: stat?.total ?? 0,
+              critical: stat?.critical ?? 0,
+              high: stat?.high ?? 0,
+              medium: stat?.medium ?? 0,
+              riskProfile,
+            });
+          }
+
+          const path = e.target as L.Path;
+          const fillColor =
+            (stat?.critical ?? 0) > 0 ? '#B3261E' :
+            (stat?.high ?? 0) > 0     ? '#B45309' :
+            (stat?.medium ?? 0) > 0   ? '#C98A2C' :
+            (stat?.total ?? 0) > 0    ? '#2C6E49' : '#B0A89A';
+
+          path.setStyle({
+            weight: isSelected ? 2.8 : 2.2,
+            color: showRiskHeatmap ? '#991B1B' : '#059669',
+            fillColor: showRiskHeatmap && riskProfile ? (
+              riskProfile.hazardLevel === 'CRITICAL' ? '#DC2626' :
+              riskProfile.hazardLevel === 'HIGH'     ? '#EA580C' :
+              riskProfile.hazardLevel === 'MODERATE' ? '#CA8A04' : '#16A34A'
+            ) : fillColor,
+            fillOpacity: isSelected ? 0.48 : 0.38,
+            opacity: 1,
+            dashArray: undefined,
+          });
         });
 
-        layer.on('mouseout', (e) => {
-          geoJsonLayerRef.current?.resetStyle(e.target as L.Path);
-        });
+        // Keep shaded once discovered, remove top hover telemetry info smoothly
+        layer.on('mouseout', (e: L.LeafletMouseEvent) => {
+          setHoveredDistrictInfo((prev) => (prev?.name === distName ? null : prev));
+          const stat = distName ? districtStatsRef.current[distName] : undefined;
+          const riskProfile = distName ? JHARKHAND_DISTRICT_RISK_INDEX[distName] : undefined;
+          const path = e.target as L.Path;
+          const isSelected = distName === selectedDistrictRef.current;
 
-        let tooltipContent = `<strong>${distName} District</strong><br/>`;
-        if (showRiskHeatmap && riskProfile) {
-          tooltipContent += `
-            <div class="text-[11px] leading-tight pt-1">
-              <span class="font-bold text-red-700">Threat: ${riskProfile.primaryThreat}</span><br/>
-              <span>Flood Risk: <strong>${riskProfile.floodScore}/100</strong> | Drought Risk: <strong>${riskProfile.droughtScore}/100</strong></span><br/>
-              <span>Rainfall Anomaly: <strong>${riskProfile.monsoonRainfallAnomalyPct > 0 ? '+' : ''}${riskProfile.monsoonRainfallAnomalyPct}%</strong></span>
-            </div>`;
-        } else {
-          const tooltipText = (t.map.districtTooltip || '{distName}: {count} reports')
-            .replace('{distName}', distName)
-            .replace('{count}', String(stat?.total ?? 0));
-          tooltipContent += `${tooltipText}`;
-        }
+          const fillColor =
+            (stat?.critical ?? 0) > 0 ? '#B3261E' :
+            (stat?.high ?? 0) > 0     ? '#B45309' :
+            (stat?.medium ?? 0) > 0   ? '#C98A2C' :
+            (stat?.total ?? 0) > 0    ? '#2C6E49' : '#B0A89A';
 
-        layer.bindTooltip(tooltipContent, {
-          sticky: true,
-          direction: 'center',
-          className: 'nivaaran-district-tooltip',
+          if (isSelected) {
+            path.setStyle({
+              weight: 2.5,
+              color: showRiskHeatmap ? '#991B1B' : '#059669',
+              fillColor: showRiskHeatmap && riskProfile ? (
+                riskProfile.hazardLevel === 'CRITICAL' ? '#DC2626' :
+                riskProfile.hazardLevel === 'HIGH'     ? '#EA580C' :
+                riskProfile.hazardLevel === 'MODERATE' ? '#CA8A04' : '#16A34A'
+              ) : fillColor,
+              fillOpacity: 0.42,
+              opacity: 1,
+              dashArray: undefined,
+            });
+          } else {
+            path.setStyle({
+              weight: 1.6,
+              color: showRiskHeatmap ? '#78350F' : '#059669',
+              fillColor: showRiskHeatmap && riskProfile ? (
+                riskProfile.hazardLevel === 'CRITICAL' ? '#DC2626' :
+                riskProfile.hazardLevel === 'HIGH'     ? '#EA580C' :
+                riskProfile.hazardLevel === 'MODERATE' ? '#CA8A04' : '#16A34A'
+              ) : fillColor,
+              fillOpacity: 0.30,
+              opacity: 0.95,
+              dashArray: undefined,
+            });
+          }
         });
       },
     }).addTo(map);
-  }, [geoData, districtStats, selectedDistrict, onDistrictSelect, showRiskHeatmap, t]);
+  }, [geoData, showRiskHeatmap]);
+
+  // Silky smooth style sync when selectedDistrict changes without rebuilding DOM
+  useEffect(() => {
+    if (!geoJsonLayerRef.current) return;
+    geoJsonLayerRef.current.eachLayer((layer: any) => {
+      const distName = layer.feature?.properties?.district as string | undefined;
+      if (!distName) return;
+      const isSelected = distName === selectedDistrict;
+      const isHovered = hoveredDistrictsRef.current.has(distName);
+      const isShaded = isSelected || isHovered;
+      const stat = districtStats[distName];
+      const riskProfile = JHARKHAND_DISTRICT_RISK_INDEX[distName];
+
+      if (showRiskHeatmap && riskProfile) {
+        const riskColor =
+          riskProfile.hazardLevel === 'CRITICAL' ? '#DC2626' :
+          riskProfile.hazardLevel === 'HIGH'     ? '#EA580C' :
+          riskProfile.hazardLevel === 'MODERATE' ? '#CA8A04' : '#16A34A';
+        layer.setStyle({
+          fillColor: riskColor,
+          fillOpacity: isSelected ? 0.65 : isHovered ? 0.38 : 0.02,
+          color: isShaded ? (isSelected ? '#991B1B' : '#78350F') : '#D6D3D1',
+          weight: isSelected ? 2.5 : isHovered ? 1.8 : 1,
+          opacity: isShaded ? 1 : 0.65,
+          dashArray: isShaded ? undefined : '3, 4',
+        });
+        return;
+      }
+
+      const fillColor =
+        (stat?.critical ?? 0) > 0 ? '#B3261E' :
+        (stat?.high ?? 0) > 0     ? '#B45309' :
+        (stat?.medium ?? 0) > 0   ? '#C98A2C' :
+        (stat?.total ?? 0) > 0    ? '#2C6E49' : '#B0A89A';
+
+      layer.setStyle({
+        fillColor,
+        fillOpacity: isSelected ? 0.42 : isHovered ? 0.32 : 0.02,
+        color: isShaded ? '#059669' : '#D6D3D1',
+        weight: isSelected ? 2.5 : isHovered ? 1.8 : 1,
+        opacity: isShaded ? 1 : 0.65,
+        dashArray: isShaded ? undefined : '3, 4',
+      });
+    });
+  }, [selectedDistrict, districtStats, showRiskHeatmap]);
 
   // Update HEI University Labs Layer
   useEffect(() => {
@@ -336,7 +500,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
 
       const popupHtml = `
         <div style="font-family: sans-serif; font-size: 12px; color: #0F172A; min-width: 240px; padding: 4px;">
-          <div style="font-size: 10px; font-weight: 800; color: #1E3A8A; text-transform: uppercase; letter-spacing: 0.05em;">
+          <div style="font-size: 10px; font-weight: 800; color: #065F46; text-transform: uppercase; letter-spacing: 0.05em;">
             🏛️ Active HEI Research Hub
           </div>
           <div style="font-size: 13px; font-weight: 800; color: #0F172A; margin-top: 2px;">
@@ -475,9 +639,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
     }
   }, [challenges, districtStats, govtMode, onValidate, onRequestEvidence, showIncidents, t]);
 
-  // Fly-to when district selected
-  const lastGeoClickRef = useRef<string | null>(null);
-
+  // Fly to when district selected
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !selectedDistrict) return;
@@ -486,7 +648,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
       return;
     }
     const centroid = JHARKHAND_DISTRICT_CENTROIDS[selectedDistrict];
-    if (centroid) map.flyTo([centroid.lat, centroid.lng], 9, { duration: 0.8 });
+    if (centroid) map.flyTo([centroid.lat, centroid.lng], 9, { duration: 0.6, easeLinearity: 0.25 });
   }, [selectedDistrict]);
 
   return (
@@ -498,7 +660,93 @@ export const MapViewport: React.FC<MapViewportProps> = ({
         style={{ minHeight: '520px', height: '100%', width: '100%' }}
       />
 
-      {/* ── Interactive GIS Layer Control Switcher HUD (Floating Top-Right) ── */}
+      {/* Sleek District Telemetry HUD: Floating Top Left, zero cursor jitter */}
+      {hoveredDistrictInfo && (
+        <div className="absolute top-3 left-3 z-[1000] pointer-events-none transition-all duration-200 ease-out">
+          <div className="bg-white/95 backdrop-blur-md px-4 py-2.5 rounded-xl shadow-lg border border-slate-200/90 flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600 animate-pulse" />
+              <span className="font-extrabold text-xs text-slate-800 tracking-wide uppercase">
+                {hoveredDistrictInfo.name} District
+              </span>
+            </div>
+            <div className="h-4 w-px bg-slate-200" />
+            {showRiskHeatmap && hoveredDistrictInfo.riskProfile ? (
+              <div className="text-xs font-semibold text-slate-700 flex items-center gap-2">
+                <span className="text-rose-600 font-bold">
+                  Threat: {hoveredDistrictInfo.riskProfile.primaryThreat}
+                </span>
+                <span className="text-slate-300">|</span>
+                <span>Flood: {hoveredDistrictInfo.riskProfile.floodScore}/100</span>
+                <span className="text-slate-300">|</span>
+                <span>Drought: {hoveredDistrictInfo.riskProfile.droughtScore}/100</span>
+              </div>
+            ) : (
+              <div className="text-xs font-semibold text-slate-700 flex items-center gap-2.5">
+                <span className="text-slate-900 font-bold">
+                  {hoveredDistrictInfo.total} {hoveredDistrictInfo.total === 1 ? 'Problem' : 'Problems'}
+                </span>
+                {hoveredDistrictInfo.critical > 0 && (
+                  <span className="text-rose-600 font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-600" />
+                    {hoveredDistrictInfo.critical} Critical
+                  </span>
+                )}
+                {hoveredDistrictInfo.high > 0 && (
+                  <span className="text-amber-600 font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-600" />
+                    {hoveredDistrictInfo.high} High
+                  </span>
+                )}
+                {hoveredDistrictInfo.critical === 0 && hoveredDistrictInfo.high === 0 && hoveredDistrictInfo.total > 0 && (
+                  <span className="text-emerald-700 font-medium">
+                    Standard Priority
+                  </span>
+                )}
+                {hoveredDistrictInfo.total === 0 && (
+                  <span className="text-slate-400 font-normal">
+                    No Reported Incidents
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Active District Focus & Reset Action: Visible when any district is selected */}
+      {selectedDistrict && !hoveredDistrictInfo && (
+        <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2 transition-all duration-200">
+          <div className="bg-emerald-800 text-white px-3.5 py-2 rounded-xl shadow-md flex items-center gap-2 text-xs font-bold">
+            <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+            <span>Focused: {selectedDistrict} District</span>
+          </div>
+          <button
+            type="button"
+            onClick={clearAllShading}
+            className="bg-white/95 hover:bg-white text-slate-700 hover:text-slate-900 px-3 py-2 rounded-xl shadow-md border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Click to reset all shaded regions"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-slate-500" /> Clear Shading
+          </button>
+        </div>
+      )}
+
+      {/* Quick Action to vanish all shaded regions when regions are shaded and no district selected */}
+      {hasShadedDistricts && !selectedDistrict && !hoveredDistrictInfo && (
+        <div className="absolute top-3 left-3 z-[1000] flex items-center gap-2 transition-all duration-200">
+          <button
+            type="button"
+            onClick={clearAllShading}
+            className="bg-white/95 hover:bg-white text-slate-700 hover:text-slate-900 px-3 py-1.5 rounded-xl shadow-md border border-slate-200 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Click to vanish all shaded regions back to incident dots only"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-slate-500" /> Clear Shaded Regions
+          </button>
+        </div>
+      )}
+
+      {/* Interactive GIS Layer Control Switcher HUD: Floating Top Right */}
       <div className="absolute top-3 right-3 z-[1000]">
         <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden w-64 transition-all">
           
@@ -540,7 +788,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
             {/* 2. Active HEI Labs Toggle */}
             <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
               <div className="flex items-center gap-2">
-                <Building2 className="w-3.5 h-3.5 text-blue-700" />
+                <Building2 className="w-3.5 h-3.5 text-emerald-700" />
                 <div>
                   <span className="font-bold text-slate-800 text-[11px] block">HEI Research Labs</span>
                   <span className="text-[9px] text-slate-500 block">6 University Centers</span>
@@ -550,7 +798,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
                 type="checkbox"
                 checked={showHEILabs}
                 onChange={(e) => setShowHEILabs(e.target.checked)}
-                className="w-4 h-4 accent-blue-600 rounded cursor-pointer"
+                className="w-4 h-4 accent-emerald-700 rounded cursor-pointer"
               />
             </label>
 
@@ -574,7 +822,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
             {/* 4. Live Precipitation Radar Toggle */}
             <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
               <div className="flex items-center gap-2">
-                <CloudRain className="w-3.5 h-3.5 text-cyan-600" />
+                <CloudRain className="w-3.5 h-3.5 text-emerald-700" />
                 <div>
                   <span className="font-bold text-slate-800 text-[11px] block">Live Weather Radar</span>
                   <span className="text-[9px] text-emerald-700 font-semibold block">Real-time Satellite Feed</span>
@@ -584,7 +832,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
                 type="checkbox"
                 checked={showWeatherRadar}
                 onChange={(e) => setShowWeatherRadar(e.target.checked)}
-                className="w-4 h-4 accent-cyan-600 rounded cursor-pointer"
+                className="w-4 h-4 accent-emerald-700 rounded cursor-pointer"
               />
             </label>
 

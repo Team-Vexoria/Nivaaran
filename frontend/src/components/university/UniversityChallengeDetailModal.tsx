@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { ChallengeDoc, updateChallengeUniversityAcceptance } from '../../services/firebaseService';
 import { UniversityDoc, DepartmentInfo } from '../../services/universityData';
-import { HEIMatchResult } from '../../services/heiMatchingEngine';
+import { HEIMatchResult, isAssignedToUniversity } from '../../services/heiMatchingEngine';
 import { getStatusPillClass } from '../../services/mapDataService';
 
 export interface UniversityChallengeDetailModalProps {
@@ -30,8 +30,8 @@ export const UniversityChallengeDetailModal: React.FC<UniversityChallengeDetailM
 
   if (!isOpen || !challenge) return null;
 
-  const isAcceptedByThisUni = challenge.assignedHEI === university.name;
-  const isAcceptedByOther = challenge.assignedHEI && challenge.assignedHEI !== university.name;
+  const isAcceptedByThisUni = isAssignedToUniversity(challenge.assignedHEI, university);
+  const isAcceptedByOther = !isAcceptedByThisUni && !!challenge.assignedHEI;
 
   const defaultDept = match?.recommendedDepartment || university.departments[0];
   const chosenDept = university.departments.find(d => d.id === selectedDeptId) || defaultDept;
@@ -150,7 +150,7 @@ export const UniversityChallengeDetailModal: React.FC<UniversityChallengeDetailM
                 <Sparkles className="w-3.5 h-3.5 text-[#C98A2C]" /> Priority & Risk Rating
               </span>
               <p className="text-base font-black text-[#C98A2C] font-heading">
-                {challenge.priorityScore !== undefined ? `${challenge.priorityScore.toFixed(1)} / 10` : '7.8 / 10'}
+                {challenge.priorityScore !== undefined ? (challenge.priorityScore > 10 ? `${challenge.priorityScore}% Priority` : `${challenge.priorityScore.toFixed(1)} / 10`) : '85% Priority'}
               </p>
               <p className="text-[10px] text-[#8A7F72]">
                 Severity: {challenge.riskLevel || 'HIGH'}

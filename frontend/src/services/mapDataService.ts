@@ -28,7 +28,7 @@ export const JHARKHAND_DISTRICT_CENTROIDS: Record<string, { lat: number; lng: nu
   'Godda':                { lat: 24.8268, lng: 87.2134 },
   'Sahibganj':            { lat: 25.2446, lng: 87.6380 },
   'Pakur':                { lat: 24.6355, lng: 87.8454 },
-  'Kharsawan':            { lat: 22.7937, lng: 85.8312 },
+  'Ramgarh':              { lat: 23.6332, lng: 85.5149 },
   'Lohardaga':            { lat: 23.4330, lng: 84.6922 },
 };
 

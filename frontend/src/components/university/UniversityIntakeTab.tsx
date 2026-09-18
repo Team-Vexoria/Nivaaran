@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CheckCircle2, XCircle, MapPin, Building2, ArrowRight, ShieldCheck } from 'lucide-react';
 import { ChallengeDoc, subscribeToChallenges, updateChallengeUniversityAcceptance } from '../../services/firebaseService';
 import { UniversityDoc, DepartmentInfo } from '../../services/universityData';
-import { calculateHEIMatchScore, HEIMatchResult } from '../../services/heiMatchingEngine';
+import { calculateHEIMatchScore, HEIMatchResult, isAssignedToUniversity } from '../../services/heiMatchingEngine';
 import { getStageForStatus } from '../../services/workflowLifecycle';
 import { UniversityChallengeDetailModal } from './UniversityChallengeDetailModal';
 
@@ -18,8 +18,8 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
   onNavigateToStage,
 }) => {
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
-  const [selectedChallengeMatch, setSelectedChallengeMatch] = useState<{ challenge: ChallengeDoc; match: HEIMatchResult } | null>(null);
-  const [inspectingItem, setInspectingItem] = useState<{ challenge: ChallengeDoc; match: HEIMatchResult } | null>(null);
+  const [selectedChallengeMatch, setSelectedChallengeMatch] = useState<{ challenge: ChallengeDoc; match: HEIMatchResult; isDirectlyAssigned?: boolean } | null>(null);
+  const [inspectingItem, setInspectingItem] = useState<{ challenge: ChallengeDoc; match: HEIMatchResult; isDirectlyAssigned?: boolean } | null>(null);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState<string>('');
   const [acceptanceError, setAcceptanceError] = useState<string>('');
 
@@ -30,33 +30,30 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
     return () => unsubscribe();
   }, []);
 
-  // Robust check: does the stored assignedHEI string match this university?
-  const isAssignedToThisUniversity = (assignedHEI: string | undefined): boolean => {
-    if (!assignedHEI) return false;
-    const heiLower = assignedHEI.toLowerCase().trim();
-    const nameLower = university.name.toLowerCase().trim();
-    const shortLower = (university.shortName || '').toLowerCase().trim();
-    // Direct exact matches
-    if (heiLower === nameLower || heiLower === shortLower) return true;
-    // Short name contained in assignedHEI (handles compound assignments like "IIT ISM & NIT Jamshedpur")
-    if (shortLower && shortLower.length >= 3 && heiLower.includes(shortLower)) return true;
-    // Full name contained in assignedHEI (handles "Birsa Agricultural University (BAU)")
-    if (nameLower.length >= 10 && heiLower.includes(nameLower)) return true;
-    return false;
-  };
+  // Filter challenges matched against this specific university:
+  // Strict rule: ONLY show challenges if matchScore >= 80%
+  // Officially allotted challenges score 100%, and open challenges must achieve >= 80% via the deterministic 5:factor AI engine.
+  const matchedChallenges = React.useMemo(() => {
+    const allStage3Plus = challenges.filter(
+      (challenge) => (getStageForStatus(challenge.status)?.stageNumber || 0) >= 3
+    );
 
-  // Filter challenges matched against this specific university
-  const allStage3Plus = challenges.filter((challenge) => (getStageForStatus(challenge.status)?.stageNumber || 0) >= 3);
-
-  const matchedChallenges = allStage3Plus
-    .filter((challenge) => isAssignedToThisUniversity(challenge.assignedHEI))
-    .map((challenge) => {
+    const scored = allStage3Plus.map((challenge) => {
       const match = calculateHEIMatchScore(challenge, university);
-      return { challenge, match };
-    })
-    .sort((a, b) => b.match.matchScore - a.match.matchScore);
+      const isDirectlyAssigned = isAssignedToUniversity(challenge.assignedHEI, university);
+      return { challenge, match, isDirectlyAssigned };
+    });
 
-  const handleOpenAcceptModal = (item: { challenge: ChallengeDoc; match: HEIMatchResult }) => {
+    // Strictly filter for capability match score >= 80%
+    const qualifiedMatches = scored.filter((item) => item.match.matchScore >= 80);
+
+    // Sort descending: highest match scores first (100%, 90%, 85%, etc.)
+    qualifiedMatches.sort((a, b) => b.match.matchScore - a.match.matchScore);
+
+    return qualifiedMatches;
+  }, [challenges, university]);
+
+  const handleOpenAcceptModal = (item: { challenge: ChallengeDoc; match: HEIMatchResult; isDirectlyAssigned?: boolean }) => {
     setSelectedChallengeMatch(item);
     setAcceptanceError('');
     if (item.match.recommendedDepartment) {
@@ -117,13 +114,24 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
 
       {/* Matched Challenges List */}
       <div className="grid gap-4">
-        {matchedChallenges.map(({ challenge, match }) => {
-          const stageNum = getStageForStatus(challenge.status)?.stageNumber || (challenge.assignedHEI ? 8 : 7);
+        {matchedChallenges.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center space-y-3 shadow-2xs">
+            <Building2 className="w-10 h-10 text-slate-400 mx-auto" />
+            <h3 className="text-base font-extrabold text-slate-800 font-heading">
+              No Current Challenges Above 80% AI Match
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              The AI Matching Engine only allocates challenges when departmental capability, specialized laboratory equipment, and faculty research depth exceed the strict 80% affinity threshold.
+            </p>
+          </div>
+        ) : (
+          matchedChallenges.map(({ challenge, match, isDirectlyAssigned }) => {
+            const stageNum = getStageForStatus(challenge.status)?.stageNumber || (challenge.assignedHEI ? 8 : 7);
 
           return (
             <div 
               key={challenge.id || challenge.reportId}
-              onClick={() => setInspectingItem({ challenge, match })}
+              onClick={() => setInspectingItem({ challenge, match, isDirectlyAssigned })}
               className={`bg-white rounded-2xl border p-5 transition-all shadow-2xs space-y-4 cursor-pointer hover:border-emerald-400 hover:shadow-md ${
                 stageNum >= 8
                   ? 'border-emerald-300 bg-emerald-50/20' 
@@ -151,6 +159,15 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
                       <span className="text-xs font-bold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded border border-emerald-200">
                         Stage {stageNum}: {challenge.status}
                       </span>
+                      {isDirectlyAssigned ? (
+                        <span className="text-xs font-bold text-amber-900 bg-amber-100/90 px-2.5 py-0.5 rounded border border-amber-300">
+                          🏛️ Designated Allotment
+                        </span>
+                      ) : (
+                        <span className="text-xs font-bold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded border border-emerald-200">
+                          ⚡ AI Capability Fit
+                        </span>
+                      )}
                       {match.districtMatch && (
                         <span className="text-xs font-bold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded border border-emerald-200">
                           📍 Direct District Match
@@ -292,7 +309,8 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
 
             </div>
           );
-        })}
+        })
+      )}
       </div>
 
       {/* Manual Human Review & Accept Modal */}

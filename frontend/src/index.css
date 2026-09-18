@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Leaflet map overrides — warm NIVAARAN palette */
+/* Leaflet map overrides: warm NIVAARAN palette */
 .leaflet-popup-content-wrapper {
   border-radius: 12px !important;
   border: 1px solid #E4DDD1 !important;
@@ -43,6 +43,13 @@
 }
 .leaflet-control-zoom a:hover {
   background-color: #EAE4D8 !important;
+}
+
+/* Smooth vector polygon hover animation, GPU accelerated transitions */
+path.leaflet-interactive {
+  transition: fill-opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.28s cubic-bezier(0.4, 0, 0.2, 1), stroke-width 0.28s cubic-bezier(0.4, 0, 0.2, 1), fill 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: fill-opacity, stroke;
+  cursor: pointer;
 }
 
 :root {

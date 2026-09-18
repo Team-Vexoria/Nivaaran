@@ -67,9 +67,6 @@ export const IndustryPortal: React.FC = () => {
   // Collaboration Requests from Firestore
   const [collabRequests, setCollabRequests] = useState<CollaborationRequest[]>([]);
 
-  // Mandate scope filter mode (defaults to mandate-only for logical segregation)
-  const [mandateScopeMode, setMandateScopeMode] = useState<'mandate_only' | 'all'>('mandate_only');
-
   // Search & Filter in Discovery
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('ALL');
@@ -140,16 +137,13 @@ export const IndustryPortal: React.FC = () => {
     });
   }, [cleanBaseChallenges, activeIndustry]);
 
-  const totalStatewideCount = evaluatedChallenges.length;
-  const mandateMatchedCount = evaluatedChallenges.filter(ec => ec.match.isRelevant).length;
+  const mandateMatchedCount = evaluatedChallenges.filter(ec => ec.match.matchScore >= 80).length;
 
-  // Filter challenges eligible for industry collaboration based on mandate scope & search
+  // Filter challenges eligible for industry collaboration strictly based on >= 80% affinity
   const displayedChallenges = useMemo(() => {
-    return evaluatedChallenges.filter(({ challenge: c, match }) => {
-      if (mandateScopeMode === 'mandate_only' && !match.isRelevant) {
-        return false;
-      }
+    const qualified = evaluatedChallenges.filter(({ match }) => match.matchScore >= 80);
 
+    const filtered = qualified.filter(({ challenge: c }) => {
       const matchesSearch =
         c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.district.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -161,11 +155,23 @@ export const IndustryPortal: React.FC = () => {
 
       return matchesSearch && matchesDistrict && matchesCategory;
     });
-  }, [evaluatedChallenges, mandateScopeMode, searchQuery, selectedDistrict, selectedCategory]);
 
-  // Unique districts & categories
-  const districts = ['ALL', ...Array.from(new Set(cleanBaseChallenges.map(c => c.district))).filter(Boolean)];
-  const categories = ['ALL', ...Array.from(new Set(cleanBaseChallenges.map(c => c.category))).filter(Boolean)];
+    filtered.sort((a, b) => b.match.matchScore - a.match.matchScore);
+    return filtered;
+  }, [evaluatedChallenges, searchQuery, selectedDistrict, selectedCategory]);
+
+  // Unique districts and categories derived strictly from the qualified matches for this industry
+  const qualifiedChallenges = useMemo(() => {
+    return evaluatedChallenges.filter(ec => ec.match.matchScore >= 80);
+  }, [evaluatedChallenges]);
+
+  const districts = useMemo(() => {
+    return ['ALL', ...Array.from(new Set(qualifiedChallenges.map(ec => ec.challenge.district))).filter(Boolean)];
+  }, [qualifiedChallenges]);
+
+  const categories = useMemo(() => {
+    return ['ALL', ...Array.from(new Set(qualifiedChallenges.map(ec => ec.challenge.category))).filter(Boolean)];
+  }, [qualifiedChallenges]);
 
   // My requests for this active org
   const myRequests = collabRequests.filter(r =>
@@ -403,45 +409,23 @@ export const IndustryPortal: React.FC = () => {
             {/* Mandate Scope & Search Filter Bar */}
             <div className="bg-white border border-[#E4DDD1] rounded-2xl p-4 shadow-2xs space-y-3">
               
-              {/* Scope Switcher Tabs */}
+              {/* Mandate Filter Status Header */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-[#F0EBE0]">
-                <div className="flex items-center gap-1.5 bg-[#FAF8F4] p-1 rounded-xl border border-[#E4DDD1]">
-                  <button
-                    onClick={() => setMandateScopeMode('mandate_only')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                      mandateScopeMode === 'mandate_only'
-                        ? 'bg-[#2C6E49] text-white shadow-2xs'
-                        : 'text-[#6A6155] hover:text-[#201C18] hover:bg-[#EAE4D8]'
-                    }`}
-                  >
-                    <Target className="w-3.5 h-3.5" />
-                    <span>My CSR Mandate Projects ({mandateMatchedCount})</span>
-                  </button>
-
-                  <button
-                    onClick={() => setMandateScopeMode('all')}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1.5 cursor-pointer ${
-                      mandateScopeMode === 'all'
-                        ? 'bg-[#2C6E49] text-white shadow-2xs'
-                        : 'text-[#6A6155] hover:text-[#201C18] hover:bg-[#EAE4D8]'
-                    }`}
-                  >
-                    <Compass className="w-3.5 h-3.5" />
-                    <span>All Statewide Projects ({totalStatewideCount})</span>
-                  </button>
+                <div className="flex items-center gap-2 bg-[#FAF8F4] px-3 py-1.5 rounded-xl border border-[#E4DDD1]">
+                  <Target className="w-4 h-4 text-[#2C6E49]" />
+                  <span className="text-xs font-black text-[#201C18]">
+                    AI Mandate Intake ({mandateMatchedCount} Concerned Projects)
+                  </span>
+                  <span className="text-[10px] font-extrabold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-300">
+                    Strict &gt;= 80% Affinity
+                  </span>
                 </div>
 
                 <div className="text-[11px] text-[#6A6155]">
-                  {mandateScopeMode === 'mandate_only' ? (
-                    <span className="flex items-center gap-1 font-semibold text-[#2C6E49]">
-                      <Sparkles className="w-3.5 h-3.5 text-[#C98A2C]" />
-                      Filtered by <strong>{activeIndustry.shortName}</strong> operational districts and focus domains.
-                    </span>
-                  ) : (
-                    <span className="text-[#8A7F72]">
-                      Showing all state university proposals across all 24 districts.
-                    </span>
-                  )}
+                  <span className="flex items-center gap-1 font-semibold text-[#2C6E49]">
+                    <Sparkles className="w-3.5 h-3.5 text-[#C98A2C]" />
+                    Filtered for <strong>{activeIndustry.shortName}</strong> CSR charter, technical synergy, and operating footprint.
+                  </span>
                 </div>
               </div>
 
@@ -482,21 +466,22 @@ export const IndustryPortal: React.FC = () => {
             {displayedChallenges.length === 0 ? (
               <div className="bg-white border border-[#E4DDD1] rounded-2xl p-10 text-center space-y-3">
                 <Target className="w-10 h-10 text-[#D5CDBF] mx-auto" />
-                <h3 className="text-sm font-extrabold text-[#8A7F72]">No Projects Matched Current Filters</h3>
+                <h3 className="text-sm font-extrabold text-[#8A7F72]">No Projects Matched Current Criteria</h3>
                 <p className="text-xs text-[#B0A89E] max-w-md mx-auto">
-                  No active challenges match the current filter criteria for {activeIndustry.name}. You can switch to All Statewide Projects to explore challenges from other districts.
+                  Only civic challenges with an AI corporate mandate score of 80% or higher are allocated to {activeIndustry.name}.
                 </p>
-                <button
-                  onClick={() => {
-                    setMandateScopeMode('all');
-                    setSelectedDistrict('ALL');
-                    setSelectedCategory('ALL');
-                    setSearchQuery('');
-                  }}
-                  className="px-4 py-2 bg-[#2C6E49] text-white text-xs font-extrabold rounded-xl hover:bg-[#23583a] transition-colors cursor-pointer"
-                >
-                  View All Statewide Projects
-                </button>
+                {(searchQuery || selectedDistrict !== 'ALL' || selectedCategory !== 'ALL') && (
+                  <button
+                    onClick={() => {
+                      setSelectedDistrict('ALL');
+                      setSelectedCategory('ALL');
+                      setSearchQuery('');
+                    }}
+                    className="px-4 py-2 bg-[#2C6E49] text-white text-xs font-extrabold rounded-xl hover:bg-[#23583a] transition-colors cursor-pointer"
+                  >
+                    Reset Search Filters
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -524,11 +509,9 @@ export const IndustryPortal: React.FC = () => {
                             {ch.category || 'Civic Infrastructure'}
                           </span>
                           <div className="flex items-center gap-1.5">
-                            {match.isRelevant && (
-                              <span className="text-[9px] font-black bg-[#FFF8EC] text-[#C98A2C] px-2 py-0.5 rounded-full border border-[#F0D99A] flex items-center gap-1">
-                                <Sparkles className="w-2.5 h-2.5" /> Mandate Match
-                              </span>
-                            )}
+                            <span className="text-[10px] font-black bg-[#FAF8F4] text-[#2C6E49] px-2.5 py-0.5 rounded-full border border-[#2C6E49]/30 flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5 text-[#C98A2C]" /> {match.matchScore}% Mandate Fit
+                            </span>
                             <span className="text-[10px] font-mono text-[#8A7F72]">
                               {ch.reportId}
                             </span>

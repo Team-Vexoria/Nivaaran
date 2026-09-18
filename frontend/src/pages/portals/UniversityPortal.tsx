@@ -10,6 +10,7 @@ import {
   ChallengeDoc, ProjectDoc, 
   subscribeToChallenges, subscribeToProjects 
 } from '../../services/firebaseService';
+import { isAssignedToUniversity } from '../../services/heiMatchingEngine';
 
 import { CollaborationReviewPanel } from '../../components/university/CollaborationReviewPanel';
 import { InnovationOutcomesTracker } from '../../components/analytics/InnovationOutcomesTracker';
@@ -56,8 +57,22 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
     };
   }, []);
 
-  const assignedProject: ProjectDoc | null =
-    projects.find(p => p.universityId === selectedUniversity.id || p.universityName === selectedUniversity.name) || null;
+  const isAssignedToSelectedUni = (nameOrId: string | undefined): boolean => {
+    return isAssignedToUniversity(nameOrId, selectedUniversity);
+  };
+
+  const assignedProject: ProjectDoc | null = React.useMemo(() => {
+    const direct = projects.find(p => isAssignedToSelectedUni(p.universityId) || isAssignedToSelectedUni(p.universityName));
+    if (direct) return direct;
+
+    const uniChallengeIds = new Set(
+      challenges.filter(c => isAssignedToSelectedUni(c.assignedHEI)).map(c => c.id || c.reportId)
+    );
+    const byChallenge = projects.find(p => uniChallengeIds.has(p.challengeId));
+    if (byChallenge) return byChallenge;
+
+    return null;
+  }, [projects, challenges, selectedUniversity]);
 
   const isStudentUser = currentUser?.role === 'Student' || !!currentUser?.email?.toLowerCase().includes('student');
 
@@ -77,8 +92,8 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
       const match = challenges.find(c => c.id === assignedProject.challengeId || c.reportId === assignedProject.challengeId);
       if (match) return match;
     }
-    return challenges.find(c => c.assignedHEI === selectedUniversity.name) || null;
-  }, [challenges, selectedChallengeId, activeChallengeForTeam, assignedProject, selectedUniversity.name]);
+    return challenges.find(c => isAssignedToSelectedUni(c.assignedHEI)) || null;
+  }, [challenges, selectedChallengeId, activeChallengeForTeam, assignedProject, selectedUniversity]);
 
   useEffect(() => {
     if (currentUser) {

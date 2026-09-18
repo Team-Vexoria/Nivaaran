@@ -1,46 +1,6 @@
 import { ChallengeDoc } from './firebaseService';
 import { JHARKHAND_UNIVERSITIES, UniversityDoc, DepartmentInfo, NotableResearchArea } from './universityData';
 
-/**
- * DEEP REASONING — 5-Factor University Matching Evidence Chain
- * ==========================================================
- * For every challenge, each score factor is derived from observable evidence,
- * not a black-box model. Decision is reproducible and defensible.
- *
- * 1. Department Capability (30 pts) — evidence chain:
- *    challenge.category (keyword) → dept.capabilities[] substring → domain bonus
- *    (flood/drainage/water → env/civil/GIS; mining → mining/geology).
- *    Scale: highestDeptScore / 40 * 30. Alternative: a lower cap match
- *    drops score linearly; no single keyword can inflate above 30.
- *
- * 2. Field Expertise (20 pts) — evidence chain:
- *    dept.fieldExpertise[] → challengeCategoryLower.includes(exL) or reverse.
- *    Match → 20; partial overlap → 8. Justification: water challenges
- *    need hydrology/geomatics expertise, not just a civil label.
- *
- * 3. Lab Equipment (20 pts) — evidence chain:
- *    dept.activeLabs[] → tag match to challenge domain.
- *    Direct tag → 20; labs exist untagged → 12; none → 5.
- *    Justification: lab with water-quality instruments > generic civil lab.
- *
- * 4. Achievements (10 pts) — evidence chain:
- *    university.institutionAchievements[] (5 pts) + dept.researchPubCount
- *    / notableResearchAreas[] (5 pts). Justification: high-achievement
- *    institution with published mitigation research > generic campus.
- *
- * 5. District Proximity (20 pts) — evidence chain:
- *    challenge.district === university.district ? 20 : 10.
- *    Justification: local campus lowers deployment cost / rapid pilot.
- *
- * ALTERNATIVE-SCORE JUSTIFICATION (black-box prevention):
- * Example: water challenge in Dhanbad. IIT ISM (Dhanbad, Mining/Civil,
- * labs + water instrumentation, achievements, proximity 20) → ~100.
- * If NIT JSR (Ranchi, Civil + env, labs untagged for water, achievements)
- * → dept 30, expertise 20, lab 12, achievements 5, proximity 10 ≈ 77.
- * If IIT ISM district changed → proximity 10 → ~90; still top due to lab.
- * If lab tag added to NIT JSR → lab 20 → ~85; still second.
- * This is why ranking is reproducible and defensible to government officers.
- */
 export interface HEIMatchResult {
   university: UniversityDoc;
   matchScore: number;
@@ -55,37 +15,97 @@ export interface HEIMatchResult {
 }
 
 /**
+ * Robust check to determine whether a challenge is officially assigned to a university.
+ * Handles exact matches, short acronyms, and compound partner allocations.
+ */
+export const isAssignedToUniversity = (
+  assignedHEI: string | undefined,
+  university: UniversityDoc
+): boolean => {
+  if (!assignedHEI) return false;
+  const assignedLower = assignedHEI.toLowerCase().trim();
+  const uniNameLower = university.name.toLowerCase().trim();
+  const uniShortLower = (university.shortName || '').toLowerCase().trim();
+  const uniIdLower = university.id.toLowerCase().trim();
+
+  if (assignedLower === uniIdLower || assignedLower === uniNameLower || assignedLower === uniShortLower) {
+    return true;
+  }
+  if (uniShortLower.length >= 3 && assignedLower.includes(uniShortLower)) {
+    return true;
+  }
+  if (uniNameLower.length >= 8 && (assignedLower.includes(uniNameLower) || uniNameLower.includes(assignedLower))) {
+    return true;
+  }
+  return false;
+};
+
+/**
  * Deterministic capability matchmaker for NIVAARAN.
- * Evaluates a challenge against all registered HEIs using 4 weighted factors:
+ * Evaluates a challenge against an HEI using the 5 weighted factors:
  * 1. Department Capability Fit (30%)
  * 2. Field Expertise Depth (20%)
  * 3. Lab Equipment Fit (20%)
  * 4. Achievements / Research Track (10%)
  * 5. District Proximity Fit (20%)
+ * Total = 100%
  */
 export const calculateHEIMatchScore = (
   challenge: ChallengeDoc,
   university: UniversityDoc
 ): HEIMatchResult => {
   const reasons: string[] = [];
-  let departmentFitScore = 0; // 30 pts
-  let expertiseScore = 0;     // 20 pts
-  let labFitScore = 0;        // 20 pts
-  let achievementsScore = 0;  // 10 pts
-  let proximityScore = 0;     // 20 pts
+  let departmentFitScore = 0;
+  let expertiseScore = 0;
+  let labFitScore = 0;
+  let achievementsScore = 0;
+  let proximityScore = 0;
   let bestDept: DepartmentInfo | null = null;
   let highestDeptScore = 0;
 
   const challengeCategoryLower = (challenge.category || '').toLowerCase();
   const challengeTitleLower = (challenge.title || '').toLowerCase();
   const challengeDistrictLower = (challenge.district || '').toLowerCase();
+  const uniDistrictLower = (university.district || '').toLowerCase();
+  const isDirectDistrict = uniDistrictLower === challengeDistrictLower;
+
+  const isAssigned = isAssignedToUniversity(challenge.assignedHEI, university);
+
+  if (isAssigned) {
+    // If officially assigned by Government or AI framework, HEI receives 100% allotment match
+    const candidateDept = (university.departments || []).find((d) => {
+      const nameL = d.name.toLowerCase();
+      return (
+        d.capabilities.some((c) => challengeCategoryLower.includes(c.toLowerCase())) ||
+        nameL.includes('engineering') ||
+        nameL.includes('science') ||
+        nameL.includes('agronomy')
+      );
+    }) || (university.departments && university.departments[0]) || null;
+
+    return {
+      university,
+      matchScore: 100,
+      districtMatch: isDirectDistrict,
+      recommendedDepartment: candidateDept,
+      matchingReasons: [
+        'Officially assigned to this HEI by Government / AI framework.',
+        `Dedicated intake queue authorization for ${university.shortName || university.name}.`,
+        isDirectDistrict ? `Local district presence in ${university.district}.` : `Regional nodal HEI deployment.`
+      ],
+      departmentFitScore: 30,
+      expertiseScore: 20,
+      labFitScore: 20,
+      achievementsScore: 10,
+      proximityScore: isDirectDistrict ? 20 : 10,
+    };
+  }
 
   // 1. Department & Capability Match (30 Points Max)
-  for (const dept of university.departments) {
+  for (const dept of university.departments || []) {
     let deptScore = 0;
-    
-    // Domain match
     const deptNameLower = dept.name.toLowerCase();
+
     dept.capabilities.forEach((cap) => {
       const capLower = cap.toLowerCase();
       if (challengeCategoryLower.includes(capLower) || capLower.includes(challengeCategoryLower)) {
@@ -96,20 +116,104 @@ export const calculateHEIMatchScore = (
       }
     });
 
-    if (challengeCategoryLower.includes('flood') || challengeCategoryLower.includes('drainage') || challengeCategoryLower.includes('water')) {
-      if (deptNameLower.includes('environmental') || deptNameLower.includes('remote sensing') || deptNameLower.includes('gis') || deptNameLower.includes('civil')) {
-        deptScore += 20;
-      }
-    } else if (challengeCategoryLower.includes('wildlife') || challengeCategoryLower.includes('elephant') || challengeCategoryLower.includes('forestry')) {
-      if (deptNameLower.includes('forestry') || deptNameLower.includes('wildlife') || deptNameLower.includes('agronomy')) {
+    if (
+      challengeCategoryLower.includes('flood') ||
+      challengeCategoryLower.includes('drainage') ||
+      challengeCategoryLower.includes('water') ||
+      challengeCategoryLower.includes('filtration') ||
+      challengeCategoryLower.includes('spring') ||
+      challengeCategoryLower.includes('aquifer')
+    ) {
+      if (
+        deptNameLower.includes('environmental') ||
+        deptNameLower.includes('remote sensing') ||
+        deptNameLower.includes('gis') ||
+        deptNameLower.includes('civil') ||
+        deptNameLower.includes('water')
+      ) {
         deptScore += 25;
       }
-    } else if (challengeCategoryLower.includes('mining') || challengeCategoryLower.includes('geology')) {
-      if (deptNameLower.includes('mining') || deptNameLower.includes('geology')) {
+    } else if (
+      challengeCategoryLower.includes('wildlife') ||
+      challengeCategoryLower.includes('elephant') ||
+      challengeCategoryLower.includes('forestry') ||
+      challengeCategoryLower.includes('silk')
+    ) {
+      if (
+        deptNameLower.includes('forestry') ||
+        deptNameLower.includes('wildlife') ||
+        deptNameLower.includes('agronomy') ||
+        deptNameLower.includes('biology') ||
+        deptNameLower.includes('botany')
+      ) {
         deptScore += 25;
       }
-    } else if (challengeCategoryLower.includes('road') || challengeCategoryLower.includes('bridge') || challengeCategoryLower.includes('infra')) {
+    } else if (
+      challengeCategoryLower.includes('mining') ||
+      challengeCategoryLower.includes('geology') ||
+      challengeCategoryLower.includes('coalfire') ||
+      challengeCategoryLower.includes('subsidence')
+    ) {
+      if (
+        deptNameLower.includes('mining') ||
+        deptNameLower.includes('geology') ||
+        deptNameLower.includes('geo')
+      ) {
+        deptScore += 25;
+      }
+    } else if (
+      challengeCategoryLower.includes('road') ||
+      challengeCategoryLower.includes('bridge') ||
+      challengeCategoryLower.includes('infra') ||
+      challengeCategoryLower.includes('transport')
+    ) {
       if (deptNameLower.includes('civil') || deptNameLower.includes('structural')) {
+        deptScore += 25;
+      }
+    } else if (
+      challengeCategoryLower.includes('agri') ||
+      challengeCategoryLower.includes('soil') ||
+      challengeCategoryLower.includes('crop') ||
+      challengeCategoryLower.includes('horticulture') ||
+      challengeCategoryLower.includes('hydrogel')
+    ) {
+      if (
+        deptNameLower.includes('agronomy') ||
+        deptNameLower.includes('agriculture') ||
+        deptNameLower.includes('soil') ||
+        deptNameLower.includes('horticulture') ||
+        deptNameLower.includes('botany')
+      ) {
+        deptScore += 25;
+      }
+    } else if (
+      challengeCategoryLower.includes('waste') ||
+      challengeCategoryLower.includes('biomethanation') ||
+      challengeCategoryLower.includes('energy') ||
+      challengeCategoryLower.includes('solar')
+    ) {
+      if (
+        deptNameLower.includes('environmental') ||
+        deptNameLower.includes('biotech') ||
+        deptNameLower.includes('energy') ||
+        deptNameLower.includes('electrical') ||
+        deptNameLower.includes('mechanical')
+      ) {
+        deptScore += 25;
+      }
+    } else if (
+      challengeCategoryLower.includes('health') ||
+      challengeCategoryLower.includes('toxicity') ||
+      challengeCategoryLower.includes('fluorosis') ||
+      challengeCategoryLower.includes('arsenic')
+    ) {
+      if (
+        deptNameLower.includes('health') ||
+        deptNameLower.includes('medicine') ||
+        deptNameLower.includes('biochem') ||
+        deptNameLower.includes('pharmacy') ||
+        deptNameLower.includes('allied')
+      ) {
         deptScore += 25;
       }
     }
@@ -120,82 +224,92 @@ export const calculateHEIMatchScore = (
     }
   }
 
-  // 1. Department Capability Fit (30 pts max — scaled from deptScore / max possible)
-  departmentFitScore = Math.min(30, Math.round((highestDeptScore / 40) * 30));
-
-  // 2. Field Expertise Depth (20 pts) — match challenge category to dept.fieldExpertise
-  if (bestDept) {
-    const currentDept = bestDept as DepartmentInfo;
-    const expertiseArr: string[] = currentDept.fieldExpertise || [];
-    const expertMatch = expertiseArr.some((ex: string) => {
-      const exL = ex.toLowerCase();
-      return challengeCategoryLower.includes(exL) || exL.includes(challengeCategoryLower);
-    });
-    expertiseScore = expertMatch ? 20 : 8; // 20 if expert field matches
-    if (expertMatch) reasons.push(`Field expertise match: ${currentDept.name} specializes in ${expertiseArr.slice(0,2).join(', ')}.`);
+  // If no department fits at all, score is 0
+  if (highestDeptScore === 0 || !bestDept) {
+    return {
+      university,
+      matchScore: 0,
+      districtMatch: isDirectDistrict,
+      recommendedDepartment: null,
+      matchingReasons: ['No matching departmental capability found for this challenge domain.'],
+      departmentFitScore: 0,
+      expertiseScore: 0,
+      labFitScore: 0,
+      achievementsScore: 0,
+      proximityScore: 0,
+    };
   }
 
-  // 3. Lab Equipment Fit (20 pts) — match challenge to activeLabs + lab tags
-  if (bestDept) {
-    const currentDept = bestDept as DepartmentInfo;
-    const labs: string[] = currentDept.activeLabs || [];
-    const labTagMatch = labs.some((lab: string) => {
-      const labL = lab.toLowerCase();
-      return challengeCategoryLower.includes(labL) || challengeTitleLower.includes(labL) || labL.includes('lab');
-    });
-    labFitScore = labTagMatch ? 20 : (labs.length > 0 ? 12 : 5);
-    if (labTagMatch) reasons.push(`Lab equipment alignment: "${labs[0]}" supports this challenge domain.`);
+  // 1. Department Capability Fit (30 pts max)
+  departmentFitScore = Math.min(30, Math.round((highestDeptScore / 35) * 30));
+  reasons.push(`Department capability alignment: ${bestDept.name} matched with ${departmentFitScore}/30 pts.`);
+
+  // 2. Field Expertise Depth (20 pts)
+  const currentDept = bestDept;
+  const expertiseArr: string[] = currentDept.fieldExpertise || [];
+  const expertMatch = expertiseArr.some((ex: string) => {
+    const exL = ex.toLowerCase();
+    return (
+      challengeCategoryLower.includes(exL) ||
+      exL.includes(challengeCategoryLower) ||
+      challengeTitleLower.includes(exL)
+    );
+  });
+  expertiseScore = expertMatch ? 20 : 10;
+  if (expertMatch) {
+    reasons.push(`Field expertise match: ${currentDept.name} specializes in ${expertiseArr.slice(0, 2).join(', ')}.`);
   }
 
-  // 4. Achievements / Research Track (10 pts) — institution achievements + dept research count
+  // 3. Lab Equipment Fit (20 pts)
+  const labs: string[] = currentDept.activeLabs || [];
+  const labTagMatch = labs.some((lab: string) => {
+    const labL = lab.toLowerCase();
+    return (
+      challengeCategoryLower.split(' ').some((w) => w.length > 3 && labL.includes(w)) ||
+      challengeTitleLower.split(' ').some((w) => w.length > 4 && labL.includes(w))
+    );
+  });
+  labFitScore = labTagMatch ? 20 : (labs.length > 0 ? 12 : 5);
+  if (labTagMatch && labs.length > 0) {
+    reasons.push(`Specialized laboratory equipment: "${labs[0]}" directly supports this crisis domain.`);
+  }
+
+  // 4. Achievements / Research Track (10 pts)
   const uniAch: string[] = university.institutionAchievements || [];
-  const currentDept = bestDept ? (bestDept as DepartmentInfo) : null;
-  const deptPub = currentDept ? (currentDept.researchPubCount || 0) : 0;
+  const deptPub = currentDept.researchPubCount || 0;
   const hasAwards = uniAch.length > 0;
-  const hasResearch = deptPub > 50 || ((university.notableResearchAreas || []).length > 0);
+  const hasResearch = deptPub > 30 || ((university.notableResearchAreas || []).length > 0);
   achievementsScore = (hasAwards ? 5 : 0) + (hasResearch ? 5 : 0);
-  if (hasAwards) reasons.push(`Institution achievements: ${uniAch.slice(0,2).join(', ')}.`);
-  if (hasResearch) reasons.push(`Research track: dept publications ~${deptPub}, notables: ${(university.notableResearchAreas||[]).slice(0,2).map((r: NotableResearchArea)=>r.field).join(', ')}.`);
+  if (hasAwards) {
+    reasons.push(`Institutional track record: ${uniAch.slice(0, 2).join(', ')}.`);
+  }
+  if (hasResearch) {
+    reasons.push(`Research depth: publications ~${deptPub}, areas: ${(university.notableResearchAreas || []).slice(0, 2).map((r: NotableResearchArea) => r.field).join(', ')}.`);
+  }
 
-  // 5. District Proximity Match (20 Points Max)
-  const uniDistrictLower = (university.district || '').toLowerCase();
-  if (uniDistrictLower === challengeDistrictLower) {
+  // 5. District Proximity Match (20 pts)
+  if (isDirectDistrict) {
     proximityScore = 20;
     reasons.push(`Direct local campus proximity in ${university.district} District.`);
   } else {
     proximityScore = 10;
-    reasons.push(`Regional HEI node serving ${university.district} & adjacent districts.`);
+    reasons.push(`Regional HEI node serving ${university.district} and adjacent Jharkhand districts.`);
   }
 
-  // Composite Score (0-100) using new weights: 30 + 20 + 20 + 10 + 20 = 100
+  // Composite Score (0 to 100)
   const totalScore = Math.min(100, departmentFitScore + expertiseScore + labFitScore + achievementsScore + proximityScore);
-
-  // Robust assignment check — handles all naming variants
-  const assignedLower = (challenge.assignedHEI || '').toLowerCase();
-  const uniNameLower = university.name.toLowerCase();
-  const uniShortLower = (university.shortName || '').toLowerCase();
-  const isAssignedToThisUni = !!challenge.assignedHEI && (
-    assignedLower === uniNameLower ||
-    assignedLower === uniShortLower ||
-    (uniShortLower.length > 2 && assignedLower.includes(uniShortLower)) ||
-    (uniNameLower.length > 3 && (assignedLower.includes(uniNameLower) || uniNameLower.includes(assignedLower)))
-  );
-  const finalScore = isAssignedToThisUni ? Math.max(totalScore, 100) : totalScore;
-  const finalReasons = isAssignedToThisUni 
-    ? ['Officially assigned to this HEI by Government/AI framework.', ...reasons] 
-    : reasons;
 
   return {
     university,
-    matchScore: finalScore,
-    districtMatch: uniDistrictLower === challengeDistrictLower,
+    matchScore: totalScore,
+    districtMatch: isDirectDistrict,
     recommendedDepartment: bestDept,
-    matchingReasons: finalReasons,
-    departmentFitScore: isAssignedToThisUni ? Math.max(departmentFitScore, 30) : departmentFitScore,
-    expertiseScore: isAssignedToThisUni ? Math.max(expertiseScore, 20) : expertiseScore,
-    labFitScore: isAssignedToThisUni ? Math.max(labFitScore, 20) : labFitScore,
-    achievementsScore: isAssignedToThisUni ? Math.max(achievementsScore, 10) : achievementsScore,
-    proximityScore: isAssignedToThisUni ? Math.max(proximityScore, 20) : proximityScore,
+    matchingReasons: reasons,
+    departmentFitScore,
+    expertiseScore,
+    labFitScore,
+    achievementsScore,
+    proximityScore,
   };
 };
 

@@ -25,6 +25,11 @@ export interface MatchDetails {
   isRelevant: boolean;
   matchScore: number;
   matchReasons: string[];
+  categoryScore?: number;
+  domainScore?: number;
+  districtScore?: number;
+  schedule7Score?: number;
+  urgencyScore?: number;
 }
 
 export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
@@ -41,7 +46,7 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'partner@tatasteel.com',
     leadPhone: '+91 657 664 4444',
     annualCsrBudget: '₹315.40 Cr',
-    operatingDistricts: ['East Singhbhum', 'Saraikela Kharsawan', 'West Singhbhum', 'Ramgarh', 'Dhanbad'],
+    operatingDistricts: ['East Singhbhum', 'Saraikela Kharsawan', 'West Singhbhum', 'Ramgarh', 'Dhanbad', 'Simdega'],
     relevantCategories: [
       'Flood Management & Urban Drainage',
       'Flooding & Drainage',
@@ -141,7 +146,7 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'csr@jindalsteel.com',
     leadPhone: '+91 6553 275 400',
     annualCsrBudget: '₹74.20 Cr',
-    operatingDistricts: ['Ramgarh', 'Ranchi', 'Dumka', 'Godda', 'Khunti', 'Palamu'],
+    operatingDistricts: ['Ramgarh', 'Ranchi', 'Dumka', 'Godda', 'Khunti', 'Palamu', 'Garhwa', 'Lohardaga'],
     relevantCategories: [
       'Drought & Aquifer Depletion',
       'Agro Forestry & Tribal Livelihood',
@@ -237,7 +242,7 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'csr@adani.com',
     leadPhone: '+91 6422 280 200',
     annualCsrBudget: '₹52.60 Cr',
-    operatingDistricts: ['Godda', 'Sahibganj', 'Pakur', 'Dumka', 'Deoghar'],
+    operatingDistricts: ['Godda', 'Sahibganj', 'Pakur', 'Dumka', 'Deoghar', 'Jamtara'],
     relevantCategories: [
       'Riverbank Erosion & Disaster Inundation',
       'Flood Management & Urban Drainage',
@@ -246,7 +251,7 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     ],
     matchKeywords: [
       'ganga', 'erosion', 'rajmahal', 'kankjol', 'diara', 'godda', 'sahibganj', 
-      'riverbank', 'thermal', 'wetland', 'submergence'
+      'riverbank', 'thermal', 'wetland', 'submergence', 'pakur', 'silicosis', 'jamtara', 'ajay'
     ],
     focusAreas: ['Solar Pumping & Drip Irrigation', 'Santhal Heritage Craft Hubs', 'Village Flood Barriers'],
     schedule7Focus: [
@@ -269,7 +274,7 @@ export const JHARKHAND_INDUSTRIES: IndustryPartnerDoc[] = [
     leadEmail: 'csr@ntpc-karanpura.co.in',
     leadPhone: '+91 6546 220 300',
     annualCsrBudget: '₹62.10 Cr',
-    operatingDistricts: ['Hazaribagh', 'Chatra', 'Ramgarh', 'Latehar', 'Palamu'],
+    operatingDistricts: ['Hazaribagh', 'Chatra', 'Ramgarh', 'Latehar', 'Palamu', 'Garhwa', 'Koderma'],
     relevantCategories: [
       'Drought & Aquifer Depletion',
       'Thermal Power Industrial Pollution',
@@ -340,7 +345,7 @@ export function getTestingIndustriesList(): Array<{ ind: IndustryPartnerDoc; ema
 }
 
 export function evaluateChallengeRelevance(
-  challenge: { title?: string; summary?: string; district?: string; category?: string; assignedHEI?: string },
+  challenge: { title?: string; summary?: string; description?: string; district?: string; category?: string; assignedHEI?: string; priorityScore?: number },
   industry: IndustryPartnerDoc
 ): MatchDetails {
   if (!industry) {
@@ -348,39 +353,95 @@ export function evaluateChallengeRelevance(
   }
 
   const reasons: string[] = [];
-  let score = 0;
+  let categoryScore = 0;
+  let domainScore = 0;
+  let districtScore = 0;
+  let schedule7Score = 0;
+  let urgencyScore = 0;
 
   const chDistrict = (challenge.district || '').toLowerCase().trim();
   const chCategory = (challenge.category || '').toLowerCase().trim();
-  const textBody = `${challenge.title || ''} ${challenge.summary || ''} ${challenge.district || ''} ${challenge.category || ''}`.toLowerCase();
+  const textBody = `${challenge.title || ''} ${challenge.description || ''} ${challenge.summary || ''} ${challenge.district || ''} ${challenge.category || ''}`.toLowerCase();
 
-  // 1. Operating District Match
-  const districtMatched = industry.operatingDistricts.some(d => d.toLowerCase().trim() === chDistrict);
-  if (districtMatched) {
-    score += 40;
-    reasons.push(`Operating Territory: ${challenge.district} District`);
+  // Factor 1: Thematic CSR Category Alignment (35 pts max)
+  const directCategory = (industry.relevantCategories || []).some(
+    c => c.toLowerCase().trim() === chCategory || chCategory.includes(c.toLowerCase().trim()) || c.toLowerCase().trim().includes(chCategory)
+  );
+
+  if (directCategory) {
+    categoryScore = 35;
+    reasons.push(`CSR Charter Alignment: ${challenge.category}`);
+  } else {
+    const partialCategory = (industry.relevantCategories || []).some(c => {
+      const words = c.toLowerCase().split(/[ &/,]+/);
+      return words.some(w => w.length > 4 && chCategory.includes(w));
+    });
+    if (partialCategory) {
+      categoryScore = 18;
+      reasons.push(`Related Sector Mandate: ${challenge.category}`);
+    }
   }
 
-  // 2. Thematic Category Match
-  const categoryMatched = industry.relevantCategories.some(c => c.toLowerCase().trim() === chCategory);
-  if (categoryMatched) {
-    score += 35;
-    reasons.push(`CSR Focus Sector: ${challenge.category}`);
+  // If no thematic category fit at all, this challenge is not concerned with this industry
+  if (categoryScore === 0) {
+    return {
+      isRelevant: false,
+      matchScore: 0,
+      matchReasons: ['No thematic alignment with corporate CSR charter or industrial focus areas.'],
+      categoryScore: 0,
+      domainScore: 0,
+      districtScore: 0,
+      schedule7Score: 0,
+      urgencyScore: 0
+    };
   }
 
-  // 3. Keyword / Domain alignment
-  const matchedKeywords = industry.matchKeywords.filter(kw => textBody.includes(kw.toLowerCase()));
-  if (matchedKeywords.length > 0) {
-    score += Math.min(25, matchedKeywords.length * 10);
-    reasons.push(`Domain Alignment: ${matchedKeywords.slice(0, 2).join(', ')}`);
+  // Factor 2: Technical Domain and Operations Keyword Match (25 pts max)
+  const matchedKeywords = (industry.matchKeywords || []).filter(kw => textBody.includes(kw.toLowerCase()));
+  if (matchedKeywords.length >= 3) {
+    domainScore = 25;
+    reasons.push(`Core Operations Synergy: ${matchedKeywords.slice(0, 3).join(', ')}`);
+  } else if (matchedKeywords.length === 2) {
+    domainScore = 18;
+    reasons.push(`Domain Alignment: ${matchedKeywords.join(', ')}`);
+  } else if (matchedKeywords.length === 1) {
+    domainScore = 10;
+    reasons.push(`Operational Synergy: ${matchedKeywords[0]}`);
+  } else {
+    domainScore = 5;
   }
 
-  // A challenge is considered relevant if it matches the operating district OR category OR has high keyword overlap
-  const isRelevant = districtMatched || categoryMatched || matchedKeywords.length >= 2;
+  // Factor 3: Geographical and Operational District Presence (20 pts max)
+  const isDirectDistrict = (industry.operatingDistricts || []).some(
+    d => d.toLowerCase().trim() === chDistrict
+  );
+  if (isDirectDistrict) {
+    districtScore = 20;
+    reasons.push(`Plant and Operational Presence in ${challenge.district} District`);
+  } else {
+    districtScore = 10;
+    reasons.push(`Regional Jharkhand Project Deployment`);
+  }
+
+  // Factor 4: Schedule VII and Statutory CSR Alignment (10 pts max)
+  const hasSchedule7 = (industry.schedule7Focus || []).length > 0;
+  schedule7Score = hasSchedule7 ? 10 : 5;
+  reasons.push(`Schedule VII R&D Eligibility under Companies Act`);
+
+  // Factor 5: Civic Severity and Project Urgency (10 pts max)
+  const prio = challenge.priorityScore || 85;
+  urgencyScore = prio >= 90 ? 10 : 8;
+
+  const totalScore = Math.min(100, categoryScore + domainScore + districtScore + schedule7Score + urgencyScore);
 
   return {
-    isRelevant,
-    matchScore: Math.min(100, score),
-    matchReasons: reasons.length > 0 ? reasons : ['General Statewide Mandate'],
+    isRelevant: totalScore >= 80,
+    matchScore: totalScore,
+    matchReasons: reasons,
+    categoryScore,
+    domainScore,
+    districtScore,
+    schedule7Score,
+    urgencyScore
   };
 }

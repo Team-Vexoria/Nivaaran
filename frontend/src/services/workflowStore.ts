@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { createSeedData } from './workflowSeedData';
+import { DISTRICT_PROBLEM_IMAGES } from './districtProblemImages';
 import type {
   WorkflowState,
   Challenge,
@@ -63,16 +64,79 @@ class WorkflowStore {
         if (this.isWorkflowState(parsed)) {
           // Merge stored challenges with seed data, preserving all stored modifications and progress.
           const seed = createSeedData();
-          const cleanParsedChallenges = parsed.challenges.filter((c: any) => 
+          const seedMap = new Map(seed.challenges.map((sc: any) => [sc.id, sc]));
+          const cleanParsedChallenges = (parsed.challenges || []).map((c: any) => {
+            const seedCh = c.id ? seedMap.get(c.id) : null;
+            let updated = { ...c };
+            if (seedCh && seedCh.locationCoords) {
+              updated.locationCoords = seedCh.locationCoords;
+            }
+            if (seedCh && seedCh.stageNumber <= 5) {
+              updated.stageNumber = seedCh.stageNumber;
+              updated.stageName = seedCh.stageName;
+              updated.status = seedCh.status;
+            }
+            if (seedCh && seedCh.assignedHEI) {
+              updated.assignedHEI = seedCh.assignedHEI;
+              updated.assignedDept = seedCh.assignedDept;
+            }
+            if (c.id && DISTRICT_PROBLEM_IMAGES[c.id]) {
+              updated.evidenceUrls = [DISTRICT_PROBLEM_IMAGES[c.id]];
+            }
+            return updated;
+          }).filter((c: any) => 
             c.title && !/i cant attach photo|cant attach photo/i.test(c.title + ' ' + (c.description || ''))
           );
           const storedIds = new Set(cleanParsedChallenges.map((c: any) => c.id || c.reportId));
           const missingSeedChallenges = seed.challenges.filter((c: any) => !storedIds.has(c.id) && !storedIds.has(c.reportId));
           const mergedChallenges = [...cleanParsedChallenges, ...missingSeedChallenges];
+
+          const seedPrjMap = new Map(seed.projects.map((sp: any) => [sp.id, sp]));
+          const updatedParsedProjects = (parsed.projects || []).map((p: any) => {
+            const seedPrj = p.id ? seedPrjMap.get(p.id) : null;
+            if (seedPrj) {
+              return {
+                ...p,
+                universityId: seedPrj.universityId,
+                universityName: seedPrj.universityName,
+                facultyMentorName: seedPrj.facultyMentorName,
+                facultyEmail: seedPrj.facultyEmail,
+                status: seedPrj.status,
+              };
+            }
+            return p;
+          });
+          const storedPrjIds = new Set(updatedParsedProjects.map((p: any) => p.id));
+          const missingSeedProjects = seed.projects.filter((p: any) => !storedPrjIds.has(p.id));
+          const mergedProjects = [...updatedParsedProjects, ...missingSeedProjects];
+
+          const seedPropMap = new Map(seed.proposals.map((sp: any) => [sp.id, sp]));
+          const updatedParsedProposals = (parsed.proposals || []).map((p: any) => {
+            const seedProp = p.id ? seedPropMap.get(p.id) : null;
+            if (seedProp) {
+              return {
+                ...p,
+                universityId: seedProp.universityId,
+                universityName: seedProp.universityName,
+                status: seedProp.status,
+              };
+            }
+            return p;
+          });
+          const storedPropIds = new Set(updatedParsedProposals.map((p: any) => p.id));
+          const missingSeedProposals = seed.proposals.filter((p: any) => !storedPropIds.has(p.id));
+          const mergedProposals = [...updatedParsedProposals, ...missingSeedProposals];
+
+          const storedTlIds = new Set((parsed.timelineEvents || []).map((t: any) => t.id));
+          const missingSeedTimeline = seed.timelineEvents.filter((t: any) => !storedTlIds.has(t.id));
+          const mergedTimeline = [...(parsed.timelineEvents || []), ...missingSeedTimeline];
           
           const finalState: WorkflowState = {
             ...parsed,
             challenges: mergedChallenges,
+            projects: mergedProjects,
+            proposals: mergedProposals,
+            timelineEvents: mergedTimeline,
           };
           this.persist(finalState);
           return finalState;
