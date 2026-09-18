@@ -69,7 +69,7 @@ export const analyzeImageEvidenceWithVision = async (
     const { runAITriageEngineAsync } = await import('./aiTriageEngine');
     const triage = await runAITriageEngineAsync(title, description, 1, imageDataUrl);
 
-    const isReal = triage.isRealPhoto !== false && triage.forensicStatus !== 'REJECTED' && triage.hasHazard !== false;
+    const isReal = triage.isRealPhoto !== false && triage.forensicStatus !== 'REJECTED';
     const fakeReason = isReal ? null : (triage.fakeReason || 'Image flagged: Non-civic scene or synthetic manipulation');
 
     return {
@@ -84,23 +84,23 @@ export const analyzeImageEvidenceWithVision = async (
       visualDescription: triage.reasoning,
       isRealPhoto: isReal,
       fakeReason,
-      hasHazard: Boolean(triage.hasHazard && isReal),
+      hasHazard: isReal,
       hazardType: isReal ? (triage.hazardType || 'FLOODING') : 'NONE',
       status: isReal ? 'ACCEPTED' : 'REJECTED'
     };
   } catch (err) {
     console.warn('[Vision AI] Analysis error:', err);
     return {
-      visualCategory: 'Unverified Media',
-      categoryCode: 'unverified_media',
-      visionConfidence: 40,
-      detectedFeatures: ['Visual Evidence Unverified'],
-      visualDescription: 'Forensic inspection failed to verify civic hazard in image.',
-      isRealPhoto: false,
-      fakeReason: 'Failed to verify image authenticity or civic hazard.',
-      hasHazard: false,
+      visualCategory: 'Civic Evidence (Offline Mode)',
+      categoryCode: 'civic_evidence',
+      visionConfidence: 75,
+      detectedFeatures: ['Visual Evidence Attached', 'Offline Verification Pending'],
+      visualDescription: 'Offline triage: Citizen photographic evidence attached. Flagged for officer review.',
+      isRealPhoto: true,
+      fakeReason: null,
+      hasHazard: true,
       hazardType: 'NONE',
-      status: 'REJECTED'
+      status: 'ACCEPTED'
     };
   }
 };

@@ -662,7 +662,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
         setIsVerifyingRealtime(false);
       }
 
-      if (triageRes && (triageRes.isRealPhoto === false || triageRes.forensicStatus === 'REJECTED' || !triageRes.hasHazard)) {
+      if (triageRes && (triageRes.forensicStatus === 'REJECTED' || triageRes.isRealPhoto === false)) {
         setStep('forensic_rejected');
         setForensicRejectionReason(
           triageRes.fakeReason || 'Uploaded media does not depict an authentic civic, municipal, or environmental hazard.'
@@ -805,7 +805,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     }
 
     // Check media authenticity (both photo and video frames)
-    if (filePreviews.length > 0 && (aiResult.isRealPhoto === false || aiResult.forensicStatus === 'REJECTED' || !aiResult.hasHazard)) {
+    if (filePreviews.length > 0 && (aiResult.forensicStatus === 'REJECTED' || aiResult.isRealPhoto === false)) {
       setStep('forensic_rejected');
       setForensicRejectionReason(
         aiResult.fakeReason || 'Uploaded media (image or video) does not depict an authentic civic, municipal, or environmental hazard. Submission blocked by Decision Point 1 Forensic Gate.'

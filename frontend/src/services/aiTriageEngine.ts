@@ -213,45 +213,40 @@ const callGeminiVisionAI = async (
 
     const domainListStr = GOV_DOMAINS.map((d, i) => `${i + 1}. ${d.label} (code: ${d.id}, problems: ${d.problems.slice(0, 4).join(', ')})`).join('\n');
 
-    const promptText = `You are the strict Civic Media Verification and Triage Gatekeeper for NIVAARAN (Jharkhand Societal Challenge Platform).
+    const promptText = `You are the Civic Media Verification and Triage Gatekeeper for NIVAARAN (Jharkhand Societal Challenge Platform).
 Analyze this uploaded citizen evidence media (image or video frame).
 
 MANDATORY RULES:
-1. CIVIC RELEVANCE & AUTHENTICITY GATE:
-   Does this image genuinely depict an authentic real-world civic, municipal, public infrastructure, environmental, agricultural, or public safety hazard/problem?
-   Valid examples: pothole/damaged road, bridge collapse, waterlogging/flooding, dirty contaminated water, overflowing sewage/drain, garbage dump, coal mine fire, ground crack/subsidence, downed powerline/sparking transformer, illegal tree logging, wild elephant/animal conflict.
-   
-   - If the media is UNRELATED to civic infrastructure or public hazards (e.g. personal selfies, human faces posing, indoor rooms/furniture/bed/ceiling, pets/animals at home, food/dishes, wallpapers, memes, cartoons, abstract graphics, solid blank/monochrome colors, screenshots of unrelated apps/chat, cars parked normally on clean road, celebrities, clothing):
+1. CIVIC, ENVIRONMENTAL & AGRICULTURAL RELEVANCE GATE:
+   Does this media depict an authentic civic, municipal, public infrastructure, environmental, agricultural, rural, or public safety problem?
+   VALID CIVIC CHALLENGES INCLUDE:
+   - Agriculture & Farming: Crop disease, leaf fungal rust, blight, pest infestation, damaged crops, drought stress, irrigation canal breach.
+   - Wildlife & Forestry: Wild elephant entering village/crops, leopard, wild boar, animal conflict, forest fire, illegal tree felling.
+   - Public Infrastructure: Road damage, potholes, bridge collapse, broken culvert, damaged public building, cracked school wall.
+   - Water & Sanitation: Flooding, stagnant waterlog, contaminated tap/borewell water, arsenic, broken handpump, overflowing drain/sewage.
+   - Energy & Safety: Downed electric wire, sparking transformer, coal mine underground fire, ground subsidence fissures.
+   - Environment & Health: Garbage heaps, toxic chemical runoff, industrial smoke, biomedical waste.
+
+   - IF THE MEDIA REPRESENTS ANY OF THE ABOVE CIVIC/ENVIRONMENTAL/AGRICULTURAL CHALLENGES:
      You MUST set:
+     "isRealPhoto": true,
+     "hasHazard": true,
+     "status": "ACCEPTED",
+     "fakeReason": null
+
+   - ONLY REJECT IF the media is blatantly UNRELATED to public issues (such as: personal face selfies, posing portraits, indoor bedroom/bed/couch, household pet cat/dog indoors, food dishes/cooking, internet memes, anime/cartoons, wallpapers, blank/solid color blocks, unrelated chat screenshots):
+     Set:
      "isRealPhoto": false,
      "hasHazard": false,
      "status": "REJECTED",
-     "fakeReason": "Media does not depict a valid civic, municipal, or environmental hazard (personal, indoor, meme, animal pet, or non-civic scene detected).",
-     "confidenceScore": 99,
-     "priorityScore": 0,
-     "riskLevel": "STANDARD",
-     "category": "Flagged Unrelated Media",
-     "categoryCode": "unrelated_media",
-     "matchedProblem": "Non-Civic / Unrelated Media"
+     "fakeReason": "Media does not depict a civic, environmental, or public safety problem (personal selfie, indoor scene, pet, or meme detected)."
 
-   - If the photo is AI-GENERATED, SYNTHETIC, OR DIGITALLY MANIPULATED (e.g. Midjourney, DALL-E, deepfake, synthetic textures, unnatural geometry):
-     You MUST set:
+   - IF the media is AI-GENERATED (Midjourney, DALL-E, synthetic textures):
+     Set:
      "isRealPhoto": false,
      "hasHazard": false,
      "status": "REJECTED",
-     "fakeReason": "Synthetic AI generation or digital manipulation detected. Only authentic camera evidence is accepted.",
-     "confidenceScore": 99,
-     "priorityScore": 0,
-     "riskLevel": "STANDARD",
-     "category": "Flagged Synthetic Media",
-     "categoryCode": "fake_media",
-     "matchedProblem": "AI-Generated / Manipulated Evidence"
-
-   - ONLY if the image depicts an AUTHENTIC, GENUINE real-world civic or public hazard:
-     Set "isRealPhoto": true,
-     Set "hasHazard": true,
-     Set "status": "ACCEPTED",
-     Set "fakeReason": null
+     "fakeReason": "Synthetic AI generation detected. Real camera photographic evidence is required."
 
 2. If ACCEPTED, match the category from this 60-Taxonomy:
 ${domainListStr}
@@ -298,8 +293,8 @@ Return ONLY valid JSON matching this schema:
       });
     }
 
-    // Use 10000ms timeout with gemini-3.5-flash as primary and gemini-3.6-flash as fallback
-    const modelsToTry = ['gemini-3.5-flash', 'gemini-3.6-flash'];
+    // Use fast flash-lite models that respond in ~1-2 seconds with HTTP 200
+    const modelsToTry = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.6-flash'];
     for (const model of modelsToTry) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -327,7 +322,7 @@ Return ONLY valid JSON matching this schema:
             const jsonMatch = rawText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
               const parsed = JSON.parse(jsonMatch[0]);
-              const isAccepted = parsed.status === 'ACCEPTED' && parsed.isRealPhoto !== false && parsed.hasHazard !== false;
+              const isAccepted = parsed.status !== 'REJECTED' && parsed.isRealPhoto !== false;
               const isReal = isAccepted;
               const fakeReason = isAccepted ? null : (parsed.fakeReason || 'Media does not depict a genuine civic, municipal, or environmental hazard.');
 
@@ -351,7 +346,7 @@ Return ONLY valid JSON matching this schema:
                 recommendedUniversityDepts: isReal ? (parsed.recommendedUniversityDepts || ['Dept of Environmental Engineering']) : [],
                 isRealPhoto: isReal,
                 fakeReason,
-                hasHazard: Boolean(parsed.hasHazard && isReal),
+                hasHazard: Boolean(parsed.hasHazard ?? isReal),
                 hazardType: isReal ? (parsed.hazardType || 'FLOODING') : 'NONE',
                 forensicStatus: isReal ? 'ACCEPTED' : 'REJECTED',
               };
@@ -412,6 +407,10 @@ export const runAITriageEngineAsync = async (
     reasoning,
     needsHumanVerification,
     recommendedUniversityDepts: nlpRes.depts,
+    isRealPhoto: true,
+    hasHazard: true,
+    forensicStatus: 'ACCEPTED',
+    fakeReason: null,
   };
 };
 
@@ -430,5 +429,9 @@ export const runAITriageEngine = (title: string, description: string, upvotesCou
     reasoning: `AI Triage: Classed as ${nlpRes.category} [Issue: ${nlpRes.matchedProblem}] (${nlpRes.confidenceScore}% confidence). Priority Score ${l2.priorityScore}/100 [${l2.riskLevel}].`,
     needsHumanVerification: !nlpRes.isExactMatch || nlpRes.confidenceScore < 85,
     recommendedUniversityDepts: nlpRes.depts,
+    isRealPhoto: true,
+    hasHazard: true,
+    forensicStatus: 'ACCEPTED',
+    fakeReason: null,
   };
 };
