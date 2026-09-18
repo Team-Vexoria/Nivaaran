@@ -152,7 +152,8 @@ export const MapViewport: React.FC<MapViewportProps> = ({
   const [showDisasterZones, setShowDisasterZones] = useState(true);
   const [showWeatherRadar, setShowWeatherRadar] = useState(true);
   const [showRiskHeatmap, setShowRiskHeatmap] = useState(false);
-  const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
+  const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(true);
+  const [selectedDisasterZoneId, setSelectedDisasterZoneId] = useState<string>('all');
 
   // Clear all shaded district regions back to clean initial state
   const clearAllShading = () => {
@@ -535,7 +536,11 @@ export const MapViewport: React.FC<MapViewportProps> = ({
 
     if (!showDisasterZones) return;
 
-    for (const zone of JHARKHAND_DISASTER_ZONES) {
+    const zonesToRender = selectedDisasterZoneId === 'all'
+      ? JHARKHAND_DISASTER_ZONES
+      : JHARKHAND_DISASTER_ZONES.filter(z => z.id === selectedDisasterZoneId);
+
+    for (const zone of zonesToRender) {
       // 1. Draw glowing danger zone circle
       const circle = L.circle([zone.center.lat, zone.center.lng], {
         radius: zone.radiusMeters,
@@ -576,7 +581,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
       marker.bindPopup(popupHtml, { maxWidth: 300 });
       marker.addTo(disasterLayer);
     }
-  }, [showDisasterZones]);
+  }, [showDisasterZones, selectedDisasterZoneId]);
 
   // Update challenge pin markers (Citizen Incidents)
   useEffect(() => {
@@ -747,14 +752,24 @@ export const MapViewport: React.FC<MapViewportProps> = ({
       )}
 
       {/* Interactive GIS Layer Control Switcher HUD: Floating Top Right */}
-      <div className="absolute top-3 right-3 z-[1000]">
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden w-64 transition-all">
+      <div 
+        className="absolute top-3 right-3 z-[1000]"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
+        onDoubleClick={(e) => e.stopPropagation()}
+      >
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden w-72 transition-all">
           
-          {/* Header Bar */}
+          {/* Dropdown Header Bar */}
           <button
             type="button"
-            onClick={() => setIsLayerMenuOpen(!isLayerMenuOpen)}
-            className="w-full px-3.5 py-2.5 flex items-center justify-between bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsLayerMenuOpen(prev => !prev);
+            }}
+            className="w-full px-3.5 py-2.5 flex items-center justify-between bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer select-none"
+            title="Toggle GIS Disaster Layers Menu"
           >
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-emerald-400" />
@@ -769,8 +784,37 @@ export const MapViewport: React.FC<MapViewportProps> = ({
           </button>
 
           {/* Collapsible Layer Toggles Body */}
-          <div className={`p-3 space-y-2 text-xs transition-all ${isLayerMenuOpen ? 'block' : 'hidden sm:block'}`}>
+          <div className={`p-3 space-y-2.5 text-xs transition-all ${isLayerMenuOpen ? 'block' : 'hidden'}`}>
             
+            {/* Disaster Zone Direct Layer Selector */}
+            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
+              <label className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider block">
+                Select Disaster / Map Layer
+              </label>
+              <select
+                value={selectedDisasterZoneId}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedDisasterZoneId(val);
+                  setShowDisasterZones(true);
+                  if (val !== 'all' && mapRef.current) {
+                    const found = JHARKHAND_DISASTER_ZONES.find(z => z.id === val);
+                    if (found) {
+                      mapRef.current.flyTo([found.center.lat, found.center.lng], 9, { duration: 0.8 });
+                    }
+                  }
+                }}
+                className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 cursor-pointer shadow-2xs"
+              >
+                <option value="all">All Disasters (5 Hazard Zones)</option>
+                <option value="ZONE-DAMODAR-FLOOD">Damodar Basin Inundation (Flood)</option>
+                <option value="ZONE-PALAMU-DROUGHT">Palamu Rain Shadow Belt (Drought)</option>
+                <option value="ZONE-JHARIA-SUBSIDENCE">Jharia Coalfire & Subsidence (Mine Hazard)</option>
+                <option value="ZONE-SUBARNAREKHA-SCOUR">Subarnarekha River Plain (Flash Flood)</option>
+                <option value="ZONE-GIRIDIH-ARSENIC">Tisri Aquifer (Arsenic Toxicity)</option>
+              </select>
+            </div>
+
             {/* 1. Citizen Incidents Toggle */}
             <label className="flex items-center justify-between p-1.5 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
               <div className="flex items-center gap-2">
@@ -808,7 +852,9 @@ export const MapViewport: React.FC<MapViewportProps> = ({
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
                 <div>
                   <span className="font-bold text-slate-800 text-[11px] block">Disaster Hazard Zones</span>
-                  <span className="text-[9px] text-slate-500 block">5 Critical Basins</span>
+                  <span className="text-[9px] text-slate-500 block">
+                    {selectedDisasterZoneId === 'all' ? '5 Critical Basins' : 'Filtered Hazard Zone'}
+                  </span>
                 </div>
               </div>
               <input
@@ -825,7 +871,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
                 <CloudRain className="w-3.5 h-3.5 text-emerald-700" />
                 <div>
                   <span className="font-bold text-slate-800 text-[11px] block">Live Weather Radar</span>
-                  <span className="text-[9px] text-emerald-700 font-semibold block">Real-time Satellite Feed</span>
+                  <span className="text-[9px] text-emerald-700 font-semibold block">Real time Satellite Feed</span>
                 </div>
               </div>
               <input

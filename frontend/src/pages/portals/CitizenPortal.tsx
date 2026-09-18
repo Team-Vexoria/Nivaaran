@@ -32,6 +32,36 @@ export const CitizenPortal: React.FC = () => {
     reportId: '',
   });
 
+  const [citizenProfileName, setCitizenProfileName] = useState<string>(() => {
+    try {
+      const key = `nivaaran_citizen_profile_${currentUser?.uid || 'default'}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.displayName) return parsed.displayName;
+      }
+    } catch {
+      // fallback
+    }
+    return currentUser?.displayName || 'Harshit Mishra';
+  });
+
+  React.useEffect(() => {
+    const handleProfileUpdate = (e: any) => {
+      if (e?.detail?.displayName) {
+        setCitizenProfileName(e.detail.displayName);
+      }
+    };
+    window.addEventListener('nivaaran_profile_updated', handleProfileUpdate);
+    return () => window.removeEventListener('nivaaran_profile_updated', handleProfileUpdate);
+  }, []);
+
+  React.useEffect(() => {
+    if (currentUser?.displayName) {
+      setCitizenProfileName(currentUser.displayName);
+    }
+  }, [currentUser?.displayName]);
+
   const handleOpenTracking = (reportId?: string) => {
     setTrackingModal({
       isOpen: true,
@@ -81,7 +111,7 @@ export const CitizenPortal: React.FC = () => {
         onOpenAuth={() => {}}
         currentLang={currentLang}
         onLangChange={setLanguage}
-        userDisplayName={currentUser?.displayName || 'Citizen User'}
+        userDisplayName={citizenProfileName}
         userEmail={currentUser?.email || ''}
       />
 
@@ -118,7 +148,7 @@ export const CitizenPortal: React.FC = () => {
 
         {activeTab === 'profile' && (
           <CitizenProfileTab
-            userDisplayName={currentUser?.displayName || 'Harshit Mishra'}
+            userDisplayName={citizenProfileName}
             userEmail={currentUser?.email || 'harshit.mishra@jharkhand.gov.in'}
             onOpenReportModal={() => setIsReportModalOpen(true)}
             onTabChange={handleTabChange}

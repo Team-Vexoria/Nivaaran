@@ -24,14 +24,77 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
   onOpenReportModal: _onOpenReportModal,
   onTabChange,
 }) => {
-  const { logout } = useAuth();
+  const { currentUser, updateUserProfile, logout } = useAuth();
   const { currentLang, setLanguage, t } = useLanguage();
 
-  const [district, setDistrict] = useState('Ranchi');
-  const [block, setBlock] = useState('Kanke Block');
-  const village = 'Hutup Panchayat';
-  const [phone, setPhone] = useState('+91 94311 00000');
+  const profileStorageKey = `nivaaran_citizen_profile_${currentUser?.uid || 'default'}`;
+
+  // Read persisted citizen profile from localStorage on initial render
+  const [profileData, setProfileData] = useState(() => {
+    try {
+      const saved = localStorage.getItem(profileStorageKey);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch {
+      // Storage parse fallback
+    }
+    return {
+      displayName: currentUser?.displayName || userDisplayName || 'Harshit Mishra',
+      phone: '+91 94311 20455',
+      district: currentUser?.district || 'Ranchi',
+      block: 'Kanke Block',
+      village: 'Hutup Panchayat',
+    };
+  });
+
+  const [displayName, setDisplayName] = useState<string>(profileData.displayName);
+  const [phone, setPhone] = useState<string>(profileData.phone);
+  const [district, setDistrict] = useState<string>(profileData.district);
+  const [block, setBlock] = useState<string>(profileData.block);
+  const [village, setVillage] = useState<string>(profileData.village);
   const [isEditing, setIsEditing] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState(false);
+
+  // Sync state if currentUser changes from outside
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(profileStorageKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setDisplayName(parsed.displayName || currentUser?.displayName || userDisplayName);
+        setPhone(parsed.phone || '+91 94311 20455');
+        setDistrict(parsed.district || currentUser?.district || 'Ranchi');
+        setBlock(parsed.block || 'Kanke Block');
+        setVillage(parsed.village || 'Hutup Panchayat');
+      }
+    } catch {
+      // Storage fallback
+    }
+  }, [currentUser?.uid, userDisplayName]);
+
+  const handleSaveProfile = () => {
+    const updated = {
+      displayName: displayName.trim() || 'Citizen User',
+      phone: phone.trim() || '+91 94311 20455',
+      district: district.trim() || 'Ranchi',
+      block: block.trim() || 'Kanke Block',
+      village: village.trim() || 'Hutup Panchayat',
+    };
+    try {
+      localStorage.setItem(profileStorageKey, JSON.stringify(updated));
+    } catch {
+      // Storage save fallback
+    }
+    setProfileData(updated);
+    if (updateUserProfile) {
+      updateUserProfile({ displayName: updated.displayName, district: updated.district });
+    }
+    window.dispatchEvent(new CustomEvent('nivaaran_profile_updated', { detail: updated }));
+    setIsEditing(false);
+    setSaveFeedback(true);
+    setTimeout(() => setSaveFeedback(false), 3500);
+  };
 
   // Live challenge data for stats
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
@@ -65,13 +128,13 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
   const saplingCount = Math.min(resolvedCount + Math.floor(govtVerified / 3), 9);
 
   const stats = [
-    { label: t.profile.reportsFiledStat, value: String(totalFiled || 4), icon: <FileText className="w-5 h-5 text-blue-600" /> },
+    { label: t.profile.reportsFiledStat, value: String(totalFiled || 4), icon: <FileText className="w-5 h-5 text-emerald-700" /> },
     { label: t.profile.govtVerifiedStat, value: String(govtVerified || 3), icon: <CheckCircle2 className="w-5 h-5 text-emerald-600" /> },
-    { label: t.profile.uniActiveStat, value: String(uniActive || 2), icon: <ShieldCheck className="w-5 h-5 text-purple-600" /> },
+    { label: t.profile.uniActiveStat, value: String(uniActive || 2), icon: <ShieldCheck className="w-5 h-5 text-amber-700" /> },
     { label: t.profile.treeVouchersStat, value: `${saplingCount || 3} Saplings`, icon: <Sprout className="w-5 h-5 text-emerald-600" /> },
   ];
 
-  // Live recent activity — most recently updated challenges
+  // Live recent activity: most recently updated challenges
   const recentActivity = allChallenges
     .slice()
     .sort((a, b) => ((b as any).updatedAt || b.createdAt || '').localeCompare((a as any).updatedAt || a.createdAt || ''))
@@ -80,7 +143,7 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
       id: c.reportId || c.id,
       title: c.title,
       district: c.district,
-      date: c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Recent',
+      date: c.createdAt ? new Date(c.createdAt).toLocaleDateString('en:IN', { day: 'numeric', month: 'short' }) : 'Recent',
       status: c.status,
       stage: c.stageName || `Stage ${c.stageNumber || 1}`,
     }));
@@ -92,13 +155,13 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5">
         <div className="flex items-center space-x-4">
           <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-slate-900 to-slate-800 text-white flex items-center justify-center font-black text-2xl shadow-md border-2 border-emerald-500 shrink-0">
-            {userDisplayName.charAt(0).toUpperCase()}
+            {displayName.charAt(0).toUpperCase()}
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
               <h2 className="text-xl sm:text-2xl font-black font-heading text-slate-900 leading-tight">
-                {userDisplayName}
+                {displayName}
               </h2>
               <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center shrink-0">
                 <ShieldCheck className="w-3 h-3 mr-1" /> {t.profile.verifiedCitizenBadge}
@@ -106,22 +169,38 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
             </div>
 
             <p className="text-xs text-slate-500 flex items-center">
-              <Mail className="w-3.5 h-3.5 mr-1 text-slate-400" /> {userEmail}
+              <Mail className="w-3.5 h-3.5 mr-1 text-slate-400" /> {currentUser?.email || userEmail}
             </p>
 
             <p className="text-xs font-semibold text-slate-700 flex items-center pt-0.5">
-              <MapPin className="w-3.5 h-3.5 mr-1 text-amber-500 shrink-0" />
+              <MapPin className="w-3.5 h-3.5 mr-1 text-amber-600 shrink-0" />
               {village}, {block}, District {district}
             </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2 shrink-0">
+          {saveFeedback && (
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Saved Successfully
+            </span>
+          )}
+
           <button
-            onClick={() => setIsEditing(!isEditing)}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 transition-colors flex items-center space-x-1.5"
+            onClick={() => {
+              if (isEditing) {
+                handleSaveProfile();
+              } else {
+                setIsEditing(true);
+              }
+            }}
+            className={`px-4 py-2 font-bold text-xs rounded-xl border transition-colors flex items-center space-x-1.5 cursor-pointer shadow-2xs ${
+              isEditing 
+                ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700' 
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-300'
+            }`}
           >
-            {isEditing ? <Save className="w-3.5 h-3.5 text-emerald-600" /> : <Edit3 className="w-3.5 h-3.5" />}
+            {isEditing ? <Save className="w-3.5 h-3.5 text-white" /> : <Edit3 className="w-3.5 h-3.5 text-slate-700" />}
             <span>{isEditing ? t.profile.saveChanges : t.profile.editProfile}</span>
           </button>
 
@@ -217,47 +296,95 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
 
           <div className="space-y-3 text-xs">
             <div>
-              <label className="text-slate-500 font-semibold block mb-1">Full Name</label>
+              <label className="text-slate-600 font-semibold block mb-1">Full Name</label>
               <input
                 type="text"
                 disabled={!isEditing}
-                value={userDisplayName}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 font-bold disabled:opacity-80"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                placeholder="Enter full name"
+                className={`w-full px-3 py-2 border rounded-lg font-bold transition-colors ${
+                  isEditing 
+                    ? 'bg-white border-emerald-500 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500' 
+                    : 'bg-slate-50 border-slate-200 text-slate-900 disabled:opacity-90'
+                }`}
               />
             </div>
 
             <div>
-              <label className="text-slate-500 font-semibold block mb-1">Phone Number</label>
+              <label className="text-slate-600 font-semibold block mb-1">Phone Number</label>
               <input
                 type="text"
                 disabled={!isEditing}
                 value={phone}
                 onChange={e => setPhone(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                placeholder="+91 94311 20455"
+                className={`w-full px-3 py-2 border rounded-lg font-bold transition-colors ${
+                  isEditing 
+                    ? 'bg-white border-emerald-500 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500' 
+                    : 'bg-slate-50 border-slate-200 text-slate-900 disabled:opacity-90'
+                }`}
               />
             </div>
 
             <div>
-              <label className="text-slate-500 font-semibold block mb-1">Resident District</label>
+              <label className="text-slate-600 font-semibold block mb-1">Resident District</label>
               <input
                 type="text"
                 disabled={!isEditing}
                 value={district}
                 onChange={e => setDistrict(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                placeholder="District name"
+                className={`w-full px-3 py-2 border rounded-lg font-bold transition-colors ${
+                  isEditing 
+                    ? 'bg-white border-emerald-500 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500' 
+                    : 'bg-slate-50 border-slate-200 text-slate-900 disabled:opacity-90'
+                }`}
               />
             </div>
 
             <div>
-              <label className="text-slate-500 font-semibold block mb-1">Block / Panchayat</label>
+              <label className="text-slate-600 font-semibold block mb-1">Block</label>
               <input
                 type="text"
                 disabled={!isEditing}
-                value={`${block}, ${village}`}
+                value={block}
                 onChange={e => setBlock(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-slate-900 font-bold focus:outline-none focus:ring-1 focus:ring-slate-900"
+                placeholder="Block name"
+                className={`w-full px-3 py-2 border rounded-lg font-bold transition-colors ${
+                  isEditing 
+                    ? 'bg-white border-emerald-500 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500' 
+                    : 'bg-slate-50 border-slate-200 text-slate-900 disabled:opacity-90'
+                }`}
               />
             </div>
+
+            <div>
+              <label className="text-slate-600 font-semibold block mb-1">Village / Panchayat</label>
+              <input
+                type="text"
+                disabled={!isEditing}
+                value={village}
+                onChange={e => setVillage(e.target.value)}
+                placeholder="Village / Panchayat name"
+                className={`w-full px-3 py-2 border rounded-lg font-bold transition-colors ${
+                  isEditing 
+                    ? 'bg-white border-emerald-500 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500' 
+                    : 'bg-slate-50 border-slate-200 text-slate-900 disabled:opacity-90'
+                }`}
+              />
+            </div>
+
+            {isEditing && (
+              <button
+                type="button"
+                onClick={handleSaveProfile}
+                className="w-full mt-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-lg transition-colors flex items-center justify-center space-x-1.5 shadow-2xs cursor-pointer"
+              >
+                <Save className="w-3.5 h-3.5 text-white" />
+                <span>Save Profile Changes</span>
+              </button>
+            )}
           </div>
         </div>
 

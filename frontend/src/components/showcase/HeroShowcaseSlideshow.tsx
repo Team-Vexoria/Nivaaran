@@ -308,10 +308,10 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
                 <div className="bg-white border border-[#E4DDD1] p-3 rounded-xl shadow-2xs">
                   <div className="flex items-center justify-between text-[#6A6155] text-[11px] font-semibold">
                     <span>Engineering Labs</span>
-                    <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                    <Building2 className="w-3.5 h-3.5 text-emerald-700" />
                   </div>
                   <p className="text-xl sm:text-2xl font-black text-[#201C18] font-heading mt-0.5">48+ HEI Labs</p>
-                  <p className="text-[10px] text-blue-700 font-bold">IIT, BIT, NIT & BAU</p>
+                  <p className="text-[10px] text-emerald-800 font-bold">IIT, BIT, NIT & BAU</p>
                 </div>
 
                 <div className="bg-white border border-[#E4DDD1] p-3 rounded-xl shadow-2xs">

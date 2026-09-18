@@ -41,6 +41,7 @@ interface AuthContextType {
   signupWithEmail: (email: string, pass: string, name: string, role: UserRole) => Promise<UserProfile>;
   loginWithGoogle: (role?: UserRole) => Promise<UserProfile>;
   loginDemoUser: (role: UserRole, name: string, uid?: string) => UserProfile;
+  updateUserProfile: (updates: Partial<UserProfile>) => void;
   logout: () => Promise<void>;
 }
 
@@ -381,6 +382,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return demoUser;
   };
 
+  const updateUserProfile = (updates: Partial<UserProfile>) => {
+    setCurrentUser(prev => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updates };
+      try {
+        localStorage.setItem('nivaaran_demo_user', JSON.stringify(updated));
+      } catch {
+        // storage fallback
+      }
+      return updated;
+    });
+  };
+
   const logout = async () => {
     try {
       if (!isMockFirebase()) {
@@ -401,6 +415,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signupWithEmail,
       loginWithGoogle,
       loginDemoUser,
+      updateUserProfile,
       logout,
     }}>
       {children}
