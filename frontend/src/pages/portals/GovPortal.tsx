@@ -38,12 +38,13 @@ import {
   Volume2,
   Film,
   ExternalLink,
-  Copy
+  Copy,
+  Trash2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
 import { useMapData, getSeverityBg, getStatusPillClass } from '../../services/mapDataService';
-import { govValidateChallenge, govRequestEvidence, govVerifyAndDeployChallenge, govRejectChallenge, ChallengeDoc } from '../../services/firebaseService';
+import { govValidateChallenge, govRequestEvidence, govVerifyAndDeployChallenge, govRejectChallenge, deleteChallengeDoc, ChallengeDoc } from '../../services/firebaseService';
 import { extractIncidentMetadata } from '../../services/dataExtractionService';
 import { CertificateModal } from '../../components/CertificateModal';
 import { StateSummaryReportModal } from '../../components/gov/StateSummaryReportModal';
@@ -94,6 +95,7 @@ interface ChallengeDetailModalProps {
   challenge: ChallengeDoc;
   officerName: string;
   onConfirmAction: (type: 'validate' | 'evidence' | 'deploy' | 'reject', note: string) => void;
+  onOpenDeleteModal?: (challenge: ChallengeDoc) => void;
   onClose: () => void;
 }
 
@@ -101,6 +103,7 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
   challenge,
   officerName,
   onConfirmAction,
+  onOpenDeleteModal,
   onClose,
 }) => {
   const [selectedAction, setSelectedAction] = useState<'validate' | 'evidence' | 'deploy' | 'reject'>('validate');
@@ -590,25 +593,191 @@ const ChallengeDetailModal: React.FC<ChallengeDetailModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 bg-[#FAF8F4] border-t border-[#E4DDD1] flex items-center justify-end gap-3 shrink-0">
+        <div className="px-6 py-4 bg-[#FAF8F4] border-t border-[#E4DDD1] flex flex-wrap items-center justify-between gap-3 shrink-0">
+          {onOpenDeleteModal && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenDeleteModal(challenge);
+              }}
+              className="px-3.5 py-2 text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+              title="Permanently remove this citizen post if it does not suit the platform"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+              <span>Delete Post from Platform</span>
+            </button>
+          )}
+          <div className="flex items-center gap-3 ml-auto">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-xs font-bold text-[#4A433B] bg-[#EAE4D8] hover:bg-[#DFD8CA] border border-[#E4DDD1] rounded-xl transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                onConfirmAction(selectedAction, officerNote.trim() || getNotePlaceholder());
+                onClose();
+              }}
+              className="px-6 py-2 text-xs font-extrabold text-white bg-[#2C6E49] hover:bg-[#23583a] rounded-xl transition-colors cursor-pointer shadow-sm flex items-center gap-1.5"
+            >
+              <Check className="w-4 h-4" />
+              <span>Confirm & Record Directive</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+// ─── Government Delete Post / Content Moderation Modal ──────────────────────
+interface GovernmentDeletePostModalProps {
+  challenge: ChallengeDoc;
+  officerName: string;
+  onConfirmDelete: (challenge: ChallengeDoc, reason: string, note: string) => Promise<void>;
+  onClose: () => void;
+}
+
+const GovernmentDeletePostModal: React.FC<GovernmentDeletePostModalProps> = ({
+  challenge,
+  officerName,
+  onConfirmDelete,
+  onClose,
+}) => {
+  const [selectedReason, setSelectedReason] = useState<string>('Does not suit platform / Inappropriate content');
+  const [auditNote, setAuditNote] = useState<string>('');
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  const reasons = [
+    'Does not suit platform / Inappropriate content',
+    'Non-civic / Personal selfie, indoor photo or promotional post',
+    'Abusive, offensive, or harmful material',
+    'Fabricated / Fake evidence or synthetic AI generation',
+    'Spam, duplicate or test submission',
+    'Other platform policy violation',
+  ];
+
+  const handleExecute = async () => {
+    setIsDeleting(true);
+    try {
+      const finalNote = auditNote.trim() || `Removed by ${officerName}. Content does not meet platform standards.`;
+      await onConfirmDelete(challenge, selectedReason, finalNote);
+    } finally {
+      setIsDeleting(false);
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[350] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white border border-rose-200 rounded-2xl max-w-lg w-full flex flex-col shadow-2xl overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
+        {/* Header */}
+        <div className="px-6 py-4 bg-rose-50/80 border-b border-rose-200 flex items-center justify-between">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center border border-rose-200 shrink-0">
+              <Trash2 className="w-4 h-4" />
+            </div>
+            <div>
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-rose-700 block">
+                Government Content Moderation Authority
+              </span>
+              <h3 className="text-base font-black text-slate-900 leading-tight">
+                Delete Citizen Post from Platform
+              </h3>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-bold text-[#4A433B] bg-[#EAE4D8] hover:bg-[#DFD8CA] border border-[#E4DDD1] rounded-xl transition-colors cursor-pointer"
+            disabled={isDeleting}
+            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-white/60 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 space-y-4 text-xs">
+          {/* Warning banner */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2.5 text-amber-900">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="text-[11px] leading-relaxed">
+              <span className="font-bold block">Permanent Platform Deletion</span>
+              This action will permanently purge this grievance, its attached media, and community feed entry across all citizen and department portals.
+            </div>
+          </div>
+
+          {/* Post summary card */}
+          <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3 space-y-1">
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="font-mono font-bold text-slate-500">{challenge.reportId || challenge.id}</span>
+              <span className="font-bold text-slate-600">{challenge.district || 'Jharkhand'}</span>
+            </div>
+            <p className="font-bold text-slate-900 line-clamp-1">{challenge.title}</p>
+            {challenge.summary && (
+              <p className="text-[11px] text-slate-600 line-clamp-2">{challenge.summary}</p>
+            )}
+          </div>
+
+          {/* Reason selection */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+              Reason for Removal (Does not suit platform):
+            </label>
+            <select
+              value={selectedReason}
+              onChange={(e) => setSelectedReason(e.target.value)}
+              className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/30"
+            >
+              {reasons.map((r, i) => (
+                <option key={i} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Official Audit Remarks */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+              Official Moderation Note (Audit Log):
+            </label>
+            <textarea
+              rows={2}
+              value={auditNote}
+              onChange={(e) => setAuditNote(e.target.value)}
+              placeholder={`Removed by ${officerName}. Content does not meet NIVAARAN societal challenge guidelines.`}
+              className="w-full border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500/30 resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isDeleting}
+            className="px-4 py-2 text-xs font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
-            onClick={() => {
-              onConfirmAction(selectedAction, officerNote.trim() || getNotePlaceholder());
-              onClose();
-            }}
-            className="px-6 py-2 text-xs font-extrabold text-white bg-[#2C6E49] hover:bg-[#23583a] rounded-xl transition-colors cursor-pointer shadow-sm flex items-center gap-1.5"
+            type="button"
+            onClick={handleExecute}
+            disabled={isDeleting}
+            className="px-4 py-2 text-xs font-extrabold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors cursor-pointer shadow-sm flex items-center gap-1.5 disabled:opacity-50"
           >
-            <Check className="w-4 h-4" />
-            <span>Confirm & Record Directive</span>
+            {isDeleting ? (
+              <span>Removing...</span>
+            ) : (
+              <>
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Permanently Delete Post</span>
+              </>
+            )}
           </button>
         </div>
-
       </div>
     </div>
   );
@@ -732,6 +901,7 @@ export const GovPortal: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'warning' } | null>(null);
   // Modals state
   const [inspectModalChallenge, setInspectModalChallenge] = useState<ChallengeDoc | null>(null);
+  const [deleteTargetChallenge, setDeleteTargetChallenge] = useState<ChallengeDoc | null>(null);
   const [selectedHEIModal, setSelectedHEIModal] = useState<HEIData | null>(null);
   const [certificateModal, setCertificateModal] = useState<{ isOpen: boolean; challenge: ChallengeDoc | null }>({
     isOpen: false,
@@ -843,6 +1013,33 @@ export const GovPortal: React.FC = () => {
     }
   };
 
+  const handleConfirmDeletePost = async (challenge: ChallengeDoc, reason: string, note: string) => {
+    const id = challenge.id || challenge.reportId;
+    setDeleteTargetChallenge(null);
+    if (inspectModalChallenge && (inspectModalChallenge.id === id || inspectModalChallenge.reportId === id)) {
+      setInspectModalChallenge(null);
+    }
+
+    workflowStore.addTimelineEvent({
+      id: `TL-${Date.now()}-del-${id}`,
+      entityType: 'challenge',
+      entityId: id,
+      action: 'status_changed',
+      actor: officerName,
+      actorRole: 'Government Department',
+      description: `Citizen post removed from platform by Government Authority. Reason: "${reason}". Note: "${note}"`,
+      timestamp: new Date().toISOString(),
+    });
+
+    const ok = await deleteChallengeDoc(id);
+    showToast(
+      ok
+        ? `✓ Citizen post "${challenge.title}" was permanently removed from the platform.`
+        : `Unable to remove post "${challenge.title}".`,
+      ok ? 'warning' : 'warning'
+    );
+  };
+
   const handleExportStateReport = () => {
     setIsReportModalOpen(true);
   };
@@ -878,7 +1075,18 @@ export const GovPortal: React.FC = () => {
           challenge={inspectModalChallenge}
           officerName={officerName}
           onConfirmAction={handleConfirmInspectionAction}
+          onOpenDeleteModal={setDeleteTargetChallenge}
           onClose={() => setInspectModalChallenge(null)}
+        />
+      )}
+
+      {/* ── Government Content Moderation / Delete Post Modal ── */}
+      {deleteTargetChallenge && (
+        <GovernmentDeletePostModal
+          challenge={deleteTargetChallenge}
+          officerName={officerName}
+          onConfirmDelete={handleConfirmDeletePost}
+          onClose={() => setDeleteTargetChallenge(null)}
         />
       )}
 
@@ -1205,6 +1413,14 @@ export const GovPortal: React.FC = () => {
                                 className="text-[11px] font-extrabold text-[#B91C1C] bg-[#FEF2F2] hover:bg-[#FEE2E2] border border-[#FECACA] px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs"
                               >
                                 Reject
+                              </button>
+                              <button
+                                onClick={() => setDeleteTargetChallenge(ch)}
+                                className="text-[11px] font-extrabold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer shadow-2xs flex items-center gap-1"
+                                title="Delete citizen post if it does not suit the platform"
+                              >
+                                <Trash2 className="w-3 h-3 text-rose-600" />
+                                <span>Delete</span>
                               </button>
                             </div>
                           </div>
@@ -1848,6 +2064,17 @@ export const GovPortal: React.FC = () => {
                             Reject
                           </button>
                         )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTargetChallenge(ch);
+                          }}
+                          className="flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-extrabold py-2 px-3 rounded-lg border border-rose-200 transition-colors cursor-pointer"
+                          title="Permanently remove citizen post from platform"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                          <span>Delete</span>
+                        </button>
                       </div>
                     </div>
                   );

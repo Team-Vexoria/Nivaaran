@@ -252,7 +252,7 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
       id: c.reportId || c.id,
       title: c.title,
       district: c.district,
-      date: c.createdAt ? new Date(c.createdAt).toLocaleDateString('en:IN', { day: 'numeric', month: 'short' }) : 'Recent',
+      date: c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Recent',
       status: c.status,
       stage: c.stageName || `Stage ${c.stageNumber || 1}`,
     }));

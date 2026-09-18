@@ -225,7 +225,7 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
           <div className="bg-white p-3.5 rounded-2xl border border-[#E4DDD1] shadow-2xs space-y-1">
             <span className="text-[11px] font-semibold text-slate-500 block">Total Tree Saplings</span>
             <div className="flex items-baseline space-x-1">
-              <span className="text-xl font-extrabold text-[#2C6E49] font-heading">{dashboardStats.stateSaplings.toLocaleString('en:IN')}</span>
+              <span className="text-xl font-extrabold text-[#2C6E49] font-heading">{dashboardStats.stateSaplings.toLocaleString('en-IN')}</span>
               <span className="text-[10px] text-slate-400 font-bold">Trees</span>
             </div>
           </div>
@@ -233,7 +233,7 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
           <div className="bg-white p-3.5 rounded-2xl border border-[#E4DDD1] shadow-2xs space-y-1">
             <span className="text-[11px] font-semibold text-slate-500 block">State Green Points</span>
             <div className="flex items-baseline space-x-1">
-              <span className="text-xl font-extrabold text-amber-700 font-heading">{dashboardStats.statePoints.toLocaleString('en:IN')}</span>
+              <span className="text-xl font-extrabold text-amber-700 font-heading">{dashboardStats.statePoints.toLocaleString('en-IN')}</span>
               <span className="text-[10px] text-slate-400 font-bold">Pts</span>
             </div>
           </div>

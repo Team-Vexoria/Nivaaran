@@ -1,5 +1,5 @@
 import { 
-  collection, addDoc, updateDoc, doc, onSnapshot, query, orderBy, serverTimestamp, getDoc, where
+  collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp, getDoc, where
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
@@ -620,6 +620,44 @@ export const deleteChallengeDoc = async (id: string): Promise<boolean> => {
     const filtered = existing.filter((c: any) => c.id !== id && c.reportId !== id);
     localStorage.setItem('nivaaran_challenges', JSON.stringify(filtered));
   } catch {}
+
+  // Also purge from community feed posts if matched
+  try {
+    const existingPosts = JSON.parse(localStorage.getItem('nivaaran_feed_posts') || '[]');
+    const filteredPosts = existingPosts.filter((p: any) => 
+      p.id !== id && 
+      p.challengeId !== id && 
+      p.reportId !== id && 
+      p.ticketId !== id &&
+      (p as any).customId !== id
+    );
+    localStorage.setItem('nivaaran_feed_posts', JSON.stringify(filteredPosts));
+  } catch {}
+
+  // Delete from Firestore if online and not a local ID
+  try {
+    if (id && !id.startsWith('LOCAL-')) {
+      const challengeRef = doc(db, 'challenges', id);
+      await deleteDoc(challengeRef);
+    }
+  } catch (err) {
+    console.warn('[Firestore] Delete challenge fallback:', err);
+  }
+
+  try {
+    if (id && !id.startsWith('LOCAL-')) {
+      const postRef = doc(db, 'community_posts', id);
+      await deleteDoc(postRef);
+    }
+  } catch (err) {
+    console.warn('[Firestore] Delete post fallback:', err);
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('nivaaran-storage-changed'));
+    window.dispatchEvent(new CustomEvent(STORE_EVENT));
+  }
+
   return ok;
 };
 
