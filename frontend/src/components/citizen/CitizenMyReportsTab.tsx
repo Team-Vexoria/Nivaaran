@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send, Users, Trash2, Calendar, User, Volume2, Film } from 'lucide-react';
+import { MapPin, PlusCircle, Clock, CheckCircle2, ChevronRight, X, UserCheck, ShieldCheck, Building2, AlertTriangle, FileSearch, Activity, Paperclip, Send, Users, Trash2, Calendar, User, Volume2, Film, Layers } from 'lucide-react';
 import { subscribeToChallenges, ChallengeDoc, uploadEvidenceImage, deleteChallengeDoc } from '../../services/firebaseService';
 import { extractIncidentMetadata } from '../../services/dataExtractionService';
 import { CHALLENGE_STATUS_OPTIONS, LIFECYCLE_STAGES, getStageForStatus, getPublicStatusLabel } from '../../services/workflowLifecycle';
 import { workflowStore } from '../../services/workflowStore';
-import type { TimelineEvent } from '../../services/workflowTypes';
+import type { TimelineEvent, Challenge } from '../../services/workflowTypes';
+import { StageDetailAccordionByPhase } from '../stages/StageDetailAccordion';
 import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { SupportedLanguage } from '../../i18n/translations';
@@ -392,14 +393,19 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
       )}
 
       {/* ── Detailed Government Incident Tracking Modal ───────────────────────── */}
-      {selectedReport && (
-        <TrackingModal
-          report={selectedReport}
-          wfStageNumber={wfStageNumber}
-          timelineEvents={timelineEvents}
-          onClose={() => setSelectedReport(null)}
-        />
-      )}
+      {selectedReport && (() => {
+        const id = selectedReport.id || selectedReport.reportId;
+        const wfCh = workflowStore.getChallenge(id);
+        return (
+          <TrackingModal
+            report={selectedReport}
+            wfStageNumber={wfStageNumber}
+            wfChallenge={wfCh || null}
+            timelineEvents={timelineEvents}
+            onClose={() => setSelectedReport(null)}
+          />
+        );
+      })()}
 
     </div>
   );
@@ -413,11 +419,12 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
 interface TrackingModalProps {
   report: ChallengeDoc;
   wfStageNumber: number | null;
+  wfChallenge?: Challenge | null;
   timelineEvents: TimelineEvent[];
   onClose: () => void;
 }
 
-const TrackingModal: React.FC<TrackingModalProps> = ({ report, wfStageNumber, timelineEvents, onClose }) => {
+const TrackingModal: React.FC<TrackingModalProps> = ({ report, wfStageNumber, wfChallenge, timelineEvents, onClose }) => {
   // Use live workflowStore stage when available; fall back to firebase's stored value
   const activeStageNumber = wfStageNumber ?? report.stageNumber ?? getStageForStatus(report.status)?.stageNumber ?? 1;
   const activeStatus = getPublicStatusLabel(report.status);
@@ -706,43 +713,47 @@ const TrackingModal: React.FC<TrackingModalProps> = ({ report, wfStageNumber, ti
           </div>
         )}
 
-        {/* 16-Stage Visual Government Milestone Stepper */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4.5 space-y-3 shadow-2xs">
+        {/* 16-Stage Animated Accordion */}
+        <div className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-2xs">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
             <span className="text-xs font-bold font-heading text-slate-900 uppercase tracking-wider flex items-center">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 mr-1.5 shrink-0" />
-              16-Stage Government Lifecycle Pipeline
+              <Layers className="w-4 h-4 text-emerald-600 mr-1.5 shrink-0" />
+              16-Stage Lifecycle — Tap to Expand
             </span>
             <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              {activeStatus}  ·  Stage {activeStageNumber}
+              {activeStatus} · Stage {activeStageNumber}
             </span>
           </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 pt-1">
-            {LIFECYCLE_STAGES.map((stage) => {
-              const isComplete = activeStageNumber > stage.stageNumber;
-              const isCurrent  = activeStageNumber === stage.stageNumber;
-              const stateLabel = isComplete ? 'COMPLETED' : isCurrent ? 'CURRENT' : 'PENDING';
-
-              return (
-                <div
-                  key={stage.stageNumber}
-                  className={`${isComplete ? 'bg-emerald-50 border-emerald-200' : isCurrent ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200 opacity-75'} border p-2.5 rounded-xl text-center space-y-1 min-h-[94px]`}
-                  title={stage.description}
-                >
-                  <span className={`w-6 h-6 ${isComplete ? 'bg-emerald-600' : isCurrent ? 'bg-amber-600' : 'bg-slate-300'} ${isComplete || isCurrent ? 'text-white' : 'text-slate-700'} rounded-full text-[10px] font-black inline-flex items-center justify-center`}>
-                    {stage.stageNumber}
-                  </span>
-                  <span className="block text-[10px] font-extrabold text-slate-900 leading-tight">
-                    {stage.displayName}
-                  </span>
-                  <span className={`block text-[8px] font-bold ${isComplete ? 'text-emerald-700' : isCurrent ? 'text-amber-700' : 'text-slate-500'} uppercase tracking-wider`}>
-                    {stateLabel}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+          {wfChallenge ? (
+            <StageDetailAccordionByPhase
+              allStages={LIFECYCLE_STAGES.map(s => ({
+                num: s.stageNumber,
+                name: s.displayName,
+                phase: s.stageNumber <= 5 ? 'Phase 1: Problem Intake & Triage'
+                  : s.stageNumber <= 9 ? 'Phase 2: Academic Allocation & Team'
+                  : s.stageNumber <= 13 ? 'Phase 3: Industry & Prototyping'
+                  : 'Phase 4: Statewide Deployment & Impact',
+                actor: s.description || '',
+              }))}
+              currentStageNum={activeStageNumber}
+              challenge={wfChallenge}
+              compact
+            />
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 pt-1">
+              {LIFECYCLE_STAGES.map((stage) => {
+                const isComplete = activeStageNumber > stage.stageNumber;
+                const isCurrent  = activeStageNumber === stage.stageNumber;
+                return (
+                  <div key={stage.stageNumber} className={`${isComplete ? 'bg-emerald-50 border-emerald-200' : isCurrent ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200 opacity-75'} border p-2.5 rounded-xl text-center space-y-1 min-h-[94px]`}>
+                    <span className={`w-6 h-6 ${isComplete ? 'bg-emerald-600' : isCurrent ? 'bg-amber-600' : 'bg-slate-300'} ${isComplete || isCurrent ? 'text-white' : 'text-slate-700'} rounded-full text-[10px] font-black inline-flex items-center justify-center`}>{stage.stageNumber}</span>
+                    <span className="block text-[10px] font-extrabold text-slate-900 leading-tight">{stage.displayName}</span>
+                    <span className={`block text-[8px] font-bold ${isComplete ? 'text-emerald-700' : isCurrent ? 'text-amber-700' : 'text-slate-500'} uppercase tracking-wider`}>{isComplete ? 'DONE' : isCurrent ? 'ACTIVE' : 'PENDING'}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* ── Journey Timeline ──────────────────────────────────────────────────── */}

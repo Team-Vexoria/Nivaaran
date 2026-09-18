@@ -9,7 +9,8 @@ export type NotificationType =
   | 'emergency'
   | 'message'
   | 'sms_dispatched'
-  | 'email_dispatched';
+  | 'email_dispatched'
+  | 'stage_advance';
 
 export interface AppNotification {
   id: string;
@@ -22,6 +23,8 @@ export interface AppNotification {
   targetRole?: string;
   channel?: 'in_app' | 'sms' | 'email';
   recipientContact?: string;
+  stageNumber?: number;
+  stageFullDescription?: string;
 }
 
 const STORAGE_KEY = 'nivaaran_live_notifications_v1';
@@ -261,6 +264,24 @@ export const notificationService = {
       recipientContact: email,
     });
   },
+
+  addStageAdvanceNotification(
+    reportId: string,
+    challengeTitle: string,
+    stageNumber: number,
+    stageName: string,
+    stageBody: string,
+  ): AppNotification {
+    return this.addNotification({
+      title: `Stage ${stageNumber} reached: ${stageName}`,
+      message: `${challengeTitle} — ${stageBody.slice(0, 120)}${stageBody.length > 120 ? '…' : ''}`,
+      type: 'stage_advance',
+      reportId,
+      channel: 'in_app',
+      stageNumber,
+      stageFullDescription: stageBody,
+    });
+  },
 };
 
 export function useNotifications() {
@@ -286,5 +307,7 @@ export function useNotifications() {
     addNotification: (item: Omit<AppNotification, 'id' | 'timestamp' | 'read'>) => notificationService.addNotification(item),
     sendSimulatedSMS: (phone: string, text: string, reportId?: string) => notificationService.sendSimulatedSMS(phone, text, reportId),
     sendSimulatedEmail: (email: string, subject: string, body: string, reportId?: string) => notificationService.sendSimulatedEmail(email, subject, body, reportId),
+    addStageAdvanceNotification: (reportId: string, challengeTitle: string, stageNumber: number, stageName: string, stageBody: string) =>
+      notificationService.addStageAdvanceNotification(reportId, challengeTitle, stageNumber, stageName, stageBody),
   };
 }

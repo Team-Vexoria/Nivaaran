@@ -16,6 +16,9 @@ import {
 import { ChallengeDoc, subscribeToChallenges, getChallengeByReportId } from '../../services/firebaseService';
 import { getSeverityBg, getStatusPillClass } from '../../services/mapDataService';
 import { IoTSensorTelemetryCard } from '../telemetry/IoTSensorTelemetryCard';
+import { StageDetailAccordionByPhase } from '../stages/StageDetailAccordion';
+import { workflowStore } from '../../services/workflowStore';
+import type { Challenge } from '../../services/workflowTypes';
 
 interface PublicChallengeTrackerProps {
   initialReportId?: string;
@@ -48,6 +51,7 @@ export const PublicChallengeTracker: React.FC<PublicChallengeTrackerProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>(initialReportId);
   const [allChallenges, setAllChallenges] = useState<ChallengeDoc[]>([]);
   const [selectedChallenge, setSelectedChallenge] = useState<ChallengeDoc | null>(null);
+  const [wfChallenge, setWfChallenge] = useState<Challenge | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -64,6 +68,14 @@ export const PublicChallengeTracker: React.FC<PublicChallengeTrackerProps> = ({
     });
     return () => unsub();
   }, [initialReportId]);
+
+  // Resolve wfChallenge from workflowStore whenever selectedChallenge changes
+  useEffect(() => {
+    if (!selectedChallenge) { setWfChallenge(null); return; }
+    const id = selectedChallenge.id || selectedChallenge.reportId || '';
+    const wf = workflowStore.getChallenge(id);
+    setWfChallenge(wf || null);
+  }, [selectedChallenge]);
 
   const handleSearch = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -82,7 +94,7 @@ export const PublicChallengeTracker: React.FC<PublicChallengeTrackerProps> = ({
     }
   };
 
-  const currentStageNum = selectedChallenge?.stageNumber || (
+  const currentStageNum = wfChallenge?.stageNumber || selectedChallenge?.stageNumber || (
     selectedChallenge?.status === 'Resolved' ? 16 :
     selectedChallenge?.status === 'In Progress' ? 8 :
     selectedChallenge?.status === 'Government Validated' ? 5 : 1
@@ -234,73 +246,30 @@ export const PublicChallengeTracker: React.FC<PublicChallengeTrackerProps> = ({
                 </div>
               </div>
 
-              {/* 2. Interactive 16-Stage Full Lifecycle Stepper */}
+              {/* 2. Interactive 16-Stage Full Lifecycle Stepper with Descriptions */}
               <div className="bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between border-b border-[#F0EBE0] pb-3">
                   <div className="flex items-center space-x-2">
                     <Layers className="w-4 h-4 text-[#2C6E49]" />
-                    <h4 className="text-sm font-extrabold text-[#201C18]">16-Stage End-to-End Progress Stepper</h4>
+                    <h4 className="text-sm font-extrabold text-[#201C18]">16-Stage End-to-End Progress</h4>
                   </div>
                   <span className="text-xs font-mono font-bold text-[#2C6E49]">
                     {currentStageNum >= 16 ? '100% Completed' : `${Math.round((currentStageNum / 16) * 100)}% Milestone Completed`}
                   </span>
                 </div>
 
-                <div className="space-y-4">
-                  {['Phase 1: Problem Intake & Triage', 'Phase 2: Academic Allocation & Team', 'Phase 3: Industry & Prototyping', 'Phase 4: Statewide Deployment & Impact'].map((phaseTitle, pIdx) => {
-                    const phaseStages = ALL_16_STAGES.filter(s => s.phase === phaseTitle);
-                    const isPhasePassed = phaseStages.every(s => s.num <= currentStageNum);
-                    const isPhaseCurrent = phaseStages.some(s => s.num === currentStageNum);
-
-                    return (
-                      <div key={pIdx} className="border border-[#E4DDD1] rounded-xl p-3.5 bg-[#FAF8F4]/60 space-y-2.5">
-                        <div className="flex items-center justify-between">
-                          <span className={`text-[11px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded ${
-                            isPhasePassed ? 'bg-[#2C6E49]/15 text-[#2C6E49]' :
-                            isPhaseCurrent ? 'bg-[#C98A2C]/15 text-[#C98A2C]' :
-                            'bg-gray-100 text-[#8A7F72]'
-                          }`}>
-                            {phaseTitle}
-                          </span>
-                          <span className="text-[10px] text-[#8A7F72]">Stages {phaseStages[0].num}–{phaseStages[phaseStages.length - 1].num}</span>
-                        </div>
-
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2">
-                          {phaseStages.map((st) => {
-                            const isDone = st.num < currentStageNum || (st.num === 16 && currentStageNum === 16);
-                            const isCurrent = st.num === currentStageNum && currentStageNum !== 16;
-
-                            return (
-                              <div
-                                key={st.num}
-                                className={`p-2.5 rounded-xl border text-xs transition-all ${
-                                  isDone
-                                    ? 'bg-[#F0FAF4] border-[#C3E6D0] text-[#2C6E49]'
-                                    : isCurrent
-                                    ? 'bg-[#FFF8EC] border-[#F0D99A] text-[#C98A2C] shadow-xs'
-                                    : 'bg-white border-[#E4DDD1] text-[#8A7F72]'
-                                }`}
-                              >
-                                <div className="flex items-center justify-between mb-1">
-                                  <span className="font-mono text-[10px] font-extrabold">Stage {st.num}</span>
-                                  {isDone ? (
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-[#2C6E49]" />
-                                  ) : isCurrent ? (
-                                    <Clock className="w-3.5 h-3.5 text-[#C98A2C] animate-pulse" />
-                                  ) : (
-                                    <div className="w-2 h-2 rounded-full bg-[#E4DDD1]" />
-                                  )}
-                                </div>
-                                <p className="font-bold leading-tight text-[11px]">{st.name}</p>
-                                <p className="text-[9px] opacity-80 mt-0.5">{st.actor}</p>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                {wfChallenge ? (
+                  <StageDetailAccordionByPhase
+                    allStages={ALL_16_STAGES}
+                    currentStageNum={currentStageNum}
+                    challenge={wfChallenge}
+                    compact={false}
+                  />
+                ) : (
+                  <p className="text-xs text-[#8A7F72] text-center py-4">
+                    Loading stage details…
+                  </p>
+                )}
               </div>
 
               {/* 3. Deep Telemetry, University R&D & Verification Grid */}

@@ -15,6 +15,8 @@ import type {
   ChallengeStatus,
 } from './workflowTypes';
 import { formatStageName, getStageForStatus, isValidStageTransition } from './workflowLifecycle';
+import { composeStageDescription } from './stageDescriptionEngine';
+import { notificationService } from './notificationService';
 import { apiClient } from '../api/client';
 
 const STORE_KEY = 'nivaaran_workflow_state';
@@ -346,6 +348,19 @@ class WorkflowStore {
             newValue: newStatus,
             timestamp: new Date().toISOString()
           });
+          // Fire stage advance notification
+          try {
+            const desc = composeStageDescription(updated, nextStage.stageNumber);
+            notificationService.addStageAdvanceNotification(
+              updated.reportId || updated.id,
+              updated.title,
+              nextStage.stageNumber,
+              nextStage.displayName,
+              desc.body,
+            );
+          } catch {
+            // Notification failure must not block lifecycle transition
+          }
         }
         return { success: true };
       }
@@ -374,6 +389,20 @@ class WorkflowStore {
       newValue: newStatus,
       timestamp: new Date().toISOString()
     });
+
+    // Fire stage advance notification
+    try {
+      const desc = composeStageDescription(updated, nextStage.stageNumber);
+      notificationService.addStageAdvanceNotification(
+        updated.reportId || updated.id,
+        updated.title,
+        nextStage.stageNumber,
+        nextStage.displayName,
+        desc.body,
+      );
+    } catch {
+      // Notification failure must not block lifecycle transition
+    }
 
     return { success: true };
   }

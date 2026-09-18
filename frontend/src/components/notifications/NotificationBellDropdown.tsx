@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Bell, Check, Trash2, Smartphone, Mail, Rocket, Building2, 
-  FileText, ShieldAlert, AlertCircle, ExternalLink, X, Send 
+  FileText, ShieldAlert, AlertCircle, ExternalLink, X, Send, Layers, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useNotifications } from '../../services/notificationService';
 
@@ -30,7 +30,8 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
   } = useNotifications();
   
   const [isOpen, setIsOpen] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<'all' | 'updates' | 'dispatches'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'updates' | 'dispatches' | 'stage_updates'>('all');
+  const [expandedStageNotif, setExpandedStageNotif] = useState<string | null>(null);
   const [showSimModal, setShowSimModal] = useState(false);
   const [simContact, setSimContact] = useState('+91 94311 00000');
   const [simType, setSimType] = useState<'sms' | 'email'>('sms');
@@ -54,6 +55,9 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
     if (activeFilter === 'dispatches') {
       return n.type === 'sms_dispatched' || n.type === 'email_dispatched';
     }
+    if (activeFilter === 'stage_updates') {
+      return n.type === 'stage_advance';
+    }
     if (activeFilter === 'updates') {
       return n.type !== 'sms_dispatched' && n.type !== 'email_dispatched';
     }
@@ -74,6 +78,8 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
         return <FileText className="w-4 h-4 text-amber-800" />;
       case 'evidence_request':
         return <ShieldAlert className="w-4 h-4 text-red-600" />;
+      case 'stage_advance':
+        return <Layers className="w-4 h-4 text-amber-600" />;
       default:
         return <AlertCircle className="w-4 h-4 text-[#2C6E49]" />;
     }
@@ -151,40 +157,26 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
           </div>
 
           {/* Filter Tabs */}
-          <div className="flex border-b border-[#E4DDD1] text-[11px] font-bold bg-[#FAF8F4]/50">
-            <button
-              type="button"
-              onClick={() => setActiveFilter('all')}
-              className={`flex-1 py-1.5 text-center transition-colors border-b-2 ${
-                activeFilter === 'all'
-                  ? 'border-[#2C6E49] text-[#2C6E49] font-black bg-white'
-                  : 'border-transparent text-[#6A6155] hover:text-[#201C18]'
-              }`}
-            >
-              All ({notifications.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveFilter('updates')}
-              className={`flex-1 py-1.5 text-center transition-colors border-b-2 ${
-                activeFilter === 'updates'
-                  ? 'border-[#2C6E49] text-[#2C6E49] font-black bg-white'
-                  : 'border-transparent text-[#6A6155] hover:text-[#201C18]'
-              }`}
-            >
-              Lifecycle Updates
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveFilter('dispatches')}
-              className={`flex-1 py-1.5 text-center transition-colors border-b-2 ${
-                activeFilter === 'dispatches'
-                  ? 'border-[#2C6E49] text-[#2C6E49] font-black bg-white'
-                  : 'border-transparent text-[#6A6155] hover:text-[#201C18]'
-              }`}
-            >
-              SMS / Email
-            </button>
+          <div className="flex border-b border-[#E4DDD1] text-[10px] font-bold bg-[#FAF8F4]/50">
+            {([
+              { key: 'all', label: `All (${notifications.length})` },
+              { key: 'updates', label: 'Lifecycle' },
+              { key: 'stage_updates', label: `Stages (${notifications.filter(n => n.type === 'stage_advance').length})` },
+              { key: 'dispatches', label: 'SMS/Email' },
+            ] as const).map(tab => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveFilter(tab.key)}
+                className={`flex-1 py-1.5 text-center transition-colors border-b-2 ${
+                  activeFilter === tab.key
+                    ? 'border-[#2C6E49] text-[#2C6E49] font-black bg-white'
+                    : 'border-transparent text-[#6A6155] hover:text-[#201C18]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           {/* Notification Items List */}
@@ -232,13 +224,40 @@ export const NotificationBellDropdown: React.FC<NotificationBellDropdownProps> =
                       {n.message}
                     </p>
 
+                    {/* Stage advance "Read more" expansion */}
+                    {n.type === 'stage_advance' && n.stageFullDescription && (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setExpandedStageNotif(expandedStageNotif === n.id ? null : n.id);
+                          }}
+                          className="flex items-center gap-1 text-[10px] font-bold text-amber-700 hover:text-amber-900 mt-1"
+                        >
+                          {expandedStageNotif === n.id
+                            ? <><ChevronUp className="w-3 h-3" /> Hide details</>
+                            : <><ChevronDown className="w-3 h-3" /> Read more</>
+                          }
+                        </button>
+                        {expandedStageNotif === n.id && (
+                          <div className="mt-2 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-2">
+                            <p className="text-[10px] font-black text-amber-700 mb-1 flex items-center gap-1">
+                              <Layers className="w-3 h-3" /> Stage {n.stageNumber} Full Description
+                            </p>
+                            <p className="text-[10px] text-[#4A433B] leading-relaxed">{n.stageFullDescription}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-2 pt-1">
                       {n.reportId && (
                         <span className="text-[9px] font-mono font-bold bg-[#EAE4D8] text-[#4A433B] px-1.5 py-0.2 rounded">
                           {n.reportId}
                         </span>
                       )}
-                      {n.channel && (
+                      {n.channel && n.type !== 'stage_advance' && (
                         <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded ${
                           n.channel === 'sms' 
                             ? 'bg-emerald-100 text-emerald-800' 

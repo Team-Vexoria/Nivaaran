@@ -1,91 +1,29 @@
 import React, { useState } from 'react';
 import { 
-  FileText, X, ShieldAlert, Sparkles, Target, Layers, ChevronDown, ChevronUp 
+  X, ShieldAlert, Sparkles, Target, Layers 
 } from 'lucide-react';
 
 interface ProblemOverviewModalProps {
-  initialOpen?: boolean;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-export const ProblemOverviewModal: React.FC<ProblemOverviewModalProps> = ({ initialOpen = false }) => {
-  const [isOpen, setIsOpen] = useState<boolean>(initialOpen);
-  const [isMinimized, setIsMinimized] = useState<boolean>(false);
+export const ProblemOverviewModal: React.FC<ProblemOverviewModalProps> = ({ isOpen, onClose }) => {
   const [activeSection, setActiveSection] = useState<'problem' | 'idea' | 'architecture' | 'impact'>('problem');
 
+  if (!isOpen) return null;
+
   return (
-    <>
-      {/* Floating Problem Overview Cue Widget */}
-      <aside 
-        aria-label="Problem Overview Floating Widget"
-        className="fixed bottom-4 left-4 z-[990] transition-all duration-300 select-none print:hidden"
+    <div 
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[9999] flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white border border-slate-200 rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-scaleIn text-left my-auto"
+        onClick={e => e.stopPropagation()}
       >
-        {!isMinimized ? (
-          <div className="bg-white/95 backdrop-blur-md border-2 border-emerald-600/40 rounded-2xl p-3 sm:p-4 shadow-xl max-w-xs sm:max-w-sm space-y-2.5 animate-fadeIn text-left">
-            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  SIH 26043 Problem Statement
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsMinimized(true)}
-                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition-colors"
-                title="Minimize widget"
-                aria-label="Minimize widget"
-              >
-                <ChevronDown className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div>
-              <h4 className="text-xs sm:text-sm font-black font-heading text-slate-900 leading-snug">
-                Nivaaran: Societal Problem Solving Engine
-              </h4>
-              <p className="text-[11px] text-slate-600 leading-relaxed mt-1">
-                Explore the complete idea, problem statement, and 16 stage R&D architecture.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 pt-1">
-              <button
-                type="button"
-                onClick={() => setIsOpen(true)}
-                className="flex-1 py-2 px-3 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
-              >
-                <FileText className="w-3.5 h-3.5 text-emerald-200" />
-                <span>View Problem Overview</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => setIsMinimized(false)}
-            className="group flex items-center gap-2 px-3 py-2 bg-white/95 backdrop-blur-md border-2 border-emerald-600/40 hover:border-emerald-600 text-slate-900 rounded-full shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer"
-            title="Expand Problem Overview"
-            aria-label="Expand Problem Overview"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping shrink-0" />
-            <span className="text-xs font-black text-emerald-800">Problem Overview</span>
-            <ChevronUp className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-800" />
-          </button>
-        )}
-      </aside>
-
-      {/* Complete Idea and Problem Statement Modal */}
-      {isOpen && (
-        <div 
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-[9999] flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn"
-          onClick={() => setIsOpen(false)}
-        >
-          <div 
-            className="bg-white border border-slate-200 rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-scaleIn text-left my-auto"
-            onClick={e => e.stopPropagation()}
-          >
             
             {/* Modal Header */}
             <div className="p-4 sm:p-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-start justify-between border-b border-slate-800">
@@ -108,7 +46,7 @@ export const ProblemOverviewModal: React.FC<ProblemOverviewModalProps> = ({ init
 
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={onClose}
                 className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
                 title="Close modal"
                 aria-label="Close modal"
@@ -362,7 +300,7 @@ export const ProblemOverviewModal: React.FC<ProblemOverviewModalProps> = ({ init
 
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={onClose}
                 className="ml-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black transition-colors shadow-sm cursor-pointer"
               >
                 Return to Prototype
@@ -371,7 +309,5 @@ export const ProblemOverviewModal: React.FC<ProblemOverviewModalProps> = ({ init
 
           </div>
         </div>
-      )}
-    </>
   );
 };

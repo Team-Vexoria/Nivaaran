@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   ChevronLeft, ChevronRight, Pause, Play, Eye, ArrowRight, Search, 
   MapPin, Building2, Award, ShieldAlert, Cpu,
-  Activity, CheckCircle2
+  Activity, CheckCircle2, FileText
 } from 'lucide-react';
+import { ProblemOverviewModal } from '../ProblemOverviewModal';
+import { ChallengeDossierPanel } from '../dossier/ChallengeDossierPanel';
 
 export interface HeroShowcaseSlideshowProps {
   onOpenAuth: () => void;
@@ -187,6 +189,9 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
   const [activeSlide, setActiveSlide] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [trackInput, setTrackInput] = useState<string>('');
+  const [isProblemOverviewOpen, setIsProblemOverviewOpen] = useState<boolean>(false);
+  const [isDossierOpen, setIsDossierOpen] = useState<boolean>(false);
+  const [activeDossierReportId, setActiveDossierReportId] = useState<string>('JH-2026-RNC-001');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const totalSlides = 1 + CASE_STUDIES.length; // Slide 0 = Overview, Slides 1-5 = Cases
@@ -284,14 +289,24 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
                   loading="eager"
                 />
 
-                {/* Floating "Next Slide" Interactive Cue */}
-                <button
-                  onClick={handleNext}
-                  className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-slate-950/80 hover:bg-slate-900 text-amber-400 border border-amber-500/40 text-xs sm:text-sm font-extrabold px-3 sm:px-4 py-2 rounded-xl backdrop-blur-md shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
-                >
-                  <span>Explore 5 Live Ground Cases</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setIsProblemOverviewOpen(true)}
+                    className="bg-slate-950/80 hover:bg-slate-900 text-emerald-400 border border-emerald-500/40 text-xs sm:text-sm font-extrabold px-3 sm:px-4 py-2 rounded-xl backdrop-blur-md shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 text-emerald-300" />
+                    <span>View Problem Overview</span>
+                  </button>
+
+                  <button
+                    onClick={handleNext}
+                    className="bg-slate-950/80 hover:bg-slate-900 text-amber-400 border border-amber-500/40 text-xs sm:text-sm font-extrabold px-3 sm:px-4 py-2 rounded-xl backdrop-blur-md shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span>Explore 5 Live Ground Cases</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* 4-Pillar Civic Metric Strip */}
@@ -469,13 +484,28 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
                   <span className="font-bold text-[#201C18]">Audited Lifecycle:</span> Real-time telemetry, stage progression & panchayat signoff available for this challenge.
                 </div>
 
-                <button
-                  onClick={() => onOpenTracking(activeCase.reportId)}
-                  className="w-full sm:w-auto px-4 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-extrabold rounded-lg shadow-2xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Inspect 16-Stage Audit Dossier ({activeCase.reportId})</span>
-                </button>
+                <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => setIsProblemOverviewOpen(true)}
+                    className="w-full sm:w-auto px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold rounded-lg shadow-2xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-amber-700" />
+                    <span>View Problem Overview</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveDossierReportId(activeCase.reportId);
+                      setIsDossierOpen(true);
+                    }}
+                    className="w-full sm:w-auto px-4 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-extrabold rounded-lg shadow-2xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shrink-0"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Inspect 16-Stage Audit Dossier ({activeCase.reportId})</span>
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -581,6 +611,19 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
         </div>
 
       </div>
+
+      <ProblemOverviewModal 
+        isOpen={isProblemOverviewOpen} 
+        onClose={() => setIsProblemOverviewOpen(false)} 
+      />
+
+      <ChallengeDossierPanel
+        isOpen={isDossierOpen}
+        onClose={() => setIsDossierOpen(false)}
+        challengeDoc={null}
+        challenge={null}
+        initialReportId={activeDossierReportId}
+      />
     </section>
   );
 };
