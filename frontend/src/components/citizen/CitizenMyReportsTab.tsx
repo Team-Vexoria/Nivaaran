@@ -342,6 +342,13 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
                     </div>
                   )}
 
+                  {report.isProvisionalIntake && (
+                    <div className="bg-amber-50 border border-amber-300 text-amber-900 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1.5 shadow-2xs">
+                      <AlertTriangle className="w-3 h-3 text-amber-700 shrink-0" />
+                      <span>अनंतिम पंजीकरण (Provisional Intake: Missing Community Metrics)</span>
+                    </div>
+                  )}
+
                   {report.needsHumanVerification && (
                     <div className="bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1">
                       <AlertTriangle className="w-3 h-3 shrink-0" />

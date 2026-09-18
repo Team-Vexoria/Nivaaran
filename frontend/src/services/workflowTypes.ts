@@ -143,6 +143,10 @@ export interface Challenge {
   // CSR / Industry
   csrSponsor?: string;
 
+  // Conversational AI Clarification and Provisional Intake Tracking
+  isProvisionalIntake?: boolean;
+  provisionalReason?: string;
+
   // Stage 4: Extracted On-Ground Proof & Audit Metadata
   extractedMetadata?: import('./dataExtractionService').IncidentExtractedData;
 

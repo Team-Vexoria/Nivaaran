@@ -392,6 +392,8 @@ export interface ChallengeDoc {
   affectedPopulation?: number;
   economicValueEstimate?: number;
   estimatedResolutionCost?: number;
+  isProvisionalIntake?: boolean;
+  provisionalReason?: string;
 }
 
 export const submitChallengeToFirestore = async (challenge: Omit<ChallengeDoc, 'id'> & { id?: string }) => {

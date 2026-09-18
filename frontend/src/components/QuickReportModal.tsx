@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 import { 
   Camera, Upload, MapPin, CheckCircle, X, Loader2, ArrowRight, AlertTriangle, RefreshCw, ShieldAlert, TrendingUp, Users,
-  Mic, Square, Volume2, Film, RotateCcw, Languages, Copy, Check, ShieldCheck
+  Mic, Square, Volume2, VolumeX, Film, RotateCcw, Languages, Copy, Check, ShieldCheck, Sparkles, HelpCircle
 } from 'lucide-react';
 import { submitChallengeToFirestore, submitFeedPostToFirestore, uploadEvidenceAudio } from '../services/firebaseService';
 import { runAITriageEngineAsync, runAITriageEngine, AITriageResult } from '../services/aiTriageEngine';
@@ -12,6 +12,12 @@ import { formatStageName, getStageForStatus } from '../services/workflowLifecycl
 import { workflowStore } from '../services/workflowStore';
 import { findSimilarChallenges, mergeWithPrimaryChallenge, getDistrictCentroid, type MergeResult } from '../services/deduplicationService';
 import { extractIncidentMetadata } from '../services/dataExtractionService';
+import {
+  analyzeMissingInformation,
+  speakAICounterQuestion,
+  extractPopulationFromClarification,
+  type ClarificationQuestion,
+} from '../services/aiClarificationService';
 import type { PriorityFactors, ResearchResult, RiskLevel } from '../services/workflowTypes';
 
 interface QuickReportModalProps {
@@ -88,10 +94,10 @@ const JHARKHAND_ISSUE_PRESETS = [
 export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { currentUser } = useAuth();
   const { t, currentLang } = useLanguage();
-  const [step, setStep] = useState<'form' | 'submitting' | 'success' | 'forensic_rejected' | 'dedup_merged'>('form');
-const [affectedPopulation, setAffectedPopulation] = useState<number | undefined>(undefined);
-const [economicValueEstimate, setEconomicValueEstimate] = useState<number | undefined>(undefined);
-const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | undefined>(undefined);
+  const [step, setStep] = useState<'form' | 'ai_clarification' | 'submitting' | 'success' | 'forensic_rejected' | 'dedup_merged'>('form');
+  const [affectedPopulation, setAffectedPopulation] = useState<number | undefined>(undefined);
+  const [economicValueEstimate, setEconomicValueEstimate] = useState<number | undefined>(undefined);
+  const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | undefined>(undefined);
   const [forensicRejectionReason, setForensicRejectionReason] = useState<string>('');
   const [dedupInfo, setDedupInfo] = useState<{
     primaryId: string;
@@ -118,7 +124,17 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
   const [isVerifyingRealtime, setIsVerifyingRealtime] = useState(false);
   const triagePromiseRef = useRef<Promise<AITriageResult> | null>(null);
 
-  // ── Multilingual Voice Recording & Speech-to-Text State ──
+  // Conversational AI Clarification State
+  const [clarificationQuestion, setClarificationQuestion] = useState<ClarificationQuestion | null>(null);
+  const [clarificationLang, setClarificationLang] = useState<'hi-IN' | 'en-IN'>('hi-IN');
+  const [clarificationAnswer, setClarificationAnswer] = useState<string>('');
+  const [isSpeakingClarification, setIsSpeakingClarification] = useState(false);
+  const [isRecordingClarification, setIsRecordingClarification] = useState(false);
+  const [isProvisionalSubmission, setIsProvisionalSubmission] = useState(false);
+  const clarificationSpeechCancelRef = useRef<(() => void) | null>(null);
+  const clarificationRecognitionRef = useRef<any>(null);
+
+  // Multilingual Voice Recording and Speech to Text State
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [voiceLanguage, setVoiceLanguage] = useState<'hi-IN' | 'en-IN' | 'bn-IN' | 'sa-IN'>('hi-IN');
@@ -467,19 +483,163 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
   const isGPSAttached = locationCoords !== null;
   const isFormValid = title.trim().length > 0 && description.trim().length > 0 && blockVillage.trim().length > 0 && isEvidenceAttached && isGPSAttached;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Conversational AI Speech and Clarification Handlers
+  const playQuestionAudio = (q: ClarificationQuestion, lang: 'hi-IN' | 'en-IN') => {
+    if (clarificationSpeechCancelRef.current) {
+      clarificationSpeechCancelRef.current();
+    }
+    const textToSpeak = lang === 'hi-IN' ? q.questionHi : q.questionEn;
+    clarificationSpeechCancelRef.current = speakAICounterQuestion(
+      textToSpeak,
+      lang,
+      () => setIsSpeakingClarification(true),
+      () => setIsSpeakingClarification(false)
+    );
+  };
+
+  const stopQuestionAudio = () => {
+    if (clarificationSpeechCancelRef.current) {
+      clarificationSpeechCancelRef.current();
+      clarificationSpeechCancelRef.current = null;
+    }
+    setIsSpeakingClarification(false);
+  };
+
+  const toggleClarificationLang = (newLang: 'hi-IN' | 'en-IN') => {
+    setClarificationLang(newLang);
+    if (clarificationQuestion) {
+      playQuestionAudio(clarificationQuestion, newLang);
+    }
+  };
+
+  const startClarificationVoiceInput = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Speech recognition is not supported in this browser. Please type your answer.');
+      return;
+    }
+    try {
+      stopQuestionAudio();
+      const recognition = new SpeechRecognition();
+      clarificationRecognitionRef.current = recognition;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = clarificationLang;
+
+      let finalTranscript = '';
+      recognition.onresult = (event: any) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript + ' ';
+          } else {
+            interim += event.results[i][0].transcript;
+          }
+        }
+        const full = (finalTranscript + interim).trim();
+        if (full) {
+          setClarificationAnswer(full);
+        }
+      };
+
+      recognition.onerror = (err: any) => {
+        console.warn('Clarification speech recognition error:', err);
+        setIsRecordingClarification(false);
+      };
+
+      recognition.onend = () => {
+        setIsRecordingClarification(false);
+      };
+
+      recognition.start();
+      setIsRecordingClarification(true);
+    } catch (e) {
+      console.warn('Clarification speech recognition start warning:', e);
+      setIsRecordingClarification(false);
+    }
+  };
+
+  const stopClarificationVoiceInput = () => {
+    if (clarificationRecognitionRef.current) {
+      try {
+        clarificationRecognitionRef.current.stop();
+      } catch {}
+      clarificationRecognitionRef.current = null;
+    }
+    setIsRecordingClarification(false);
+  };
+
+  const handleInitialSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid) return;
 
+    // Inspect if critical parameters are missing
+    const missingQ = analyzeMissingInformation({
+      title,
+      description,
+      district,
+      blockVillage,
+      affectedPopulation,
+      audioTranscript: voiceTranscript,
+    });
+
+    if (missingQ) {
+      const isHindi = voiceLanguage === 'hi-IN' || currentLang === 'hi' || /[\u0900-\u097F]/.test(`${title} ${description}`);
+      const targetLang: 'hi-IN' | 'en-IN' = isHindi ? 'hi-IN' : 'en-IN';
+      setClarificationQuestion(missingQ);
+      setClarificationLang(targetLang);
+      setClarificationAnswer('');
+      setStep('ai_clarification');
+      setTimeout(() => {
+        playQuestionAudio(missingQ, targetLang);
+      }, 300);
+      return;
+    }
+
+    executeFinalSubmission(false, description, affectedPopulation);
+  };
+
+  const handleClarificationSubmit = () => {
+    stopQuestionAudio();
+    stopClarificationVoiceInput();
+
+    let finalDesc = description;
+    let finalPop = affectedPopulation;
+
+    if (clarificationAnswer.trim()) {
+      const header = clarificationLang === 'hi-IN' ? 'नागरिक जमीनी स्पष्टीकरण' : 'Citizen Ground Clarification';
+      finalDesc = `${description}\n\n[${header} / ${clarificationQuestion?.titleEn || 'Metrics'}]: ${clarificationAnswer.trim()}`;
+      setDescription(finalDesc);
+
+      const extracted = extractPopulationFromClarification(clarificationAnswer);
+      if (extracted && (!finalPop || finalPop === 0)) {
+        finalPop = extracted;
+        setAffectedPopulation(extracted);
+      }
+    }
+
+    executeFinalSubmission(false, finalDesc, finalPop);
+  };
+
+  const handleClarificationSkip = () => {
+    stopQuestionAudio();
+    stopClarificationVoiceInput();
+    setIsProvisionalSubmission(true);
+    executeFinalSubmission(true, description, affectedPopulation);
+  };
+
+  const executeFinalSubmission = async (
+    isSkipped: boolean,
+    descOverride?: string,
+    popOverride?: number
+  ) => {
     setStep('submitting');
+    const finalDescription = descOverride !== undefined ? descOverride : description;
+    const finalPopulation = popOverride !== undefined ? popOverride : affectedPopulation;
 
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const generatedId = `JH-2026-NIV-${randomNum}`;
-    // coords reflects actual GPS when granted, else the selected district's
-    // centroid (injected by the geolocation error handler), else null. Dedup's
-    // GPS-proximity stage runs off this; downstream payloads guard against null.
-    // No more hard-coded Ranchi anchor.
-    const coords = locationCoords || null;
+    const coords = locationCoords || undefined;
     const finalAddress = formattedAddress || `${blockVillage}, District ${district}`;
 
     const videoUrls = filePreviews.filter(isVideoUrl);
@@ -487,10 +647,8 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
     const isAllVideo = filePreviews.length > 0 && videoUrls.length === filePreviews.length;
 
     // 1. Instant Decision Point 1 Gate: Resolved in milliseconds from preloaded triage or fast engine.
-    // SAFETY: All AI triage paths are guarded by a 3-second Promise.race timeout
-    // so a hanging Gemini API call or res.json() stall can never freeze the form.
     const TRIAGE_TIMEOUT_MS = 3000;
-    const fallbackTriage = runAITriageEngine(title, description, 1);
+    const fallbackTriage = runAITriageEngine(title, finalDescription, 1);
     let aiResult: AITriageResult;
     if (precomputedAITriage) {
       aiResult = precomputedAITriage;
@@ -501,11 +659,25 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
       ]);
     } else if (imageUrls.length > 0) {
       aiResult = await Promise.race([
-        runAITriageEngineAsync(title, description, 1, imageUrls[0]),
+        runAITriageEngineAsync(title, finalDescription, 1, imageUrls[0]),
         new Promise<AITriageResult>(r => setTimeout(() => r(fallbackTriage), TRIAGE_TIMEOUT_MS)),
       ]);
     } else {
       aiResult = fallbackTriage;
+    }
+
+    // Apply 18 point penalty if citizen skipped clarification
+    if (isSkipped) {
+      const penalizedScore = Math.max(15, Math.round(aiResult.priorityScore - 18));
+      aiResult = {
+        ...aiResult,
+        priorityScore: penalizedScore,
+        riskLevel: penalizedScore >= 80 ? 'CRITICAL' : penalizedScore >= 60 ? 'HIGH' : penalizedScore >= 40 ? 'MEDIUM' : 'STANDARD',
+        reasoning: `${aiResult.reasoning} [Provisional Intake: Citizen skipped AI clarification on missing community evidence. Priority score penalized by 18 points.]`,
+      };
+      setIsProvisionalSubmission(true);
+    } else {
+      setIsProvisionalSubmission(false);
     }
 
     // If fake image detected (only checked on static images, skipped on pure video submissions)
@@ -625,7 +797,7 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
         village: blockVillage || 'Panchayat Area',
         category: aiResult.category,
         status: 'Under Review',
-        summary: description || 'Reported by citizen with geotagged photo evidence.',
+        summary: finalDescription || 'Reported by citizen with geotagged photo evidence.',
         evidenceUrl: filePreviews[0] || '', // S3 storage_ref / data URL
         evidenceUrls: filePreviews,
         videoUrl: primaryVideo,
@@ -647,12 +819,14 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
         clusterId: dedupeResult.clusterId ?? undefined,
         extractedMetadata: extractedData,
         translations,  // Multilingual strings
-        affectedPopulation,
+        affectedPopulation: finalPopulation,
         economicValueEstimate,
         estimatedResolutionCost,
         reporterId: currentUser?.uid,
         reporterEmail: currentUser?.email || undefined,
         reporterName: currentUser?.displayName || 'Citizen Resident',
+        isProvisionalIntake: isSkipped,
+        provisionalReason: isSkipped ? 'Provisional Intake: Missing Community Impact Metrics (Citizen Skipped Clarification)' : undefined,
       });
 
       // Track this report as created by the current user
@@ -672,7 +846,7 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
         district,
         block: blockVillage || 'Local Block',
         title: title || 'Local Community Report',
-        content: `${description} [Location: ${finalAddress}]`,
+        content: `${finalDescription} [Location: ${finalAddress}]`,
         upvotes: 1,
         category: aiResult.category,
         status: 'Under Review',
@@ -686,11 +860,11 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
         translations: {
           [langCode]: {
             title: title || 'Local Community Report',
-            content: `${description} [Location: ${finalAddress}]`,
+            content: `${finalDescription} [Location: ${finalAddress}]`,
           },
           en: {
             title: title || 'Local Community Report',
-            content: `${description} [Location: ${finalAddress}]`,
+            content: `${finalDescription} [Location: ${finalAddress}]`,
           },
         },
       });
@@ -706,7 +880,9 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
       action: 'submitted',
       actor: 'Citizen',
       actorRole: 'Citizen',
-      description: `Challenge submitted. AI classified as "${aiResult.category}" with ${aiResult.confidenceScore}% confidence. Priority: ${aiResult.priorityScore}/100 [${aiResult.riskLevel}].`,
+      description: isSkipped
+        ? `Challenge submitted under Provisional Intake. Citizen skipped AI clarification on missing ground metrics. Priority score penalized by 18 points (Final: ${aiResult.priorityScore}/100 [${aiResult.riskLevel}]).`
+        : `Challenge submitted. Citizen provided verified ground metrics via AI conversation. Priority: ${aiResult.priorityScore}/100 [${aiResult.riskLevel}].`,
       newValue: 'Under Review',
       timestamp: now,
     });
@@ -805,6 +981,8 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
 
   const resetAndClose = () => {
     stopCamera();
+    stopQuestionAudio();
+    stopClarificationVoiceInput();
     setStep('form');
     setTitle('');
     setDescription('');
@@ -823,6 +1001,11 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
     setAffectedPopulation(undefined);
     setEconomicValueEstimate(undefined);
     setEstimatedResolutionCost(undefined);
+    setClarificationQuestion(null);
+    setClarificationAnswer('');
+    setIsSpeakingClarification(false);
+    setIsRecordingClarification(false);
+    setIsProvisionalSubmission(false);
     onClose();
   };
 
@@ -864,7 +1047,7 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
 
           {/* Step 1: Form */}
           {step === 'form' && (
-            <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
+            <form onSubmit={handleInitialSubmit} className="p-5 sm:p-6 space-y-4">
             
             {/* ── Multilingual Voice Reporting & Speech-to-Text Bar ── */}
             <div className="bg-gradient-to-r from-amber-50 via-orange-50/60 to-emerald-50/50 border-2 border-amber-200/80 rounded-2xl p-3.5 space-y-2.5 shadow-xs">
@@ -1350,6 +1533,210 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
           </form>
         )}
 
+        {/* Step: AI Conversational Voice Clarification */}
+        {step === 'ai_clarification' && clarificationQuestion && (
+          <div className="p-5 sm:p-6 space-y-4">
+            {/* Header Pill */}
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/80 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-xs">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-xs font-black text-slate-900 block flex items-center gap-1.5">
+                    🤖 NIVAARAN AI Ground Intake Cell
+                    <span className="text-[9px] bg-amber-200/80 text-amber-950 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Clarification</span>
+                  </span>
+                  <span className="text-[10px] text-slate-500">
+                    {clarificationLang === 'hi-IN'
+                      ? 'सटीक समाधान के लिए AI द्वारा आवश्यक प्रश्न'
+                      : 'AI counter question to complete critical impact metrics'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Language Switcher */}
+              <div className="flex items-center gap-1 bg-white border border-amber-200 rounded-lg p-0.5 shadow-2xs">
+                <Languages className="w-3.5 h-3.5 text-slate-400 ml-1.5" />
+                <button
+                  type="button"
+                  onClick={() => toggleClarificationLang('hi-IN')}
+                  className={`px-2 py-0.5 text-[11px] font-bold rounded cursor-pointer transition-all ${
+                    clarificationLang === 'hi-IN'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  🇮🇳 हिन्दी
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleClarificationLang('en-IN')}
+                  className={`px-2 py-0.5 text-[11px] font-bold rounded cursor-pointer transition-all ${
+                    clarificationLang === 'en-IN'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  🇬🇧 English
+                </button>
+              </div>
+            </div>
+
+            {/* AI Spoken Question Box */}
+            <div className="bg-gradient-to-br from-amber-50/90 via-orange-50/40 to-emerald-50/60 border-2 border-amber-300 rounded-2xl p-4 space-y-3 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Volume2 className={`w-4 h-4 ${isSpeakingClarification ? 'text-amber-700 animate-pulse' : 'text-slate-600'}`} />
+                  {clarificationLang === 'hi-IN' ? clarificationQuestion.titleHi : clarificationQuestion.titleEn}
+                </span>
+
+                {isSpeakingClarification && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-200/80 text-amber-950 rounded-full flex items-center gap-1 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-700" />
+                    Speaking Aloud...
+                  </span>
+                )}
+              </div>
+
+              {/* Animated Soundwave Visualizer when AI speaks */}
+              {isSpeakingClarification && (
+                <div className="flex items-center justify-center gap-1 h-6 py-0.5">
+                  {[35, 70, 95, 55, 80, 40, 90, 65, 30, 85, 60, 40, 75, 95, 45].map((h, i) => (
+                    <span
+                      key={i}
+                      className="w-1 bg-amber-600 rounded-full animate-pulse"
+                      style={{
+                        height: `${h}%`,
+                        animationDelay: `${i * 70}ms`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
+              {/* Question Text */}
+              <p className="text-sm sm:text-base font-black text-slate-900 leading-snug">
+                "{clarificationLang === 'hi-IN' ? clarificationQuestion.questionHi : clarificationQuestion.questionEn}"
+              </p>
+
+              {/* Audio Controls */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => playQuestionAudio(clarificationQuestion, clarificationLang)}
+                  className="px-3 py-1.5 bg-white hover:bg-slate-100 text-slate-800 text-xs font-bold rounded-xl border border-amber-300 shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                >
+                  <Volume2 className="w-3.5 h-3.5 text-amber-600" />
+                  <span>{clarificationLang === 'hi-IN' ? 'दोबारा सुनें (Listen Again)' : 'Listen Again'}</span>
+                </button>
+
+                {isSpeakingClarification && (
+                  <button
+                    type="button"
+                    onClick={stopQuestionAudio}
+                    className="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 shadow-2xs flex items-center gap-1.5 cursor-pointer transition-all"
+                  >
+                    <VolumeX className="w-3.5 h-3.5 text-rose-600" />
+                    <span>{clarificationLang === 'hi-IN' ? 'आवाज़ रोकें (Mute)' : 'Mute'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Citizen Response Section: Voice or Text */}
+            <div className="space-y-2.5">
+              <label className="block text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center justify-between">
+                <span>
+                  {clarificationLang === 'hi-IN' ? 'आपका उत्तर (बोलकर या लिखकर)' : 'Your Response (Voice or Text)'}
+                </span>
+                <span className="text-[10px] text-slate-500 font-semibold">
+                  {clarificationLang === 'hi-IN' ? 'माइक दबाकर बोलें' : 'Tap mic to speak'}
+                </span>
+              </label>
+
+              {/* Voice Input Button */}
+              {isRecordingClarification ? (
+                <div className="bg-rose-50 border-2 border-rose-300 rounded-xl p-3 flex items-center justify-between shadow-xs animate-pulse">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-rose-600 animate-ping" />
+                    <span className="text-xs font-black text-rose-900">
+                      {clarificationLang === 'hi-IN' ? 'आपकी आवाज़ सुनी जा रही है...' : 'Listening to your response...'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={stopClarificationVoiceInput}
+                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-lg flex items-center gap-1 shadow-xs cursor-pointer"
+                  >
+                    <Square className="w-3 h-3" />
+                    <span>{clarificationLang === 'hi-IN' ? 'बोलना समाप्त करें' : 'Done Speaking'}</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startClarificationVoiceInput}
+                  className="w-full py-2.5 px-3 bg-white hover:bg-amber-50 border-2 border-amber-400 text-slate-900 font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-2xs cursor-pointer hover:border-amber-500"
+                >
+                  <Mic className="w-4 h-4 text-amber-600" />
+                  <span>
+                    {clarificationLang === 'hi-IN'
+                      ? '🎙️ बोलकर उत्तर दें (Tap to Speak Answer in Hindi)'
+                      : '🎙️ Tap to Speak Answer in English'}
+                  </span>
+                </button>
+              )}
+
+              {/* Text Input Area */}
+              <textarea
+                rows={3}
+                value={clarificationAnswer}
+                onChange={(e) => setClarificationAnswer(e.target.value)}
+                placeholder={clarificationLang === 'hi-IN' ? clarificationQuestion.placeholderHi : clarificationQuestion.placeholderEn}
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 leading-relaxed"
+              />
+
+              {/* Context Hint */}
+              <div className="flex items-start gap-1.5 text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                <HelpCircle className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                <span>{clarificationLang === 'hi-IN' ? clarificationQuestion.contextHintHi : clarificationQuestion.contextHintEn}</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={handleClarificationSubmit}
+                disabled={!clarificationAnswer.trim()}
+                className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99]"
+              >
+                <span>
+                  {clarificationLang === 'hi-IN' ? 'उत्तर जमा करें एवं आगे बढ़ें' : 'Submit Clarification and Proceed'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleClarificationSkip}
+                className="w-full py-2.5 bg-slate-100 hover:bg-amber-100/70 text-slate-700 hover:text-amber-950 border border-slate-300 hover:border-amber-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                {clarificationLang === 'hi-IN'
+                  ? 'जानकारी उपलब्ध नहीं है / प्रश्न छोड़ें (Skip Question)'
+                  : 'I Do Not Have This Information / Skip'}
+              </button>
+
+              <div className="bg-amber-50 border border-amber-300/80 rounded-xl p-2.5 text-center text-[10px] text-amber-900 font-medium">
+                {clarificationLang === 'hi-IN'
+                  ? '⚠️ ध्यान दें: जानकारी न होने पर प्रश्न छोड़ सकते हैं, किंतु अधूरी जानकारी से AI प्राथमिकता स्कोर में 18 अंकों की कटौती होगी और रिपोर्ट अनंतिम (Provisional) दर्ज होगी।'
+                  : '⚠️ Notice: Skipping is allowed, but missing metrics deduct 18 points from AI Priority Score and flag the grievance as Provisional Intake.'}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Step 2: Submitting state */}
         {step === 'submitting' && (
           <div className="p-8 text-center space-y-4">
@@ -1458,12 +1845,24 @@ const [estimatedResolutionCost, setEstimatedResolutionCost] = useState<number | 
                 </div>
               </div>
 
-              <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-lg p-2.5 text-[11px] text-emerald-950 font-medium flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span>
-                  <strong>Official routing initiated:</strong> Your challenge is now visible in the Government Verification Queue and Academic Matching Engine.
-                </span>
-              </div>
+              {isProvisionalSubmission ? (
+                <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-[11px] text-amber-950 font-medium space-y-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+                    <span>अनंतिम पंजीकरण (Provisional Intake / Incomplete Evidence)</span>
+                  </div>
+                  <p className="text-amber-800 leading-relaxed pl-5">
+                    आवश्यक जमीनी आंकड़े न होने के कारण AI प्राथमिकता स्कोर में 18 अंकों की कटौती लागू की गई है (अंतिम स्कोर: {submittedPriority}/100)। ऑन ग्राउंड फील्ड सत्यापन होने के बाद ही पूर्ण प्राथमिकता बहाल होगी।
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-lg p-2.5 text-[11px] text-emerald-950 font-medium flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>
+                    <strong>आधिकारिक पंजीकरण सफल (AI Verified Intake):</strong> आपके द्वारा दिए गए जमीनी विवरण के आधार पर पूर्ण प्राथमिकता स्कोर ({submittedPriority}/100) आवंटित किया गया है।
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Action Buttons */}
