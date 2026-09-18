@@ -13,9 +13,11 @@ import { workflowStore } from '../services/workflowStore';
 import { findSimilarChallenges, mergeWithPrimaryChallenge, getDistrictCentroid, type MergeResult } from '../services/deduplicationService';
 import { extractIncidentMetadata } from '../services/dataExtractionService';
 import {
-  analyzeMissingInformation,
   speakAICounterQuestion,
   extractPopulationFromClarification,
+  detectProblemDomain,
+  getClarificationQuestion,
+  validateClarificationAnswer,
   type ClarificationQuestion,
 } from '../services/aiClarificationService';
 import type { PriorityFactors, ResearchResult, RiskLevel } from '../services/workflowTypes';
@@ -124,7 +126,12 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
   const [isVerifyingRealtime, setIsVerifyingRealtime] = useState(false);
   const triagePromiseRef = useRef<Promise<AITriageResult> | null>(null);
 
-  // Conversational AI Clarification State
+  // Conversational AI Clarification State (2-Round Multi-Turn Flow)
+  const [clarificationRound, setClarificationRound] = useState<1 | 2>(1);
+  const [round1Question, setRound1Question] = useState<ClarificationQuestion | null>(null);
+  const [round2Question, setRound2Question] = useState<ClarificationQuestion | null>(null);
+  const [round1Answer, setRound1Answer] = useState<string>('');
+  const [answerWarning, setAnswerWarning] = useState<string | null>(null);
   const [clarificationQuestion, setClarificationQuestion] = useState<ClarificationQuestion | null>(null);
   const [clarificationLang, setClarificationLang] = useState<'hi-IN' | 'en-IN'>('hi-IN');
   const [clarificationAnswer, setClarificationAnswer] = useState<string>('');
@@ -151,6 +158,69 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
   // Helper to identify video items
   const isVideoUrl = (url: string) => {
     return url.startsWith('data:video') || url.endsWith('.mp4') || url.endsWith('.webm') || url.endsWith('.mov') || url.includes('/evidence_videos/');
+  };
+
+  // Helper to extract a representative JPEG frame snapshot from uploaded video
+  const extractVideoSnapshot = (videoSource: string): Promise<string> => {
+    return new Promise((resolve) => {
+      try {
+        const video = document.createElement('video');
+        video.muted = true;
+        video.playsInline = true;
+        video.crossOrigin = 'anonymous';
+        video.src = videoSource;
+
+        const timeout = setTimeout(() => resolve(''), 4000);
+
+        video.onloadeddata = () => {
+          try {
+            video.currentTime = Math.min(0.5, Math.max(0.1, (video.duration || 1) / 2));
+          } catch {
+            // ignore seek error
+          }
+        };
+
+        video.onseeked = () => {
+          clearTimeout(timeout);
+          try {
+            const canvas = document.createElement('canvas');
+            const MAX_DIM = 480;
+            let width = video.videoWidth || 640;
+            let height = video.videoHeight || 480;
+            if (width > MAX_DIM || height > MAX_DIM) {
+              if (width > height) {
+                height = Math.round((height * MAX_DIM) / width);
+                width = MAX_DIM;
+              } else {
+                width = Math.round((width * MAX_DIM) / height);
+                height = MAX_DIM;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, width, height);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+              resolve(dataUrl);
+              return;
+            }
+          } catch (e) {
+            console.warn('[Video Snapshot] Frame capture error:', e);
+          }
+          resolve('');
+        };
+
+        video.onerror = () => {
+          clearTimeout(timeout);
+          resolve('');
+        };
+
+        video.load();
+      } catch {
+        resolve('');
+      }
+    });
   };
 
   const triggerInstantPreTriage = (compressedImage: string, currentTitle: string = title, currentDesc: string = description) => {
@@ -421,16 +491,24 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
       const filesArray = Array.from(input.files);
       for (const file of filesArray) {
         if (file.type.startsWith('video/')) {
-          // Video evidence: Read directly as Data URL without canvas image compression
+          // Video evidence: Read Data URL, extract video snapshot frame for forensic inspection
           const reader = new FileReader();
-          reader.onload = (evt) => {
+          reader.onload = async (evt) => {
             if (typeof evt.target?.result === 'string') {
               const videoDataUrl = evt.target.result;
               setFilePreviews((prev) => [...prev, videoDataUrl]);
-              // Video files bypass image forensic gate as requested; trigger text-based triage
-              if (!precomputedAITriage) {
-                const textTriage = runAITriageEngine(title || 'Incident Video Report', description || 'Citizen uploaded video evidence', 1);
-                setPrecomputedAITriage(textTriage);
+              
+              // Extract frame snapshot from video and run through forensic gate
+              try {
+                const snapshot = await extractVideoSnapshot(videoDataUrl);
+                if (snapshot) {
+                  triggerInstantPreTriage(snapshot);
+                } else if (!precomputedAITriage) {
+                  const textTriage = runAITriageEngine(title || 'Incident Video Report', description || 'Citizen uploaded video evidence', 1);
+                  setPrecomputedAITriage(textTriage);
+                }
+              } catch (err) {
+                console.warn('[Video Frame Extraction] Error:', err);
               }
             }
           };
@@ -569,53 +647,100 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
     setIsRecordingClarification(false);
   };
 
-  const handleInitialSubmit = (e: React.FormEvent) => {
+  const handleInitialSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid) return;
 
-    // Inspect if critical parameters are missing
-    const missingQ = analyzeMissingInformation({
-      title,
-      description,
-      district,
-      blockVillage,
-      affectedPopulation,
-      audioTranscript: voiceTranscript,
-    });
+    // 1. If media is uploaded, verify authenticity & civic relevance first
+    if (filePreviews.length > 0) {
+      let triageRes = precomputedAITriage;
+      if (!triageRes && triagePromiseRef.current) {
+        setIsVerifyingRealtime(true);
+        try {
+          triageRes = await triagePromiseRef.current;
+        } catch {}
+        setIsVerifyingRealtime(false);
+      }
 
-    if (missingQ) {
-      const isHindi = voiceLanguage === 'hi-IN' || currentLang === 'hi' || /[\u0900-\u097F]/.test(`${title} ${description}`);
-      const targetLang: 'hi-IN' | 'en-IN' = isHindi ? 'hi-IN' : 'en-IN';
-      setClarificationQuestion(missingQ);
-      setClarificationLang(targetLang);
-      setClarificationAnswer('');
-      setStep('ai_clarification');
-      setTimeout(() => {
-        playQuestionAudio(missingQ, targetLang);
-      }, 300);
-      return;
+      if (triageRes && (triageRes.isRealPhoto === false || triageRes.forensicStatus === 'REJECTED' || !triageRes.hasHazard)) {
+        setStep('forensic_rejected');
+        setForensicRejectionReason(
+          triageRes.fakeReason || 'Uploaded media does not depict an authentic civic, municipal, or environmental hazard.'
+        );
+        return;
+      }
     }
 
-    executeFinalSubmission(false, description, affectedPopulation);
+    // 2. Prepare 2-Round Conversational AI Clarification
+    const domain = detectProblemDomain(title, description, precomputedAITriage?.categoryCode);
+    const q1 = getClarificationQuestion(domain, 1);
+    const q2 = getClarificationQuestion(domain, 2);
+
+    setClarificationRound(1);
+    setRound1Question(q1);
+    setRound2Question(q2);
+    setRound1Answer('');
+    setClarificationAnswer('');
+    setAnswerWarning(null);
+    setClarificationQuestion(q1);
+
+    const isHindi = (currentLang === 'hi' || voiceLanguage === 'hi-IN') && currentLang !== 'en';
+    const targetLang: 'hi-IN' | 'en-IN' = isHindi ? 'hi-IN' : 'en-IN';
+    setClarificationLang(targetLang);
+    setStep('ai_clarification');
+    setTimeout(() => {
+      playQuestionAudio(q1, targetLang);
+    }, 300);
   };
 
   const handleClarificationSubmit = () => {
     stopQuestionAudio();
     stopClarificationVoiceInput();
 
-    let finalDesc = description;
-    let finalPop = affectedPopulation;
+    // Validate citizen response to prevent blank or meaningless text
+    const validation = validateClarificationAnswer(clarificationAnswer, clarificationLang);
+    if (!validation.isValid) {
+      setAnswerWarning(validation.warning);
+      return;
+    }
+    setAnswerWarning(null);
 
-    if (clarificationAnswer.trim()) {
-      const header = clarificationLang === 'hi-IN' ? 'नागरिक जमीनी स्पष्टीकरण' : 'Citizen Ground Clarification';
-      finalDesc = `${description}\n\n[${header} / ${clarificationQuestion?.titleEn || 'Metrics'}]: ${clarificationAnswer.trim()}`;
-      setDescription(finalDesc);
+    // If on Round 1 -> advance to Round 2 counter-question
+    if (clarificationRound === 1 && round2Question) {
+      const r1Text = clarificationAnswer.trim();
+      setRound1Answer(r1Text);
+      setClarificationRound(2);
+      setClarificationQuestion(round2Question);
+      setClarificationAnswer('');
 
-      const extracted = extractPopulationFromClarification(clarificationAnswer);
-      if (extracted && (!finalPop || finalPop === 0)) {
-        finalPop = extracted;
-        setAffectedPopulation(extracted);
+      const pop1 = extractPopulationFromClarification(r1Text);
+      if (pop1 && (!affectedPopulation || affectedPopulation === 0)) {
+        setAffectedPopulation(pop1);
       }
+
+      setTimeout(() => {
+        playQuestionAudio(round2Question, clarificationLang);
+      }, 300);
+      return;
+    }
+
+    // If on Round 2 -> finalize answers and proceed to submission
+    const r1Text = round1Answer || '';
+    const r2Text = clarificationAnswer.trim();
+
+    const header = clarificationLang === 'hi-IN' ? '2-चरणीय AI जमीनी सत्यापन' : '2-Round AI Ground Verification';
+    const q1Title = round1Question?.titleEn || 'Hazard Metrics';
+    const q2Title = round2Question?.titleEn || 'Community Impact';
+
+    const finalDesc = `${description}\n\n[${header}]:\n• ${q1Title}: ${r1Text}\n• ${q2Title}: ${r2Text}`;
+    setDescription(finalDesc);
+
+    let finalPop = affectedPopulation;
+    const pop2 = extractPopulationFromClarification(r2Text);
+    const pop1 = extractPopulationFromClarification(r1Text);
+    if ((pop2 || pop1) && (!finalPop || finalPop === 0)) {
+      finalPop = pop2 || pop1;
+      setAffectedPopulation(finalPop);
     }
 
     executeFinalSubmission(false, finalDesc, finalPop);
@@ -644,10 +769,9 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
 
     const videoUrls = filePreviews.filter(isVideoUrl);
     const imageUrls = filePreviews.filter(u => !isVideoUrl(u));
-    const isAllVideo = filePreviews.length > 0 && videoUrls.length === filePreviews.length;
 
     // 1. Instant Decision Point 1 Gate: Resolved in milliseconds from preloaded triage or fast engine.
-    const TRIAGE_TIMEOUT_MS = 3000;
+    const TRIAGE_TIMEOUT_MS = 4000;
     const fallbackTriage = runAITriageEngine(title, finalDescription, 1);
     let aiResult: AITriageResult;
     if (precomputedAITriage) {
@@ -680,11 +804,11 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
       setIsProvisionalSubmission(false);
     }
 
-    // If fake image detected (only checked on static images, skipped on pure video submissions)
-    if (!isAllVideo && imageUrls.length > 0 && (aiResult.isRealPhoto === false || aiResult.forensicStatus === 'REJECTED')) {
+    // Check media authenticity (both photo and video frames)
+    if (filePreviews.length > 0 && (aiResult.isRealPhoto === false || aiResult.forensicStatus === 'REJECTED' || !aiResult.hasHazard)) {
       setStep('forensic_rejected');
       setForensicRejectionReason(
-        aiResult.fakeReason || 'Image flagged as synthetic AI generation or digitally manipulated. Submission blocked by Decision Point 1 Forensic Gate.'
+        aiResult.fakeReason || 'Uploaded media (image or video) does not depict an authentic civic, municipal, or environmental hazard. Submission blocked by Decision Point 1 Forensic Gate.'
       );
       return;
     }
@@ -1545,12 +1669,14 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                 <div>
                   <span className="text-xs font-black text-slate-900 block flex items-center gap-1.5">
                     🤖 NIVAARAN AI Ground Intake Cell
-                    <span className="text-[9px] bg-amber-200/80 text-amber-950 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">Clarification</span>
+                    <span className="text-[9px] bg-amber-200/80 text-amber-950 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                      Round {clarificationRound} of 2
+                    </span>
                   </span>
                   <span className="text-[10px] text-slate-500">
                     {clarificationLang === 'hi-IN'
-                      ? 'सटीक समाधान के लिए AI द्वारा आवश्यक प्रश्न'
-                      : 'AI counter question to complete critical impact metrics'}
+                      ? (clarificationRound === 1 ? 'चरण 1: समस्या की जमीनी स्थिति एवं गहराई की पुष्टि' : 'चरण 2: प्रभावित आबादी एवं तात्कालिकता का काउंटर प्रश्न')
+                      : (clarificationRound === 1 ? 'Round 1: Ground Hazard Severity Assessment' : 'Round 2: Community Impact & Urgency Follow-up')}
                   </span>
                 </div>
               </div>
@@ -1583,6 +1709,19 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
               </div>
             </div>
 
+            {/* In Round 2: Show Round 1 Answer Summary Recap */}
+            {clarificationRound === 2 && round1Answer && (
+              <div className="bg-emerald-50/90 border border-emerald-300 rounded-xl p-3 text-left space-y-1 shadow-2xs">
+                <div className="flex items-center gap-1.5 text-[10px] font-extrabold text-emerald-900 uppercase tracking-wider">
+                  <Check className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>{clarificationLang === 'hi-IN' ? 'चरण 1 में दर्ज जमीनी साक्ष्य:' : 'Round 1 Evidence Recorded:'}</span>
+                </div>
+                <p className="text-xs text-emerald-950 font-medium italic pl-5 line-clamp-2">
+                  "{round1Answer}"
+                </p>
+              </div>
+            )}
+
             {/* AI Spoken Question Box */}
             <div className="bg-gradient-to-br from-amber-50/90 via-orange-50/40 to-emerald-50/60 border-2 border-amber-300 rounded-2xl p-4 space-y-3 shadow-xs">
               <div className="flex items-center justify-between">
@@ -1591,12 +1730,17 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                   {clarificationLang === 'hi-IN' ? clarificationQuestion.titleHi : clarificationQuestion.titleEn}
                 </span>
 
-                {isSpeakingClarification && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-200/80 text-amber-950 rounded-full flex items-center gap-1 animate-pulse">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-700" />
-                    Speaking Aloud...
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-mono font-black px-2 py-0.5 bg-amber-200 text-amber-950 rounded-md">
+                    {clarificationRound}/2
                   </span>
-                )}
+                  {isSpeakingClarification && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 bg-amber-200/80 text-amber-950 rounded-full flex items-center gap-1 animate-pulse">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-700" />
+                      Speaking Aloud...
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Animated Soundwave Visualizer when AI speaks */}
@@ -1692,10 +1836,21 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
               <textarea
                 rows={3}
                 value={clarificationAnswer}
-                onChange={(e) => setClarificationAnswer(e.target.value)}
+                onChange={(e) => {
+                  setClarificationAnswer(e.target.value);
+                  if (answerWarning) setAnswerWarning(null);
+                }}
                 placeholder={clarificationLang === 'hi-IN' ? clarificationQuestion.placeholderHi : clarificationQuestion.placeholderEn}
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 leading-relaxed"
               />
+
+              {/* Validation Warning Callout */}
+              {answerWarning && (
+                <div className="bg-rose-50 border border-rose-300 rounded-xl p-2.5 text-xs text-rose-900 font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{answerWarning}</span>
+                </div>
+              )}
 
               {/* Context Hint */}
               <div className="flex items-start gap-1.5 text-[11px] text-slate-600 bg-slate-50 p-2 rounded-lg border border-slate-200">
@@ -1713,7 +1868,9 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                 className="w-full py-3.5 bg-emerald-700 hover:bg-emerald-800 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed text-white font-extrabold text-xs sm:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer active:scale-[0.99]"
               >
                 <span>
-                  {clarificationLang === 'hi-IN' ? 'उत्तर जमा करें एवं आगे बढ़ें' : 'Submit Clarification and Proceed'}
+                  {clarificationRound === 1
+                    ? (clarificationLang === 'hi-IN' ? 'उत्तर जमा करें एवं अगले प्रश्न पर जाएं (Round 1 of 2)' : 'Submit Answer & Continue (Round 1 of 2)')
+                    : (clarificationLang === 'hi-IN' ? 'सत्यापित विवरण जमा करें एवं रिपोर्ट दर्ज करें (Round 2 of 2)' : 'Verify Ground Evidence & Register Grievance (Round 2 of 2)')}
                 </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
@@ -1849,17 +2006,30 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                 <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 text-[11px] text-amber-950 font-medium space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-amber-900">
                     <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
-                    <span>अनंतिम पंजीकरण (Provisional Intake / Incomplete Evidence)</span>
+                    <span>
+                      {(currentLang === 'hi' || (clarificationLang === 'hi-IN' && currentLang !== 'en'))
+                        ? 'अनंतिम पंजीकरण (Provisional Intake / Incomplete Evidence)'
+                        : 'Provisional Intake (Incomplete Ground Evidence)'}
+                    </span>
                   </div>
                   <p className="text-amber-800 leading-relaxed pl-5">
-                    आवश्यक जमीनी आंकड़े न होने के कारण AI प्राथमिकता स्कोर में 18 अंकों की कटौती लागू की गई है (अंतिम स्कोर: {submittedPriority}/100)। ऑन ग्राउंड फील्ड सत्यापन होने के बाद ही पूर्ण प्राथमिकता बहाल होगी।
+                    {(currentLang === 'hi' || (clarificationLang === 'hi-IN' && currentLang !== 'en'))
+                      ? `आवश्यक जमीनी आंकड़े न होने के कारण AI प्राथमिकता स्कोर में 18 अंकों की कटौती लागू की गई है (अंतिम स्कोर: ${submittedPriority}/100)। ऑन ग्राउंड फील्ड सत्यापन होने के बाद ही पूर्ण प्राथमिकता बहाल होगी।`
+                      : `Due to skipped ground clarification, an 18-point deduction was applied to the initial AI priority score (Final Score: ${submittedPriority}/100). Full priority will be restored once on-ground field verification takes place.`}
                   </p>
                 </div>
               ) : (
                 <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-lg p-2.5 text-[11px] text-emerald-950 font-medium flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
                   <span>
-                    <strong>आधिकारिक पंजीकरण सफल (AI Verified Intake):</strong> आपके द्वारा दिए गए जमीनी विवरण के आधार पर पूर्ण प्राथमिकता स्कोर ({submittedPriority}/100) आवंटित किया गया है।
+                    <strong>
+                      {(currentLang === 'hi' || (clarificationLang === 'hi-IN' && currentLang !== 'en'))
+                        ? 'आधिकारिक पंजीकरण सफल (AI Verified Intake): '
+                        : 'Official Registration Successful (AI Verified Intake): '}
+                    </strong>
+                    {(currentLang === 'hi' || (clarificationLang === 'hi-IN' && currentLang !== 'en'))
+                      ? `आपके द्वारा दिए गए 2-चरणों के जमीनी विवरण के आधार पर पूर्ण प्राथमिकता स्कोर (${submittedPriority}/100) आवंटित किया गया है।`
+                      : `Based on your multi-round verified ground evidence, full priority score (${submittedPriority}/100) has been awarded.`}
                   </span>
                 </div>
               )}
@@ -1987,9 +2157,9 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-red-600 bg-red-50 border border-red-200 px-2.5 py-0.5 rounded-full">
                 Decision Point 1 AI Gate: Blocked
               </span>
-              <h3 className="text-xl font-black text-[#1E3A5F] pt-1">Evidence Flagged as Synthetic / Fake</h3>
+              <h3 className="text-xl font-black text-[#1E3A5F] pt-1">Evidence Rejected by AI Verification Gate</h3>
               <p className="text-xs text-[#5C574C]">
-                NIVAARAN forensic AI vision engine inspected the uploaded photo and flagged non-authentic artifacts.
+                NIVAARAN AI vision engine inspected the uploaded evidence and flagged it as non-authentic, synthetic, or unrelated to civic infrastructure.
               </p>
             </div>
 
@@ -1999,7 +2169,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                 <span>Forensic Rejection Reason:</span>
               </div>
               <p className="text-[11px] leading-relaxed text-red-800 font-medium pl-6">
-                {forensicRejectionReason || 'AI-generated, stock photo, or digitally manipulated media detected. Real on-ground geotagged photographic evidence is required for government resource allocation.'}
+                {forensicRejectionReason || 'Media does not depict an authentic civic or environmental problem, or synthetic/manipulated media was detected. Authentic on-ground civic evidence is strictly required.'}
               </p>
             </div>
 
@@ -2009,7 +2179,7 @@ export const QuickReportModal: React.FC<QuickReportModalProps> = ({ isOpen, onCl
                 onClick={() => setStep('form')}
                 className="flex-1 py-3 bg-[#0F766E] hover:bg-[#0D625B] text-white font-bold text-xs rounded-xl shadow transition-colors cursor-pointer"
               >
-                Upload Authentic Camera Photo
+                Upload Authentic Civic Evidence
               </button>
               <button
                 type="button"

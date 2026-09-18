@@ -20,7 +20,10 @@ export interface VisionAnalysisResult {
  * Local Forensic Quick-Check (EXIF & Metadata anomaly analyzer)
  */
 export function quickForensicCheck(imageDataUrl: string): { isFlagged: boolean; reason: string | null } {
-  if (!imageDataUrl) return { isFlagged: false, reason: null };
+  if (!imageDataUrl) return { isFlagged: true, reason: 'Empty media provided.' };
+  if (imageDataUrl.length < 200) {
+    return { isFlagged: true, reason: 'Media file is empty or corrupted.' };
+  }
   try {
     const header = imageDataUrl.slice(0, 1000).toLowerCase();
     const syntheticSignatures = ['midjourney', 'dall-e', 'dalle', 'stablediffusion', 'stable diffusion', 'novelai', 'firefly', 'comfyui'];
@@ -66,8 +69,8 @@ export const analyzeImageEvidenceWithVision = async (
     const { runAITriageEngineAsync } = await import('./aiTriageEngine');
     const triage = await runAITriageEngineAsync(title, description, 1, imageDataUrl);
 
-    const isReal = triage.isRealPhoto !== false;
-    const fakeReason = isReal ? null : (triage.fakeReason || 'Image flagged as synthetic or digitally manipulated');
+    const isReal = triage.isRealPhoto !== false && triage.forensicStatus !== 'REJECTED' && triage.hasHazard !== false;
+    const fakeReason = isReal ? null : (triage.fakeReason || 'Image flagged: Non-civic scene or synthetic manipulation');
 
     return {
       visualCategory: triage.category,
@@ -81,23 +84,23 @@ export const analyzeImageEvidenceWithVision = async (
       visualDescription: triage.reasoning,
       isRealPhoto: isReal,
       fakeReason,
-      hasHazard: Boolean(triage.hasHazard ?? (triage.riskLevel === 'CRITICAL' || triage.riskLevel === 'HIGH' || triage.riskLevel === 'MEDIUM')),
-      hazardType: triage.hazardType || 'FLOODING',
+      hasHazard: Boolean(triage.hasHazard && isReal),
+      hazardType: isReal ? (triage.hazardType || 'FLOODING') : 'NONE',
       status: isReal ? 'ACCEPTED' : 'REJECTED'
     };
   } catch (err) {
-    console.warn('[Vision AI] Fallback analysis:', err);
+    console.warn('[Vision AI] Analysis error:', err);
     return {
-      visualCategory: 'Civic Infrastructure Evidence',
-      categoryCode: 'general_infra',
-      visionConfidence: 85,
-      detectedFeatures: ['Visual Evidence Verified'],
-      visualDescription: 'Evidence photo verified by forensic intake pipeline.',
-      isRealPhoto: true,
-      fakeReason: null,
-      hasHazard: true,
-      hazardType: 'FLOODING',
-      status: 'ACCEPTED'
+      visualCategory: 'Unverified Media',
+      categoryCode: 'unverified_media',
+      visionConfidence: 40,
+      detectedFeatures: ['Visual Evidence Unverified'],
+      visualDescription: 'Forensic inspection failed to verify civic hazard in image.',
+      isRealPhoto: false,
+      fakeReason: 'Failed to verify image authenticity or civic hazard.',
+      hasHazard: false,
+      hazardType: 'NONE',
+      status: 'REJECTED'
     };
   }
 };

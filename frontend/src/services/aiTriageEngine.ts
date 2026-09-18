@@ -213,68 +213,55 @@ const callGeminiVisionAI = async (
 
     const domainListStr = GOV_DOMAINS.map((d, i) => `${i + 1}. ${d.label} (code: ${d.id}, problems: ${d.problems.slice(0, 4).join(', ')})`).join('\n');
 
-    const promptText = `You are NIVAARAN-Vision, a forensic multimodal AI for the Government of Jharkhand's civic grievance platform.
+    const promptText = `You are the strict Civic Media Verification and Triage Gatekeeper for NIVAARAN (Jharkhand Societal Challenge Platform).
+Analyze this uploaded citizen evidence media (image or video frame).
 
-PRIMARY TASK: Analyze the provided image and classify the real-world civic/environmental problem visible in it.
-TEXT IS OPTIONAL — classify from the image alone. The citizen title/description is supplementary context only.
+MANDATORY RULES:
+1. CIVIC RELEVANCE & AUTHENTICITY GATE:
+   Does this image genuinely depict an authentic real-world civic, municipal, public infrastructure, environmental, agricultural, or public safety hazard/problem?
+   Valid examples: pothole/damaged road, bridge collapse, waterlogging/flooding, dirty contaminated water, overflowing sewage/drain, garbage dump, coal mine fire, ground crack/subsidence, downed powerline/sparking transformer, illegal tree logging, wild elephant/animal conflict.
+   
+   - If the media is UNRELATED to civic infrastructure or public hazards (e.g. personal selfies, human faces posing, indoor rooms/furniture/bed/ceiling, pets/animals at home, food/dishes, wallpapers, memes, cartoons, abstract graphics, solid blank/monochrome colors, screenshots of unrelated apps/chat, cars parked normally on clean road, celebrities, clothing):
+     You MUST set:
+     "isRealPhoto": false,
+     "hasHazard": false,
+     "status": "REJECTED",
+     "fakeReason": "Media does not depict a valid civic, municipal, or environmental hazard (personal, indoor, meme, animal pet, or non-civic scene detected).",
+     "confidenceScore": 99,
+     "priorityScore": 0,
+     "riskLevel": "STANDARD",
+     "category": "Flagged Unrelated Media",
+     "categoryCode": "unrelated_media",
+     "matchedProblem": "Non-Civic / Unrelated Media"
 
-STEP 1 — AUTHENTICITY CHECK:
-Detect if the image is: AI-generated (Midjourney/DALL-E/Stable Diffusion artifacts, unnatural textures, mangled geometry), a stock photo, a screenshot of a screen, or heavily edited.
-→ If synthetic/fake: set isRealPhoto=false, hasHazard=false.
-→ If real field photo: set isRealPhoto=true.
+   - If the photo is AI-GENERATED, SYNTHETIC, OR DIGITALLY MANIPULATED (e.g. Midjourney, DALL-E, deepfake, synthetic textures, unnatural geometry):
+     You MUST set:
+     "isRealPhoto": false,
+     "hasHazard": false,
+     "status": "REJECTED",
+     "fakeReason": "Synthetic AI generation or digital manipulation detected. Only authentic camera evidence is accepted.",
+     "confidenceScore": 99,
+     "priorityScore": 0,
+     "riskLevel": "STANDARD",
+     "category": "Flagged Synthetic Media",
+     "categoryCode": "fake_media",
+     "matchedProblem": "AI-Generated / Manipulated Evidence"
 
-STEP 2 — VISUAL CLASSIFICATION (only if real photo):
-Look at what is ACTUALLY VISIBLE in the image. Classify into ONE of these domains:
+   - ONLY if the image depicts an AUTHENTIC, GENUINE real-world civic or public hazard:
+     Set "isRealPhoto": true,
+     Set "hasHazard": true,
+     Set "status": "ACCEPTED",
+     Set "fakeReason": null
+
+2. If ACCEPTED, match the category from this 60-Taxonomy:
 ${domainListStr}
 
-Examples of visual cues → correct category mapping (use these as anchors):
-- Stagnant water on road, submerged vehicles, flooded street → Urban & Stormwater Flooding
-- Mudslide, hill slope collapse, eroded road embankment → Landslide & Soil Erosion
-- Cracked road surface, potholes, broken pavement → Road Damage & Pavement Failure
-- Bridge with cracks, missing railings, bridge damage → Bridge & Overpass Structural Safety
-- Crop leaves with yellow/brown spots, fungal growth, rust pattern → Crop Pest & Disease Infestation
-- Wilting crops, dry cracked farmland, drought stress → Agriculture & Farming
-- Cattle, cow, goat, poultry showing illness signs → Livestock & Dairy Farming
-- Open garbage heap, burning waste, overflowing bin → Municipal Solid Waste Management
-- Industrial chimney smoke, smog, factory emissions, burning fields → Air Pollution & Industrial Emissions
-- Dirty river/lake, foam on water, dead fish, industrial effluent → River, Lake & Waterbody Pollution
-- Brown/black tap water, corroded pipe, dirty borewell water → Water Contamination & Quality
-- Coal mine, subsidence crack in ground, underground smouldering → Mining, Quarrying & Geology
-- Smoking ground, cracked earth with smoke → Coal Mine Fire & Underground Burning
-- Downed power line, sparking transformer, leaning electric pole → Electrical Hazard & Safety
-- Collapsed building wall, roof fallen, cracked structure → Building Safety & Structural Collapse
-- Drain blocked, sewage on road, manhole overflowing → Drainage & Sewerage System Failure
-- Stray dogs on road, dog bite victim, stray cattle → Stray Animals & Animal Welfare
-- Elephant in village/crop, wild boar in farm, leopard near house → Human-Wildlife Conflict
-- Fire in building, market fire, burning vehicle → Fire & Structural Fire Incidents
-- Chemical drum, industrial spill, toxic liquid in water → Hazardous & Chemical Waste
-- Biomedical/hospital waste on road, syringes in open → Biomedical & Hospital Waste
-- Tree felled illegally, stumps on roadside, logged forest → Illegal Tree Cutting & Felling
-- Forest fire, burnt trees → Forestry & Wildlife
-- Road accident, overturned vehicle, crash site → Road Accident & Traffic Safety
-- Traffic signal not working, heavy traffic jam → Traffic Congestion & Signal Failure
-- Railway crossing without gate, damaged track → Railway & Level Crossing Safety
-- School building with crack/damaged, no roof → School Safety & Child Protection
-- Old/dilapidated hospital, broken PHC facility → Hospital & Healthcare Infrastructure
-- Open defecation, broken public toilet, no toilet facility → Open Defecation & ODF Reversal
-- Child working in factory/mine/domestic work → Child Labour & Exploitation
-- Slum housing, kutcha house damage → Housing, Slum & Shelter Issues
-- Heritage building damaged, monument vandalized → Heritage, Culture & Historical Sites
-- Solar panel broken, solar streetlight not working → Solar & Renewable Energy Issues
-- Plastic litter in river/road, polythene waste → Plastic & Solid Waste Pollution
-- Waterlogged agricultural land, canal breach → Irrigation & Agricultural Water
-- Fish farm disease, dead fish in pond → Fisheries & Aquaculture
-- Vegetable/fruit crop disease → Horticulture & Plantation Crops
-- Degraded bare farmland, cracked dry soil → Soil Degradation & Land Health
-
-STEP 3 — SCORING:
-Assign realistic scores based on visual severity.
-
-Return ONLY valid JSON, no markdown, no explanation outside JSON:
+Return ONLY valid JSON matching this schema:
 {
   "isRealPhoto": boolean,
-  "fakeReason": string | null,
   "hasHazard": boolean,
+  "status": "ACCEPTED" | "REJECTED",
+  "fakeReason": string | null,
   "hazardType": "FLOODING" | "CONTAMINATED_WATER" | "MINE_SUBSIDENCE" | "ROAD_DAMAGE" | "WILDLIFE" | "NONE",
   "category": "Exact Category Label from domain list above",
   "categoryCode": "category id code",
@@ -282,7 +269,7 @@ Return ONLY valid JSON, no markdown, no explanation outside JSON:
   "confidenceScore": 95,
   "priorityScore": 80,
   "riskLevel": "CRITICAL" | "HIGH" | "MEDIUM" | "STANDARD",
-  "reasoning": "1-2 sentence description of what is visually seen in the photo and why this category was chosen",
+  "reasoning": "1-2 sentence explanation of findings",
   "recommendedUniversityDepts": ["Department 1", "Department 2"],
   "factors": {
     "populationImpact": { "score": 20, "max": 25, "reason": "reason" },
@@ -302,7 +289,6 @@ Return ONLY valid JSON, no markdown, no explanation outside JSON:
       parts.push({ text: `Citizen report text (supplementary context only): ${textContext}` });
     }
 
-
     if (cleanBase64) {
       parts.push({
         inlineData: {
@@ -312,63 +298,72 @@ Return ONLY valid JSON, no markdown, no explanation outside JSON:
       });
     }
 
-    // Use 2200ms timeout for Gemini Vision so requests never stall or delay UI
-    console.log('[Gemini Vision AI] Sending fast request to gemini-3.6-flash …');
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2200);
+    // Use 10000ms timeout with gemini-3.5-flash as primary and gemini-3.6-flash as fallback
+    const modelsToTry = ['gemini-3.5-flash', 'gemini-3.6-flash'];
+    for (const model of modelsToTry) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    let res: Response | null = null;
-    try {
-      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts }] }),
-        signal: controller.signal,
-      });
-    } catch (fetchErr: any) {
-      console.warn('[Gemini Vision AI] Fast fetch timed out or aborted — switching to instant local engine:', fetchErr?.message);
-    } finally {
-      clearTimeout(timeoutId);
-    }
+      try {
+        console.log(`[Gemini Vision AI] Requesting ${model} with civic gatekeeper...`);
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts }],
+            generationConfig: {
+              responseMimeType: "application/json"
+            }
+          }),
+          signal: controller.signal,
+        });
 
-    if (res && res.ok) {
-      const data = await res.json();
-      const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (rawText) {
-        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const parsed = JSON.parse(jsonMatch[0]);
-          const isReal = parsed.isRealPhoto !== false;
-          const fakeReason = isReal ? null : (parsed.fakeReason || 'Image flagged as synthetic or digitally manipulated');
+        clearTimeout(timeoutId);
 
-          return {
-            category: isReal ? (parsed.category || 'Forestry & Wildlife') : 'Flagged Synthetic Media',
-            categoryCode: isReal ? (parsed.categoryCode || 'forestry_wildlife') : 'fake_media',
-            matchedProblem: isReal ? (parsed.matchedProblem || parsed.category) : 'AI-Generated / Manipulated Evidence',
-            confidenceScore: Math.max(90, parsed.confidenceScore || 96),
-            priorityScore: parsed.priorityScore || 88,
-            riskLevel: isReal ? (parsed.riskLevel || 'HIGH') : 'CRITICAL',
-            factors: parsed.factors || {
-              populationImpact: { score: 20, max: 25, reason: 'Visual evidence analyzed by Gemini Vision AI' },
-              economicLifeSaving: { score: 18, max: 25, reason: 'Economic and public safety preservation' },
-              resolutionCostFeasibility: { score: 19, max: 25, reason: 'High impact to deployment cost ratio' },
-              hazardUrgency: { score: 22, max: 25, reason: 'Active field hazard detected' },
-            },
-            reasoning: isReal
-              ? (parsed.reasoning || `Gemini 1.5 Flash Vision AI identified ${parsed.matchedProblem || parsed.category} from authentic photo evidence.`)
-              : `Forensic AI Gate Blocked: ${fakeReason}`,
-            needsHumanVerification: !isReal || (parsed.confidenceScore || 96) < 85,
-            recommendedUniversityDepts: parsed.recommendedUniversityDepts || ['Dept of Wildlife Science & Forestry', 'Dept of Edge AI & Thermal Imaging'],
-            isRealPhoto: isReal,
-            fakeReason,
-            hasHazard: Boolean(parsed.hasHazard),
-            hazardType: parsed.hazardType || 'FLOODING',
-            forensicStatus: isReal ? 'ACCEPTED' : 'REJECTED',
-          };
+        if (res.ok) {
+          const data = await res.json();
+          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (rawText) {
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              const isAccepted = parsed.status === 'ACCEPTED' && parsed.isRealPhoto !== false && parsed.hasHazard !== false;
+              const isReal = isAccepted;
+              const fakeReason = isAccepted ? null : (parsed.fakeReason || 'Media does not depict a genuine civic, municipal, or environmental hazard.');
+
+              return {
+                category: isReal ? (parsed.category || 'Forestry & Wildlife') : 'Flagged Unrelated Media',
+                categoryCode: isReal ? (parsed.categoryCode || 'forestry_wildlife') : 'unrelated_media',
+                matchedProblem: isReal ? (parsed.matchedProblem || parsed.category) : 'Non-Civic / Unrelated Media',
+                confidenceScore: Math.max(90, parsed.confidenceScore || 96),
+                priorityScore: isReal ? (parsed.priorityScore || 80) : 0,
+                riskLevel: isReal ? (parsed.riskLevel || 'HIGH') : 'STANDARD',
+                factors: parsed.factors || {
+                  populationImpact: { score: isReal ? 20 : 0, max: 25, reason: isReal ? 'Visual evidence analyzed by Gemini Vision AI' : 'Blocked' },
+                  economicLifeSaving: { score: isReal ? 18 : 0, max: 25, reason: 'Preservation' },
+                  resolutionCostFeasibility: { score: isReal ? 19 : 0, max: 25, reason: 'Feasibility' },
+                  hazardUrgency: { score: isReal ? 22 : 0, max: 25, reason: isReal ? 'Active field hazard' : 'None' },
+                },
+                reasoning: isReal
+                  ? (parsed.reasoning || `Gemini Vision AI identified ${parsed.matchedProblem || parsed.category} from authentic civic photo evidence.`)
+                  : `Forensic AI Gate Blocked: ${fakeReason}`,
+                needsHumanVerification: !isReal || (parsed.confidenceScore || 96) < 85,
+                recommendedUniversityDepts: isReal ? (parsed.recommendedUniversityDepts || ['Dept of Environmental Engineering']) : [],
+                isRealPhoto: isReal,
+                fakeReason,
+                hasHazard: Boolean(parsed.hasHazard && isReal),
+                hazardType: isReal ? (parsed.hazardType || 'FLOODING') : 'NONE',
+                forensicStatus: isReal ? 'ACCEPTED' : 'REJECTED',
+              };
+            }
+          }
+        } else {
+          console.warn(`[Gemini Vision AI] ${model} returned HTTP ${res.status}, checking fallback...`);
         }
+      } catch (fetchErr: any) {
+        clearTimeout(timeoutId);
+        console.warn(`[Gemini Vision AI] ${model} fetch failed or timed out:`, fetchErr?.message);
       }
-    } else {
-      console.warn('[Gemini Vision AI] API responded with error status:', res?.status);
     }
   } catch (err) {
     console.warn('[Gemini Vision AI] Request failed:', err);
