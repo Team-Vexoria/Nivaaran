@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { LoadingScreen } from './components/LoadingScreen';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { ApiStatus } from './components/ApiStatus';
+import { ProblemOverviewModal } from './components/ProblemOverviewModal';
 
 // Code-split every portal so only the active one is fetched per login.
 const LandingPage = lazy(() => import('./pages/LandingPage').then(m => ({ default: m.LandingPage })));
@@ -119,9 +120,8 @@ export const App: React.FC = () => {
         <Suspense fallback={<LoadingScreen />}>
           <AppContent />
         </Suspense>
-        {/* API connectivity badge — always visible so a broken frontend↔backend
-            link is obvious instead of silently falling back. */}
         <ApiStatus />
+        <ProblemOverviewModal />
       </AuthProvider>
     </LanguageProvider>
   );

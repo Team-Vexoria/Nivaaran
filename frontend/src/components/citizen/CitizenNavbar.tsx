@@ -19,6 +19,7 @@ interface CitizenNavbarProps {
   onLangChange?: (lang: SupportedLanguage) => void;
   userDisplayName?: string;
   userEmail?: string;
+  userPhoto?: string;
 }
 
 export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
@@ -29,6 +30,7 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
   currentLang,
   onLangChange,
   userDisplayName = '',
+  userPhoto,
 }) => {
   const { t } = useLanguage();
   const [_fontSize, _setFontSize] = useState<'normal' | 'large' | 'small'>('normal');
@@ -132,7 +134,11 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
                     : 'bg-[#EAE4D8] hover:bg-[#DFD8CA] text-[#201C18] border-[#E4DDD1]'
                 }`}
               >
-                <User className="w-3.5 h-3.5 shrink-0 text-[#C98A2C]" />
+                {userPhoto ? (
+                  <img src={userPhoto} alt={userDisplayName} className="w-4 h-4 rounded-full object-cover border border-emerald-600/40 shrink-0" />
+                ) : (
+                  <User className="w-3.5 h-3.5 shrink-0 text-[#C98A2C]" />
+                )}
                 <span className="whitespace-nowrap">{userDisplayName}</span>
               </button>
 

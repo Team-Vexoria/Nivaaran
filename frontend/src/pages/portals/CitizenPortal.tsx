@@ -46,10 +46,27 @@ export const CitizenPortal: React.FC = () => {
     return currentUser?.displayName || 'Harshit Mishra';
   });
 
+  const [citizenProfilePhoto, setCitizenProfilePhoto] = useState<string>(() => {
+    try {
+      const key = `nivaaran_citizen_profile_${currentUser?.uid || 'default'}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.photoUrl) return parsed.photoUrl;
+      }
+    } catch {
+      // fallback
+    }
+    return currentUser?.photoURL || '';
+  });
+
   React.useEffect(() => {
     const handleProfileUpdate = (e: any) => {
       if (e?.detail?.displayName) {
         setCitizenProfileName(e.detail.displayName);
+      }
+      if (e?.detail?.photoUrl !== undefined) {
+        setCitizenProfilePhoto(e.detail.photoUrl);
       }
     };
     window.addEventListener('nivaaran_profile_updated', handleProfileUpdate);
@@ -60,7 +77,10 @@ export const CitizenPortal: React.FC = () => {
     if (currentUser?.displayName) {
       setCitizenProfileName(currentUser.displayName);
     }
-  }, [currentUser?.displayName]);
+    if (currentUser?.photoURL) {
+      setCitizenProfilePhoto(currentUser.photoURL);
+    }
+  }, [currentUser?.displayName, currentUser?.photoURL]);
 
   const handleOpenTracking = (reportId?: string) => {
     setTrackingModal({
@@ -113,6 +133,7 @@ export const CitizenPortal: React.FC = () => {
         onLangChange={setLanguage}
         userDisplayName={citizenProfileName}
         userEmail={currentUser?.email || ''}
+        userPhoto={citizenProfilePhoto}
       />
 
       {/* Main Tab Content Stream */}

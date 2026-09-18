@@ -6,7 +6,8 @@ import { subscribeToChallenges, ChallengeDoc } from '../../services/firebaseServ
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 import {
   User, MapPin, CheckCircle2, ShieldCheck, Mail, Sprout,
-  FileText, Clock, Edit3, Save, ChevronRight, LogOut, Globe
+  FileText, Clock, Edit3, Save, ChevronRight, LogOut, Globe,
+  Camera, Trash2, AlertCircle
 } from 'lucide-react';
 
 interface CitizenProfileTabProps {
@@ -45,6 +46,7 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
       district: currentUser?.district || 'Ranchi',
       block: 'Kanke Block',
       village: 'Hutup Panchayat',
+      photoUrl: currentUser?.photoURL || '',
     };
   });
 
@@ -53,8 +55,12 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
   const [district, setDistrict] = useState<string>(profileData.district);
   const [block, setBlock] = useState<string>(profileData.block);
   const [village, setVillage] = useState<string>(profileData.village);
+  const [photoUrl, setPhotoUrl] = useState<string>(profileData.photoUrl || currentUser?.photoURL || '');
+  const [photoError, setPhotoError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState(false);
+
+  const MAX_PHOTO_BYTES = 500 * 1024 * 1024; // 500 MB limit
 
   // Sync state if currentUser changes from outside
   useEffect(() => {
@@ -67,11 +73,113 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
         setDistrict(parsed.district || currentUser?.district || 'Ranchi');
         setBlock(parsed.block || 'Kanke Block');
         setVillage(parsed.village || 'Hutup Panchayat');
+        if (parsed.photoUrl) setPhotoUrl(parsed.photoUrl);
       }
     } catch {
       // Storage fallback
     }
   }, [currentUser?.uid, userDisplayName]);
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPhotoError(null);
+
+    if (file.size > MAX_PHOTO_BYTES) {
+      const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+      setPhotoError(`Selected file exceeds the maximum allowed size of 500 MB (${sizeMB} MB). Please choose a smaller image file.`);
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const rawDataUrl = event.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDimension = 640;
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width);
+            width = maxDimension;
+          } else {
+            width = Math.round((width * maxDimension) / height);
+            height = maxDimension;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        let finalDataUrl = rawDataUrl;
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          finalDataUrl = canvas.toDataURL('image/jpeg', 0.88);
+        }
+
+        setPhotoUrl(finalDataUrl);
+        const updated = {
+          ...profileData,
+          displayName,
+          phone,
+          district,
+          block,
+          village,
+          photoUrl: finalDataUrl,
+        };
+        setProfileData(updated);
+        try {
+          localStorage.setItem(profileStorageKey, JSON.stringify(updated));
+        } catch (err) {
+          console.warn('LocalStorage save error:', err);
+        }
+        if (updateUserProfile) {
+          updateUserProfile({ photoURL: finalDataUrl });
+        }
+        window.dispatchEvent(new CustomEvent('nivaaran_profile_updated', { detail: updated }));
+        setSaveFeedback(true);
+        setTimeout(() => setSaveFeedback(false), 3500);
+      };
+      img.onerror = () => {
+        setPhotoUrl(rawDataUrl);
+        const updated = { ...profileData, photoUrl: rawDataUrl };
+        setProfileData(updated);
+        try {
+          localStorage.setItem(profileStorageKey, JSON.stringify(updated));
+        } catch {
+          // ignore
+        }
+        window.dispatchEvent(new CustomEvent('nivaaran_profile_updated', { detail: updated }));
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleRemovePhoto = () => {
+    setPhotoUrl('');
+    setPhotoError(null);
+    const updated = {
+      ...profileData,
+      photoUrl: '',
+    };
+    setProfileData(updated);
+    try {
+      localStorage.setItem(profileStorageKey, JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+    if (updateUserProfile) {
+      updateUserProfile({ photoURL: '' });
+    }
+    window.dispatchEvent(new CustomEvent('nivaaran_profile_updated', { detail: updated }));
+    setSaveFeedback(true);
+    setTimeout(() => setSaveFeedback(false), 3500);
+  };
 
   const handleSaveProfile = () => {
     const updated = {
@@ -80,6 +188,7 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
       district: district.trim() || 'Ranchi',
       block: block.trim() || 'Kanke Block',
       village: village.trim() || 'Hutup Panchayat',
+      photoUrl: photoUrl || '',
     };
     try {
       localStorage.setItem(profileStorageKey, JSON.stringify(updated));
@@ -88,7 +197,7 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
     }
     setProfileData(updated);
     if (updateUserProfile) {
-      updateUserProfile({ displayName: updated.displayName, district: updated.district });
+      updateUserProfile({ displayName: updated.displayName, district: updated.district, photoURL: updated.photoUrl });
     }
     window.dispatchEvent(new CustomEvent('nivaaran_profile_updated', { detail: updated }));
     setIsEditing(false);
@@ -154,8 +263,22 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
       {/* Profile Header Banner */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-5">
         <div className="flex items-center space-x-4">
-          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-slate-900 to-slate-800 text-white flex items-center justify-center font-black text-2xl shadow-md border-2 border-emerald-500 shrink-0">
-            {displayName.charAt(0).toUpperCase()}
+          <div className="relative group shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-slate-900 to-slate-800 text-white flex items-center justify-center font-black text-2xl shadow-md border-2 border-emerald-500 overflow-hidden">
+              {photoUrl ? (
+                <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
+              ) : (
+                displayName.charAt(0).toUpperCase()
+              )}
+            </div>
+            <label
+              htmlFor="citizen-profile-photo-input"
+              className="absolute -bottom-1 -right-1 p-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl shadow-md cursor-pointer border-2 border-white transition-all hover:scale-110 flex items-center justify-center"
+              title="Upload Profile Photo (Max 500 MB)"
+              aria-label="Upload Profile Photo"
+            >
+              <Camera className="w-3.5 h-3.5" />
+            </label>
           </div>
 
           <div className="space-y-1">
@@ -295,6 +418,62 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
           </h3>
 
           <div className="space-y-3 text-xs">
+            {/* Profile Photo Upload Option */}
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5">
+              <label className="text-slate-700 font-bold block text-xs">Profile Photo</label>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-slate-900 text-white flex items-center justify-center font-black text-lg border-2 border-emerald-500 overflow-hidden shrink-0 shadow-2xs">
+                  {photoUrl ? (
+                    <img src={photoUrl} alt={displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    displayName.charAt(0).toUpperCase()
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <label
+                      htmlFor="citizen-profile-photo-input"
+                      className="px-2.5 py-1 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-[11px] cursor-pointer transition-colors shadow-2xs inline-flex items-center gap-1 active:scale-95"
+                    >
+                      <Camera className="w-3 h-3 text-emerald-200" />
+                      <span>{photoUrl ? 'Change Photo' : 'Upload Photo'}</span>
+                    </label>
+
+                    {photoUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        className="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg font-bold text-[11px] transition-colors border border-red-200 inline-flex items-center gap-1 cursor-pointer"
+                        title="Remove current photo"
+                      >
+                        <Trash2 className="w-3 h-3 text-red-600" />
+                        <span>Remove</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-medium">
+                    Maximum file size: 500 MB (JPG, PNG, WEBP)
+                  </p>
+                </div>
+              </div>
+
+              <input
+                id="citizen-profile-photo-input"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
+              />
+
+              {photoError && (
+                <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-800 text-[11px] font-semibold flex items-start gap-1.5 animate-fadeIn">
+                  <AlertCircle className="w-4 h-4 text-red-600 shrink-0 mt-0.2" />
+                  <span>{photoError}</span>
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="text-slate-600 font-semibold block mb-1">Full Name</label>
               <input

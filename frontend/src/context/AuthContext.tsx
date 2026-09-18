@@ -32,6 +32,7 @@ export interface UserProfile {
   role: UserRole;
   district?: string;
   institution?: string;
+  photoURL?: string;
 }
 
 interface AuthContextType {
