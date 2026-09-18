@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon, Zap, Users, Trash2, Volume2, Film, Camera, Sparkles, ShieldCheck, Tag, X } from 'lucide-react';
+import { ThumbsUp, MessageSquare, MapPin, CheckCircle2, Send, Image as ImageIcon, Zap, Users, Trash2, Volume2, Film, Camera, Sparkles, ShieldCheck, Tag, X, Eye } from 'lucide-react';
 import {
   subscribeToFeedPosts, submitFeedPostToFirestore, upvotePostInFirestore, FeedPostDoc, addCommentToFeedPost, deleteFeedPostFromFirestore
 } from '../../services/firebaseService';
+import { CommunityPostDetailModal } from './CommunityPostDetailModal';
 import { useLanguage } from '../../context/LanguageContext';
 import { DISTRICT_PROBLEM_IMAGES } from '../../services/districtProblemImages';
 import { tr } from '../../i18n/translationEngine';
@@ -1583,6 +1584,7 @@ export const CitizenCommunityFeedTab: React.FC = () => {
   const [showMediaInputs, setShowMediaInputs] = useState(false);
   const [activeCommentPostId, setActiveCommentPostId] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState('');
+  const [selectedPostForDetail, setSelectedPostForDetail] = useState<FeedPostUI | null>(null);
 
   useEffect(() => {
     // Clear out any old dummy testing submissions from localStorage
@@ -1735,14 +1737,15 @@ export const CitizenCommunityFeedTab: React.FC = () => {
     setShowMediaInputs(false);
   };
 
-  const handleAddComment = async (postId: string) => {
-    if (!commentInput.trim()) return;
+  const handleAddComment = async (postId: string, customText?: string) => {
+    const textToSubmit = (customText !== undefined ? customText : commentInput).trim();
+    if (!textToSubmit) return;
 
     const newComment: FeedComment = {
       id: `C-${Date.now()}`,
       author: 'You (Citizen Resident)',
       role: 'Citizen',
-      text: commentInput.replace(/[—–]/g, ' to ').replace(/--+/g, ' '),
+      text: textToSubmit.replace(/[—–]/g, ' to ').replace(/--+/g, ' '),
       timestamp: 'Just now',
     };
 
@@ -1962,7 +1965,11 @@ export const CitizenCommunityFeedTab: React.FC = () => {
           const videoUrl = (post as any).videoUrl || ((post as any).evidenceUrl && ((post as any).evidenceUrl.endsWith('.mp4') || (post as any).evidenceUrl.includes('/evidence_videos/')) ? (post as any).evidenceUrl : null);
 
           return (
-            <div key={post.id || idx} className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5 hover:border-slate-300 transition-colors">
+            <div
+              key={post.id || idx}
+              onClick={() => setSelectedPostForDetail(post)}
+              className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer group"
+            >
               {/* Header */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center space-x-2.5">
@@ -1983,7 +1990,7 @@ export const CitizenCommunityFeedTab: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
                   <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
                     post.isProgress
                       ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
@@ -1995,7 +2002,10 @@ export const CitizenCommunityFeedTab: React.FC = () => {
                   </span>
                   {post.id && !post.isProgress && (
                     <button
-                      onClick={() => handleDeletePost(post.id!, post.title)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePost(post.id!, post.title);
+                      }}
                       title="Delete post"
                       className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-red-200"
                     >
@@ -2008,7 +2018,7 @@ export const CitizenCommunityFeedTab: React.FC = () => {
               {/* Media Section: Photos & Playable Videos */}
               <div className="space-y-2">
                 {videoUrl && (
-                  <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-950 shadow-xs">
+                  <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-950 shadow-xs" onClick={e => e.stopPropagation()}>
                     <div className="absolute top-2.5 left-2.5 z-10 bg-black/75 backdrop-blur-md text-white px-2.5 py-1 rounded-md flex items-center gap-1.5 text-[10px] font-extrabold border border-white/20">
                       <Film className="w-3 h-3 text-rose-400" />
                       <span>Live Incident Video Footage</span>
@@ -2048,11 +2058,17 @@ export const CitizenCommunityFeedTab: React.FC = () => {
 
               {/* Title & Body */}
               <div className="space-y-1.5">
-                <h3 className="font-bold text-base text-slate-900 leading-snug">
-                  {post.translations?.[currentLang]?.title 
-                    ? post.translations[currentLang].title 
-                    : tr(post.title, currentLang)}
-                </h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-bold text-base text-slate-900 leading-snug group-hover:text-emerald-800 transition-colors">
+                    {post.translations?.[currentLang]?.title 
+                      ? post.translations[currentLang].title 
+                      : tr(post.title, currentLang)}
+                  </h3>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md shrink-0 inline-flex items-center gap-1 opacity-80 group-hover:opacity-100">
+                    <Eye className="w-3 h-3" />
+                    <span>View 16 Stages</span>
+                  </span>
+                </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
                   {post.translations?.[currentLang]?.content 
                     ? post.translations[currentLang].content 
@@ -2062,7 +2078,7 @@ export const CitizenCommunityFeedTab: React.FC = () => {
 
               {/* Citizen Voice Note Audio Player */}
               {(post as any).audioUrl && (
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200 rounded-xl p-2.5 flex items-center justify-between gap-2 shadow-2xs">
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50/60 border border-amber-200 rounded-xl p-2.5 flex items-center justify-between gap-2 shadow-2xs" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center gap-1.5 text-amber-900 font-bold shrink-0 text-xs">
                     <Volume2 className="w-3.5 h-3.5 text-amber-700" />
                     <span>🎙️ Voice Note {(post as any).voiceLanguage ? `(${(post as any).voiceLanguage === 'hi-IN' ? 'हिन्दी' : (post as any).voiceLanguage === 'bn-IN' ? 'বাংলা' : (post as any).voiceLanguage === 'sa-IN' ? 'संथाली' : 'English'})` : ''}</span>
@@ -2079,30 +2095,43 @@ export const CitizenCommunityFeedTab: React.FC = () => {
               )}
 
               {/* Voting & Action Bar */}
-              <div className="flex items-center space-x-4 pt-2 border-t border-slate-100 text-xs text-slate-600">
-                <button
-                  onClick={() => post.id && handleUpvote(post.id)}
-                  className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
-                    post.hasUpvoted
-                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700 font-bold'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <ThumbsUp className="w-3.5 h-3.5" />
-                  <span>{tr('Upvote', currentLang)} ({post.upvotes})</span>
-                </button>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-600" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center space-x-3">
+                  <button
+                    type="button"
+                    onClick={() => post.id && handleUpvote(post.id)}
+                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${
+                      post.hasUpvoted
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-700 font-bold'
+                        : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <ThumbsUp className="w-3.5 h-3.5" />
+                    <span>{tr('Upvote', currentLang)} ({post.upvotes})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : (post.id || null))}
+                    className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 font-semibold cursor-pointer"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>{tr('Comments', currentLang)} ({(post.comments || []).length})</span>
+                  </button>
+                </div>
 
                 <button
-                  onClick={() => setActiveCommentPostId(activeCommentPostId === post.id ? null : (post.id || null))}
-                  className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 font-semibold cursor-pointer"
+                  type="button"
+                  onClick={() => setSelectedPostForDetail(post)}
+                  className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer"
                 >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  <span>{tr('Comments', currentLang)} ({(post.comments || []).length})</span>
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>View All Details</span>
                 </button>
               </div>
 
               {/* Comments Stream */}
-              <div className="bg-slate-50/70 p-4 rounded-xl space-y-3">
+              <div className="bg-slate-50/70 p-4 rounded-xl space-y-3" onClick={e => e.stopPropagation()}>
                 {(post.comments || []).length > 0 ? (
                   (post.comments || []).map(c => (
                     <div key={c.id} className="bg-white p-3.5 rounded-lg border border-slate-200 space-y-2 text-xs">
@@ -2164,6 +2193,47 @@ export const CitizenCommunityFeedTab: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Full Modal Overlay for Detailed Post Information & 16 Stages */}
+      {selectedPostForDetail && (
+        <CommunityPostDetailModal
+          post={selectedPostForDetail}
+          isOpen={!!selectedPostForDetail}
+          onClose={() => setSelectedPostForDetail(null)}
+          currentLang={currentLang}
+          onUpvote={(id) => {
+            handleUpvote(id);
+            // Synchronize modal state with updated upvote count and hasUpvoted state
+            setSelectedPostForDetail(prev => {
+              if (!prev || prev.id !== id) return prev;
+              const nextVoted = !prev.hasUpvoted;
+              return {
+                ...prev,
+                hasUpvoted: nextVoted,
+                upvotes: Math.max(0, (prev.upvotes || 0) + (nextVoted ? 1 : -1)),
+              };
+            });
+          }}
+          onAddComment={(id, text) => {
+            handleAddComment(id, text);
+            // Synchronize modal state with new comment
+            setSelectedPostForDetail(prev => {
+              if (!prev || prev.id !== id) return prev;
+              const newComment: FeedComment = {
+                id: `C-${Date.now()}`,
+                author: 'You (Citizen Resident)',
+                role: 'Citizen',
+                text,
+                timestamp: 'Just now',
+              };
+              return {
+                ...prev,
+                comments: [...(prev.comments || []), newComment],
+              };
+            });
+          }}
+        />
+      )}
     </div>
   );
 };
