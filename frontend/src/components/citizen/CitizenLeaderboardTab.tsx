@@ -158,25 +158,27 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
 
   // Build live guardian standings by dynamically connecting dashboard data
   const topGuardians: CitizenGuardian[] = useMemo(() => {
-    const entries: Array<Omit<CitizenGuardian, 'rank'>> = BASELINE_GUARDIANS.map(bg => {
-      const liveDistData = districtLiveCounts.get(bg.district) || { total: 0, verified: 0, resolved: 0 };
-      const reportsSubmitted = bg.baseSubmitted + liveDistData.total;
-      const verifiedCount = bg.baseVerified + liveDistData.verified;
-      const points = verifiedCount * 90 + reportsSubmitted * 20;
-      const plantsEarned = Math.floor(verifiedCount / 3);
-      return {
-        name: bg.name,
-        district: bg.district,
-        reportsSubmitted,
-        verifiedCount,
-        points,
-        badge: getBadge(verifiedCount),
-        plantsEarned,
-        isCurrentUser: false,
-      };
-    });
+    const entries: Array<Omit<CitizenGuardian, 'rank'>> = BASELINE_GUARDIANS
+      .filter(bg => bg.name.trim().toLowerCase() !== (userStats.name || '').trim().toLowerCase())
+      .map(bg => {
+        const liveDistData = districtLiveCounts.get(bg.district) || { total: 0, verified: 0, resolved: 0 };
+        const reportsSubmitted = bg.baseSubmitted + liveDistData.total;
+        const verifiedCount = bg.baseVerified + liveDistData.verified;
+        const points = verifiedCount * 90 + reportsSubmitted * 20;
+        const plantsEarned = Math.floor(verifiedCount / 3);
+        return {
+          name: bg.name,
+          district: bg.district,
+          reportsSubmitted,
+          verifiedCount,
+          points,
+          badge: getBadge(verifiedCount),
+          plantsEarned,
+          isCurrentUser: false,
+        };
+      });
 
-    // Include the active logged:in citizen
+    // Include the active logged-in citizen
     entries.push(userStats);
 
     // Sort by points descending and assign ranks
@@ -346,9 +348,9 @@ export const CitizenLeaderboardTab: React.FC<CitizenLeaderboardTabProps> = ({ cu
         </div>
 
         <div className="divide-y divide-slate-100">
-          {topGuardians.map((guardian) => (
+          {topGuardians.map((guardian, idx) => (
             <div 
-              key={guardian.name} 
+              key={`${guardian.name}-${guardian.district}-${guardian.isCurrentUser ? 'you' : 'base'}-${idx}`} 
               className={`p-4 sm:p-5 flex items-center justify-between gap-4 transition-colors ${
                 guardian.isCurrentUser 
                   ? 'bg-emerald-50/60 border-l-4 border-l-emerald-600' 

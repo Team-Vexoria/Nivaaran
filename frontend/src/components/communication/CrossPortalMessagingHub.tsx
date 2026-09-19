@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  MessageSquare, Send, Smartphone 
+  MessageSquare, Send, Smartphone, ShieldCheck 
 } from 'lucide-react';
 import { notificationService } from '../../services/notificationService';
 
@@ -243,11 +243,18 @@ export const CrossPortalMessagingHub: React.FC<CrossPortalMessagingHubProps> = (
     setActiveThreadId(challengeKey);
   }, [activeChallenge, _userHEI]);
   const [inputMessage, setInputMessage] = useState('');
-  const [selectedRole, setSelectedRole] = useState<StakeholderMessage['senderRole']>(
-    (currentRole.includes('Univ') ? 'University Mentor' : 
-     currentRole.includes('Industry') ? 'Industry Partner' : 
-     currentRole.includes('Citizen') ? 'Citizen Representative' : 'Government Officer')
-  );
+  
+  const lockedRole: StakeholderMessage['senderRole'] = React.useMemo(() => {
+    const r = (currentRole || '').toLowerCase();
+    if (r.includes('student')) return 'Student Lead';
+    if (r.includes('univ') || r.includes('faculty') || r.includes('college')) return 'University Mentor';
+    if (r.includes('industry') || r.includes('csr')) return 'Industry Partner';
+    if (r.includes('pri') || r.includes('panchayat')) return 'PRI Member';
+    if (r.includes('citizen') || r.includes('community')) return 'Citizen Representative';
+    if (r.includes('gov') || r.includes('ulb') || r.includes('admin')) return 'Government Officer';
+    return 'Government Officer';
+  }, [currentRole]);
+
   const [broadcastSMS, setBroadcastSMS] = useState(true);
 
   const activeThread = threads.find(t => t.id === activeThreadId) || threads[0];
@@ -258,14 +265,15 @@ export const CrossPortalMessagingHub: React.FC<CrossPortalMessagingHubProps> = (
 
     const newMessage: StakeholderMessage = {
       id: `msg-${Date.now()}`,
-      senderName: effectiveUser || 'Active Stakeholder',
-      senderRole: selectedRole,
+      senderName: effectiveUser || lockedRole,
+      senderRole: lockedRole,
       text: inputMessage.trim(),
       timestamp: 'Just now',
-      avatarBg: selectedRole === 'Government Officer' ? 'bg-blue-600' :
-                selectedRole === 'University Mentor' ? 'bg-purple-600' :
-                selectedRole === 'Industry Partner' ? 'bg-amber-600' :
-                selectedRole === 'Student Lead' ? 'bg-indigo-600' : 'bg-emerald-600',
+      avatarBg: lockedRole === 'Government Officer' ? 'bg-blue-600' :
+                lockedRole === 'University Mentor' ? 'bg-purple-600' :
+                lockedRole === 'Industry Partner' ? 'bg-amber-600' :
+                lockedRole === 'Student Lead' ? 'bg-indigo-600' :
+                lockedRole === 'PRI Member' ? 'bg-emerald-600' : 'bg-emerald-600',
     };
 
     const updatedThreads = threads.map(th => {
@@ -289,7 +297,7 @@ export const CrossPortalMessagingHub: React.FC<CrossPortalMessagingHubProps> = (
     // Trigger Notification & Simulated SMS Dispatch
     notificationService.addNotification({
       title: `New Message on ${activeThread.challengeReportId}`,
-      message: `${selectedRole} (${effectiveUser}): "${inputMessage.slice(0, 75)}..."`,
+      message: `${lockedRole} (${effectiveUser}): "${inputMessage.slice(0, 75)}..."`,
       type: 'message',
       reportId: activeThread.challengeReportId,
       channel: 'in_app',
@@ -298,7 +306,7 @@ export const CrossPortalMessagingHub: React.FC<CrossPortalMessagingHubProps> = (
     if (broadcastSMS) {
       notificationService.sendSimulatedSMS(
         '+91 94311 00000',
-        `NIVAARAN [${activeThread.challengeReportId}] New message from ${selectedRole}: ${inputMessage.slice(0, 60)}`,
+        `NIVAARAN [${activeThread.challengeReportId}] New message from ${lockedRole}: ${inputMessage.slice(0, 60)}`,
         activeThread.challengeReportId
       );
     }
@@ -439,20 +447,18 @@ export const CrossPortalMessagingHub: React.FC<CrossPortalMessagingHubProps> = (
         {/* Message Input & Role Switcher Form */}
         <form onSubmit={handleSendMessage} className="p-3 border-t border-[#E4DDD1] bg-white space-y-2.5 shrink-0">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <span className="text-[11px] text-[#8A7F72] font-semibold">Post As:</span>
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value as any)}
-                className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-lg px-2 py-1 text-xs font-bold text-[#201C18] focus:outline-none focus:border-[#2C6E49]"
-              >
-                <option value="Government Officer">Government Officer</option>
-                <option value="University Mentor">University Mentor (BIT Mesra / IIT ISM)</option>
-                <option value="Student Lead">Student R&D Lead</option>
-                <option value="Industry Partner">Industry Sponsor (Tata Steel CSR)</option>
-                <option value="Citizen Representative">Citizen Representative</option>
-                <option value="PRI Member">Panchayat Member</option>
-              </select>
+              <div className="inline-flex items-center gap-1.5 bg-[#FAF8F4] border border-[#E4DDD1] px-2.5 py-1 rounded-lg text-xs font-bold text-[#201C18]">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#2C6E49]" />
+                <span>{lockedRole}</span>
+                {effectiveUser && (
+                  <span className="text-[10px] text-[#6A6155] font-semibold">({effectiveUser})</span>
+                )}
+                <span className="text-[9px] font-black uppercase tracking-wider bg-[#2C6E49]/10 text-[#2C6E49] px-1.5 py-0.5 rounded border border-[#2C6E49]/20 ml-1">
+                  Portal Locked
+                </span>
+              </div>
             </div>
 
             <label className="flex items-center gap-1.5 text-[11px] text-[#6A6155] cursor-pointer select-none">

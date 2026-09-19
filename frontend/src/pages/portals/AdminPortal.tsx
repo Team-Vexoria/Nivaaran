@@ -281,7 +281,7 @@ export const AdminPortal: React.FC = () => {
     <div className="min-h-screen bg-[#FAF8F4] text-[#201C18] flex flex-col antialiased selection:bg-[#2C6E49] selection:text-white font-sans">
       
       {/* Top Header */}
-      <header className="sticky top-0 z-40 bg-[#FAF8F4] text-[#201C18] px-4 sm:px-6 py-3 border-b border-[#E4DDD1] shadow-2xs">
+      <header className="sticky top-0 z-40 bg-white text-[#201C18] px-4 sm:px-6 py-3 border-b border-[#E4DDD1] shadow-xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
           
           {/* Brand & Subtitle */}
@@ -311,7 +311,7 @@ export const AdminPortal: React.FC = () => {
               onClick={() => setIsBroadcastOpen(true)}
               className="flex items-center space-x-2 text-xs bg-[#B5502D] hover:bg-[#9E4223] text-white font-black px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer active:scale-95"
             >
-              <Radio className="w-4 h-4 animate-pulse" />
+              <Radio className="w-4 h-4" />
               <span>CAP Broadcast</span>
             </button>
 
@@ -334,7 +334,7 @@ export const AdminPortal: React.FC = () => {
         </div>
 
         {/* Tab Navigation */}
-        <div className="max-w-7xl mx-auto mt-2.5 flex items-center space-x-1.5 border-t border-[#E4DDD1] pt-2.5 overflow-x-auto">
+        <div className="max-w-7xl mx-auto mt-2.5 flex items-center space-x-1.5 border-t border-[#E4DDD1] pt-2.5 overflow-x-auto no-scrollbar scrollbar-none scroll-smooth whitespace-nowrap">
           {([
             { id: 'matrix', label: '1. Master Case Matrix', icon: Layers },
             { id: 'overview', label: '2. Platform KPIs & Pipeline', icon: BarChart3 },
@@ -345,10 +345,10 @@ export const AdminPortal: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-black flex items-center space-x-2 transition-all shrink-0 cursor-pointer ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all shrink-0 cursor-pointer ${
                 activeTab === tab.id
-                  ? 'bg-[#2C6E49] text-white shadow-2xs'
-                  : 'text-[#5A5247] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                  ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                  : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -415,24 +415,24 @@ export const AdminPortal: React.FC = () => {
             </div>
 
             {/* Matrix Table */}
-            <div className="bg-white border border-[#E4DDD1] rounded-2xl shadow-2xs overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-[#FAF8F4] border-b border-[#E4DDD1] text-xs text-[#6A6155] uppercase font-black tracking-wider">
+            <div className="bg-white border border-[#E4DDD1] rounded-2xl shadow-xs overflow-hidden">
+              <div className="overflow-x-auto no-scrollbar scrollbar-none">
+                <table className="w-full text-left text-xs min-w-[1200px] border-collapse">
+                  <thead className="bg-[#FAF8F4] border-b border-[#E4DDD1] text-[11px] text-[#5A5247] uppercase font-bold tracking-wider">
                     <tr>
-                      <th className="p-4">Case ID &amp; Title</th>
-                      <th className="p-4">District / Risk</th>
-                      <th className="p-4">Assigned University &amp; Team</th>
-                      <th className="p-4">CSR Sponsor &amp; Grant</th>
-                      <th className="p-4">Lifecycle Stage</th>
-                      <th className="p-4">Live Field Telemetry</th>
-                      <th className="p-4 text-right">Quick Actions</th>
+                      <th className="py-3.5 px-4 w-[280px]">Case ID & Title</th>
+                      <th className="py-3.5 px-4 w-[130px]">District & Risk</th>
+                      <th className="py-3.5 px-4 w-[250px]">Assigned University & Team</th>
+                      <th className="py-3.5 px-4 w-[190px]">CSR Sponsor & Grant</th>
+                      <th className="py-3.5 px-4 w-[180px]">Lifecycle Stage</th>
+                      <th className="py-3.5 px-4 w-[210px]">Live Field Telemetry</th>
+                      <th className="py-3.5 px-4 w-[100px] text-right">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#E4DDD1] font-medium text-[#201C18]">
+                  <tbody className="divide-y divide-[#E4DDD1] text-[#201C18]">
                     {filteredChallenges.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="p-10 text-center text-[#8A7F72] text-xs">
+                        <td colSpan={7} className="p-12 text-center text-[#8A7F72] text-xs font-medium">
                           No matching cases found for the selected filters.
                         </td>
                       </tr>
@@ -455,65 +455,75 @@ export const AdminPortal: React.FC = () => {
                           : heiMeta.defaultGrant;
 
                         return (
-                          <tr key={c.id} className="hover:bg-[#FAF8F4]/80 transition-colors">
+                          <tr key={c.id} className="hover:bg-[#FAF8F4]/90 transition-colors">
                             
                             {/* Case ID & Title */}
-                            <td className="p-4 max-w-xs">
+                            <td className="py-4 px-4 align-top w-[280px]">
                               <div className="flex items-start gap-3">
-                                {((c as any).evidenceUrl || (c.evidenceUrls && c.evidenceUrls[0])) && (
+                                {((c as any).evidenceUrl || (c.evidenceUrls && c.evidenceUrls[0])) ? (
                                   <img
                                     src={(c as any).evidenceUrl || (c.evidenceUrls && c.evidenceUrls[0])}
                                     alt={c.title}
                                     onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                                    className="w-14 h-14 rounded-xl object-cover border border-[#E4DDD1] shrink-0 shadow-2xs mt-0.5"
+                                    className="w-12 h-12 rounded-xl object-cover border border-[#E4DDD1] shrink-0 shadow-2xs mt-0.5"
                                   />
+                                ) : (
+                                  <div className="w-12 h-12 rounded-xl bg-[#FAF8F4] border border-[#E4DDD1] flex items-center justify-center shrink-0 text-[#8A7F72]">
+                                    <FileText className="w-5 h-5 text-[#8A7F72]" />
+                                  </div>
                                 )}
                                 <div className="min-w-0 flex-1">
-                                  <span className="font-mono text-xs font-black text-[#2C6E49] block">
+                                  <span className="font-mono text-[11px] font-semibold text-[#2C6E49] bg-[#2C6E49]/8 px-1.5 py-0.5 rounded border border-[#2C6E49]/20 inline-block mb-1">
                                     {c.reportId || c.id.slice(0, 10)}
                                   </span>
-                                  <p className="font-bold text-sm text-[#201C18] line-clamp-2 leading-snug mt-0.5">{c.title}</p>
-                                  <span className="text-xs text-[#6A6155] font-semibold block mt-1">
-                                    Category: <strong className="text-[#201C18]">{c.category}</strong>
+                                  <h4 className="font-bold text-xs text-[#201C18] leading-snug break-words">
+                                    {c.title}
+                                  </h4>
+                                  <span className="text-[11px] text-[#6A6155] font-medium block mt-1">
+                                    Category: <span className="font-semibold text-[#332C24]">{c.category}</span>
                                   </span>
                                 </div>
                               </div>
                             </td>
 
                             {/* District & Risk */}
-                            <td className="p-4 whitespace-nowrap">
-                              <span className="font-bold text-sm text-[#201C18] block">{c.district || 'Ranchi'}</span>
-                              <span className={`text-xs font-black px-2.5 py-0.5 rounded-full inline-block mt-1 ${
-                                c.riskLevel === 'CRITICAL' ? 'bg-[#FFF0EE] text-[#B5502D] border border-[#F5C6C0]' :
-                                c.riskLevel === 'HIGH' ? 'bg-[#FFF8EC] text-[#C98A2C] border border-[#F0D99A]' :
-                                'bg-[#F0FAF4] text-[#2C6E49] border border-[#C3E6D0]'
+                            <td className="py-4 px-4 align-top w-[130px]">
+                              <span className="font-bold text-xs text-[#201C18] block">{c.district || 'Ranchi'}</span>
+                              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md inline-block mt-1.5 uppercase tracking-wide border ${
+                                c.riskLevel === 'CRITICAL' ? 'bg-[#FFF0EE] text-[#B5502D] border-[#F5C6C0]' :
+                                c.riskLevel === 'HIGH' ? 'bg-[#FFF8EC] text-[#C98A2C] border-[#F0D99A]' :
+                                'bg-[#F0FAF4] text-[#2C6E49] border-[#C3E6D0]'
                               }`}>
                                 {c.riskLevel || 'MEDIUM'} PRIORITY
                               </span>
                             </td>
 
                             {/* Assigned University */}
-                            <td className="p-4 max-w-xs">
+                            <td className="py-4 px-4 align-top w-[250px]">
                               {c.assignedHEI ? (
-                                <div className="space-y-1">
-                                  <span className="font-black text-xs text-[#2C6E49] flex items-center gap-1.5">
+                                <div className="space-y-1.5">
+                                  <span className="font-bold text-xs text-[#2C6E49] flex items-center gap-1.5">
                                     <Building2 className="w-3.5 h-3.5 text-[#2C6E49] shrink-0" />
-                                    {c.assignedHEI}
+                                    <span className="truncate max-w-[210px]">{c.assignedHEI}</span>
                                   </span>
-                                  <span className="text-xs text-[#4A433B] block">
-                                    Lead: <strong className="text-[#201C18]">{heiMeta.studentLead}</strong>
-                                  </span>
-                                  <span className="text-xs text-[#6A6155] block">
-                                    Mentor: {heiMeta.facultyLead}
-                                  </span>
+                                  <div className="text-[11px] text-[#4A433B] space-y-0.5">
+                                    <p className="truncate">
+                                      <span className="text-[#8A7F72] font-medium">Lead:</span>{' '}
+                                      <span className="font-semibold text-[#201C18]">{heiMeta.studentLead}</span>
+                                    </p>
+                                    <p className="truncate text-[#6A6155]">
+                                      <span className="text-[#8A7F72] font-medium">Mentor:</span>{' '}
+                                      <span>{heiMeta.facultyLead}</span>
+                                    </p>
+                                  </div>
                                 </div>
                               ) : (
                                 <div className="space-y-1">
-                                  <span className="text-xs font-extrabold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2 py-0.5 rounded-lg inline-flex items-center gap-1">
-                                    <Building2 className="w-3.5 h-3.5" />
+                                  <span className="text-[10px] font-bold text-[#C98A2C] bg-[#FFF8EC] border border-[#F0D99A] px-2 py-0.5 rounded-md inline-flex items-center gap-1">
+                                    <Building2 className="w-3 h-3" />
                                     Unallocated
                                   </span>
-                                  <span className="text-xs text-[#8A7F72] block font-medium">
+                                  <span className="text-[11px] text-[#8A7F72] block">
                                     Open for university intake
                                   </span>
                                 </div>
@@ -521,58 +531,67 @@ export const AdminPortal: React.FC = () => {
                             </td>
 
                             {/* CSR Sponsor & Grant */}
-                            <td className="p-4 whitespace-nowrap">
-                              <span className="font-bold text-xs text-[#201C18] block">{csrPartnerName}</span>
-                              <span className="text-xs font-mono text-[#2C6E49] font-black block mt-0.5">
+                            <td className="py-4 px-4 align-top w-[190px]">
+                              <span className="font-bold text-xs text-[#201C18] block truncate">{csrPartnerName}</span>
+                              <span className="text-xs text-[#2C6E49] font-bold block mt-0.5">
                                 {csrGrantText}
                               </span>
-                              <span className="text-xs bg-[#FAF8F4] border border-[#E4DDD1] text-[#6A6155] px-2 py-0.5 rounded-lg mt-1 inline-block font-bold">
+                              <span className="text-[10px] bg-[#FAF8F4] border border-[#E4DDD1] text-[#6A6155] px-2 py-0.5 rounded-md mt-1.5 inline-block font-semibold">
                                 {realCollab ? realCollab.status : 'Schedule VII R&D Grant'}
                               </span>
                             </td>
 
                             {/* Lifecycle Stage & Direct Admin Transition */}
-                            <td className="p-4 whitespace-nowrap">
-                              <span className="text-xs font-black bg-[#FAF8F4] text-[#2C6E49] border border-[#E4DDD1] px-2.5 py-1 rounded-full block text-center mb-1.5">
-                                Stage {stageInfo?.stageNumber || 8}: {c.status}
-                              </span>
-                              <select
-                                value={c.status}
-                                onChange={(e) => handleStatusChange(c.id, e.target.value as ChallengeStatus)}
-                                className="text-xs bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl px-2 py-1 text-[#201C18] font-bold w-full focus:outline-none focus:ring-2 focus:ring-[#2C6E49]/30 cursor-pointer"
-                              >
-                                {CHALLENGE_STATUS_OPTIONS.map(st => (
-                                  <option key={st} value={st}>{st}</option>
-                                ))}
-                              </select>
+                            <td className="py-4 px-4 align-top w-[180px]">
+                              <div className="space-y-1.5">
+                                <span className="text-[10px] font-bold bg-[#F0FAF4] text-[#2C6E49] border border-[#C3E6D0] px-2 py-1 rounded-md block text-center truncate">
+                                  Stage {stageInfo?.stageNumber || 8}: {c.status}
+                                </span>
+                                <select
+                                  value={c.status}
+                                  onChange={(e) => handleStatusChange(c.id, e.target.value as ChallengeStatus)}
+                                  className="text-xs bg-[#FAF8F4] border border-[#E4DDD1] rounded-lg px-2.5 py-1.5 text-[#201C18] font-semibold w-full focus:outline-none focus:border-[#2C6E49] cursor-pointer shadow-2xs"
+                                >
+                                  {CHALLENGE_STATUS_OPTIONS.map(st => (
+                                    <option key={st} value={st}>{st}</option>
+                                  ))}
+                                </select>
+                              </div>
                             </td>
 
                             {/* Live Field Telemetry */}
-                            <td className="p-4 max-w-xs">
-                              <span className="text-xs font-mono text-[#2C6E49] font-black block">
-                                ● {heiMeta.sensorReading}
-                              </span>
-                              <span className="text-xs text-[#8A7F72] block mt-0.5">
-                                Sensor: {heiMeta.sensorType} · 99.2% Uptime
-                              </span>
+                            <td className="py-4 px-4 align-top w-[210px]">
+                              <div className="flex items-start gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 mt-1" />
+                                <div>
+                                  <span className="text-xs font-semibold text-[#201C18] block leading-snug">
+                                    {heiMeta.sensorReading}
+                                  </span>
+                                  <span className="text-[11px] text-[#8A7F72] block mt-1">
+                                    Sensor: {heiMeta.sensorType} · 99.2% Uptime
+                                  </span>
+                                </div>
+                              </div>
                             </td>
 
                             {/* Quick Actions */}
-                            <td className="p-4 text-right whitespace-nowrap space-x-1.5">
-                              <button
-                                onClick={() => handleLaunchTargetedBroadcast(c.district, c.title)}
-                                title="Broadcast Emergency CAP Alert to this District"
-                                className="p-2 bg-[#FFF0EE] hover:bg-[#FDE2DF] text-[#B5502D] rounded-xl border border-[#F5C6C0] transition-colors cursor-pointer"
-                              >
-                                <Radio className="w-4 h-4" />
-                              </button>
-                              <button
-                                onClick={() => setInspectingChallenge(c)}
-                                title="View Full Case Dossier"
-                                className="p-2 bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#201C18] rounded-xl border border-[#E4DDD1] transition-colors cursor-pointer"
-                              >
-                                <Eye className="w-4 h-4 text-[#2C6E49]" />
-                              </button>
+                            <td className="py-4 px-4 align-top w-[100px] text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleLaunchTargetedBroadcast(c.district, c.title)}
+                                  title="Broadcast Emergency CAP Alert to this District"
+                                  className="p-2 bg-[#FFF0EE] hover:bg-[#FDE2DF] text-[#B5502D] rounded-xl border border-[#F5C6C0] transition-colors cursor-pointer active:scale-95"
+                                >
+                                  <Radio className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setInspectingChallenge(c)}
+                                  title="View Full Case Dossier"
+                                  className="p-2 bg-[#FAF8F4] hover:bg-[#EAE4D8] text-[#201C18] rounded-xl border border-[#E4DDD1] transition-colors cursor-pointer active:scale-95"
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-[#2C6E49]" />
+                                </button>
+                              </div>
                             </td>
 
                           </tr>

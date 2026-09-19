@@ -460,7 +460,7 @@ export const PFMSDisbursementLedger: React.FC<PFMSDisbursementLedgerProps> = ({
       </div>
 
       {selectedOrderForDisbursal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[200] p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[9999] p-4">
           <div className="bg-white border border-[#E4DDD1] rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
             <div className="flex items-start justify-between border-b border-[#F0EBE0] pb-3">
               <div>
@@ -540,7 +540,7 @@ export const PFMSDisbursementLedger: React.FC<PFMSDisbursementLedgerProps> = ({
       )}
 
       {viewingSanctionDoc && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[200] p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-[9999] p-4">
           <div className="bg-white border border-[#E4DDD1] rounded-2xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5">
             <div className="flex items-start justify-between border-b border-[#2C6E49]/20 pb-4">
               <div>

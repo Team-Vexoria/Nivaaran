@@ -39,7 +39,8 @@ import {
   Film,
   ExternalLink,
   Copy,
-  Trash2
+  Trash2,
+  Search
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
@@ -790,6 +791,25 @@ interface HEIDetailModalProps {
   onClose: () => void;
 }
 
+const cleanDisplayString = (val: any, fallback: string): string => {
+  if (!val) return fallback;
+  if (typeof val === 'object') {
+    if (Array.isArray(val)) {
+      const names = val
+        .map(item => (typeof item === 'object' ? item?.name || String(item) : String(item)))
+        .filter(s => s && !s.includes('[object Object]'));
+      return names.length > 0 ? names.join(', ') : fallback;
+    }
+    return (val as any)?.name || fallback;
+  }
+  const str = String(val);
+  if (str.includes('[object Object]')) {
+    const cleaned = str.replace(/\[object Object\],?\s*/g, '').replace(/,\s*,/g, ',').trim().replace(/^,\s*|,\s*$/g, '');
+    return cleaned || fallback;
+  }
+  return str;
+};
+
 const HEIDetailModal: React.FC<HEIDetailModalProps> = ({ hei, challenges, onClose }) => {
   const assignedChallenges = challenges.filter(c => c.assignedHEI === hei.name || c.district === hei.district);
 
@@ -804,7 +824,9 @@ const HEIDetailModal: React.FC<HEIDetailModalProps> = ({ hei, challenges, onClos
               {hei.badge}
             </span>
             <h2 className="text-xl font-black text-[#201C18] mt-1 font-heading">{hei.name}</h2>
-            <p className="text-xs text-[#6A6155] mt-0.5">{hei.role}</p>
+            <p className="text-xs text-[#6A6155] mt-0.5">
+              {cleanDisplayString(hei.role, 'Research & Innovation Centre')}
+            </p>
           </div>
           <button onClick={onClose} className="p-2 text-[#8A7F72] hover:text-[#201C18] rounded-xl hover:bg-[#EAE4D8]">
             <X className="w-5 h-5" />
@@ -818,7 +840,7 @@ const HEIDetailModal: React.FC<HEIDetailModalProps> = ({ hei, challenges, onClos
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3">
               <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Faculty Nodal Lead</span>
-              <p className="font-extrabold text-[#201C18] mt-0.5">{hei.lead}</p>
+              <p className="font-extrabold text-[#201C18] mt-0.5">{cleanDisplayString(hei.lead, 'Dr. Nodal Officer')}</p>
             </div>
 
             <div className="bg-[#FAF8F4] border border-[#E4DDD1] rounded-xl p-3">
@@ -838,12 +860,14 @@ const HEIDetailModal: React.FC<HEIDetailModalProps> = ({ hei, challenges, onClos
           <div className="space-y-3">
             <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 space-y-1">
               <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px]">Hazard Domain Focus</h4>
-              <p className="text-xs text-[#4A433B] font-semibold">{hei.domain}</p>
+              <p className="text-xs text-[#4A433B] font-semibold">
+                {cleanDisplayString(hei.domain, 'Applied R&D & Civic Innovation')}
+              </p>
             </div>
 
             <div className="bg-white border border-[#E4DDD1] rounded-xl p-4 space-y-1">
               <h4 className="font-black text-[#201C18] uppercase tracking-wider text-[10px]">Specialized Lab Equipment & Testbeds</h4>
-              <p className="text-xs text-[#6A6155] leading-relaxed">{hei.facilities}</p>
+              <p className="text-xs text-[#6A6155] leading-relaxed">{cleanDisplayString(hei.facilities, 'IoT Lab, Ground Telemetry, Testing Beds')}</p>
             </div>
           </div>
 
@@ -908,6 +932,7 @@ export const GovPortal: React.FC = () => {
     challenge: null,
   });
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
+  const [heiSearchQuery, setHeiSearchQuery] = useState('');
 
   // Priority override editor state
   const [editingPriorityId, setEditingPriorityId] = useState<string | null>(null);
@@ -1128,7 +1153,7 @@ export const GovPortal: React.FC = () => {
       />
 
       {/* ── Top Navbar ── */}
-      <header className="bg-[#FAF8F4] text-[#201C18] border-b border-[#E4DDD1] shadow-2xs px-4 sm:px-6 py-2.5 sticky top-0 z-[100]">
+      <header className="bg-white text-[#201C18] border-b border-[#E4DDD1] shadow-xs px-4 sm:px-6 py-3 sticky top-0 z-[100]">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
 
           <div className="flex items-center space-x-2 shrink-0">
@@ -1182,7 +1207,7 @@ export const GovPortal: React.FC = () => {
         </div>
 
         {/* Tab bar */}
-        <div className="max-w-7xl mx-auto flex items-center gap-1.5 border-t border-[#E4DDD1] pt-2.5 mt-2 overflow-x-auto no-scrollbar scroll-smooth whitespace-nowrap px-1 pb-1">
+        <div className="max-w-7xl mx-auto flex items-center gap-1.5 border-t border-[#E4DDD1] pt-2.5 mt-2.5 overflow-x-auto no-scrollbar scrollbar-none scroll-smooth whitespace-nowrap px-1 pb-1">
           {tabs.map(t => (
             <button
               key={t.id}
@@ -1190,7 +1215,7 @@ export const GovPortal: React.FC = () => {
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
                 activeTab === t.id
                   ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
-                  : 'text-[#5A5247] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                  : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
               }`}
             >
               {t.icon}
@@ -1570,6 +1595,20 @@ export const GovPortal: React.FC = () => {
         {activeTab === 'universities' && (() => {
           const liveUniCount = JHARKHAND_UNIVERSITIES.length;
           const liveDeptCount = JHARKHAND_UNIVERSITIES.reduce((sum, u) => sum + (u.departments?.length ?? 0), 0);
+          const filteredUnis = JHARKHAND_UNIVERSITIES.filter(u => {
+            if (!heiSearchQuery.trim()) return true;
+            const q = heiSearchQuery.toLowerCase();
+            const deptMatch = (u.departments || []).some((d: any) => 
+              (typeof d === 'string' ? d : d?.name || '').toLowerCase().includes(q)
+            );
+            return (
+              u.name.toLowerCase().includes(q) ||
+              u.district.toLowerCase().includes(q) ||
+              (u.shortName || '').toLowerCase().includes(q) ||
+              deptMatch
+            );
+          });
+
           return (
           <div className="flex-1 overflow-y-auto p-6 space-y-6 max-w-7xl mx-auto w-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-[#E4DDD1] rounded-2xl p-5 shadow-2xs">
@@ -1597,9 +1636,26 @@ export const GovPortal: React.FC = () => {
               </div>
             </div>
 
+            {/* Search & Filter Bar for HEIs */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-[#E4DDD1] rounded-xl px-4 py-3 shadow-2xs">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-[#8A7F72] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search 30 partner universities, districts, labs..."
+                  value={heiSearchQuery}
+                  onChange={(e) => setHeiSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#FAF8F4] border border-[#E4DDD1] rounded-lg focus:outline-none focus:border-[#2C6E49]"
+                />
+              </div>
+              <div className="text-xs text-[#6A6155] font-semibold">
+                Showing <span className="font-extrabold text-[#201C18]">{filteredUnis.length}</span> of {liveUniCount} Institutions across Jharkhand
+              </div>
+            </div>
+
             {/* University Cards Grid — driven by JHARKHAND_UNIVERSITIES + live project counts */}
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {JHARKHAND_UNIVERSITIES.slice(0, 6).map((uni) => {
+              {filteredUnis.map((uni) => {
                 const uniProjects = workflowStore.getProjects().filter(
                   p => p.universityId === uni.id
                 );
@@ -1607,8 +1663,16 @@ export const GovPortal: React.FC = () => {
                   !['Completed', 'Cancelled'].includes(p.status || '')
                 ).length;
                 const teamCount = uni.departments?.length ?? 0;
-                const primaryDept = uni.departments?.[0] ?? 'R&D';
-                const role = `${primaryDept} Research & Innovation Centre`;
+                const deptNames = (uni.departments || [])
+                  .map((d: any) => typeof d === 'string' ? d : d?.name)
+                  .filter(Boolean);
+                const primaryDeptName = deptNames[0] || 'Engineering & Technology';
+                const role = `${primaryDeptName} Research & Innovation Centre`;
+                const domainStr = deptNames.length > 0 ? deptNames.slice(0, 3).join(', ') : 'Applied R&D & Prototyping';
+                const leadPerson = (uni.departments?.[0] as any)?.headOfDept || (uni as any)?.facultyMentors?.[0]?.name || 'Dr. Nodal Officer';
+                const activeLabs = (uni.departments || []).flatMap((d: any) => d?.activeLabs || []).filter(Boolean);
+                const facilitiesStr = activeLabs.length > 0 ? activeLabs.slice(0, 4).join(', ') : 'IoT Lab, Ground Telemetry, Testing Beds';
+
                 const badge = uni.type === 'Central University' ? 'Premier R&D Lab'
                   : uni.type === 'National Institute' || uni.type === 'Institute of National Importance' ? 'Technical Node'
                   : uni.type === 'State University' ? 'State R&D Cell'
@@ -1618,13 +1682,13 @@ export const GovPortal: React.FC = () => {
                   id: uni.id,
                   name: uni.name,
                   role,
-                  domain: uni.departments?.slice(0, 3).join(', ') ?? 'R&D',
+                  domain: domainStr,
                   assigned: activeProjects,
                   teams: teamCount,
-                  lead: 'Dr. Nodal Officer',
+                  lead: leadPerson,
                   email: `contact@${uni.id}.ac.in`,
                   phone: '+91 651 220 0000',
-                  facilities: 'IoT Lab, Ground Telemetry, Testing Beds',
+                  facilities: facilitiesStr,
                   badge,
                   district: uni.district
                 };
@@ -1649,7 +1713,7 @@ export const GovPortal: React.FC = () => {
                     <div className="space-y-2 text-xs">
                       <div>
                         <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">Departments:</span>
-                        <p className="text-[#201C18] font-semibold">{uni.departments?.slice(0, 3).join(', ') ?? '—'}</p>
+                        <p className="text-[#201C18] font-semibold">{domainStr}</p>
                       </div>
                       <div>
                         <span className="text-[10px] font-bold text-[#8A7F72] uppercase block">District:</span>

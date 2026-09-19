@@ -759,7 +759,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
         onPointerDown={(e) => e.stopPropagation()}
         onDoubleClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-slate-200/90 overflow-hidden w-72 transition-all">
+        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl border border-[#E4DDD1] overflow-hidden w-72 transition-all">
           
           {/* Dropdown Header Bar */}
           <button
@@ -768,18 +768,18 @@ export const MapViewport: React.FC<MapViewportProps> = ({
               e.stopPropagation();
               setIsLayerMenuOpen(prev => !prev);
             }}
-            className="w-full px-3.5 py-2.5 flex items-center justify-between bg-slate-900 text-white hover:bg-slate-800 transition-colors cursor-pointer select-none"
+            className="w-full px-3.5 py-2.5 flex items-center justify-between bg-[#FAF8F4] border-b border-[#E4DDD1] text-[#201C18] hover:bg-[#F3EDE2] transition-colors cursor-pointer select-none"
             title="Toggle GIS Disaster Layers Menu"
           >
             <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs font-black tracking-tight">GIS Disaster Layers</span>
+              <Layers className="w-4 h-4 text-[#C98A2C]" />
+              <span className="text-xs font-black tracking-tight text-[#201C18]">GIS Disaster Layers</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-[9px] bg-emerald-500/20 text-emerald-300 font-bold px-1.5 py-0.5 rounded border border-emerald-500/30 flex items-center gap-1">
-                <Radio className="w-2.5 h-2.5 text-emerald-400 animate-pulse" /> LIVE
+              <span className="text-[9px] bg-amber-100 text-amber-900 font-black px-1.5 py-0.5 rounded border border-amber-300 flex items-center gap-1">
+                <Radio className="w-2.5 h-2.5 text-amber-700 animate-pulse" /> LIVE
               </span>
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-300 transition-transform duration-200 ${isLayerMenuOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-3.5 h-3.5 text-[#6A6155] transition-transform duration-200 ${isLayerMenuOpen ? 'rotate-180' : ''}`} />
             </div>
           </button>
 
@@ -787,8 +787,8 @@ export const MapViewport: React.FC<MapViewportProps> = ({
           <div className={`p-3 space-y-2.5 text-xs transition-all ${isLayerMenuOpen ? 'block' : 'hidden'}`}>
             
             {/* Disaster Zone Direct Layer Selector */}
-            <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-1.5">
-              <label className="text-[10px] font-extrabold text-slate-700 uppercase tracking-wider block">
+            <div className="bg-[#FAF8F4] p-2.5 rounded-xl border border-[#E4DDD1] space-y-1.5">
+              <label className="text-[10px] font-extrabold text-[#4A433B] uppercase tracking-wider block">
                 Select Disaster / Map Layer
               </label>
               <select
@@ -804,7 +804,7 @@ export const MapViewport: React.FC<MapViewportProps> = ({
                     }
                   }
                 }}
-                className="w-full px-2.5 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 cursor-pointer shadow-2xs"
+                className="w-full px-2.5 py-1.5 bg-white border border-[#E4DDD1] rounded-lg text-xs font-bold text-[#201C18] focus:outline-none focus:ring-2 focus:ring-[#C98A2C] cursor-pointer shadow-2xs"
               >
                 <option value="all">All Disasters (5 Hazard Zones)</option>
                 <option value="ZONE-DAMODAR-FLOOD">Damodar Basin Inundation (Flood)</option>

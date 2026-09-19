@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   X, MapPin, Building2, CheckCircle2, ShieldCheck, 
   ArrowRight, FileText, Printer, Sparkles, 
@@ -52,8 +53,8 @@ export const UniversityChallengeDetailModal: React.FC<UniversityChallengeDetailM
     onClose();
   };
 
-  return (
-    <div className="fixed inset-0 z-[300] bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto print:p-0 print:bg-white print:static">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black/65 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto print:p-0 print:bg-white print:static">
       
       <div className="bg-white rounded-3xl max-w-3xl w-full shadow-2xl border border-[#D5CDBF] overflow-hidden flex flex-col my-4 max-h-[92vh] print:max-h-none print:shadow-none print:border-none print:w-full">
         
@@ -257,6 +258,7 @@ export const UniversityChallengeDetailModal: React.FC<UniversityChallengeDetailM
 
       </div>
 
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -309,7 +309,18 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
             </span>
           )}
 
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => setIsEditing(false)}
+              className="px-3 py-2 font-bold text-xs rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 transition-colors cursor-pointer shadow-2xs"
+            >
+              Cancel
+            </button>
+          )}
+
           <button
+            type="button"
             onClick={() => {
               if (isEditing) {
                 handleSaveProfile();
@@ -349,6 +360,114 @@ export const CitizenProfileTab: React.FC<CitizenProfileTabProps> = ({
           </button>
         </div>
       </div>
+
+      {/* ANIMATED PROFILE EDIT DRAWER / FORM (Visible immediately without scrolling) */}
+      {isEditing && (
+        <div className="bg-gradient-to-br from-white via-emerald-50/20 to-white border-2 border-emerald-500 rounded-3xl p-5 sm:p-7 shadow-xl space-y-5 animate-in fade-in slide-in-from-top-3 duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-100 pb-3.5">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-sm">
+                <Edit3 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-extrabold text-lg text-slate-900 font-heading">
+                  Edit Profile Information
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Update your display name, contact number, and regional administrative jurisdiction.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveProfile}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Save className="w-4 h-4" />
+                <span>Save Changes</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+            <div>
+              <label className="text-slate-700 font-bold block mb-1">Full Name</label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={e => setDisplayName(e.target.value)}
+                placeholder="Enter full name"
+                className="w-full px-3.5 py-2.5 bg-white border-2 border-emerald-400 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-700 font-bold block mb-1">Phone Number</label>
+              <input
+                type="text"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="+91 94311 20455"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-700 font-bold block mb-1">Resident District</label>
+              <input
+                type="text"
+                value={district}
+                onChange={e => setDistrict(e.target.value)}
+                placeholder="e.g. Ranchi, Dumka, Dhanbad"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-700 font-bold block mb-1">Block / Ward</label>
+              <input
+                type="text"
+                value={block}
+                onChange={e => setBlock(e.target.value)}
+                placeholder="e.g. Kanke Block"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-700 font-bold block mb-1">Village / Panchayat</label>
+              <input
+                type="text"
+                value={village}
+                onChange={e => setVillage(e.target.value)}
+                placeholder="e.g. Hutup Panchayat"
+                className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-2xs"
+              />
+            </div>
+
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={handleSaveProfile}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Save Profile Changes</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Impact Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

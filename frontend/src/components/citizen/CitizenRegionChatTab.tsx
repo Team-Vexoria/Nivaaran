@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Send, MapPin, Users, MessageSquare } from 'lucide-react';
+import { Send, MapPin, Users, MessageSquare, Trash2 } from 'lucide-react';
 import { 
   subscribeToDistrictChat, sendChatMessageToFirestore, ChatMessageDoc 
 } from '../../services/firebaseService';
-import { useLanguage } from '../../context/LanguageContext';
 
 // All 24 Jharkhand districts available as community chat rooms.
 const JHARKHAND_DISTRICTS = [
@@ -14,8 +13,15 @@ const JHARKHAND_DISTRICTS = [
   'Chatra', 'Koderma', 'Lohardaga',
 ];
 
+const BLOCKED_OR_REMOVED_TEXTS = new Set([
+  'gmfynf',
+  'brsrgvwgwsf',
+  'brsrgvwgfwsf',
+  'bvnsg',
+  'fbsfgs',
+]);
+
 export const CitizenRegionChatTab: React.FC = () => {
-  const { t } = useLanguage();
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Ranchi');
   const [chatMessages, setChatMessages] = useState<ChatMessageDoc[]>([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -52,19 +58,59 @@ export const CitizenRegionChatTab: React.FC = () => {
   ];
 
   useEffect(() => {
+    // Purge unwanted test messages from localStorage on load
+    try {
+      const key = `nivaaran_chat_${selectedDistrict}`;
+      const saved = JSON.parse(localStorage.getItem(key) || '[]');
+      if (Array.isArray(saved)) {
+        const cleaned = saved.filter((m: any) => !BLOCKED_OR_REMOVED_TEXTS.has(m?.text?.trim()?.toLowerCase()));
+        if (cleaned.length !== saved.length) {
+          localStorage.setItem(key, JSON.stringify(cleaned));
+        }
+      }
+    } catch {}
+
     const filteredSeed = seedMessages.filter(m => m.district === selectedDistrict);
     const unsubscribe = subscribeToDistrictChat(selectedDistrict, (incomingMsgs) => {
       const combined = [...filteredSeed];
       (incomingMsgs || []).forEach(inc => {
-        if (!combined.some(c => c.id === inc.id || c.text === inc.text)) {
+        const isSpam = BLOCKED_OR_REMOVED_TEXTS.has(inc?.text?.trim()?.toLowerCase());
+        if (!isSpam && !combined.some(c => c.id === inc.id || c.text === inc.text)) {
           combined.push(inc);
         }
       });
-      setChatMessages(combined);
+      setChatMessages(combined.filter(c => !BLOCKED_OR_REMOVED_TEXTS.has(c.text?.trim()?.toLowerCase())));
     });
 
     return () => unsubscribe();
   }, [selectedDistrict]);
+
+  const handleDeleteMessage = (id?: string) => {
+    if (!id) return;
+    setChatMessages(prev => prev.filter(m => m.id !== id));
+    try {
+      const key = `nivaaran_chat_${selectedDistrict}`;
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+      const filtered = existing.filter((m: any) => m.id !== id);
+      localStorage.setItem(key, JSON.stringify(filtered));
+      window.dispatchEvent(new Event('nivaaran-storage-changed'));
+    } catch (err) {
+      console.warn('Failed to delete message:', err);
+    }
+  };
+
+  const handleClearMyMessages = () => {
+    setChatMessages(prev => prev.filter(m => m.sender !== 'You'));
+    try {
+      const key = `nivaaran_chat_${selectedDistrict}`;
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+      const filtered = existing.filter((m: any) => m.sender !== 'You');
+      localStorage.setItem(key, JSON.stringify(filtered));
+      window.dispatchEvent(new Event('nivaaran-storage-changed'));
+    } catch (err) {
+      console.warn('Failed to clear messages:', err);
+    }
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,26 +145,27 @@ export const CitizenRegionChatTab: React.FC = () => {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       
-      {/* Header & District Selector */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+      {/* Header Bar with District Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold font-heading text-slate-900 flex items-center">
-            <MessageSquare className="w-6 h-6 mr-2 text-emerald-700" />
-            {t.regionChat.title}
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-            {t.regionChat.subtitle}
+          <div className="flex items-center space-x-2">
+            <MessageSquare className="w-5 h-5 text-slate-800" />
+            <h2 className="text-xl sm:text-2xl font-black font-heading text-slate-900">
+              District & Panchayat Regional Chat Rooms
+            </h2>
+          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            Real-time peer-to-peer discussion between citizens, PRI representatives, and university student researchers.
           </p>
         </div>
 
-        {/* District Selector Pill */}
         <div className="flex items-center space-x-2 shrink-0">
-          <MapPin className="w-4 h-4 text-amber-500" />
-          <span className="text-xs font-bold text-slate-700">{t.regionChat.selectDistrict}:</span>
+          <MapPin className="w-4 h-4 text-amber-600 shrink-0" />
+          <span className="text-xs font-bold text-slate-700">Select District Room:</span>
           <select
             value={selectedDistrict}
             onChange={e => setSelectedDistrict(e.target.value)}
-            className="px-3 py-1.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow-xs focus:outline-none"
+            className="px-3 py-1.5 bg-slate-900 text-white font-bold text-xs rounded-xl shadow-xs focus:outline-none cursor-pointer"
           >
             {districts.map(d => (
               <option key={d} value={d}>{d} District</option>
@@ -137,9 +184,22 @@ export const CitizenRegionChatTab: React.FC = () => {
             <span className="font-bold text-sm text-slate-900">{selectedDistrict} District Community Room</span>
           </div>
 
-          <div className="flex items-center space-x-1 text-xs text-slate-500 font-semibold">
-            <Users className="w-3.5 h-3.5 text-slate-400" />
-            <span>Real-time Active</span>
+          <div className="flex items-center space-x-3">
+            {chatMessages.some(m => m.sender === 'You') && (
+              <button
+                type="button"
+                onClick={handleClearMyMessages}
+                className="text-[10px] text-slate-500 hover:text-red-600 font-bold flex items-center gap-1 hover:underline cursor-pointer transition-colors"
+                title="Clear all messages sent by You in this room"
+              >
+                <Trash2 className="w-3 h-3 text-red-500" />
+                <span>Clear My Messages</span>
+              </button>
+            )}
+            <div className="flex items-center space-x-1 text-xs text-slate-500 font-semibold">
+              <Users className="w-3.5 h-3.5 text-slate-400" />
+              <span>Real-time Active</span>
+            </div>
           </div>
         </div>
 
@@ -155,12 +215,24 @@ export const CitizenRegionChatTab: React.FC = () => {
                   <span className="font-bold text-slate-700">{msg.sender}</span>
                   <span>({msg.role})</span>
                 </div>
-                <div className={`p-3 rounded-2xl max-w-md text-xs leading-relaxed shadow-2xs ${
-                  msg.sender === 'You'
-                    ? 'bg-slate-900 text-white rounded-tr-none'
-                    : 'bg-white border border-slate-200 text-slate-900 rounded-tl-none'
-                }`}>
-                  {msg.text}
+                <div className="flex items-center gap-1.5 group">
+                  {msg.sender === 'You' && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteMessage(msg.id)}
+                      className="opacity-60 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-500 rounded transition-all cursor-pointer"
+                      title="Delete message"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <div className={`p-3 rounded-2xl max-w-md text-xs leading-relaxed shadow-2xs ${
+                    msg.sender === 'You'
+                      ? 'bg-slate-900 text-white rounded-tr-none'
+                      : 'bg-white border border-slate-200 text-slate-900 rounded-tl-none'
+                  }`}>
+                    {msg.text}
+                  </div>
                 </div>
               </div>
             ))

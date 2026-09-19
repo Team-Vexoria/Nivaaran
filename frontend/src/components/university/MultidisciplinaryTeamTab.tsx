@@ -234,10 +234,10 @@ export const MultidisciplinaryTeamTab: React.FC<MultidisciplinaryTeamTabProps> =
       </div>
 
       {/* Confirm Team & Proceed */}
-      <div className="bg-slate-900 text-white p-5 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="bg-white border-2 border-[#2C6E49] text-[#201C18] p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">Multidisciplinary Team Ready</span>
-          <p className="text-sm font-extrabold">
+          <span className="text-xs font-black text-[#2C6E49] uppercase tracking-wider block">Multidisciplinary Team Ready</span>
+          <p className="text-sm font-extrabold text-[#201C18] mt-0.5">
             {selectedMembers.length} Students & 1 Faculty Lead Assigned to R&D Unit
           </p>
         </div>
@@ -245,7 +245,7 @@ export const MultidisciplinaryTeamTab: React.FC<MultidisciplinaryTeamTabProps> =
         <button
           onClick={handleSaveTeam}
           disabled={selectedMembers.length === 0}
-          className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center space-x-2 active:scale-95 disabled:opacity-50"
+          className="px-6 py-3 bg-[#2C6E49] hover:bg-[#23583a] text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center space-x-2 active:scale-95 disabled:opacity-50 cursor-pointer"
         >
           <span>Save R&D Team & Draft Proposal</span>
           <ArrowRight className="w-4 h-4" />

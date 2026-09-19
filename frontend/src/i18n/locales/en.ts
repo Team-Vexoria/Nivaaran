@@ -352,7 +352,7 @@ export const en: TranslationDictionary = {
     impactRewardsLabel: 'Citizen Rewards',
     impactRewardsValue: '3,420+ Saplings',
     impactRewardsNote: 'Tree Vouchers Issued',
-    footerTagline: 'Jharkhand Societal Challenge & Innovation Network. Smart India Hackathon Problem Statement 26043.',
+    footerTagline: 'Jharkhand Societal Challenge & Innovation Network.',
     footerDept: 'Department of Higher & Technical Education, Government of Jharkhand.',
     footerRoleEntrances: 'Portal Role Entrances',
     footerGovPortal: 'Government Department Portal',
@@ -405,7 +405,7 @@ export const en: TranslationDictionary = {
     uniName5: 'IIIT Ranchi',
     uniName6: 'Ranchi University',
     tickerResolutionValue: '14 Days',
-    footerVersion: 'NIVAARAN Platform v2.0 • SIH 26043',
+    footerVersion: 'NIVAARAN Platform v2.0',
   },
   auth: {
     signInTitle: 'Sign In to NIVAARAN',

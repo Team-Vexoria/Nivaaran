@@ -352,7 +352,7 @@ export const hi: TranslationDictionary = {
     impactRewardsLabel: 'नागरिक पुरस्कार',
     impactRewardsValue: '3,420+ पौधे',
     impactRewardsNote: 'जारी किए गए वृक्ष वाउचर',
-    footerTagline: 'झारखंड सामाजिक चुनौती एवं नवाचार नेटवर्क। स्मार्ट इंडिया हैकाथॉन समस्या विवरण 26043।',
+    footerTagline: 'झारखंड सामाजिक चुनौती एवं नवाचार नेटवर्क।',
     footerDept: 'उच्च एवं तकनीकी शिक्षा विभाग, झारखंड सरकार।',
     footerRoleEntrances: 'पोर्टल भूमिका प्रवेश',
     footerGovPortal: 'सरकारी विभाग पोर्टल',
@@ -405,7 +405,7 @@ export const hi: TranslationDictionary = {
     uniName5: 'आईआईआईआईटी रांची',
     uniName6: 'रांची विश्वविद्यालय',
     tickerResolutionValue: '14 दिन',
-    footerVersion: 'निवारण प्लेटफ़ॉर्म v2.0 • SIH 26043',
+    footerVersion: 'निवारण प्लेटफ़ॉर्म v2.0',
   },
   auth: {
     signInTitle: 'निवारण में प्रवेश / लॉग इन करें',

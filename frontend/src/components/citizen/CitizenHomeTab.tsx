@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowRight, MapPin, PhoneCall } from 'lucide-react';
+import { ArrowRight, MapPin, PhoneCall, X } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
@@ -7,6 +7,7 @@ import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 import { getStageForStatus } from '../../services/workflowLifecycle';
 import { HeroShowcaseSlideshow } from '../showcase/HeroShowcaseSlideshow';
 import { IVRWhatsAppIntakeGateway } from './IVRWhatsAppIntakeGateway';
+import { JharkhandMapExplorer } from '../map/JharkhandMapExplorer';
 
 interface CitizenHomeTabProps {
   onOpenReportModal: () => void;
@@ -24,6 +25,7 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
   const { t } = useLanguage();
   const [showAllDistricts, setShowAllDistricts] = useState(false);
   const [isIvrModalOpen, setIsIvrModalOpen] = useState(false);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [wfChallenges, setWfChallenges] = useState(workflowStore.getChallenges());
 
   useEffect(() => {
@@ -240,13 +242,9 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
               </button>
 
               <button 
-                onClick={() => {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set('portal', 'map');
-                  window.history.pushState({ portal: 'map' }, '', url.toString());
-                  window.dispatchEvent(new Event('popstate'));
-                }}
-                className="px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white rounded-lg text-xs font-extrabold transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs"
+                type="button"
+                onClick={() => setIsMapModalOpen(true)}
+                className="px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white rounded-lg text-xs font-extrabold transition-all flex items-center space-x-1.5 cursor-pointer shadow-2xs active:scale-95"
                 title="View All 24 Districts on GIS Map"
               >
                 <MapPin className="w-3.5 h-3.5 shrink-0" />
@@ -281,6 +279,50 @@ export const CitizenHomeTab: React.FC<CitizenHomeTabProps> = ({
           </div>
         </div>
       </section>
+
+      {/* Interactive GIS Map Modal for Citizen Portal */}
+      {isMapModalOpen && (
+        <div 
+          className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-xs flex flex-col p-2 sm:p-4 animate-fadeIn"
+          onClick={() => setIsMapModalOpen(false)}
+        >
+          <div 
+            className="w-full h-full max-w-7xl mx-auto bg-[#FAF8F4] rounded-2xl border border-[#E4DDD1] shadow-2xl overflow-hidden flex flex-col my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Top Bar */}
+            <div className="shrink-0 bg-[#FAF8F4] border-b border-[#E4DDD1] px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 bg-[#2C6E49] text-white rounded-xl flex items-center justify-center font-bold shadow-2xs">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm text-[#201C18]">Jharkhand 24-District Interactive GIS Map</h3>
+                  <p className="text-[11px] text-[#6A6155]">Real-time civic incidents, university research centers, and hazard zones</p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsMapModalOpen(false)}
+                className="p-2 text-[#6A6155] hover:text-[#201C18] hover:bg-[#EAE4D8] rounded-xl transition-colors cursor-pointer"
+                title="Close GIS Map"
+                aria-label="Close GIS Map"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Map Explorer Body */}
+            <div className="flex-1 overflow-hidden min-h-0">
+              <JharkhandMapExplorer
+                embedded={true}
+                onNavigateHome={() => setIsMapModalOpen(false)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

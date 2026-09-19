@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Building2, GraduationCap, CheckCircle2, Layers, FileText, 
   Users, Award, LogOut, Handshake, FlaskConical, Search, Copy, Check, X, ShieldCheck,
@@ -57,7 +58,7 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
   }, [searchQuery]);
 
   return (
-    <header className="sticky top-0 z-[100] bg-[#FAF8F4] text-[#201C18] border-b border-[#E4DDD1] shadow-2xs px-4 sm:px-6 py-2.5">
+    <header className="sticky top-0 z-[100] bg-white text-[#201C18] border-b border-[#E4DDD1] shadow-xs px-4 sm:px-6 py-3">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
         
         {/* Logo and Portal Branding */}
@@ -99,27 +100,25 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
           {/* Dedicated Testing Accounts Switcher */}
           <button
             onClick={() => setIsTestingModalOpen(true)}
-            className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-all shadow-2xs cursor-pointer active:scale-95"
-            title="Open testing accounts directory"
+            className="px-3 py-1.5 bg-[#FFF8EC] border border-[#F0D99A] text-[#C98A2C] hover:bg-[#FDF2D9] rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 shadow-2xs cursor-pointer active:scale-95"
+            title="Open Testing Accounts Directory"
           >
-            <FlaskConical className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-            <span className="hidden md:inline font-bold">Testing Accounts</span>
-            <span className="md:hidden font-bold">Test</span>
+            <FlaskConical className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">Testing Accounts</span>
           </button>
 
           {/* Real-time Notification Bell */}
           <NotificationBellDropdown userRole="university" userDistrict={selectedUniversity.district} />
 
-          {/* Role Switcher Pill */}
-          <div className="hidden sm:flex items-center bg-[#EAE4D8] p-1 rounded-xl border border-[#E4DDD1] text-xs">
+          {/* Faculty / Student Mode Switcher */}
+          <div className="bg-[#EAE4D8] p-1 rounded-xl flex items-center space-x-1 border border-[#E4DDD1] shrink-0">
             <button
               onClick={() => {
                 onRoleChange('faculty');
-                // Faculty: keep current tab unless on student-workspace, jump to intake
-                if (activeTab === 'student-workspace') onTabChange('intake-queue');
+                onTabChange('intake-queue');
               }}
               className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
-                userRole === 'faculty' || userRole === 'admin' ? 'bg-[#2C6E49] text-white shadow-2xs' : 'text-[#4A433B] hover:text-[#201C18]'
+                userRole !== 'student' ? 'bg-[#2C6E49] text-white shadow-2xs' : 'text-[#4A433B] hover:text-[#201C18]'
               }`}
             >
               <Building2 className="w-3.5 h-3.5" />
@@ -144,16 +143,16 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
       </div>
 
       {/* Sub-Tab Navigation Bar */}
-      <div className="max-w-7xl mx-auto flex items-center justify-between border-t border-[#E4DDD1] pt-2 mt-2 overflow-x-auto gap-2 text-xs">
-        <nav className="flex items-center space-x-1">
+      <div className="max-w-7xl mx-auto flex items-center justify-between border-t border-[#E4DDD1] pt-2.5 mt-2.5 overflow-x-auto no-scrollbar scrollbar-none scroll-smooth whitespace-nowrap gap-2 text-xs">
+        <nav className="flex items-center space-x-1.5">
           {/* Admin + Faculty: Intake Queue */}
           {userRole !== 'student' && (
             <button
               onClick={() => onTabChange('intake-queue')}
-              className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
                 activeTab === 'intake-queue'
-                  ? 'bg-[#2C6E49] text-white shadow-2xs'
-                  : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                  ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                  : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -165,10 +164,10 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
           {userRole !== 'student' && (
             <button
               onClick={() => onTabChange('team-builder')}
-              className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
                 activeTab === 'team-builder'
-                  ? 'bg-[#2C6E49] text-white shadow-2xs'
-                  : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                  ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                  : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
@@ -180,10 +179,10 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
           {userRole !== 'student' && (
             <button
               onClick={() => onTabChange('proposals')}
-              className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
                 activeTab === 'proposals'
-                  ? 'bg-[#2C6E49] text-white shadow-2xs'
-                  : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                  ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                  : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
@@ -191,65 +190,69 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
             </button>
           )}
 
-          {/* All roles: Student Workspace */}
+          {/* Student Workspace: #1 for Student, #4 for Faculty */}
           <button
             onClick={() => onTabChange('student-workspace')}
-            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'student-workspace'
-                ? 'bg-[#2C6E49] text-white shadow-2xs'
-                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
             }`}
           >
             <Award className="w-3.5 h-3.5 text-[#C98A2C]" />
-            <span>{userRole === 'student' ? 'My R&D Workspace' : '4. Student R&D Workspace'}</span>
+            <span>{userRole === 'student' ? '1. My R&D Workspace' : '4. Student R&D Workspace'}</span>
           </button>
 
+          {/* Industry Collab: #2 for Student, #5 for Faculty */}
           <button
             onClick={() => onTabChange('industry-collab')}
-            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'industry-collab'
-                ? 'bg-[#2C6E49] text-white shadow-2xs'
-                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
             }`}
           >
             <Handshake className="w-3.5 h-3.5 text-[#C98A2C]" />
-            <span>5. Industry / CSR Collaboration Requests</span>
+            <span>{userRole === 'student' ? '2. Industry / CSR Collaboration Requests' : '5. Industry / CSR Collaboration Requests'}</span>
           </button>
 
+          {/* Innovation Registry: #3 for Student, #6 for Faculty */}
           <button
             onClick={() => onTabChange('outcomes')}
-            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'outcomes'
-                ? 'bg-[#2C6E49] text-white shadow-2xs'
-                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
             }`}
           >
             <Award className="w-3.5 h-3.5 text-[#2C6E49]" />
-            <span>6. Innovation & IP Registry</span>
+            <span>{userRole === 'student' ? '3. Innovation & IP Registry' : '6. Innovation & IP Registry'}</span>
           </button>
 
+          {/* Stakeholder Comms: #4 for Student, #7 for Faculty */}
           <button
             onClick={() => onTabChange('messages')}
-            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'messages'
-                ? 'bg-[#2C6E49] text-white shadow-2xs'
-                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5 text-[#2C6E49]" />
-            <span>7. Stakeholder Comms</span>
+            <span>{userRole === 'student' ? '4. Stakeholder Comms' : '7. Stakeholder Comms'}</span>
           </button>
 
+          {/* PFMS Ledger: #5 for Student, #8 for Faculty */}
           <button
             onClick={() => onTabChange('pfms')}
-            className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === 'pfms'
-                ? 'bg-[#2C6E49] text-white shadow-2xs'
-                : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+                ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
             }`}
           >
             <IndianRupee className="w-3.5 h-3.5 text-[#2C6E49]" />
-            <span>8. PFMS Grant Ledger</span>
+            <span>{userRole === 'student' ? '5. PFMS Grant Ledger' : '8. PFMS Grant Ledger'}</span>
           </button>
         </nav>
 
@@ -275,8 +278,8 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
       </div>
 
       {/* Testing Accounts Directory Modal */}
-      {isTestingModalOpen && (
-        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+      {isTestingModalOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
           <div className="bg-white border border-[#E4DDD1] rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
             
             {/* Modal Header */}
@@ -414,7 +417,8 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </header>
   );

@@ -81,7 +81,7 @@ export const kru: TranslationDictionary = {
     impactRewardsLabel: 'नागरिक पुरस्कार',
     impactRewardsValue: '3,420+ पौधा',
     impactRewardsNote: 'जारी भेल वृक्ष वाउचर',
-    footerTagline: 'झारखंड सामाजिक चुनौती अरा नवाचार नेटवर्क। स्मार्ट इंडिया हैकाथॉन समस्या विवरण 26043।',
+    footerTagline: 'झारखंड सामाजिक चुनौती अरा नवाचार नेटवर्क।',
     footerDept: 'उच्च अरा तकनीकी शिक्षा विभाग, झारखंड सरकार।',
     footerRoleEntrances: 'पोर्टल भूमिका प्रवेश',
     footerGovPortal: 'सरकारी विभाग पोर्टल',

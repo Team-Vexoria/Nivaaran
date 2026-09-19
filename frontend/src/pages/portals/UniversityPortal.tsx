@@ -240,8 +240,8 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
 
         {activeTab === 'messages' && (
           <CrossPortalMessagingHub
-            currentRole="university"
-            currentUserName={`${selectedUniversity.shortName} Nodal Officer`}
+            currentRole={userRole === 'student' ? 'student' : 'university'}
+            currentUserName={userRole === 'student' ? 'Student R&D Lead' : `${selectedUniversity.shortName} Nodal Officer`}
             userHEI={selectedUniversity.name}
             activeChallenge={assignedChallenge}
           />

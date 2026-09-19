@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { CheckCircle2, XCircle, MapPin, Building2, ArrowRight, ShieldCheck } from 'lucide-react';
 import { ChallengeDoc, subscribeToChallenges, updateChallengeUniversityAcceptance } from '../../services/firebaseService';
 import { UniversityDoc, DepartmentInfo } from '../../services/universityData';
@@ -314,8 +315,8 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
       </div>
 
       {/* Manual Human Review & Accept Modal */}
-      {selectedChallengeMatch && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 pt-16">
+      {selectedChallengeMatch && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 pt-16">
           <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-2xl border border-slate-200 max-h-[85vh] overflow-y-auto">
             
             <div className="flex items-start justify-between border-b border-slate-200 pb-3">
@@ -395,7 +396,8 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Challenge Inspection Modal */}

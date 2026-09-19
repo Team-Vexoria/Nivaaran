@@ -187,7 +187,13 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
   liveStats = { verifiedDistricts: 24, verificationRate: 94, total: 1284, resolved: 860 },
 }) => {
   const [activeSlide, setActiveSlide] = useState<number>(0);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isPaused, setIsPaused] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('nivaaran_hero_slideshow_paused') === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [trackInput, setTrackInput] = useState<string>('');
   const [isProblemOverviewOpen, setIsProblemOverviewOpen] = useState<boolean>(false);
   const [isDossierOpen, setIsDossierOpen] = useState<boolean>(false);
@@ -196,9 +202,23 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
 
   const totalSlides = 1 + CASE_STUDIES.length; // Slide 0 = Overview, Slides 1-5 = Cases
 
+  const handleTogglePause = () => {
+    setIsPaused((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('nivaaran_hero_slideshow_paused', String(next));
+      } catch {}
+      return next;
+    });
+  };
+
   useEffect(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+
     if (isPaused) {
-      if (timerRef.current) clearInterval(timerRef.current);
       return;
     }
 
@@ -207,9 +227,12 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
     }, AUTO_PLAY_INTERVAL_MS);
 
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
-  }, [isPaused, totalSlides, activeSlide]);
+  }, [isPaused, totalSlides]);
 
   const handlePrev = () => {
     setActiveSlide((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
@@ -240,13 +263,27 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
         <div className="flex items-center justify-end gap-1.5 pt-1">
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => setIsPaused((p) => !p)}
-              className="p-1.5 rounded-lg bg-white border border-[#E4DDD1] text-[#6A6155] hover:text-[#201C18] hover:bg-[#F3EDE2] text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
-              title={isPaused ? 'Resume Slideshow' : 'Pause Slideshow'}
-              aria-label={isPaused ? 'Resume Slideshow' : 'Pause Slideshow'}
+              type="button"
+              onClick={handleTogglePause}
+              className={`p-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer ${
+                isPaused
+                  ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100'
+                  : 'bg-white border-[#E4DDD1] text-[#6A6155] hover:text-[#201C18] hover:bg-[#F3EDE2]'
+              }`}
+              title={isPaused ? 'Resume Auto-Play' : 'Pause Slideshow'}
+              aria-label={isPaused ? 'Resume Auto-Play' : 'Pause Slideshow'}
             >
-              {isPaused ? <Play className="w-3.5 h-3.5 text-emerald-700" /> : <Pause className="w-3.5 h-3.5" />}
-              <span className="text-[10px] uppercase font-mono tracking-wider">{isPaused ? 'Paused' : 'Auto'}</span>
+              {isPaused ? (
+                <>
+                  <Play className="w-3.5 h-3.5 text-amber-700 fill-amber-700" />
+                  <span className="text-[10px] uppercase font-mono tracking-wider font-bold text-amber-900">Paused</span>
+                </>
+              ) : (
+                <>
+                  <Pause className="w-3.5 h-3.5 text-[#6A6155]" />
+                  <span className="text-[10px] uppercase font-mono tracking-wider">Auto</span>
+                </>
+              )}
             </button>
 
             <button

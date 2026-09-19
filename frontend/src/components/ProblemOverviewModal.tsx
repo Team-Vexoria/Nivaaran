@@ -26,28 +26,25 @@ export const ProblemOverviewModal: React.FC<ProblemOverviewModalProps> = ({ isOp
       >
             
             {/* Modal Header */}
-            <div className="p-4 sm:p-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-start justify-between border-b border-slate-800">
+            <div className="p-4 sm:p-6 bg-[#FAF8F4] text-[#201C18] flex items-start justify-between border-b border-[#E4DDD1]">
               <div className="space-y-1 pr-4">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-black uppercase tracking-widest bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded">
-                    Smart India Hackathon : SIH 26043
-                  </span>
-                  <span className="text-[10px] font-bold text-amber-300">
+                  <span className="text-[10px] font-black uppercase tracking-widest bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded">
                     State of Jharkhand Special Initiative
                   </span>
                 </div>
-                <h2 className="text-lg sm:text-2xl font-black font-heading text-white">
+                <h2 className="text-lg sm:text-2xl font-black font-heading text-[#201C18]">
                   Problem Overview: The Nivaaran Framework
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-300">
-                  Multimodal Crowdsourcing, AI Triage, HEI Capability Matching & CSR Co:Financing
+                <p className="text-xs sm:text-sm text-[#6A6155]">
+                  Multimodal Crowdsourcing, AI Triage, HEI Capability Matching & CSR Co-Financing
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors shrink-0 cursor-pointer"
+                className="p-2 text-[#6A6155] hover:text-[#201C18] rounded-xl hover:bg-[#EAE4D8] transition-colors shrink-0 cursor-pointer"
                 title="Close modal"
                 aria-label="Close modal"
               >
@@ -255,11 +252,11 @@ export const ProblemOverviewModal: React.FC<ProblemOverviewModalProps> = ({ isOp
               {/* SECTION 4: GROUND IMPACT & FEASIBILITY */}
               {activeSection === 'impact' && (
                 <div className="space-y-4 animate-fadeIn text-xs">
-                  <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-2">
-                    <h3 className="text-base font-extrabold font-heading text-white">
+                  <div className="p-4 rounded-2xl bg-[#FAF8F4] border border-[#E4DDD1] text-[#201C18] space-y-2">
+                    <h3 className="text-base font-extrabold font-heading text-[#201C18]">
                       Verified Field Feasibility in 24 Districts
                     </h3>
-                    <p className="text-xs text-slate-300">
+                    <p className="text-xs text-[#6A6155]">
                       Tested against active Jharkhand state priority areas including Ranchi, Dhanbad, Bokaro, Giridih, and Palamu.
                     </p>
                   </div>
@@ -301,7 +298,7 @@ export const ProblemOverviewModal: React.FC<ProblemOverviewModalProps> = ({ isOp
               <button
                 type="button"
                 onClick={onClose}
-                className="ml-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black transition-colors shadow-sm cursor-pointer"
+                className="ml-auto px-5 py-2.5 bg-[#C98A2C] hover:bg-[#b07824] text-white rounded-xl text-xs font-black transition-colors shadow-xs cursor-pointer"
               >
                 Return to Prototype
               </button>

@@ -92,7 +92,7 @@ export const ur: TranslationDictionary = {
     impactRewardsLabel: 'شہری انعامات',
     impactRewardsValue: '3,420+ پودے',
     impactRewardsNote: 'جاری کردہ درخت واؤچر',
-    footerTagline: 'جھارکھنڈ سماجی چیلنج اور اختراع نیٹ ورک۔ اسمارٹ انڈیا ہیکاتھون مسئلہ 26043۔',
+    footerTagline: 'جھارکھنڈ سماجی چیلنج اور اختراع نیٹ ورک۔',
     footerDept: 'محکمہ اعلیٰ و تکنیکی تعلیم، حکومت جھارکھنڈ۔',
     footerRoleEntrances: 'پورٹل کردار کے داخلی دروازے',
     footerGovPortal: 'سرکاری محکمہ پورٹل',
