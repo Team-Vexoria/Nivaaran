@@ -4,6 +4,7 @@ import { UniversityPortal } from './portals/UniversityPortal';
 import { JharkhandMapExplorer } from '../components/map/JharkhandMapExplorer';
 import { PublicChallengeTracker } from '../components/tracking/PublicChallengeTracker';
 import { HeroShowcaseSlideshow } from '../components/showcase/HeroShowcaseSlideshow';
+import { HelpUserGuide } from '../components/help/HelpUserGuide';
 import {
   Building2, ShieldCheck, UserCheck, ArrowRight, Cpu, Map, Maximize2
 } from 'lucide-react';
@@ -93,6 +94,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     );
   }
 
+  if (currentPortal === 'help') {
+    return (
+      <div className="min-h-screen bg-[#FAF8F4] flex flex-col font-sans text-[#201C18]">
+        <PublicNavbar
+          onOpenAuth={onOpenAuth}
+          onNavigatePortal={handleNavigatePortal}
+          onOpenTracking={handleOpenTracking}
+          currentLang={currentLang}
+          onLangChange={setLanguage}
+          currentPortal={currentPortal}
+        />
+        <div className="flex-1">
+          <HelpUserGuide
+            onNavigateHome={() => handleNavigatePortal('')}
+            onNavigateLandingPage={() => handleNavigatePortal('')}
+            onOpenAuth={onOpenAuth}
+            onOpenTracking={handleOpenTracking}
+            onOpenReportModal={onOpenAuth}
+            onNavigateTab={() => onOpenAuth()}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const macroPhases = [
     {
       phase: t.landing.phase1,
@@ -179,7 +205,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
         />
 
         {/* 3. Role Portals Gateway Tree Diagram */}
-        <section id="role-gateways" className="max-w-7xl mx-auto px-6 space-y-6">
+        <section id="role-gateways" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <span className="text-xs font-extrabold text-[#2C6E49] uppercase tracking-wider block">
               {t.landing.portalSectionBadge}
@@ -193,25 +219,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           <div className="flex flex-col items-center">
 
             {/* Root Hub Node */}
-            <div className="bg-white border-2 border-[#2C6E49] text-[#201C18] px-8 py-3 rounded-2xl shadow-sm flex items-center justify-center relative z-10">
-              <p className="font-black text-base font-heading tracking-tight text-[#201C18]">{t.landing.portalRootLabel}</p>
+            <div className="bg-white border-2 border-[#2C6E49] text-[#201C18] px-6 sm:px-8 py-2.5 sm:py-3 rounded-2xl shadow-sm flex items-center justify-center relative z-10 text-center">
+              <p className="font-black text-sm sm:text-base font-heading tracking-tight text-[#201C18]">{t.landing.portalRootLabel}</p>
             </div>
 
             {/* Vertical stem down from root */}
-            <div className="w-px h-8 bg-[#DCD6C6]" />
+            <div className="w-px h-6 sm:h-8 bg-[#DCD6C6]" />
 
             {/* Horizontal branch bar */}
             <div className="relative w-full max-w-5xl">
-              <div className="absolute top-0 left-[12.5%] right-[12.5%] h-px bg-[#DCD6C6]" />
+              <div className="hidden sm:block absolute top-0 left-[12.5%] right-[12.5%] h-px bg-[#DCD6C6]" />
 
               {/* 4 branch drops + cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-0">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-0">
                 {/* Gov */}
                 <div className="flex flex-col items-center">
-                  <div className="w-px h-8 bg-[#DCD6C6]" />
+                  <div className="hidden sm:block w-px h-8 bg-[#DCD6C6]" />
                   <button
                     onClick={onOpenAuth}
-                    className="w-full p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-[#1D4ED8] hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
+                    className="w-full p-4 sm:p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-[#1D4ED8] hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
                   >
                     <div className="flex items-center justify-between">
                       <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-100">
@@ -232,10 +258,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
                 {/* University */}
                 <div className="flex flex-col items-center">
-                  <div className="w-px h-8 bg-[#DCD6C6]" />
+                  <div className="hidden sm:block w-px h-8 bg-[#DCD6C6]" />
                   <button
                     onClick={onOpenAuth}
-                    className="w-full p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-purple-400 hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
+                    className="w-full p-4 sm:p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-purple-400 hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
                   >
                     <div className="flex items-center justify-between">
                       <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-100">
@@ -256,10 +282,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
                 {/* Industry */}
                 <div className="flex flex-col items-center">
-                  <div className="w-px h-8 bg-[#DCD6C6]" />
+                  <div className="hidden sm:block w-px h-8 bg-[#DCD6C6]" />
                   <button
                     onClick={onOpenAuth}
-                    className="w-full p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-[#C98A2C] hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
+                    className="w-full p-4 sm:p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-[#C98A2C] hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
                   >
                     <div className="flex items-center justify-between">
                       <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-100">
@@ -280,10 +306,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
                 {/* Citizen */}
                 <div className="flex flex-col items-center">
-                  <div className="w-px h-8 bg-[#DCD6C6]" />
+                  <div className="hidden sm:block w-px h-8 bg-[#DCD6C6]" />
                   <button
                     onClick={onOpenAuth}
-                    className="w-full p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-[#2C6E49] hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
+                    className="w-full p-4 sm:p-5 rounded-2xl border-2 bg-white border-[#E4DDD1] hover:border-[#2C6E49] hover:shadow-lg transition-all duration-300 group text-left space-y-3 cursor-pointer"
                   >
                     <div className="flex items-center justify-between">
                       <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-100">
@@ -308,12 +334,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
         </section>
 
         {/* 4. 16-Stage Pipeline Flow Diagram */}
-        <section id="framework-16" className="max-w-7xl mx-auto px-6 space-y-5">
+        <section id="framework-16" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h2 className="text-2xl sm:text-3xl font-extrabold font-heading text-[#201C18]">{t.landing.lifecycleTitle}</h2>
             </div>
-            <div className="px-3.5 py-1.5 bg-[#2C6E49]/10 text-[#2C6E49] border border-[#2C6E49]/30 rounded-xl text-xs font-mono font-bold shrink-0 flex items-center space-x-2">
+            <div className="px-3.5 py-1.5 bg-[#2C6E49]/10 text-[#2C6E49] border border-[#2C6E49]/30 rounded-xl text-xs font-mono font-bold shrink-0 flex items-center space-x-2 self-start sm:self-auto">
               <span className="w-2 h-2 rounded-full bg-[#2C6E49]"></span>
               <span>{t.landing.lifecycleAuditTrail}</span>
             </div>
@@ -335,9 +361,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 : 'grid-cols-1 sm:grid-cols-3';
 
               return (
-                <div key={pIdx} className={`${phaseColors.light} border ${phaseColors.border} rounded-2xl p-5 sm:p-6 space-y-4 shadow-2xs`}>
+                <div key={pIdx} className={`${phaseColors.light} border ${phaseColors.border} rounded-2xl p-4 sm:p-6 space-y-4 shadow-2xs`}>
                   {/* Phase label */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex items-center space-x-2.5">
                       <span className={`${phaseColors.bg} text-white text-[11px] font-black px-3 py-1 rounded-full font-mono shadow-2xs`}>{mp.badge}</span>
                       <span className={`${phaseColors.text} text-sm font-extrabold font-heading`}>{mp.phase}</span>
@@ -348,14 +374,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                   </div>
 
                   {/* Stage nodes full-width grid */}
-                  <div className={`grid ${gridCols} gap-3.5 w-full`}>
+                  <div className={`grid ${gridCols} gap-3 sm:gap-3.5 w-full`}>
                     {mp.stages.map((st, sIdx) => (
                       <div 
                         key={st.stage}
-                        className="bg-white p-4 rounded-xl border border-[#E4DDD1] shadow-2xs hover:border-[#2C6E49] transition-all flex flex-col justify-between space-y-3 relative group"
+                        className="bg-white p-3.5 sm:p-4 rounded-xl border border-[#E4DDD1] shadow-2xs hover:border-[#2C6E49] transition-all flex flex-col justify-between space-y-3 relative group"
                       >
                         <div className="flex items-center justify-between">
-                          <div className={`${phaseColors.bubble} text-white w-8 h-8 rounded-full flex items-center justify-center font-black text-xs font-mono shadow-2xs shrink-0`}>
+                          <div className={`${phaseColors.bubble} text-white w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-xs font-mono shadow-2xs shrink-0`}>
                             {st.stage}
                           </div>
                           {sIdx < mp.stages.length - 1 && (
@@ -376,7 +402,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
         </section>
 
         {/* 5. 24-Districts Live GIS Disaster & Challenge Hotspot Map */}
-        <section id="gis-map" className="max-w-7xl mx-auto px-6 space-y-6">
+        <section id="gis-map" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div className="space-y-2 max-w-2xl">
               <span className="text-xs font-extrabold text-[#2C6E49] uppercase tracking-wider flex items-center">
@@ -399,13 +425,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             </button>
           </div>
 
-          <div className="h-[520px] rounded-2xl border border-[#E4DDD1] overflow-hidden shadow-sm bg-white">
+          <div className="h-[380px] sm:h-[460px] md:h-[520px] rounded-2xl border border-[#E4DDD1] overflow-hidden shadow-sm bg-white">
             <JharkhandMapExplorer embedded={true} />
           </div>
         </section>
 
         {/* 6. Partner Universities & Specialization Nodes */}
-        <section id="university-network" className="max-w-7xl mx-auto px-6 space-y-6">
+        <section id="university-network" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
           <div className="text-center space-y-2 max-w-2xl mx-auto">
             <span className="text-xs font-extrabold text-[#C98A2C] uppercase tracking-wider block">
               {t.landing.uniSectionBadge}
@@ -418,7 +444,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {universityNodes.map((u, i) => (
               <div key={i} className="bg-white p-5 rounded-2xl border border-[#E4DDD1] shadow-2xs space-y-3">
                 <div className="flex items-center space-x-3 border-b border-[#FAF8F4] pb-3">
@@ -428,47 +454,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <span className="text-[10px] font-bold text-[#C98A2C]">{u.node}</span>
                   </div>
                 </div>
-                <p className="text-xs text-slate-600">
-                  <strong>{t.landing.uniFocusArea}</strong> {u.domain}
-                </p>
+                <div className="flex items-center justify-between text-xs text-[#6A6155]">
+                  <span>Domain</span>
+                  <span className="font-semibold text-[#201C18]">{u.domain}</span>
+                </div>
               </div>
             ))}
           </div>
         </section>
 
-        {/* 6. State Impact Analytics */}
-        <section id="state-impact" className="bg-[#FAF8F4] py-10">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="bg-white rounded-2xl border border-[#E4DDD1] shadow-sm p-8 md:p-10 relative overflow-hidden border-t-4 border-t-[#2C6E49] space-y-6">
-              
+        {/* 7. Measured Governance Impact */}
+        <section id="state-impact" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+          <div className="bg-white rounded-3xl border border-[#E4DDD1] p-6 sm:p-10 shadow-xs">
+            <div className="space-y-6">
               <div>
                 <span className="text-[#2C6E49] font-semibold tracking-wider text-xs bg-[#2C6E49]/10 px-3 py-1 rounded-full border border-[#2C6E49]/30 inline-block mb-3">
                   {t.landing.impactBadge}
                 </span>
-                <h2 className="text-[#201C18] text-3xl font-bold tracking-tight font-heading">
+                <h2 className="text-[#201C18] text-2xl sm:text-3xl font-bold tracking-tight font-heading">
                   {t.landing.impactTitle}
                 </h2>
-                <p className="text-slate-600 text-base max-w-2xl mt-2">
+                <p className="text-slate-600 text-sm sm:text-base max-w-2xl mt-2">
                   {t.landing.impactSubtitle}
                 </p>
               </div>
 
-              <div className="grid sm:grid-cols-3 gap-5 pt-2">
-                <div className="bg-[#FAF8F4] rounded-xl border border-[#E4DDD1] p-5 space-y-2">
-                  <span className="text-slate-500 text-sm font-medium block">{t.landing.impactGeotaggedLabel}</span>
-                  <p className="text-[#201C18] font-extrabold text-3xl font-heading">{t.landing.impactGeotaggedValue}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5 pt-2">
+                <div className="bg-[#FAF8F4] rounded-xl border border-[#E4DDD1] p-4 sm:p-5 space-y-2">
+                  <span className="text-slate-500 text-xs sm:text-sm font-medium block">{t.landing.impactGeotaggedLabel}</span>
+                  <p className="text-[#201C18] font-extrabold text-2xl sm:text-3xl font-heading">{t.landing.impactGeotaggedValue}</p>
                   <span className="text-[#2C6E49] text-xs font-bold block">{t.landing.impactGeotaggedNote}</span>
                 </div>
 
-                <div className="bg-[#FAF8F4] rounded-xl border border-[#E4DDD1] p-5 space-y-2">
-                  <span className="text-slate-500 text-sm font-medium block">{t.landing.impactDistrictsLabel}</span>
-                  <p className="text-[#201C18] font-extrabold text-3xl font-heading">{t.landing.impactDistrictsValue}</p>
+                <div className="bg-[#FAF8F4] rounded-xl border border-[#E4DDD1] p-4 sm:p-5 space-y-2">
+                  <span className="text-slate-500 text-xs sm:text-sm font-medium block">{t.landing.impactDistrictsLabel}</span>
+                  <p className="text-[#201C18] font-extrabold text-2xl sm:text-3xl font-heading">{t.landing.impactDistrictsValue}</p>
                   <span className="text-[#2C6E49] text-xs font-bold block">{t.landing.impactDistrictsNote}</span>
                 </div>
 
-                <div className="bg-[#FAF8F4] rounded-xl border border-[#E4DDD1] p-5 space-y-2">
-                  <span className="text-slate-500 text-sm font-medium block">{t.landing.impactRewardsLabel}</span>
-                  <p className="text-[#201C18] font-extrabold text-3xl font-heading">{t.landing.impactRewardsValue}</p>
+                <div className="bg-[#FAF8F4] rounded-xl border border-[#E4DDD1] p-4 sm:p-5 space-y-2">
+                  <span className="text-slate-500 text-xs sm:text-sm font-medium block">{t.landing.impactRewardsLabel}</span>
+                  <p className="text-[#201C18] font-extrabold text-2xl sm:text-3xl font-heading">{t.landing.impactRewardsValue}</p>
                   <span className="text-[#2C6E49] text-xs font-bold block">{t.landing.impactRewardsNote}</span>
                 </div>
               </div>
@@ -479,10 +505,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
       </main>
 
-      {/* 7. Official Government Footer */}
-      <footer className="bg-[#2C323B] text-slate-200 pt-12 pb-8 px-6 border-t border-[#3D4550]">
+      {/* 8. Official Government Footer */}
+      <footer className="bg-[#2C323B] text-slate-200 pt-10 sm:pt-12 pb-8 px-4 sm:px-6 lg:px-8 border-t border-[#3D4550]">
         <div className="max-w-7xl mx-auto space-y-8">
-          <div className="grid md:grid-cols-4 gap-8 text-xs text-slate-300">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-xs text-slate-300">
             
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
@@ -506,6 +532,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">{t.landing.footerUniPortal}</button></li>
                 <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">{t.landing.footerIndustryPortal}</button></li>
                 <li><button onClick={onOpenAuth} className="text-slate-300 hover:text-white transition-colors cursor-pointer">{t.landing.footerCitizenPortal}</button></li>
+                <li><button onClick={() => handleNavigatePortal('help')} className="text-[#E0A854] hover:text-white transition-colors cursor-pointer font-bold flex items-center space-x-1"><span>Help &amp; User Guide</span></button></li>
               </ul>
             </div>
 

@@ -460,8 +460,22 @@ export const subscribeToChallenges = (callback: (challenges: ChallengeDoc[]) => 
         const serverChallenges = res.data.map((item: any) => toWorkflowChallengeFromApi(item));
         // IMPORTANT: Never let server data overwrite local DEMO seed challenges.
         // DEMO challenges have curated assignedHEI values that must be preserved.
-        // Only merge in non-DEMO (real user-submitted) challenges from the API.
-        const realServerChallenges = serverChallenges.filter((c: any) => !c.id?.startsWith('DEMO-'));
+        const realServerChallenges = serverChallenges
+          .filter((c: any) => !c.id?.startsWith('DEMO-'))
+          .map((sc: any) => {
+            const local = localChallenges.find((lc: any) => lc.id === sc.id || lc.reportId === sc.reportId);
+            if (local) {
+              return {
+                ...sc,
+                assignedHEI: local.assignedHEI || sc.assignedHEI,
+                assignedDept: local.assignedDept || sc.assignedDept,
+                status: (local.stageNumber || 0) >= (sc.stageNumber || 0) ? (local.status || sc.status) : sc.status,
+                stageNumber: Math.max(local.stageNumber || 0, sc.stageNumber || 0) || sc.stageNumber,
+                stageName: (local.stageNumber || 0) >= (sc.stageNumber || 0) ? (local.stageName || sc.stageName) : sc.stageName,
+              };
+            }
+            return sc;
+          });
         const serverIds = new Set([
           ...realServerChallenges.map((c: any) => c.id).filter(Boolean),
           ...realServerChallenges.map((c: any) => c.reportId).filter(Boolean),
@@ -908,10 +922,20 @@ export const saveProjectTeamToStore = async (project: ProjectDoc) => {
   }
 };
 
-const getProjectForPhase3 = (projectId: string): { project: ReturnType<typeof workflowStore.getProject>; challenge: ReturnType<typeof workflowStore.getChallenge> } => ({
-  project: workflowStore.getProject(projectId),
-  challenge: workflowStore.getChallenge(workflowStore.getProject(projectId)?.challengeId || ''),
-});
+const getProjectForPhase3 = (projectId: string): { project: ReturnType<typeof workflowStore.getProject>; challenge: ReturnType<typeof workflowStore.getChallenge> } => {
+  let project = workflowStore.getProject(projectId);
+  if (!project) {
+    project = workflowStore.getProjects().find(p => p.id === projectId || p.challengeId === projectId);
+  }
+  let challenge = project ? (workflowStore.getChallenge(project.challengeId) || workflowStore.findChallengeByIdOrReportId(project.challengeId)) : undefined;
+  if (!challenge) {
+    challenge = workflowStore.findChallengeByIdOrReportId(projectId);
+  }
+  if (!project && challenge) {
+    project = workflowStore.getProjects().find(p => p.challengeId === challenge?.id || p.challengeId === challenge?.reportId);
+  }
+  return { project, challenge };
+};
 
 const advanceChallengeIfNeeded = async (
   challengeId: string,
@@ -920,7 +944,7 @@ const advanceChallengeIfNeeded = async (
   actorRole: string,
   note: string
 ): Promise<boolean> => {
-  const challenge = workflowStore.getChallenge(challengeId);
+  const challenge = workflowStore.findChallengeByIdOrReportId(challengeId);
   const currentStage = challenge ? getStageForStatus(challenge.status)?.stageNumber : undefined;
   const targetStage = getStageForStatus(targetStatus)?.stageNumber;
   if (!challenge || currentStage === undefined || targetStage === undefined) return false;
@@ -1002,13 +1026,40 @@ export const submitPrototypeUpdate = async (
   projectId: string,
   update: Omit<PrototypeUpdate, 'submittedAt'>
 ): Promise<boolean> => {
-  const { project, challenge } = getProjectForPhase3(projectId);
+  let { project, challenge } = getProjectForPhase3(projectId);
+  if (!challenge && project) challenge = workflowStore.findChallengeByIdOrReportId(project.challengeId);
+  if (!challenge) challenge = workflowStore.findChallengeByIdOrReportId(projectId);
+  if (challenge && !project) {
+    const prjId = projectId.startsWith('PRJ-') || projectId.startsWith('DEMO-PRJ-') ? projectId : `PRJ-${challenge.id}`;
+    const newPrj: any = {
+      id: prjId,
+      challengeId: challenge.id,
+      challengeTitle: challenge.title,
+      universityId: 'UNI-CUJ-RANCHI',
+      universityName: challenge.assignedHEI || 'Central University of Jharkhand (CUJ)',
+      category: challenge.category,
+      district: challenge.district,
+      status: 'Prototype Active',
+      teamMembers: [],
+      proposals: [],
+      budgetEstimated: 500000,
+      budgetApproved: 500000,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await workflowStore.createProject(newPrj);
+    project = newPrj;
+  }
   if (!project || !challenge) return false;
-  const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
-  if (currentStage < 9 || currentStage > 12) return false;
-  if (!await advanceChallengeIfNeeded(challenge.id, 'Prototype Active', update.submittedBy, 'University / Project Team', 'Prototype progress submitted.')) return false;
+
+  await workflowStore.updateChallenge(challenge.id, {
+    status: 'Prototype Active',
+    stageNumber: 11,
+    stageName: 'Stage 11: Prototype Development & Testing',
+  });
+
   return updateProjectForPhase3(project.id, {
-    status: currentStage <= 11 ? 'Prototype Active' : project.status,
+    status: 'Prototype Active',
     prototypeUpdate: { ...update, submittedAt: new Date().toISOString() },
   }, update.submittedBy, 'University / Project Team', 'Prototype documentation and telemetry submitted.');
 };
@@ -1017,11 +1068,38 @@ export const submitPilotReport = async (
   projectId: string,
   report: Omit<PilotReport, 'submittedAt'>
 ): Promise<boolean> => {
-  const { project, challenge } = getProjectForPhase3(projectId);
+  let { project, challenge } = getProjectForPhase3(projectId);
+  if (!challenge && project) challenge = workflowStore.findChallengeByIdOrReportId(project.challengeId);
+  if (!challenge) challenge = workflowStore.findChallengeByIdOrReportId(projectId);
+  if (challenge && !project) {
+    const prjId = projectId.startsWith('PRJ-') || projectId.startsWith('DEMO-PRJ-') ? projectId : `PRJ-${challenge.id}`;
+    const newPrj: any = {
+      id: prjId,
+      challengeId: challenge.id,
+      challengeTitle: challenge.title,
+      universityId: 'UNI-CUJ-RANCHI',
+      universityName: challenge.assignedHEI || 'Central University of Jharkhand (CUJ)',
+      category: challenge.category,
+      district: challenge.district,
+      status: 'Pilot Active',
+      teamMembers: [],
+      proposals: [],
+      budgetEstimated: 500000,
+      budgetApproved: 500000,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await workflowStore.createProject(newPrj);
+    project = newPrj;
+  }
   if (!project || !challenge) return false;
-  const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
-  if (currentStage < 11 || currentStage > 12) return false;
-  if (!await advanceChallengeIfNeeded(challenge.id, 'Pilot Active', report.submittedBy, 'University / Project Team', 'Pilot field report submitted.')) return false;
+
+  await workflowStore.updateChallenge(challenge.id, {
+    status: 'Pilot Active',
+    stageNumber: 12,
+    stageName: 'Stage 12: Panchayat Pilot & Field Trials',
+  });
+
   return updateProjectForPhase3(project.id, {
     status: 'Pilot Active',
     pilotReport: { ...report, submittedAt: new Date().toISOString() },
@@ -1032,15 +1110,67 @@ export const submitOutcomeAudit = async (
   projectId: string,
   audit: OutcomeAudit
 ): Promise<boolean> => {
-  const { project, challenge } = getProjectForPhase3(projectId);
-  if (!project || !challenge) return false;
-  const currentStage = getStageForStatus(challenge.status)?.stageNumber || 0;
-  if (currentStage < 12 || currentStage > 13) return false;
-  if (!await advanceChallengeIfNeeded(challenge.id, 'Outcome Audit', audit.verifiedBy, 'Government / Community Auditor', 'Technical and community outcome audit submitted.')) return false;
+  let { project, challenge } = getProjectForPhase3(projectId);
+  if (!challenge && project) {
+    challenge = workflowStore.findChallengeByIdOrReportId(project.challengeId);
+  }
+  if (!challenge) {
+    challenge = workflowStore.findChallengeByIdOrReportId(projectId);
+  }
+
+  // If no project exists yet in store, create/register one so state is persisted
+  if (challenge && !project) {
+    const prjId = projectId.startsWith('PRJ-') || projectId.startsWith('DEMO-PRJ-') ? projectId : `DEMO-PRJ-${challenge.id.replace(/[^a-zA-Z0-9]/g, '')}`;
+    const newPrj: any = {
+      id: prjId,
+      challengeId: challenge.id,
+      challengeTitle: challenge.title,
+      universityId: 'UNI-CUJ-RANCHI',
+      universityName: challenge.assignedHEI || 'Central University of Jharkhand (CUJ)',
+      category: challenge.category,
+      district: challenge.district,
+      status: 'Outcome Audit',
+      teamMembers: [],
+      proposals: [],
+      budgetEstimated: 500000,
+      budgetApproved: 500000,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    await workflowStore.createProject(newPrj);
+    project = newPrj;
+  }
+
+  if (!project || !challenge) {
+    console.warn('[submitOutcomeAudit] Project or challenge not found for:', projectId);
+    return false;
+  }
+
+  // Advance challenge to Stage 13: Outcome Audit
+  await workflowStore.updateChallenge(challenge.id, {
+    status: 'Outcome Audit',
+    stageNumber: 13,
+    stageName: 'Stage 13: Outcome Audit & Scaled Production Clearance',
+    govtOfficerNote: `Stage 13 Outcome Audit submitted by ${audit.verifiedBy}. Verified findings: ${audit.summary}`,
+  });
+
+  workflowStore.addTimelineEvent({
+    id: `TL_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+    entityType: 'challenge',
+    entityId: challenge.id,
+    action: 'status_changed',
+    actor: audit.verifiedBy || 'Research Team',
+    actorRole: 'Student Research Lead',
+    description: `Stage 13 Outcome Audit submitted: ${audit.summary}`,
+    previousValue: challenge.status,
+    newValue: 'Outcome Audit',
+    timestamp: new Date().toISOString()
+  });
+
   return updateProjectForPhase3(project.id, {
     status: 'Outcome Audit',
     outcomeAudit: audit,
-  }, audit.verifiedBy, 'Government / Community Auditor', 'Outcome audit submitted for validation.');
+  }, audit.verifiedBy || 'Research Team', 'Student Research Lead', 'Stage 13 Outcome audit submitted for validation.');
 };
 
 export const getProjectsFromStore = (): ProjectDoc[] => {

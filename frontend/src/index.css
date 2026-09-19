@@ -63,10 +63,26 @@ path.leaflet-interactive {
 }
 
 @layer base {
-  body {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    -webkit-overflow-scrolling: touch;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: #FAF8F4;
     color: #201C18;
+  }
+
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  img, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
   }
 
   h1, h2, h3, h4, h5, h6 {

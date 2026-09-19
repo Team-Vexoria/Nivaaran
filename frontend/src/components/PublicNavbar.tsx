@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LogIn, PhoneCall, Globe, ChevronDown, Map } from 'lucide-react';
+import { LogIn, PhoneCall, Globe, ChevronDown, Map, HelpCircle, LayoutDashboard, Menu, X, ArrowRight } from 'lucide-react';
 import { SupportedLanguage, JHARKHAND_LANGUAGES } from '../i18n/translations';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 interface PublicNavbarProps {
   onOpenAuth: () => void;
@@ -9,25 +10,52 @@ interface PublicNavbarProps {
   onNavigatePortal?: (portal: string) => void;
   currentLang?: SupportedLanguage;
   onLangChange?: (lang: SupportedLanguage) => void;
+  currentPortal?: string;
 }
 
 export const PublicNavbar: React.FC<PublicNavbarProps> = ({ 
   onOpenAuth,
   onNavigatePortal,
   currentLang = 'en',
-  onLangChange
+  onLangChange,
+  currentPortal = '',
 }) => {
   const { t } = useLanguage();
+  const { currentUser } = useAuth();
   const [fontSize, setFontSize] = useState<'normal' | 'large' | 'small'>('normal');
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const langDropdownRef = useRef<HTMLDivElement>(null);
 
   const currentLangMeta = JHARKHAND_LANGUAGES.find(l => l.code === currentLang) || JHARKHAND_LANGUAGES[0];
 
+  const handleReturnToLanding = () => {
+    if (onNavigatePortal) {
+      onNavigatePortal('');
+    } else {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('portal');
+      url.searchParams.delete('tab');
+      url.searchParams.delete('view');
+      window.history.pushState({}, '', url.toString());
+      window.dispatchEvent(new Event('popstate'));
+    }
+  };
+
   const scrollToSection = (id: string) => {
     setIsDropdownOpen(false);
+    if (currentPortal) {
+      handleReturnToLanding();
+      setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 150);
+      return;
+    }
     const el = document.getElementById(id);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
@@ -66,10 +94,17 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
       <header className="bg-[#FAF8F4] text-[#201C18] border-b border-[#E4DDD1] shadow-2xs px-4 sm:px-8 h-14 flex items-center">
         <div className="max-w-7xl w-full mx-auto flex items-center justify-between gap-4">
           
-          {/* Logo & Wordmark on ONE line */}
+          {/* Logo & Wordmark */}
           <div 
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={() => {
+              if (currentPortal) {
+                handleReturnToLanding();
+              } else {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            }}
             className="flex items-center space-x-2.5 cursor-pointer select-none"
+            title="NIVAARAN — Home / Landing Page"
           >
             <img src="/logo.png" alt="NIVAARAN Logo" className="h-8 w-auto object-contain shrink-0" />
             <span className="text-xl font-black font-heading text-[#201C18] tracking-tight leading-none block">
@@ -100,7 +135,9 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                   window.dispatchEvent(new Event('popstate'));
                 }
               }}
-              className="hover:text-[#2C6E49] transition-colors cursor-pointer flex items-center space-x-1.5"
+              className={`hover:text-[#2C6E49] transition-colors cursor-pointer flex items-center space-x-1.5 ${
+                currentPortal === 'map' ? 'text-[#2C6E49] font-black' : ''
+              }`}
             >
               <Map className="w-3.5 h-3.5" />
               <span>{t.landing.navExploreMap}</span>
@@ -137,49 +174,188 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
                   </button>
                   <button
                     onClick={() => scrollToSection('framework-16')}
-                    className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block"
+                    className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block cursor-pointer"
                   >
                     {t.landing.navLifecycleStream}
                   </button>
                   <button
                     onClick={() => scrollToSection('university-network')}
-                    className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block"
+                    className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block cursor-pointer"
                   >
                     {t.landing.navUniLabs}
                   </button>
                   <button
                     onClick={() => scrollToSection('state-impact')}
-                    className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block"
+                    className="w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block cursor-pointer"
                   >
                     {t.landing.navImpactLedger}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      if (onNavigatePortal) {
+                        onNavigatePortal('help');
+                      } else {
+                        const url = new URL(window.location.href);
+                        url.searchParams.set('portal', 'help');
+                        window.history.pushState({ portal: 'help' }, '', url.toString());
+                        window.dispatchEvent(new Event('popstate'));
+                      }
+                    }}
+                    className={`w-full text-left px-4 py-2 hover:bg-[#FAF8F4] text-[#201C18] hover:text-[#2C6E49] font-medium transition-colors block cursor-pointer border-t border-[#F0EBE0] ${
+                      currentPortal === 'help' ? 'bg-[#2C6E49]/10 text-[#2C6E49] font-bold' : ''
+                    }`}
+                  >
+                    Help &amp; User Guide
                   </button>
                 </div>
               )}
             </div>
 
+            {/* Top-Level Link 4: Help & User Guide */}
+            <button
+              onClick={() => {
+                if (onNavigatePortal) {
+                  onNavigatePortal('help');
+                } else {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('portal', 'help');
+                  window.history.pushState({ portal: 'help' }, '', url.toString());
+                  window.dispatchEvent(new Event('popstate'));
+                }
+              }}
+              className={`hover:text-[#2C6E49] transition-colors cursor-pointer flex items-center space-x-1 ${
+                currentPortal === 'help' ? 'text-[#2C6E49] font-black' : ''
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-[#2C6E49]" />
+              <span>Help &amp; Guide</span>
+            </button>
+
           </nav>
 
-          {/* Primary Action Buttons */}
+          {/* Primary Action Buttons & Mobile Menu Button */}
           <div className="flex items-center space-x-2">
+            {currentUser ? (
+              <button
+                onClick={onOpenAuth}
+                className="px-3 sm:px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white font-bold text-xs rounded-lg shadow-2xs transition-all flex items-center space-x-1.5 active:scale-95 cursor-pointer"
+                title="Return to Portal Dashboard"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5 shrink-0 text-white" />
+                <span className="hidden xs:inline">My Portal</span>
+              </button>
+            ) : (
+              <button
+                onClick={onOpenAuth}
+                className="px-3 sm:px-4 py-1.5 sm:py-2 bg-[#2C6E49] hover:bg-[#23583a] text-white font-medium text-xs rounded-lg shadow-2xs transition-all flex items-center space-x-1.5 active:scale-95 cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5 shrink-0 text-white" />
+                <span>{t.landing.navSignIn}</span>
+              </button>
+            )}
+
+            {/* Mobile Hamburger Toggle */}
             <button
-              onClick={onOpenAuth}
-              className="px-4 py-2 bg-[#2C6E49] hover:bg-[#23583a] text-white font-medium text-xs rounded-lg shadow-2xs transition-all flex items-center space-x-1.5 active:scale-95 cursor-pointer"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-1.5 rounded-lg bg-[#FAF8F4] hover:bg-[#EAE4D8] border border-[#E4DDD1] text-[#201C18] transition-colors cursor-pointer"
+              title="Toggle Mobile Navigation"
+              aria-label="Toggle Mobile Navigation"
             >
-              <LogIn className="w-3.5 h-3.5 shrink-0 text-white" />
-              <span>{t.landing.navSignIn}</span>
+              {isMobileMenuOpen ? <X className="w-5 h-5 text-[#2C6E49]" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
 
         </div>
       </header>
 
+      {/* Mobile Navigation Drawer */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden bg-white border-b border-[#E4DDD1] shadow-xl px-4 py-3 space-y-1 animate-fadeIn text-xs font-bold text-[#4A433B]">
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              scrollToSection('role-gateways');
+            }}
+            className="w-full text-left py-2 px-3 rounded-lg hover:bg-[#FAF8F4] hover:text-[#2C6E49] transition-colors flex items-center justify-between cursor-pointer"
+          >
+            <span>{t.landing.navRolePortals}</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#8A7F72]" />
+          </button>
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              if (onNavigatePortal) {
+                onNavigatePortal('map');
+              } else {
+                const url = new URL(window.location.href);
+                url.searchParams.set('portal', 'map');
+                window.history.pushState({ portal: 'map' }, '', url.toString());
+                window.dispatchEvent(new Event('popstate'));
+              }
+            }}
+            className={`w-full text-left py-2 px-3 rounded-lg hover:bg-[#FAF8F4] hover:text-[#2C6E49] transition-colors flex items-center justify-between cursor-pointer ${
+              currentPortal === 'map' ? 'bg-[#2C6E49]/10 text-[#2C6E49] font-black' : ''
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              <Map className="w-3.5 h-3.5 text-[#2C6E49]" />
+              <span>{t.landing.navExploreMap}</span>
+            </div>
+            <ArrowRight className="w-3.5 h-3.5 text-[#8A7F72]" />
+          </button>
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              scrollToSection('framework-16');
+            }}
+            className="w-full text-left py-2 px-3 rounded-lg hover:bg-[#FAF8F4] hover:text-[#2C6E49] transition-colors flex items-center justify-between cursor-pointer"
+          >
+            <span>{t.landing.navLifecycleStream}</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#8A7F72]" />
+          </button>
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              scrollToSection('university-network');
+            }}
+            className="w-full text-left py-2 px-3 rounded-lg hover:bg-[#FAF8F4] hover:text-[#2C6E49] transition-colors flex items-center justify-between cursor-pointer"
+          >
+            <span>{t.landing.navUniLabs}</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#8A7F72]" />
+          </button>
+          <button
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              if (onNavigatePortal) {
+                onNavigatePortal('help');
+              } else {
+                const url = new URL(window.location.href);
+                url.searchParams.set('portal', 'help');
+                window.history.pushState({ portal: 'help' }, '', url.toString());
+                window.dispatchEvent(new Event('popstate'));
+              }
+            }}
+            className={`w-full text-left py-2 px-3 rounded-lg hover:bg-[#FAF8F4] hover:text-[#2C6E49] transition-colors flex items-center justify-between cursor-pointer ${
+              currentPortal === 'help' ? 'bg-[#2C6E49]/10 text-[#2C6E49] font-black' : ''
+            }`}
+          >
+            <div className="flex items-center space-x-2">
+              <HelpCircle className="w-3.5 h-3.5 text-[#2C6E49]" />
+              <span>Help &amp; User Guide</span>
+            </div>
+            <ArrowRight className="w-3.5 h-3.5 text-[#2C6E49]" />
+          </button>
+        </div>
+      )}
+
       {/* 2. GIGW Utility Strip (Placed BELOW the main navbar) */}
-      <div className="bg-[#F3EDE2] text-[#4A433B] border-b border-[#E4DDD1] px-4 sm:px-8 h-7 flex items-center text-[11px]">
-        <div className="max-w-7xl w-full mx-auto flex items-center justify-between gap-2">
+      <div className="bg-[#F3EDE2] text-[#4A433B] border-b border-[#E4DDD1] px-3 sm:px-8 min-h-[28px] py-1 flex items-center text-[11px]">
+        <div className="max-w-7xl w-full mx-auto flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
           
           {/* Left: Govt Mandate & Helpline */}
-          <div className="flex items-center space-x-2.5">
-            <span className="font-semibold text-[#201C18] flex items-center gap-1.5">
+          <div className="flex items-center space-x-2 flex-wrap">
+            <span className="font-semibold text-[#201C18] flex items-center gap-1.5 whitespace-nowrap">
               <span className="inline-block w-1.5 h-1.5 rounded-full bg-[#2C6E49]"></span>
               {t.landing.govStripGovt}
             </span>
@@ -188,7 +364,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
             <span className="text-[#C4BDB0]">·</span>
             <a 
               href="tel:1070" 
-              className="text-[#B5502D] font-bold hover:underline transition-colors flex items-center space-x-1"
+              className="text-[#B5502D] font-bold hover:underline transition-colors flex items-center space-x-1 whitespace-nowrap"
             >
               <PhoneCall className="w-3 h-3 shrink-0" />
               <span>{t.landing.govStripHelpline}</span>
@@ -196,7 +372,7 @@ export const PublicNavbar: React.FC<PublicNavbarProps> = ({
           </div>
 
           {/* Right: Accessibility Controls & Language Toggle */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 shrink-0 ml-auto">
             
             {/* Skip to Main Content */}
             <a 

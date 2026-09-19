@@ -9,17 +9,27 @@ import { CitizenProfileTab } from '../../components/citizen/CitizenProfileTab';
 import { QuickReportModal } from '../../components/QuickReportModal';
 import { LiveEmergencyAlertBanner } from '../../components/LiveEmergencyAlertBanner';
 import { PublicChallengeTracker } from '../../components/tracking/PublicChallengeTracker';
+import { HelpUserGuide } from '../../components/help/HelpUserGuide';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export const CitizenPortal: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
   const { currentLang, setLanguage } = useLanguage();
+
+  const handleGoToLandingPage = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('portal');
+    url.searchParams.delete('tab');
+    url.searchParams.set('view', 'landing');
+    window.history.pushState({ view: 'landing' }, '', url.toString());
+    window.dispatchEvent(new Event('popstate'));
+  };
 
   const getInitialTab = (): CitizenTab => {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get('tab') as CitizenTab;
-    if (tabParam && ['home', 'my-reports', 'community-feed', 'region-chat', 'leaderboard', 'profile'].includes(tabParam)) {
+    if (tabParam && ['home', 'my-reports', 'community-feed', 'region-chat', 'leaderboard', 'profile', 'help'].includes(tabParam)) {
       return tabParam;
     }
     return 'home';
@@ -129,6 +139,8 @@ export const CitizenPortal: React.FC = () => {
         onTabChange={handleTabChange}
         onOpenReportModal={() => setIsReportModalOpen(true)}
         onOpenAuth={() => {}}
+        onLogout={logout}
+        onNavigateLanding={handleGoToLandingPage}
         currentLang={currentLang}
         onLangChange={setLanguage}
         userDisplayName={citizenProfileName}
@@ -174,6 +186,18 @@ export const CitizenPortal: React.FC = () => {
             onOpenReportModal={() => setIsReportModalOpen(true)}
             onTabChange={handleTabChange}
           />
+        )}
+
+        {activeTab === 'help' && (
+          <div className="bg-[#FAF8F4] min-h-[calc(100vh-80px)]">
+            <HelpUserGuide
+              onNavigateHome={() => handleTabChange('home')}
+              onNavigateLandingPage={handleGoToLandingPage}
+              onOpenReportModal={() => setIsReportModalOpen(true)}
+              onOpenTracking={handleOpenTracking}
+              onNavigateTab={(tab) => handleTabChange(tab as CitizenTab)}
+            />
+          </div>
         )}
       </main>
 

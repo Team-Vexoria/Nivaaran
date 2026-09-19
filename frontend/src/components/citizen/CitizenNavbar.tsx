@@ -1,13 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { 
   Home, FileText, MessageSquare, MessagesSquare, Trophy, 
-  User, LogOut, Globe, ChevronDown 
+  User, LogOut, Globe, ChevronDown, HelpCircle 
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { SupportedLanguage, JHARKHAND_LANGUAGES } from '../../i18n/translations';
 import { NotificationBellDropdown } from '../notifications/NotificationBellDropdown';
 
-export type CitizenTab = 'home' | 'my-reports' | 'community-feed' | 'region-chat' | 'leaderboard' | 'profile';
+export type CitizenTab = 'home' | 'my-reports' | 'community-feed' | 'region-chat' | 'leaderboard' | 'profile' | 'help';
 
 interface CitizenNavbarProps {
   activeTab: CitizenTab;
@@ -15,6 +15,8 @@ interface CitizenNavbarProps {
   onOpenReportModal?: () => void;
   onOpenAuth?: () => void;
   onOpenUniversityPortal?: () => void;
+  onLogout?: () => void;
+  onNavigateLanding?: () => void;
   currentLang?: SupportedLanguage;
   onLangChange?: (lang: SupportedLanguage) => void;
   userDisplayName?: string;
@@ -27,6 +29,8 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
   onTabChange,
   onOpenAuth,
   onOpenUniversityPortal: _onOpenUniversityPortal,
+  onLogout,
+  onNavigateLanding,
   currentLang,
   onLangChange,
   userDisplayName = '',
@@ -46,6 +50,7 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
     { id: 'community-feed', label: t.nav.communityFeed, icon: <MessageSquare className="w-4 h-4" /> },
     { id: 'region-chat', label: t.nav.regionChat, icon: <MessagesSquare className="w-4 h-4" /> },
     { id: 'leaderboard', label: t.nav.leaderboard, icon: <Trophy className="w-4 h-4" /> },
+    { id: 'help', label: 'Help & Guide', icon: <HelpCircle className="w-4 h-4" /> },
   ];
 
   return (
@@ -143,22 +148,73 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
               </button>
 
               <button
-                onClick={() => onTabChange('profile')}
+                onClick={() => {
+                  if (onNavigateLanding) {
+                    onNavigateLanding();
+                  } else {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('portal');
+                    url.searchParams.delete('tab');
+                    url.searchParams.set('view', 'landing');
+                    window.history.pushState({ view: 'landing' }, '', url.toString());
+                    window.dispatchEvent(new Event('popstate'));
+                  }
+                }}
+                className="px-2.5 py-1.5 bg-[#FAF8F4] hover:bg-[#EAE4D8] border border-[#E4DDD1] text-[#4A433B] hover:text-[#201C18] rounded-lg text-xs font-bold flex items-center space-x-1 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
+                title="Return to Public Landing Page"
+              >
+                <Home className="w-3.5 h-3.5 text-[#2C6E49] shrink-0" />
+                <span className="hidden sm:inline">Landing Page</span>
+              </button>
+
+              <button
+                onClick={async () => {
+                  if (onLogout) {
+                    await onLogout();
+                  }
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('portal');
+                  url.searchParams.delete('tab');
+                  url.searchParams.set('view', 'landing');
+                  window.history.pushState({}, '', url.toString());
+                  window.dispatchEvent(new Event('popstate'));
+                }}
                 className="px-2.5 py-1.5 bg-[#B5502D] hover:bg-[#9c4323] text-white rounded-lg text-xs font-extrabold flex items-center space-x-1 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
-                title="Manage Account & Sign Out"
+                title="Sign Out & Return to Landing Page"
               >
                 <LogOut className="w-3.5 h-3.5 text-white shrink-0" />
                 <span className="hidden sm:inline">{t.nav.signOut}</span>
               </button>
             </div>
           ) : (
-            <button
-              onClick={onOpenAuth}
-              className="px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-black rounded-lg shadow-2xs transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap cursor-pointer"
-            >
-              <User className="w-3.5 h-3.5 shrink-0" />
-              <span className="whitespace-nowrap">{t.nav.signIn}</span>
-            </button>
+            <div className="flex items-center space-x-1.5">
+              <button
+                onClick={() => {
+                  if (onNavigateLanding) {
+                    onNavigateLanding();
+                  } else {
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('portal');
+                    url.searchParams.delete('tab');
+                    url.searchParams.set('view', 'landing');
+                    window.history.pushState({ view: 'landing' }, '', url.toString());
+                    window.dispatchEvent(new Event('popstate'));
+                  }
+                }}
+                className="px-2.5 py-1.5 bg-[#FAF8F4] hover:bg-[#EAE4D8] border border-[#E4DDD1] text-[#4A433B] hover:text-[#201C18] rounded-lg text-xs font-bold flex items-center space-x-1 transition-colors whitespace-nowrap cursor-pointer shadow-2xs"
+                title="Return to Public Landing Page"
+              >
+                <Home className="w-3.5 h-3.5 text-[#2C6E49] shrink-0" />
+                <span className="inline">Landing Page</span>
+              </button>
+              <button
+                onClick={onOpenAuth}
+                className="px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white text-xs font-black rounded-lg shadow-2xs transition-all flex items-center space-x-1.5 active:scale-95 whitespace-nowrap cursor-pointer"
+              >
+                <User className="w-3.5 h-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{t.nav.signIn}</span>
+              </button>
+            </div>
           )}
 
         </div>
@@ -166,16 +222,35 @@ export const CitizenNavbar: React.FC<CitizenNavbarProps> = ({
       </div>
 
       {/* Mobile Nav Tabs */}
-      <div className="md:hidden flex items-center justify-between border-t border-[#E4DDD1] pt-2 mt-2 overflow-x-auto gap-1">
+      <div className="md:hidden flex items-center justify-start border-t border-[#E4DDD1] pt-2 mt-2 overflow-x-auto no-scrollbar scrollbar-none scroll-smooth gap-1.5 pb-1">
+        <button
+          onClick={() => {
+            if (onNavigateLanding) {
+              onNavigateLanding();
+            } else {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('portal');
+              url.searchParams.delete('tab');
+              url.searchParams.set('view', 'landing');
+              window.history.pushState({ view: 'landing' }, '', url.toString());
+              window.dispatchEvent(new Event('popstate'));
+            }
+          }}
+          className="px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center space-x-1 whitespace-nowrap text-[#2C6E49] bg-emerald-50 border border-emerald-200 shrink-0 cursor-pointer"
+          title="Return to Landing Page"
+        >
+          <Home className="w-3.5 h-3.5" />
+          <span>Landing</span>
+        </button>
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           return (
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center space-x-1 whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all flex items-center space-x-1 whitespace-nowrap shrink-0 cursor-pointer ${
                 isActive
-                  ? 'bg-[#2C6E49] text-white'
+                  ? 'bg-[#2C6E49] text-white shadow-2xs'
                   : 'text-[#4A433B] bg-[#EAE4D8] hover:bg-[#DFD8CA]'
               }`}
             >

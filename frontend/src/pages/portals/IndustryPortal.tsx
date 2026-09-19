@@ -4,7 +4,7 @@ import {
   ShieldCheck, Award, CheckCircle2,
   MapPin, Clock, Layers, LogOut, Download,
   Check, MessageSquareText, Eye,
-  FlaskConical, X, Copy, Target, Sparkles
+  FlaskConical, X, Copy, Target, Sparkles, HelpCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -22,8 +22,9 @@ import {
   JHARKHAND_INDUSTRIES, IndustryPartnerDoc, getIndustryByEmail, getTestingIndustriesList,
   evaluateChallengeRelevance
 } from '../../services/industryData';
+import { HelpUserGuide } from '../../components/help/HelpUserGuide';
 
-type IndustryTab = 'discovery' | 'my-requests' | 'active' | 'compliance' | 'certificates' | 'messages';
+type IndustryTab = 'discovery' | 'my-requests' | 'active' | 'compliance' | 'certificates' | 'messages' | 'help';
 
 const SCHEDULE7_LIST: Schedule7Category[] = [
   'i. Eradicating extreme hunger, poverty and malnutrition',
@@ -261,7 +262,7 @@ export const IndustryPortal: React.FC = () => {
         </div>
 
         {/* Tab Navigation Bar */}
-        <div className="max-w-7xl mx-auto flex items-center justify-between border-t border-[#E4DDD1] pt-2 mt-2 overflow-x-auto gap-2 text-xs">
+        <div className="max-w-7xl mx-auto flex items-center justify-between border-t border-[#E4DDD1] pt-2 mt-2 overflow-x-auto no-scrollbar scrollbar-none scroll-smooth whitespace-nowrap gap-2 text-xs">
           <nav className="flex items-center space-x-1">
             <button
               onClick={() => setActiveTab('discovery')}
@@ -343,6 +344,18 @@ export const IndustryPortal: React.FC = () => {
             >
               <MessageSquareText className="w-3.5 h-3.5" />
               <span>6. Messages</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('help')}
+              className={`px-3 py-1.5 rounded-lg font-extrabold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer ${
+                activeTab === 'help'
+                  ? 'bg-[#2C6E49] text-white shadow-2xs'
+                  : 'text-[#4A433B] hover:text-[#201C18] hover:bg-[#EAE4D8]'
+              }`}
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+              <span>7. Help &amp; Guide</span>
             </button>
           </nav>
         </div>
@@ -924,6 +937,11 @@ export const IndustryPortal: React.FC = () => {
             </div>
             <CrossPortalMessagingHub currentRole="industry" currentUserName={orgName} />
           </div>
+        )}
+
+        {/* TAB 7: HELP & USER GUIDE */}
+        {activeTab === 'help' && (
+          <HelpUserGuide onNavigateHome={() => setActiveTab('discovery')} />
         )}
       </main>
 

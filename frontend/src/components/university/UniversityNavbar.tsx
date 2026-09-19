@@ -3,14 +3,14 @@ import { createPortal } from 'react-dom';
 import { 
   Building2, GraduationCap, CheckCircle2, Layers, FileText, 
   Users, Award, LogOut, Handshake, FlaskConical, Search, Copy, Check, X, ShieldCheck,
-  MessageSquare, IndianRupee
+  MessageSquare, IndianRupee, HelpCircle
 } from 'lucide-react';
 import { 
   UniversityDoc, getUniversityEmail, getTestingInstitutionsList 
 } from '../../services/universityData';
 import { NotificationBellDropdown } from '../notifications/NotificationBellDropdown';
 
-export type UniversityTab = 'intake-queue' | 'team-builder' | 'proposals' | 'student-workspace' | 'industry-collab' | 'outcomes' | 'messages' | 'pfms';
+export type UniversityTab = 'intake-queue' | 'team-builder' | 'proposals' | 'student-workspace' | 'industry-collab' | 'outcomes' | 'messages' | 'pfms' | 'help';
 export type UserRoleType = 'admin' | 'faculty' | 'student';
 
 interface UniversityNavbarProps {
@@ -76,24 +76,24 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
                 HEI Portal
               </span>
             </div>
-            <span className="text-[10px] text-[#5A5247] font-semibold block">
-              University R&D Orchestration
+            <span className="text-[10px] text-[#5A5247] font-semibold hidden sm:block">
+              University R&amp;D Orchestration
             </span>
           </div>
         </div>
 
         {/* Institution Badge, Testing Switcher, and Role Switcher */}
-        <div className="flex items-center space-x-2 shrink-0">
+        <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
           
           {/* Institutional Access Badge */}
-          <div className="px-3 py-1.5 bg-[#EAE4D8] text-[#201C18] border border-[#E4DDD1] rounded-xl text-xs flex items-center space-x-2 shadow-2xs select-none">
-            <Building2 className="w-4 h-4 text-[#2C6E49] shrink-0" />
+          <div className="px-2.5 sm:px-3 py-1 sm:py-1.5 bg-[#EAE4D8] text-[#201C18] border border-[#E4DDD1] rounded-xl text-xs flex items-center space-x-1.5 sm:space-x-2 shadow-2xs select-none">
+            <Building2 className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-[#2C6E49] shrink-0" />
             <div className="flex flex-col text-left">
-              <div className="flex items-center gap-1.5">
-                <span className="truncate max-w-[130px] sm:max-w-[180px] font-extrabold text-xs text-[#201C18]">{selectedUniversity.shortName}</span>
-                <span className="text-[9px] font-black bg-[#2C6E49]/10 text-[#2C6E49] px-1.5 py-0.5 rounded border border-[#2C6E49]/20 hidden sm:inline">VERIFIED HEI</span>
+              <div className="flex items-center gap-1">
+                <span className="truncate max-w-[90px] sm:max-w-[180px] font-extrabold text-xs text-[#201C18]">{selectedUniversity.shortName}</span>
+                <span className="text-[9px] font-black bg-[#2C6E49]/10 text-[#2C6E49] px-1.5 py-0.5 rounded border border-[#2C6E49]/20 hidden md:inline">VERIFIED HEI</span>
               </div>
-              <span className="text-[10px] font-mono text-[#6A6155] truncate max-w-[140px] sm:max-w-[190px]">{getUniversityEmail(selectedUniversity)}</span>
+              <span className="text-[10px] font-mono text-[#6A6155] truncate max-w-[100px] sm:max-w-[190px] hidden xs:inline">{getUniversityEmail(selectedUniversity)}</span>
             </div>
           </div>
 
@@ -253,6 +253,19 @@ export const UniversityNavbar: React.FC<UniversityNavbarProps> = ({
           >
             <IndianRupee className="w-3.5 h-3.5 text-[#2C6E49]" />
             <span>{userRole === 'student' ? '5. PFMS Grant Ledger' : '8. PFMS Grant Ledger'}</span>
+          </button>
+
+          {/* Help & User Guide */}
+          <button
+            onClick={() => onTabChange('help')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 whitespace-nowrap cursor-pointer shrink-0 ${
+              activeTab === 'help'
+                ? 'bg-[#2C6E49] text-white shadow-xs font-extrabold'
+                : 'text-[#4A433B] bg-[#FAF8F4] border border-[#E4DDD1] hover:text-[#201C18] hover:bg-[#F0EBE0] shadow-2xs'
+            }`}
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-[#2C6E49]" />
+            <span>Help &amp; Guide</span>
           </button>
         </nav>
 

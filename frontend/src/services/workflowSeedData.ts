@@ -1323,8 +1323,8 @@ export const SEED_CHALLENGES: Challenge[] = [
     "govtOfficerNote": "Inspected by DC Simdega office and verified for HEI engineering deployment.",
     "govtValidatedBy": "Shri Ajay Kumar Singh, DC Simdega",
     "govtValidatedAt": daysAgo(14),
-    "assignedHEI": "XLRI Xavier School of Management & NIT Jamshedpur",
-    "assignedDept": "Structural Engineering & Rural Infrastructure",
+    "assignedHEI": "Central University of Jharkhand (CUJ) & NIT Jamshedpur",
+    "assignedDept": "Department of Water Engineering and Management",
     "assignedProjectId": "DEMO-PRJ-019",
     "createdAt": daysAgo(24),
     "updatedAt": daysAgo(4)
@@ -1608,7 +1608,7 @@ export const SEED_CHALLENGES: Challenge[] = [
   {
     "id": "DEMO-CH-024",
     "reportId": "NIV-2026-024",
-    "title": "Ajay river seasonal sand deposition suffocating fertile paddy alluvial topsoil",
+    "title": "Ajay river seasonal flash flood and sand deposition suffocating fertile paddy alluvial topsoil",
     "description": "Violent monsoon runoff along the Ajay river deposited 0.8m thick sterile sand sheets across 480 hectares of fertile paddy fields in Kundahit.",
     "district": "Jamtara",
     "block": "Kundahit",
@@ -1625,7 +1625,7 @@ export const SEED_CHALLENGES: Challenge[] = [
     "aiAnalysis": {
       "category": "Flooding & Drainage",
       "categoryCode": "GOV-CIVIC",
-      "matchedProblem": "Ajay river seasonal sand deposition suffocating fertile paddy alluvial topsoil",
+      "matchedProblem": "Ajay river seasonal flash flood and sand deposition suffocating fertile paddy alluvial topsoil",
       "confidenceScore": 99,
       "priorityScore": 94,
       "riskLevel": "CRITICAL",
@@ -2082,8 +2082,8 @@ export const SEED_CHALLENGES: Challenge[] = [
     "govtOfficerNote": "Inspected by DC Latehar office and verified for HEI engineering deployment.",
     "govtValidatedBy": "Shri Himanshu Mohan, DC Latehar",
     "govtValidatedAt": daysAgo(10),
-    "assignedHEI": "BIT Mesra, Ranchi",
-    "assignedDept": "Department of Civil & Environmental Engineering",
+    "assignedHEI": "Central University of Jharkhand (CUJ)",
+    "assignedDept": "Department of Water Engineering and Management",
     "assignedProjectId": "DEMO-PRJ-030",
     "createdAt": daysAgo(20),
     "updatedAt": daysAgo(3)
@@ -4900,13 +4900,13 @@ export const SEED_PROJECTS: Project[] = [
   {
     "id": "DEMO-PRJ-024",
     "challengeId": "DEMO-CH-024",
-    "challengeTitle": "Ajay river seasonal sand deposition suffocating fertile paddy alluvial topsoil",
+    "challengeTitle": "Ajay river seasonal flash flood and sand deposition suffocating fertile paddy alluvial topsoil",
     "category": "Flooding & Drainage",
     "district": "Jamtara",
     "universityId": "UNI-CUJ-RANCHI",
     "universityName": "Central University of Jharkhand (CUJ)",
-    "facultyMentorName": "Prof. Mentoring Cell (Birsa Agricultural University (BAU))",
-    "facultyEmail": "mentor.jmt@university.ac.in",
+    "facultyMentorName": "Dr. Manoj Kumar (Water Resource Centre, CUJ)",
+    "facultyEmail": "faculty@cuj.ac.in",
     "teamMembers": [
       {
         "id": "TM-024A",
@@ -5311,10 +5311,10 @@ export const SEED_PROJECTS: Project[] = [
     "challengeTitle": "Frequent monsoon flash flood logjams and wooden culvert collapse cutting off Mahuadanr valley",
     "category": "Bridge Infrastructure & Transport Safety",
     "district": "Latehar",
-    "universityId": "UNI-BIT-MESRA",
-    "universityName": "BIT Mesra, Ranchi",
-    "facultyMentorName": "Dr. Arun Kumar (BIT Mesra, Ranchi)",
-    "facultyEmail": "arunkumar.civil@bitmesra.ac.in",
+    "universityId": "UNI-CUJ-RANCHI",
+    "universityName": "Central University of Jharkhand (CUJ)",
+    "facultyMentorName": "Dr. Manoj Kumar (Water Resource Centre, CUJ)",
+    "facultyEmail": "faculty@cuj.ac.in",
     "teamMembers": [
       {
         "id": "TM-030A",

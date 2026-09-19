@@ -20,6 +20,8 @@ interface MapSidebarProps {
   onFiltersChange: (f: FilterState) => void;
   totalCount: number;
   criticalCount: number;
+  isOpenOnMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
 const STATUS_OPTIONS = CHALLENGE_STATUS_OPTIONS;
@@ -38,6 +40,8 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
   onFiltersChange,
   totalCount,
   criticalCount,
+  isOpenOnMobile = false,
+  onCloseMobile,
 }) => {
   const { t } = useLanguage();
   const riskLabel: Record<string, string> = {
@@ -59,8 +63,26 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
   const hasFilters =
     filters.categories.length > 0 || filters.statuses.length > 0 || filters.riskLevels.length > 0;
 
-  return (
-    <aside className="w-72 shrink-0 flex flex-col bg-[#FAF8F4] border-r border-[#E4DDD1] overflow-hidden">
+  const renderContent = (isMobile: boolean) => (
+    <div className={`w-72 max-w-[85vw] flex flex-col bg-[#FAF8F4] border-r border-[#E4DDD1] overflow-hidden ${isMobile ? 'h-full shadow-2xl' : 'h-full'}`}>
+      {/* Mobile-only Header with Close Button */}
+      {isMobile && (
+        <div className="px-3 py-2.5 bg-white border-b border-[#E4DDD1] flex items-center justify-between shrink-0">
+          <span className="text-xs font-bold text-[#201C18] flex items-center gap-1.5">
+            <Filter className="w-3.5 h-3.5 text-[#2C6E49]" />
+            <span>Filters &amp; Districts</span>
+          </span>
+          {onCloseMobile && (
+            <button
+              onClick={onCloseMobile}
+              className="p-1 text-[#6A6155] hover:text-[#201C18] rounded-lg hover:bg-[#FAF8F4]"
+              title="Close Filters"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── KPI Strip ── */}
       <div className="px-3 py-3 border-b border-[#E4DDD1] bg-[#F3EDE2] shrink-0">
@@ -214,6 +236,30 @@ export const MapSidebar: React.FC<MapSidebarProps> = ({
           ))}
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar: visible on md and up */}
+      <aside className="hidden md:flex w-72 shrink-0 h-full">
+        {renderContent(false)}
+      </aside>
+
+      {/* Mobile drawer: visible only when toggled on mobile */}
+      {isOpenOnMobile && (
+        <div
+          className="fixed inset-0 z-[200] bg-black/50 backdrop-blur-xs flex md:hidden animate-fadeIn"
+          onClick={onCloseMobile}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="h-full bg-[#FAF8F4] shadow-2xl"
+          >
+            {renderContent(true)}
+          </div>
+        </div>
+      )}
+    </>
   );
 };

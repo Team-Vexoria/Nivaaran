@@ -154,7 +154,7 @@ export const CommunityPortal: React.FC = () => {
         </div>
 
         {/* Tabs */}
-        <div className="max-w-7xl mx-auto mt-2.5 flex items-center gap-1 border-t border-white/10 pt-2">
+        <div className="max-w-7xl mx-auto mt-2.5 flex items-center gap-1 border-t border-white/10 pt-2 overflow-x-auto no-scrollbar scrollbar-none scroll-smooth whitespace-nowrap">
           {([
             { id: 'overview', label: 'Overview', icon: FileText },
             { id: 'challenges', label: 'All Challenges', icon: AlertTriangle },
@@ -164,7 +164,7 @@ export const CommunityPortal: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => { setActiveTab(tab.id); setActionView('menu'); }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center space-x-1.5 transition-all shrink-0 cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-white/15 text-white'
                   : 'text-white/50 hover:text-white/80 hover:bg-white/10'

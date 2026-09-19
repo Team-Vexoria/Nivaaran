@@ -583,7 +583,38 @@ export const JHARKHAND_UNIVERSITIES: UniversityDoc[] = [
         capabilities: [
           'Biodiversity Assessment', 'Ecological Impact Studies',
           'Tribal Forest Rights Research', 'Water Body Conservation',
-          'Environmental Education'
+          'Environmental Education', 'Flash Flood Basin Analysis'
+        ],
+      },
+      {
+        id: 'DEPT-CUJ-WRE',
+        name: 'Department of Water Engineering and Management',
+        code: 'WRE',
+        headOfDept: 'Dr. Manoj Kumar, Head of Water Engineering',
+        activeLabs: [
+          'Hydrology & River Mechanics Lab',
+          'Flash Flood Modeling & Hydro-informatics Lab',
+          'GIS & Remote Sensing Water Resources Lab',
+        ],
+        capabilities: [
+          'Flash Flood Inundation Modeling', 'Riverbank Scour Mitigation',
+          'Causeway & Culvert Hydraulics', 'Early Flood Warning Systems',
+          'Catchment Runoff Management', 'Disaster Risk Zonation'
+        ],
+      },
+      {
+        id: 'DEPT-CUJ-CIVIL',
+        name: 'Department of Civil Engineering',
+        code: 'CIVIL',
+        headOfDept: 'Head, Civil Engineering',
+        activeLabs: [
+          'Structural Engineering Lab',
+          'Geotechnical Testing Facility',
+          'Hydraulics & Fluid Dynamics Lab',
+        ],
+        capabilities: [
+          'Culvert & Bridge Design', 'Soil Erosion Control',
+          'Rural Infrastructure Rehabilitation', 'Submersible Causeways'
         ],
       },
       {
@@ -2961,8 +2992,26 @@ export function getUniversityEmail(uni: UniversityDoc): string {
 // Helper: get university by email
 export function getUniversityByEmail(email: string): UniversityDoc | undefined {
   const cleanEmail = email.toLowerCase().trim();
-  if (cleanEmail === 'bitmesera@nivaaran.com' || cleanEmail === 'bitmesra@nivaaran.com' || cleanEmail === 'admin@bitmesra.in') {
+  if (
+    cleanEmail === 'bitmesera@nivaaran.com' ||
+    cleanEmail === 'bitmesra@nivaaran.com' ||
+    cleanEmail === 'admin@bitmesra.in' ||
+    cleanEmail === 'faculty@bitmesra.in' ||
+    cleanEmail === 'student@bitmesra.in' ||
+    cleanEmail.includes('bitmesra')
+  ) {
     return JHARKHAND_UNIVERSITIES.find(u => u.id === 'UNI-BIT-MESRA');
+  }
+  if (
+    cleanEmail === 'cuj@nivaaran.com' ||
+    cleanEmail === 'faculty@cuj.ac.in' ||
+    cleanEmail === 'student@cuj.ac.in' ||
+    cleanEmail === 'admin@cuj.ac.in' ||
+    cleanEmail === 'teacher@cuj.ac.in' ||
+    cleanEmail.includes('cuj.ac.in') ||
+    cleanEmail.includes('cuj.in')
+  ) {
+    return JHARKHAND_UNIVERSITIES.find(u => u.id === 'UNI-CUJ-RANCHI');
   }
   for (const [id, mappedEmail] of Object.entries(UNIVERSITY_PORTAL_EMAILS)) {
     if (mappedEmail.toLowerCase() === cleanEmail) {
@@ -2970,7 +3019,15 @@ export function getUniversityByEmail(email: string): UniversityDoc | undefined {
       if (match) return match;
     }
   }
-  return JHARKHAND_UNIVERSITIES.find(u => getUniversityEmail(u).toLowerCase() === cleanEmail);
+  const byCleanEmail = JHARKHAND_UNIVERSITIES.find(u => getUniversityEmail(u).toLowerCase() === cleanEmail);
+  if (byCleanEmail) return byCleanEmail;
+
+  // Domain / keyword match (e.g. nitjsr, iitism, cuj, etc.)
+  return JHARKHAND_UNIVERSITIES.find(u => {
+    const uniShort = (u.shortName || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const uniId = u.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return (uniShort.length >= 3 && cleanEmail.includes(uniShort)) || (uniId.length >= 5 && cleanEmail.includes(uniId));
+  });
 }
 
 // Helper: get unique primary institutions list for testing directory

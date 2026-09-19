@@ -16,6 +16,7 @@ import { CollaborationReviewPanel } from '../../components/university/Collaborat
 import { InnovationOutcomesTracker } from '../../components/analytics/InnovationOutcomesTracker';
 import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
 import { PFMSDisbursementLedger } from '../../components/gov/PFMSDisbursementLedger';
+import { HelpUserGuide } from '../../components/help/HelpUserGuide';
 
 interface UniversityPortalProps {
   onNavigateHome?: () => void;
@@ -85,14 +86,20 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
   const assignedChallenge: ChallengeDoc | null = React.useMemo(() => {
     if (selectedChallengeId) {
       const match = challenges.find(c => c.id === selectedChallengeId || c.reportId === selectedChallengeId);
-      if (match) return match;
+      if (match && isAssignedToSelectedUni(match.assignedHEI)) return match;
     }
-    if (activeChallengeForTeam) return activeChallengeForTeam;
+    if (activeChallengeForTeam && isAssignedToSelectedUni(activeChallengeForTeam.assignedHEI)) {
+      return activeChallengeForTeam;
+    }
+    // Prioritize challenge directly allocated to this university
+    const directlyAllocated = challenges.find(c => isAssignedToSelectedUni(c.assignedHEI));
+    if (directlyAllocated) return directlyAllocated;
+
     if (assignedProject) {
       const match = challenges.find(c => c.id === assignedProject.challengeId || c.reportId === assignedProject.challengeId);
       if (match) return match;
     }
-    return challenges.find(c => isAssignedToSelectedUni(c.assignedHEI)) || null;
+    return null;
   }, [challenges, selectedChallengeId, activeChallengeForTeam, assignedProject, selectedUniversity]);
 
   useEffect(() => {
@@ -111,6 +118,9 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
       if (matched && matched.id !== selectedUniversity.id) {
         setSelectedUniversity(matched);
         setActiveChallengeForTeam(null);
+        setSelectedChallengeId('');
+        setActiveProposalChallengeId('');
+        localStorage.removeItem('nivaaran_active_challenge_id');
         localStorage.setItem('nivaaran_active_university_id', matched.id);
       }
     }
@@ -119,6 +129,9 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
   const handleUniversityChange = (uni: UniversityDoc) => {
     setSelectedUniversity(uni);
     setActiveChallengeForTeam(null);
+    setSelectedChallengeId('');
+    setActiveProposalChallengeId('');
+    localStorage.removeItem('nivaaran_active_challenge_id');
     localStorage.setItem('nivaaran_active_university_id', uni.id);
   };
 
@@ -253,6 +266,10 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
             defaultHEI={selectedUniversity.name}
             activeChallenge={assignedChallenge}
           />
+        )}
+
+        {activeTab === 'help' && (
+          <HelpUserGuide onNavigateHome={() => setActiveTab(userRole === 'student' ? 'student-workspace' : 'intake-queue')} />
         )}
       </main>
 

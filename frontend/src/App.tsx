@@ -25,12 +25,45 @@ const INDUSTRY_ROLES: UserRole[] = ['Industry / MSME', 'CSR Organization'];
 const AppContent: React.FC = () => {
   const { currentUser } = useAuth();
   const [showAuthPage, setShowAuthPage] = useState<boolean>(false);
+  const [viewLanding, setViewLanding] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('view') === 'landing';
+  });
 
-  if (!currentUser) {
+  React.useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      setViewLanding(params.get('view') === 'landing');
+    };
+    const handleCustomLanding = () => {
+      setViewLanding(true);
+    };
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('nivaaran_navigate_landing', handleCustomLanding);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('nivaaran_navigate_landing', handleCustomLanding);
+    };
+  }, []);
+
+  if (!currentUser || viewLanding) {
     if (showAuthPage) {
       return <AuthPage onBackToHome={() => setShowAuthPage(false)} />;
     }
-    return <LandingPage onOpenAuth={() => setShowAuthPage(true)} />;
+    return (
+      <LandingPage
+        onOpenAuth={() => {
+          if (currentUser) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('view');
+            window.history.pushState({}, '', url.toString());
+            setViewLanding(false);
+          } else {
+            setShowAuthPage(true);
+          }
+        }}
+      />
+    );
   }
 
   const role = currentUser.role;

@@ -10,7 +10,7 @@ import {
   ChallengeDoc, ProjectDoc, 
   submitPrototypeProgress, submitPilotGroundTrial,
   submitOutcomeAudit, submitPilotReport, submitPrototypeUpdate, 
-  subscribeToChallenges, subscribeToProjects 
+  subscribeToChallenges, subscribeToProjects
 } from '../../services/firebaseService';
 import { CertificateModal } from '../CertificateModal';
 import { ChallengeDetailModal } from '../ChallengeDetailModal';
@@ -18,6 +18,7 @@ import { IoTSensorTelemetryCard } from '../telemetry/IoTSensorTelemetryCard';
 import { getStageForStatus } from '../../services/workflowLifecycle';
 import { workflowStore } from '../../services/workflowStore';
 import { ChallengeStatus } from '../../services/workflowTypes';
+import { isAssignedToUniversity } from '../../services/heiMatchingEngine';
 
 interface StudentWorkspaceTabProps {
   university: UniversityDoc;
@@ -52,21 +53,95 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({
   const [projects, setProjects] = useState<ProjectDoc[]>([]);
   const [challenges, setChallenges] = useState<ChallengeDoc[]>([]);
 
-  const universityProjects = projects.filter(p => p.universityId === university.id || p.universityName === university.name);
+  const universityProjects = projects.filter(p => isAssignedToUniversity(p.universityId, university) || isAssignedToUniversity(p.universityName, university));
 
-  const assignedProject: ProjectDoc | null = activeChallengeId
-    ? (universityProjects.find(p => p.challengeId === activeChallengeId) || universityProjects[0] || null)
-    : (universityProjects[0] || null);
+  // Collect all challenges allocated to this university OR linked to university projects
+  const allocatedChallenges = React.useMemo(() => {
+    return challenges.filter(c =>
+      isAssignedToUniversity(c.assignedHEI, university) ||
+      universityProjects.some(p => p.challengeId === c.id || p.challengeId === c.reportId)
+    );
+  }, [challenges, university, universityProjects]);
 
-  const assignedChallenge = assignedProject
-    ? challenges.find(c => c.id === assignedProject.challengeId || c.reportId === assignedProject.challengeId)
-    : (activeChallengeId ? challenges.find(c => c.id === activeChallengeId || c.reportId === activeChallengeId) : undefined);
-  
+  const [selectedLocalChallengeId, setSelectedLocalChallengeId] = useState<string>(() => {
+    return activeChallengeId || localStorage.getItem('nivaaran_active_challenge_id') || '';
+  });
+
+  useEffect(() => {
+    if (activeChallengeId) {
+      setSelectedLocalChallengeId(activeChallengeId);
+    }
+  }, [activeChallengeId]);
+
+  // When university changes or allocated challenges update, ensure active challenge belongs to this university
+  useEffect(() => {
+    if (allocatedChallenges.length > 0) {
+      const belongs = allocatedChallenges.some(c => c.id === selectedLocalChallengeId || c.reportId === selectedLocalChallengeId);
+      if (!belongs) {
+        const nextId = allocatedChallenges[0].id || allocatedChallenges[0].reportId;
+        setSelectedLocalChallengeId(nextId);
+        localStorage.setItem('nivaaran_active_challenge_id', nextId);
+      }
+    }
+  }, [university.id, allocatedChallenges]);
+
+  // Determine active challenge
+  const currentChallengeId = selectedLocalChallengeId || (allocatedChallenges.length > 0 ? (allocatedChallenges[0].id || allocatedChallenges[0].reportId) : '');
+
+  const assignedChallenge: ChallengeDoc | undefined = React.useMemo(() => {
+    if (currentChallengeId) {
+      const match = allocatedChallenges.find(c => c.id === currentChallengeId || c.reportId === currentChallengeId);
+      if (match) return match;
+    }
+    if (allocatedChallenges.length > 0) return allocatedChallenges[0];
+    return undefined;
+  }, [currentChallengeId, allocatedChallenges]);
+
+  const assignedProject: ProjectDoc | null = React.useMemo(() => {
+    if (!assignedChallenge) return universityProjects[0] || null;
+    const chId = assignedChallenge.id || assignedChallenge.reportId;
+    const match = universityProjects.find(p => p.challengeId === chId || p.challengeId === assignedChallenge.id || p.challengeId === assignedChallenge.reportId);
+    if (match) return match;
+
+    // Synthesize active project representation for this allocated challenge so student workspace is immediately active
+    return {
+      id: `PRJ-${chId}`,
+      challengeId: chId,
+      challengeTitle: assignedChallenge.title,
+      category: assignedChallenge.category,
+      district: assignedChallenge.district,
+      universityId: university.id,
+      universityName: university.name,
+      facultyMentorName: university.faculty[0]?.name || 'Dr. Arvind Sinha',
+      facultyEmail: university.faculty[0]?.email || 'mentor@hei.ac.in',
+      status: (assignedChallenge.status === 'University Accepted' ? 'In Progress' : assignedChallenge.status) as any,
+      teamMembers: university.students.slice(0, 3).map((stu, idx) => ({
+        studentId: stu.id,
+        name: stu.name,
+        departmentName: university.departments[0]?.name || 'Engineering',
+        role: idx === 0 ? 'Student Project Lead & IoT' : idx === 1 ? 'GIS & Drone Data Specialist' : 'Environmental Auditor',
+        skills: stu.skills,
+      })),
+      milestones: [
+        { stageNumber: 8, title: 'Team Formation & Problem Formulation', description: 'Multidisciplinary team assembled and verified', status: 'Completed', targetDays: 3 },
+        { stageNumber: 9, title: 'Solution Proposal & System Architecture', description: 'Technical design and Bill of Materials (BOM)', status: 'Completed', targetDays: 7 },
+        { stageNumber: 10, title: 'Industry / CSR Co-Funding Grant', description: 'CSR co-funding and mentorship engagement', status: 'Completed', targetDays: 10 },
+        { stageNumber: 11, title: 'IoT Prototype Bench Testing', description: 'Hardware sensor assembly and firmware verification', status: 'In Progress', targetDays: 14 },
+        { stageNumber: 12, title: 'Panchayat Pilot Field Trial', description: 'Field trial at village site with citizen feedback', status: 'Pending', targetDays: 21 },
+        { stageNumber: 13, title: 'Outcome Audit & Technical Clearance', description: 'Government verification certificate issued', status: 'Pending', targetDays: 28 },
+      ],
+    };
+  }, [assignedChallenge, universityProjects, university]);
+
   // Calculate current stage number (default to stage 11 if active prototype project)
   const currentStage = assignedChallenge ? (getStageForStatus(assignedChallenge.status)?.stageNumber || 11) : 11;
 
   // Active view tab for Stages 8-13
   const [selectedStageTab, setSelectedStageTab] = useState<number>(() => Math.min(Math.max(currentStage, 8), 13));
+
+  useEffect(() => {
+    setSelectedStageTab(Math.min(Math.max(currentStage, 8), 13));
+  }, [currentStage]);
 
   // Prototype (Stage 11) Form States
   const [hardwareSpec, setHardwareSpec] = useState<string>(
@@ -146,7 +221,7 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({
 
   const handleLogProgress = async (e: React.FormEvent) => {
     e.preventDefault();
-    const challengeId = assignedProject?.challengeId || 'LOCAL-1787968429418';
+    const challengeId = assignedChallenge?.id || assignedChallenge?.reportId || assignedProject?.challengeId || 'LOCAL-1787968429418';
 
     if (selectedStageTab === 11) {
       await submitPrototypeProgress(
@@ -198,12 +273,15 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({
     setTimeout(() => setIsLoggedSuccess(false), 5000);
   };
 
+  const [isSubmittingAudit, setIsSubmittingAudit] = useState<boolean>(false);
+
   const handlePilotReport = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assignedProject?.id || !groundReport.trim()) return;
+    if (!groundReport.trim()) return;
+    const prjId = assignedProject?.id || (assignedChallenge ? `PRJ-${assignedChallenge.id || assignedChallenge.reportId}` : 'DEMO-PRJ-030');
     
     const evidenceUrls = pilotFiles.map(f => URL.createObjectURL(f));
-    const saved = await submitPilotReport(assignedProject.id, {
+    const saved = await submitPilotReport(prjId, {
       location: panchayatLocation,
       observations: groundReport.trim(),
       evidenceUrls: evidenceUrls,
@@ -219,21 +297,29 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({
 
   const handleOutcomeAudit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!assignedProject?.id || !auditSummary.trim()) return;
+    if (!auditSummary.trim()) return;
+    setIsSubmittingAudit(true);
     
-    const evidenceUrls = auditFiles.map(f => URL.createObjectURL(f));
-    const saved = await submitOutcomeAudit(assignedProject.id, {
-      summary: auditSummary.trim(),
-      verifiedBy: currentStudent.name,
-      metrics: auditMetrics,
-      evidenceUrls: evidenceUrls,
-      verifiedAt: new Date().toISOString(),
-    });
-    if (saved) {
-      setAuditSubmitted(true);
-      setSuccessMessage('✓ Stage 13 Outcome Audit submitted for final Government Deployment Clearance.');
-      setIsLoggedSuccess(true);
-      setTimeout(() => setIsLoggedSuccess(false), 4000);
+    try {
+      const prjId = assignedProject?.id || (assignedChallenge ? `PRJ-${assignedChallenge.id || assignedChallenge.reportId}` : 'DEMO-PRJ-030');
+      const evidenceUrls = auditFiles.map(f => URL.createObjectURL(f));
+      const saved = await submitOutcomeAudit(prjId, {
+        summary: auditSummary.trim(),
+        verifiedBy: currentStudent.name,
+        metrics: auditMetrics,
+        evidenceUrls: evidenceUrls,
+        verifiedAt: new Date().toISOString(),
+      });
+      if (saved) {
+        setAuditSubmitted(true);
+        setSuccessMessage('✓ Stage 13 Outcome Audit submitted for final Government Deployment Clearance.');
+        setIsLoggedSuccess(true);
+        setTimeout(() => setIsLoggedSuccess(false), 5000);
+      }
+    } catch (err) {
+      console.error('Error submitting outcome audit:', err);
+    } finally {
+      setIsSubmittingAudit(false);
     }
   };
 
@@ -610,6 +696,52 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* ── Allocated Challenges Problem Switcher ── */}
+      {allocatedChallenges.length > 0 && (
+        <div className="bg-white border-2 border-emerald-500/30 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100/80 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-300">
+              <FlaskConical className="w-5 h-5 text-emerald-700" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-700 text-white px-2.5 py-0.5 rounded-md shadow-2xs">
+                  Allocated R&D Problems ({allocatedChallenges.length})
+                </span>
+                <span className="text-[10px] font-bold text-slate-500">
+                  {university.shortName || university.name}
+                </span>
+              </div>
+              <h4 className="text-xs font-black text-slate-900 mt-0.5 font-heading">
+                Active Research Problem in Student & Faculty Workspace:
+              </h4>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="challenge-switcher" className="sr-only">Switch active allocated challenge</label>
+            <select
+              id="challenge-switcher"
+              value={currentChallengeId}
+              onChange={(e) => {
+                const newId = e.target.value;
+                setSelectedLocalChallengeId(newId);
+                localStorage.setItem('nivaaran_active_challenge_id', newId);
+              }}
+              className="w-full sm:w-auto px-3.5 py-2 text-xs font-extrabold border-2 border-emerald-400 rounded-xl bg-emerald-50/90 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 max-w-lg truncate cursor-pointer shadow-xs"
+            >
+              {allocatedChallenges.map(c => {
+                const id = c.id || c.reportId;
+                return (
+                  <option key={id} value={id}>
+                    {c.reportId ? `[${c.reportId}] ` : ''}{c.title} · Stage {getStageForStatus(c.status)?.stageNumber || 8} ({c.status})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        </div>
+      )}
 
       {/* ── Active Multidisciplinary Project Assignment Overview ── */}
       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs space-y-4">
@@ -1121,10 +1253,20 @@ export const StudentWorkspaceTab: React.FC<StudentWorkspaceTabProps> = ({
 
             <button 
               type="submit"
-              disabled={!auditSummary.trim()}
-              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-xs font-black rounded-xl cursor-pointer"
+              disabled={!auditSummary.trim() || isSubmittingAudit}
+              className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 active:scale-95 disabled:opacity-50 text-white text-xs font-black rounded-xl cursor-pointer transition-all flex items-center gap-2 shadow-xs"
             >
-              Submit Stage 13 Outcome Audit
+              {isSubmittingAudit ? (
+                <>
+                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Submitting Stage 13 Audit...</span>
+                </>
+              ) : (
+                <>
+                  <ClipboardCheck className="w-4 h-4" />
+                  <span>Submit Stage 13 Outcome Audit</span>
+                </>
+              )}
             </button>
           </form>
         </div>

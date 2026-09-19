@@ -22,19 +22,77 @@ export const isAssignedToUniversity = (
   assignedHEI: string | undefined,
   university: UniversityDoc
 ): boolean => {
-  if (!assignedHEI) return false;
-  const assignedLower = assignedHEI.toLowerCase().trim();
-  const uniNameLower = university.name.toLowerCase().trim();
-  const uniShortLower = (university.shortName || '').toLowerCase().trim();
-  const uniIdLower = university.id.toLowerCase().trim();
+  if (!assignedHEI || !university) return false;
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+  const assignedNorm = normalize(assignedHEI);
+  const uniNameNorm = normalize(university.name);
+  const uniShortNorm = normalize(university.shortName || '');
+  const uniIdNorm = normalize(university.id);
 
-  if (assignedLower === uniIdLower || assignedLower === uniNameLower || assignedLower === uniShortLower) {
+  if (
+    assignedNorm === uniIdNorm ||
+    assignedNorm === uniNameNorm ||
+    assignedNorm === uniShortNorm
+  ) {
     return true;
   }
-  if (uniShortLower.length >= 3 && assignedLower.includes(uniShortLower)) {
+
+  // Explicit institution alias map to ensure 100% reliable matching across all views
+  const KNOWN_ALIASES: Record<string, string[]> = {
+    'UNI-CUJ-RANCHI': [
+      'cuj',
+      'central university of jharkhand',
+      'central university jharkhand',
+      'cuj ranchi',
+      'cuj brambe',
+      'brambe',
+    ],
+    'UNI-BIT-MESRA': [
+      'bit mesra',
+      'birla institute of technology',
+      'bitmesra',
+      'bit ranchi',
+    ],
+    'UNI-IIT-ISM-DHANBAD': [
+      'iit ism',
+      'ism dhanbad',
+      'iitism',
+      'indian school of mines',
+    ],
+    'UNI-NIT-JAMSHEDPUR': [
+      'nit jamshedpur',
+      'nit jsr',
+      'nitjsr',
+      'national institute of technology',
+    ],
+    'UNI-BAU-RANCHI': [
+      'bau',
+      'birsa agricultural university',
+      'bau ranchi',
+    ],
+    'UNI-DSPMU-RANCHI': [
+      'dspmu',
+      'dr shyama prasad mukherjee university',
+      'shyama prasad mukherjee',
+    ],
+  };
+
+  const aliases = KNOWN_ALIASES[university.id] || [];
+  for (const alias of aliases) {
+    if (assignedNorm.includes(alias) || alias.includes(assignedNorm)) {
+      return true;
+    }
+  }
+
+  if (uniShortNorm.length >= 3 && assignedNorm.includes(uniShortNorm)) {
     return true;
   }
-  if (uniNameLower.length >= 8 && (assignedLower.includes(uniNameLower) || uniNameLower.includes(assignedLower))) {
+  if (uniNameNorm.length >= 6 && (assignedNorm.includes(uniNameNorm) || uniNameNorm.includes(assignedNorm))) {
+    return true;
+  }
+  // Check key identifying tokens (e.g. ['bit', 'mesra'], ['iit', 'ism'], ['nit', 'jamshedpur'])
+  const shortTokens = uniShortNorm.split(' ').filter(t => t.length >= 3);
+  if (shortTokens.length > 0 && shortTokens.every(t => assignedNorm.includes(t))) {
     return true;
   }
   return false;

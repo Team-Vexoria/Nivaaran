@@ -103,12 +103,12 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
   };
 
   return (
-    <div className="min-h-screen bg-nivaaran-bg flex flex-col justify-center items-center p-6">
-      <div className="w-full max-w-md bg-white border border-nivaaran-border rounded-xl shadow-xl p-8 space-y-6 relative">
+    <div className="min-h-screen bg-nivaaran-bg flex flex-col justify-center items-center p-3 sm:p-6 py-6 sm:py-12">
+      <div className="w-full max-w-md bg-white border border-nivaaran-border rounded-xl shadow-xl p-5 sm:p-8 space-y-5 sm:space-y-6 relative">
         {onBackToHome && (
           <button
             onClick={onBackToHome}
-            className="absolute top-6 left-6 text-xs text-nivaaran-text-secondary hover:text-nivaaran-primary flex items-center space-x-1 font-medium cursor-pointer"
+            className="absolute top-4 left-4 sm:top-6 sm:left-6 text-xs text-nivaaran-text-secondary hover:text-nivaaran-primary flex items-center space-x-1 font-medium cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>{t.auth.backBtn}</span>
@@ -271,7 +271,7 @@ export const AuthPage: React.FC<{ onBackToHome?: () => void }> = ({ onBackToHome
               </button>
             </div>
 
-            {/* 4. Student Researcher */}
+            {/* 3. Student Researcher */}
             <div className="p-2 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-between transition-colors">
               <div>
                 <span className="font-bold text-slate-900 block">🧑‍🎓 Student Researcher</span>

@@ -32,24 +32,37 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
   }, []);
 
   // Filter challenges matched against this specific university:
-  // Strict rule: ONLY show challenges if matchScore >= 80%
-  // Officially allotted challenges score 100%, and open challenges must achieve >= 80% via the deterministic 5:factor AI engine.
+  // Strict rule: Directly allocated challenges are always displayed with 100% priority.
+  // Open challenges must achieve >= 80% capability match via the AI matching engine.
   const matchedChallenges = React.useMemo(() => {
-    const allStage3Plus = challenges.filter(
-      (challenge) => (getStageForStatus(challenge.status)?.stageNumber || 0) >= 3
-    );
+    const allEligible = challenges.filter((challenge) => {
+      const isAssigned = isAssignedToUniversity(challenge.assignedHEI, university);
+      const stage = getStageForStatus(challenge.status)?.stageNumber || challenge.stageNumber || 0;
+      return isAssigned || stage >= 3;
+    });
 
-    const scored = allStage3Plus.map((challenge) => {
-      const match = calculateHEIMatchScore(challenge, university);
+    const scored = allEligible.map((challenge) => {
       const isDirectlyAssigned = isAssignedToUniversity(challenge.assignedHEI, university);
+      const match = calculateHEIMatchScore(challenge, university);
+      // Directly assigned challenges always have 100% priority match score
+      if (isDirectlyAssigned && match.matchScore < 100) {
+        match.matchScore = 100;
+        if (!match.matchingReasons.some(r => r.includes('Officially assigned') || r.includes('allocated'))) {
+          match.matchingReasons.unshift(`Officially allocated to ${university.shortName || university.name} by Government / AI framework.`);
+        }
+      }
       return { challenge, match, isDirectlyAssigned };
     });
 
-    // Strictly filter for capability match score >= 80%
-    const qualifiedMatches = scored.filter((item) => item.match.matchScore >= 80);
+    // Directly assigned challenges are always qualified, plus open challenges with matchScore >= 80%
+    const qualifiedMatches = scored.filter((item) => item.isDirectlyAssigned || item.match.matchScore >= 80);
 
-    // Sort descending: highest match scores first (100%, 90%, 85%, etc.)
-    qualifiedMatches.sort((a, b) => b.match.matchScore - a.match.matchScore);
+    // Sort descending: directly assigned first, then highest match scores
+    qualifiedMatches.sort((a, b) => {
+      if (a.isDirectlyAssigned && !b.isDirectlyAssigned) return -1;
+      if (!a.isDirectlyAssigned && b.isDirectlyAssigned) return 1;
+      return b.match.matchScore - a.match.matchScore;
+    });
 
     return qualifiedMatches;
   }, [challenges, university]);

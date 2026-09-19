@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Map, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Map, Loader2, AlertCircle, Filter } from 'lucide-react';
 import { MapViewport } from './MapViewport';
 import { MapSidebar, FilterState } from './MapSidebar';
 import { useMapData } from '../../services/mapDataService';
@@ -27,6 +27,7 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
     useMapData();
 
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState<boolean>(false);
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
     statuses: [],
@@ -125,16 +126,34 @@ export const JharkhandMapExplorer: React.FC<JharkhandMapExplorerProps> = ({
       )}
 
       {/* ── Main body ── */}
-      <div className="flex flex-1 overflow-hidden min-h-[520px] h-full w-full">
+      <div className="relative flex flex-1 overflow-hidden min-h-[380px] sm:min-h-[520px] h-full w-full">
+        {/* Mobile Floating Filter Toggle Button */}
+        <button
+          onClick={() => setIsMobileSidebarOpen(true)}
+          className="md:hidden absolute top-3 left-3 z-[400] bg-white/95 hover:bg-white text-[#201C18] border border-[#E4DDD1] px-3 py-1.5 rounded-xl shadow-md text-xs font-bold flex items-center gap-1.5 cursor-pointer backdrop-blur-xs active:scale-95"
+          title="Open Filters & Districts"
+        >
+          <Filter className="w-3.5 h-3.5 text-[#2C6E49]" />
+          <span>Filters &amp; Districts</span>
+          {filters.categories.length + filters.statuses.length + filters.riskLevels.length > 0 && (
+            <span className="w-2 h-2 rounded-full bg-[#2C6E49]" />
+          )}
+        </button>
+
         <MapSidebar
           districtStats={districtStats}
           challenges={filteredChallenges}
           selectedDistrict={selectedDistrict}
-          onDistrictSelect={setSelectedDistrict}
+          onDistrictSelect={(d) => {
+            setSelectedDistrict(d);
+            setIsMobileSidebarOpen(false);
+          }}
           filters={filters}
           onFiltersChange={setFilters}
           totalCount={filteredChallenges.length}
           criticalCount={filteredChallenges.filter(c => c.riskLevel === 'CRITICAL').length}
+          isOpenOnMobile={isMobileSidebarOpen}
+          onCloseMobile={() => setIsMobileSidebarOpen(false)}
         />
 
         <MapViewport

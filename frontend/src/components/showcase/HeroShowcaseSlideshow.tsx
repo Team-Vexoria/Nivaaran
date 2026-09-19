@@ -326,11 +326,11 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
                   loading="eager"
                 />
 
-                <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 flex items-center gap-2 flex-wrap">
+                <div className="absolute bottom-3 left-3 right-3 sm:left-auto sm:right-4 flex items-center justify-center sm:justify-end gap-2 flex-wrap">
                   <button
                     type="button"
                     onClick={() => setIsProblemOverviewOpen(true)}
-                    className="bg-slate-950/80 hover:bg-slate-900 text-emerald-400 border border-emerald-500/40 text-xs sm:text-sm font-extrabold px-3 sm:px-4 py-2 rounded-xl backdrop-blur-md shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                    className="bg-slate-950/80 hover:bg-slate-900 text-emerald-400 border border-emerald-500/40 text-xs sm:text-sm font-extrabold px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl backdrop-blur-md shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
                   >
                     <FileText className="w-4 h-4 text-emerald-300" />
                     <span>View Problem Overview</span>
@@ -338,7 +338,7 @@ export const HeroShowcaseSlideshow: React.FC<HeroShowcaseSlideshowProps> = ({
 
                   <button
                     onClick={handleNext}
-                    className="bg-slate-950/80 hover:bg-slate-900 text-amber-400 border border-amber-500/40 text-xs sm:text-sm font-extrabold px-3 sm:px-4 py-2 rounded-xl backdrop-blur-md shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
+                    className="bg-slate-950/80 hover:bg-slate-900 text-amber-400 border border-amber-500/40 text-xs sm:text-sm font-extrabold px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl backdrop-blur-md shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
                   >
                     <span>Explore 5 Live Ground Cases</span>
                     <ArrowRight className="w-4 h-4" />

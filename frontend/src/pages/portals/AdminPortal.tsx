@@ -299,35 +299,37 @@ export const AdminPortal: React.FC = () => {
                   Super Admin Command Matrix
                 </span>
               </div>
-              <span className="text-xs text-[#5A5247] font-semibold block mt-0.5">
+              <span className="text-xs text-[#5A5247] font-semibold hidden md:block mt-0.5">
                 Statewide Incident Traceability, Autonomous HEI Engineering Labs &amp; CAP Emergency Broadcast
               </span>
             </div>
           </div>
 
           {/* Quick Header Actions */}
-          <div className="flex items-center space-x-2.5 shrink-0 flex-wrap">
+          <div className="flex items-center space-x-1.5 sm:space-x-2.5 shrink-0">
             <button
               onClick={() => setIsBroadcastOpen(true)}
-              className="flex items-center space-x-2 text-xs bg-[#B5502D] hover:bg-[#9E4223] text-white font-black px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer active:scale-95"
+              className="flex items-center space-x-1.5 sm:space-x-2 text-xs bg-[#B5502D] hover:bg-[#9E4223] text-white font-black px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-xs transition-all cursor-pointer active:scale-95"
             >
-              <Radio className="w-4 h-4" />
-              <span>CAP Broadcast</span>
+              <Radio className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+              <span className="hidden sm:inline">CAP Broadcast</span>
+              <span className="sm:hidden">CAP</span>
             </button>
 
             <button
               onClick={() => setIsBriefingOpen(true)}
-              className="flex items-center space-x-2 text-xs bg-[#2C6E49] hover:bg-[#23583a] text-white font-black px-4 py-2 rounded-xl shadow-xs transition-all cursor-pointer active:scale-95"
+              className="flex items-center space-x-1.5 sm:space-x-2 text-xs bg-[#2C6E49] hover:bg-[#23583a] text-white font-black px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-xs transition-all cursor-pointer active:scale-95"
             >
-              <Printer className="w-4 h-4" />
-              <span>DM Dossier (PDF)</span>
+              <Printer className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+              <span className="hidden sm:inline">DM Dossier (PDF)</span>
+              <span className="sm:hidden">PDF</span>
             </button>
 
             <button
               onClick={handleReturnHome}
-              className="flex items-center space-x-1.5 text-xs bg-white hover:bg-[#EAE4D8] text-[#5A5247] hover:text-[#201C18] font-black px-3.5 py-2 rounded-xl transition-all cursor-pointer border border-[#E4DDD1] shadow-2xs"
+              className="flex items-center space-x-1 sm:space-x-1.5 text-xs bg-white hover:bg-[#EAE4D8] text-[#5A5247] hover:text-[#201C18] font-black px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-xl transition-all cursor-pointer border border-[#E4DDD1] shadow-2xs"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
               <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>

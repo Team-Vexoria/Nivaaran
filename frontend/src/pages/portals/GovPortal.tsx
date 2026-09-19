@@ -40,7 +40,8 @@ import {
   ExternalLink,
   Copy,
   Trash2,
-  Search
+  Search,
+  HelpCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { JharkhandMapExplorer } from '../../components/map/JharkhandMapExplorer';
@@ -60,6 +61,7 @@ import { AIPerformanceCard } from '../../components/charts/AIPerformanceCard';
 import { useAnalytics } from '../../hooks/useAnalytics';
 import { workflowStore, STORE_EVENT } from '../../services/workflowStore';
 import { JHARKHAND_UNIVERSITIES } from '../../services/universityData';
+import { isAssignedToUniversity } from '../../services/heiMatchingEngine';
 import { ClusterReviewTab } from '../../components/gov/ClusterReviewTab';
 import { DeploymentApprovalTab } from '../../components/gov/DeploymentApprovalTab';
 import { ClosureTab } from '../../components/gov/ClosureTab';
@@ -73,8 +75,9 @@ import { InnovationOutcomesTracker } from '../../components/analytics/Innovation
 import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
 import { PFMSDisbursementLedger } from '../../components/gov/PFMSDisbursementLedger';
 import { IoTSensorTelemetryStreamer } from '../../components/iot/IoTSensorTelemetryStreamer';
+import { HelpUserGuide } from '../../components/help/HelpUserGuide';
 
-type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports' | 'deployment' | 'closure' | 'clusters' | 'messages' | 'outcomes' | 'pfms' | 'iot';
+type GovTab = 'overview' | 'map' | 'queue' | 'universities' | 'proposals' | 'reports' | 'deployment' | 'closure' | 'clusters' | 'messages' | 'outcomes' | 'pfms' | 'iot' | 'help';
 
 interface HEIData {
   id: string;
@@ -811,7 +814,10 @@ const cleanDisplayString = (val: any, fallback: string): string => {
 };
 
 const HEIDetailModal: React.FC<HEIDetailModalProps> = ({ hei, challenges, onClose }) => {
-  const assignedChallenges = challenges.filter(c => c.assignedHEI === hei.name || c.district === hei.district);
+  const assignedChallenges = challenges.filter(c => {
+    const uniDoc = JHARKHAND_UNIVERSITIES.find(u => u.id === hei.id || u.name === hei.name);
+    return (uniDoc && isAssignedToUniversity(c.assignedHEI, uniDoc)) || c.assignedHEI === hei.name || c.district === hei.district;
+  });
 
   return (
     <div className="fixed inset-0 z-[300] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
@@ -1083,6 +1089,7 @@ export const GovPortal: React.FC = () => {
     { id: 'messages',     label: 'Stakeholder Comms',     icon: <MessageSquare className="w-3.5 h-3.5" /> },
     { id: 'reports',      label: 'Impact KPIs',           icon: <TrendingUp className="w-3.5 h-3.5" /> },
     { id: 'closure',      label: 'Closure',               icon: <Archive className="w-3.5 h-3.5" /> },
+    { id: 'help',         label: 'Help & Guide',          icon: <HelpCircle className="w-3.5 h-3.5" /> },
   ];
 
   const pendingCount = challenges.filter(c => c.status === 'Under Review').length;
@@ -1165,7 +1172,7 @@ export const GovPortal: React.FC = () => {
                   Gov Portal
                 </span>
               </div>
-              <p className="text-[10px] text-[#5A5247] font-semibold">Dept of Higher & Technical Education, Jharkhand</p>
+              <p className="text-[10px] text-[#5A5247] font-semibold hidden sm:block">Dept of Higher &amp; Technical Education, Jharkhand</p>
             </div>
           </div>
 
@@ -2331,6 +2338,13 @@ export const GovPortal: React.FC = () => {
           </div>
           );
         })()}
+
+        {/* HELP & USER GUIDE TAB */}
+        {activeTab === 'help' && (
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 max-w-7xl mx-auto w-full">
+            <HelpUserGuide onNavigateHome={() => setActiveTab('overview')} />
+          </div>
+        )}
       </main>
 
       {/* Toast */}

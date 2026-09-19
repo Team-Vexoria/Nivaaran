@@ -82,6 +82,14 @@ class WorkflowStore {
               updated.assignedHEI = seedCh.assignedHEI;
               updated.assignedDept = seedCh.assignedDept;
             }
+            if (seedCh && seedCh.id.startsWith('DEMO-')) {
+              updated.title = seedCh.title;
+              updated.description = seedCh.description;
+              updated.category = seedCh.category;
+              updated.assignedHEI = seedCh.assignedHEI;
+              updated.assignedDept = seedCh.assignedDept;
+              updated.assignedProjectId = seedCh.assignedProjectId;
+            }
             if (c.id && DISTRICT_PROBLEM_IMAGES[c.id]) {
               updated.evidenceUrls = [DISTRICT_PROBLEM_IMAGES[c.id]];
             }
@@ -101,6 +109,7 @@ class WorkflowStore {
                 ...p,
                 universityId: seedPrj.universityId,
                 universityName: seedPrj.universityName,
+                challengeTitle: seedPrj.challengeTitle,
                 facultyMentorName: seedPrj.facultyMentorName,
                 facultyEmail: seedPrj.facultyEmail,
                 status: seedPrj.status,
