@@ -21,7 +21,7 @@ interface FeedComment {
   id: string;
   postId?: string;
   author: string;
-  role: 'Citizen' | 'Government Admin' | 'University Student';
+  role: 'Citizen' | 'Government Admin' | 'University Student' | 'Faculty / Mentor' | 'Industry / MSME';
   text: string;
   timestamp: string;
   isVerifiedGovt?: boolean;
@@ -55,6 +55,61 @@ export const CitizenCommunityFeedTab: React.FC = () => {
   // 15 REAL RECENT JHARKHAND COMMUNITY POSTS
   // ═════════════════════════════════════════════════════════════════════════════
   const seedPosts: FeedPostUI[] = [
+    {
+      "id": "POST-TUPUDANA-001",
+      "author": "Citizen Action Cell (Tupudana Industrial Belt, Ranchi)",
+      "district": "Ranchi",
+      "block": "Hatia",
+      "title": "Catastrophic Culvert Failure & Roadway Washout on Tupudana–Balalong Industrial Corridor [NIV-JH-RNC-2026-0042]",
+      "content": "🎉 100% COMPLETED & RESOLVED: The catastrophic 4.2m deep crater and washed-out culvert on Tupudana–Balalong Link Road (KM 4+350) has been fully reconstructed with an engineered Twin-Cell RCC Box Culvert (2x 4.5m x 3.0m). Carriageway permanently re-opened to heavy freight, school buses, and emergency ambulances. Live field IoT sensors show 0.2mm static deflection (well below 5.6mm limit). All 16 lifecycle stages 100% completed!",
+      "upvotes": 284,
+      "hasUpvoted": false,
+      "timestamp": "Verified Resolved",
+      "category": "Bridge Infrastructure & Transport Safety",
+      "status": "Stage 16: Closed · 100% Resolved",
+      "citizenReportCount": 14,
+      "evidenceUrl": DISTRICT_PROBLEM_IMAGES['TUPUDANA-CULVERT'],
+      "comments": [
+        {
+          "id": "C-TUP-01",
+          "author": "Sunil Linda (Hatia Commercial Logistics Union)",
+          "role": "Citizen",
+          "text": "Tremendous relief for the entire industrial corridor! 35+ stone tipper trucks and over 1,200 daily commuters are moving safely across the newly cast twin-cell bridge without any detour. Roadway is smooth and safe!",
+          "timestamp": "1 day ago"
+        },
+        {
+          "id": "C-TUP-02",
+          "author": "Rameshwar Oraon (Mukhiya, Gram Panchayat Balalong)",
+          "role": "Citizen",
+          "text": "14 tribal villages are permanently reconnected with Hatia sub-divisional hospital! Ambulance transit time is back from 45 mins to just 8 mins. High pedestrian safety barriers and storm runoff aprons are built to top standard.",
+          "timestamp": "18 hours ago"
+        },
+        {
+          "id": "C-TUP-03",
+          "author": "District Disaster Management Authority (DC Ranchi Cell)",
+          "role": "Government Admin",
+          "isVerifiedGovt": true,
+          "text": "OFFICIAL COMPLETION ORDER: Emergency twin-cell RCC box culvert project (DPR ₹39.05L via SDMF + TIEMA CSR) successfully completed and certified. 24-hour static proof load test (2x 40t dumpers) passed with 0.42mm deflection vs 5.625mm limit. Permanent bituminous carriageway open to traffic. Case NIV-JH-RNC-2026-0042 officially closed.",
+          "timestamp": "6 hours ago",
+          "beforeImg": DISTRICT_PROBLEM_IMAGES['TUPUDANA-CULVERT'],
+          "afterImg": DISTRICT_PROBLEM_IMAGES['TUPUDANA-RESTORED'] || 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?auto=format&fit=crop&w=800&q=80'
+        },
+        {
+          "id": "C-TUP-04",
+          "author": "Dr. Anand Prakash & Manish Pandey (Civil Engg, BIT Mesra)",
+          "role": "Faculty / Mentor",
+          "text": "BIT Mesra R&D Team completed all 6 milestones: HEC-RAS 2D simulation (Q_peak = 42.6 m³/s), M35 concrete casting, Ultrasonic Pulse Velocity testing (4,410 m/s), and real-time DTS telemetry integration. Technical DPR and lessons learned archived to State Infrastructure Knowledge Base.",
+          "timestamp": "4 hours ago"
+        },
+        {
+          "id": "C-TUP-05",
+          "author": "Tupudana Industrial Estate Manufacturers Association (TIEMA)",
+          "role": "Industry / MSME",
+          "text": "₹15.00L CSR co-funding fully disbursed through PFMS milestone escrow. Freight logistics restored with estimated ₹14.8L/month savings in fuel and vehicle downtime. Proud to partner with Nivaaran and BIT Mesra!",
+          "timestamp": "2 hours ago"
+        }
+      ]
+    },
     {
       "id": "POST-101",
       "author": "Citizen Cell (Lodna Colliery, Dhanbad)",
@@ -1627,7 +1682,15 @@ export const CitizenCommunityFeedTab: React.FC = () => {
             })),
           }));
 
-        setPosts(applyUpvotesToPosts([...customUserPosts, ...seedPosts]));
+        // Ensure Tupudana 100% completed post is permanently pinned at index 0
+        const combined = [...customUserPosts, ...seedPosts];
+        const tupudanaIndex = combined.findIndex(p => p.id === 'POST-TUPUDANA-001' || p.title?.includes('Tupudana') || p.title?.includes('0042'));
+        let finalFeed = combined;
+        if (tupudanaIndex > 0) {
+          const tupudanaPost = combined[tupudanaIndex];
+          finalFeed = [tupudanaPost, ...combined.slice(0, tupudanaIndex), ...combined.slice(tupudanaIndex + 1)];
+        }
+        setPosts(applyUpvotesToPosts(finalFeed));
       } else {
         setPosts(applyUpvotesToPosts(seedPosts));
       }
@@ -1992,15 +2055,22 @@ export const CitizenCommunityFeedTab: React.FC = () => {
 
                 <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
                   <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full whitespace-nowrap ${
-                    post.isProgress
-                      ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                      : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    post.status?.includes('100%') || post.status?.includes('Closed') || post.status?.includes('Resolved')
+                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 font-extrabold shadow-2xs'
+                      : post.isProgress
+                        ? 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                        : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                   }`}>
-                    {post.isProgress ? (
+                    {post.status?.includes('100%') || post.status?.includes('Closed') ? (
+                      <span className="inline-flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        {tr(post.status, currentLang)}
+                      </span>
+                    ) : post.isProgress ? (
                       <span className="inline-flex items-center"><Zap className="w-3 h-3 mr-1" />{tr(post.status, currentLang)}</span>
                     ) : tr(post.status, currentLang)}
                   </span>
-                  {post.id && !post.isProgress && (
+                  {post.id && !post.isProgress && !post.id.startsWith('POST-TUPUDANA') && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();

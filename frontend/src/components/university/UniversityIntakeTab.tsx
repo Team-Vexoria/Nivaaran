@@ -57,10 +57,23 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
     // Directly assigned challenges are always qualified, plus open challenges with matchScore >= 80%
     const qualifiedMatches = scored.filter((item) => item.isDirectlyAssigned || item.match.matchScore >= 80);
 
-    // Sort descending: directly assigned first, then highest match scores
+    // Sort descending:
+    // 1. Flagship demo problem (Tupudana / NIV-JH-RNC-2026-0042) always comes FIRST
+    // 2. Directly assigned challenges
+    // 3. Highest priorityScore, then matchScore
     qualifiedMatches.sort((a, b) => {
+      const isTupudanaA = a.challenge.id === 'DEMO-CH-TUPUDANA' || a.challenge.reportId === 'NIV-JH-RNC-2026-0042';
+      const isTupudanaB = b.challenge.id === 'DEMO-CH-TUPUDANA' || b.challenge.reportId === 'NIV-JH-RNC-2026-0042';
+      if (isTupudanaA && !isTupudanaB) return -1;
+      if (!isTupudanaA && isTupudanaB) return 1;
+
       if (a.isDirectlyAssigned && !b.isDirectlyAssigned) return -1;
       if (!a.isDirectlyAssigned && b.isDirectlyAssigned) return 1;
+
+      const priorityA = a.challenge.priorityScore || 0;
+      const priorityB = b.challenge.priorityScore || 0;
+      if (priorityB !== priorityA) return priorityB - priorityA;
+
       return b.match.matchScore - a.match.matchScore;
     });
 
@@ -314,9 +327,26 @@ export const UniversityIntakeTab: React.FC<UniversityIntakeTabProps> = ({
                       <span>R&D Lab · Student Workspace →</span>
                     </button>
                   ) : (
-                    <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200">
-                      ✓ Solution Deployed
-                    </span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-emerald-800 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-200 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>✓ Deployed &amp; Resolved</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onNavigateToStage) {
+                            onNavigateToStage(stageNum, challenge);
+                          } else {
+                            onAcceptAndProceedToTeam(challenge, match.recommendedDepartment || university.departments[0]);
+                          }
+                        }}
+                        className="px-3.5 py-1.5 bg-[#2C6E49] hover:bg-[#23583a] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center space-x-1 cursor-pointer"
+                      >
+                        <span>Open Workspace Dossier →</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

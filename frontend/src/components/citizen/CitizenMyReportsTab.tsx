@@ -10,6 +10,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 import { SupportedLanguage } from '../../i18n/translations';
 import { tr } from '../../i18n/translationEngine';
+import { DISTRICT_PROBLEM_IMAGES } from '../../services/districtProblemImages';
 
 interface CitizenMyReportsTabProps {
   onOpenReportModal: () => void;
@@ -42,6 +43,277 @@ function getTimelineDotColor(status?: string): string {
   return 'bg-slate-600';
 }
 
+// Canonical 16-Stage Flagship Report for Tupudana Culvert Failure
+const TUPUDANA_FLAGSHIP_REPORT: ChallengeDoc = {
+  id: 'DEMO-CH-TUPUDANA',
+  reportId: 'NIV-JH-RNC-2026-0042',
+  title: 'Catastrophic Culvert Failure & Roadway Washout on Tupudana–Balalong Industrial Corridor',
+  district: 'Ranchi',
+  block: 'Hatia',
+  village: 'Tupudana–Balalong',
+  category: 'Bridge Infrastructure & Transport Safety',
+  status: 'Closed',
+  summary: 'Monsoon flash flood surge overtopped the aging 1.8m masonry culvert, causing total foundation scour and a 4.2m deep crater across the roadway. Direct arterial access severed for Hatia rail yard, 35 MSME industrial units, and 14 tribal villages (22,000 residents). Ambulances diverted 14.5 km via Ring Road (+35 mins). All 16 engineering & administrative stages successfully completed.',
+  evidenceUrl: DISTRICT_PROBLEM_IMAGES['TUPUDANA-CULVERT'] || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgK4i__LQ6nJDp1_hhwpjez6WsvLfL4TTu1jJJwb-MWw&s=10',
+  evidenceUrls: [
+    DISTRICT_PROBLEM_IMAGES['TUPUDANA-CULVERT'] || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgK4i__LQ6nJDp1_hhwpjez6WsvLfL4TTu1jJJwb-MWw&s=10'
+  ],
+  locationCoords: { lat: 23.2842, lng: 85.3126 },
+  formattedAddress: 'Tupudana–Balalong Link Road (KM 4+350), Hatia Block, Ranchi District, Jharkhand',
+  priorityScore: 94.05,
+  confidenceScore: 96.4,
+  riskLevel: 'CRITICAL',
+  aiReasoning: 'Arterial collapse cutting off 22,000 residents & 35 MSMEs. 14 corroborated citizen reports clustered. P1 priority assigned. Full 16-stage lifecycle completed with BIT Mesra civil engineering and Jharkhand RCD.',
+  govtOfficerNote: 'Emergency restoration completed. 5-milestone twin-cell RCC box culvert cast and tested by BIT Mesra. Carriageway re-opened to traffic. Project closed with 100% positive citizen satisfaction and archived to State Knowledge Base.',
+  govtValidatedBy: 'Shri Rahul Sinha, DC Ranchi',
+  govtValidatedAt: new Date(Date.now() - 35 * 86400000).toISOString(),
+  assignedHEI: 'Birla Institute of Technology (BIT Mesra), Ranchi',
+  assignedDept: 'Department of Civil and Environmental Engineering',
+  createdAt: new Date(Date.now() - 42 * 86400000).toISOString(),
+};
+
+const TUPUDANA_FLAGSHIP_CHALLENGE: Challenge = {
+  id: 'DEMO-CH-TUPUDANA',
+  reportId: 'NIV-JH-RNC-2026-0042',
+  title: 'Catastrophic Culvert Failure & Roadway Washout on Tupudana–Balalong Industrial Corridor',
+  description: 'Monsoon flash flood surge overtopped the aging 1.8m masonry culvert, causing total foundation scour and a 4.2m deep crater across the roadway. Direct arterial access severed for Hatia rail yard, 35 MSME industrial units, and 14 tribal villages (22,000 residents). Ambulances diverted 14.5 km via Ring Road (+35 mins).',
+  district: 'Ranchi',
+  block: 'Hatia',
+  village: 'Tupudana–Balalong',
+  locationCoords: { lat: 23.2842, lng: 85.3126 },
+  formattedAddress: 'Tupudana–Balalong Link Road (KM 4+350), Hatia Block, Ranchi District, Jharkhand',
+  status: 'Closed',
+  stageNumber: 16,
+  stageName: 'Stage 16: Closure & Open Learning',
+  category: 'Bridge Infrastructure & Transport Safety',
+  aiAnalysis: {
+    category: 'Bridge Infrastructure & Transport Safety',
+    categoryCode: 'GOV-CIVIC-04',
+    matchedProblem: 'Catastrophic Culvert Failure & Roadway Washout on Tupudana–Balalong Industrial Corridor',
+    confidenceScore: 96.4,
+    priorityScore: 94.05,
+    riskLevel: 'CRITICAL',
+    factors: {
+      populationImpact: { score: 23, max: 25, reason: '22,000+ citizens and 35 MSME manufacturing units severed.' },
+      economicLifeSaving: { score: 24, max: 25, reason: 'High freight disruption and emergency ambulance reroute.' },
+      resolutionCostFeasibility: { score: 24, max: 25, reason: 'Twin-cell box culvert solution funded via SDMF & TIEMA CSR.' },
+      hazardUrgency: { score: 25, max: 25, reason: 'Active 4.2m deep chasm on arterial carriageway.' },
+    },
+    reasoning: 'Critical infrastructure failure in Ranchi. Verified through 14 corroborated reports and drone LiDAR diagnostic.',
+    needsHumanVerification: false,
+    recommendedUniversityDepts: ['Civil and Environmental Engineering', 'Hydraulic Engineering', 'Structural Mechanics'],
+  },
+  priorityScore: 94.05,
+  confidenceScore: 96.4,
+  riskLevel: 'CRITICAL',
+  evidenceUrls: [
+    DISTRICT_PROBLEM_IMAGES['TUPUDANA-CULVERT'] || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgK4i__LQ6nJDp1_hhwpjez6WsvLfL4TTu1jJJwb-MWw&s=10'
+  ],
+  govtOfficerNote: 'Emergency restoration completed. 5-milestone twin-cell RCC box culvert cast and tested by BIT Mesra. Carriageway re-opened to traffic. Project closed with 100% positive citizen satisfaction and archived to State Knowledge Base.',
+  govtValidatedBy: 'Shri Rahul Sinha, DC Ranchi',
+  govtValidatedAt: new Date(Date.now() - 35 * 86400000).toISOString(),
+  assignedHEI: 'Birla Institute of Technology (BIT Mesra), Ranchi',
+  assignedDept: 'Department of Civil and Environmental Engineering',
+  assignedProjectId: 'PRJ-TUPUDANA-0042',
+  createdAt: new Date(Date.now() - 42 * 86400000).toISOString(),
+  updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
+};
+
+const TUPUDANA_16_STAGE_TIMELINE: TimelineEvent[] = [
+  {
+    id: 'TL-TUP-16',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'status_changed',
+    actor: 'Jharkhand State Innovation Council',
+    actorRole: 'Government Department',
+    description: 'Stage 16: Platform Closure & Open Learning — Complete DPR, CAD drawings, and HEC-RAS hydraulic models archived in Provincial Knowledge Repository as a reusable blueprint for all 24 Jharkhand districts.',
+    previousValue: 'Measuring Impact',
+    newValue: 'Closed',
+    timestamp: new Date(Date.now() - 1 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-15',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'impact_measured',
+    actor: 'District Monitoring Cell & Citizen Jury',
+    actorRole: 'Citizen Group',
+    description: 'Stage 15: Impact Measurement & Citizen Verification — Verified 35 minutes saved per commute trip, ₹14.8 Lakhs/month logistics fuel savings for 35 MSMEs, and 100% positive citizen feedback.',
+    previousValue: 'Resolved',
+    newValue: 'Measuring Impact',
+    timestamp: new Date(Date.now() - 3 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-14',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'status_changed',
+    actor: 'Executive Engineer, RCD Ranchi',
+    actorRole: 'Government Department',
+    description: 'Stage 14: Statewide Deployment & Handover — Bituminous road approach surfacing (DBM/BC), W-beam metallic crash barriers, and solar blinkers completed. Carriageway re-opened to heavy traffic.',
+    previousValue: 'Outcome Audit',
+    newValue: 'Resolved',
+    timestamp: new Date(Date.now() - 7 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-13',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'audit_completed',
+    actor: 'BIT Mesra Third-Party Quality Audit Cell',
+    actorRole: 'Faculty / Mentor',
+    description: 'Stage 13: Technical & Community Validation — Non-destructive Ultrasonic Pulse Velocity test (4,410 m/s) and 24-hour static proof load test (2x 40t trucks, 0.42mm deflection vs 5.625mm limit) approved.',
+    previousValue: 'Pilot Active',
+    newValue: 'Outcome Audit',
+    timestamp: new Date(Date.now() - 12 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-12',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'pilot_active',
+    actor: 'Fast-Track Construction Squad',
+    actorRole: 'Contractor',
+    description: 'Stage 12: Field Pilot Deployment — Stream bypass cofferdam installed, foundation excavation down to -2.8m, and M35 RCC bottom raft slab cast with moisture sensor telemetry.',
+    previousValue: 'Prototype Active',
+    newValue: 'Pilot Active',
+    timestamp: new Date(Date.now() - 25 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-11',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'prototype_active',
+    actor: 'BIT Mesra Civil Engineering Team',
+    actorRole: 'University Student',
+    description: 'Stage 11: Engineering Prototype Development — Complete AutoCAD GAD structural reinforcement blueprints, bar bending schedules, and Jharkhand SoR BoQ approved.',
+    previousValue: 'Industry Collaboration',
+    newValue: 'Prototype Active',
+    timestamp: new Date(Date.now() - 32 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-10',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'csr_partnered',
+    actor: 'Tupudana Industrial Estate Manufacturers Association (TIEMA)',
+    actorRole: 'Industry Partner',
+    description: 'Stage 10: Industry & CSR Collaboration — TIEMA sanctioned ₹10.00 Lakhs CSR co-funding alongside ₹29.05 Lakhs from State Disaster Mitigation Fund (SDMF) under DC Ranchi.',
+    previousValue: 'Proposal Submitted',
+    newValue: 'Industry Collaboration',
+    timestamp: new Date(Date.now() - 35 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-09',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'proposal_submitted',
+    actor: 'Dr. Anand Prakash (BIT Mesra Mentor)',
+    actorRole: 'Faculty / Mentor',
+    description: 'Stage 9: Solution Proposal & R&D Workplan — Submitted comprehensive technical diagnostic: HEC-RAS 2D simulation (Q_peak = 42.6 m³/s) and twin-cell RCC box culvert proposal (2x 4.5m x 3.0m).',
+    previousValue: 'In Progress',
+    newValue: 'Proposal Submitted',
+    timestamp: new Date(Date.now() - 37 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-08',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'team_formed',
+    actor: 'BIT Mesra Student Chapter',
+    actorRole: 'University Student',
+    description: 'Stage 8: Team Formation & Project Initiation — Multidisciplinary team DEMO-TEAM-BIT-042 formed with 4 civil & geomatics scholars led by Manish Pandey under Prof. Anand Prakash.',
+    previousValue: 'University Accepted',
+    newValue: 'In Progress',
+    timestamp: new Date(Date.now() - 39 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-07',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'university_accepted',
+    actor: 'Head of Department, Civil Engg, BIT Mesra',
+    actorRole: 'Faculty / Mentor',
+    description: 'Stage 7: University Acceptance — BIT Mesra formally accepted the challenge docket JH-RNC-DPR-0042 within 4 hours 45 minutes.',
+    previousValue: 'HEI Matched',
+    newValue: 'University Accepted',
+    timestamp: new Date(Date.now() - 40 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-06',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'hei_matched',
+    actor: 'Nivaaran HEI Matching Engine',
+    actorRole: 'System AI',
+    description: 'Stage 6: Institution Matching — 4-Factor HEI algorithm matched BIT Mesra Civil & Environmental Engineering (Score 95.3%, Rank #1 statewide, 18.2km proximity).',
+    previousValue: 'Government Validated',
+    newValue: 'HEI Matched',
+    timestamp: new Date(Date.now() - 40 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-05',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'government_validated',
+    actor: 'Shri Rahul Sinha, DC Ranchi',
+    actorRole: 'Government Department',
+    description: 'Stage 5: Validation & Emergency Containment — Field inspection confirmed collapse. Executive Engineer RCD deployed reflective barricades, lighting, and bypass footbridge.',
+    previousValue: 'Prioritized',
+    newValue: 'Government Validated',
+    timestamp: new Date(Date.now() - 41 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-04',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'prioritized',
+    actor: 'Nivaaran AI Triage Engine',
+    actorRole: 'System AI',
+    description: 'Stage 4: Multi-Factor Prioritization — Computed 5-factor mathematical rubric: Severity=25, Urgency=24, Population=23, Evidence=25, Vulnerability=23. Priority Score: 94.05/100 (P1 Emergency).',
+    previousValue: 'Clustered',
+    newValue: 'Prioritized',
+    timestamp: new Date(Date.now() - 41 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-03',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'clustered',
+    actor: 'PostGIS Spatio-Temporal Cluster Engine',
+    actorRole: 'System AI',
+    description: 'Stage 3: Deduplication & Clustering — PostGIS ST_DWithin (250m) and pg_trgm similarity (0.91) merged 14 citizen complaints into Master Challenge CH-JH-RNC-2026-0042.',
+    previousValue: 'Under Review',
+    newValue: 'Clustered',
+    timestamp: new Date(Date.now() - 42 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-02',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'ai_triaged',
+    actor: 'Nivaaran Autonomous Perception Pipeline',
+    actorRole: 'System AI',
+    description: 'Stage 2: AI Understanding — Computer Vision detected structural concrete defect (96.4%) and roadway washout (94.8%). ASR transcribed Nagpuri voice note. Automated PII scrubbing redacted phone/Aadhaar/faces.',
+    previousValue: 'Submitted',
+    newValue: 'Under Review',
+    timestamp: new Date(Date.now() - 42 * 86400000).toISOString(),
+  },
+  {
+    id: 'TL-TUP-01',
+    entityType: 'challenge',
+    entityId: 'NIV-JH-RNC-2026-0042',
+    action: 'submitted',
+    actor: 'Sunil Linda & Mukhiya Rameshwar Oraon',
+    actorRole: 'Citizen Group',
+    description: 'Stage 1: Submission — Grievance lodged via IVR and WhatsApp Civic Bot with 3 geotagged photos of collapsed culvert crater at KM 4+350 Tupudana–Balalong corridor.',
+    previousValue: undefined,
+    newValue: 'Submitted',
+    timestamp: new Date(Date.now() - 42 * 86400000).toISOString(),
+  },
+];
+
 export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
   onOpenReportModal,
   currentLang = 'en'
@@ -67,12 +339,21 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
         mySubmittedIds = [];
       }
 
-      // Filter to ONLY reports submitted by the logged-in user
+      // Filter to ONLY reports submitted by the logged-in user + flagship Tupudana 16-stage report
       const userReports = incomingDocs.filter((doc) => {
         const docId = doc.id || '';
         const reportId = doc.reportId || '';
 
-        // Exclude all system pre-seeded demonstration challenges
+        // Explicitly include the flagship Tupudana Culvert Failure demonstration report in My Reports
+        if (
+          docId === 'DEMO-CH-TUPUDANA' ||
+          docId === 'NIV-JH-RNC-2026-0042' ||
+          reportId === 'NIV-JH-RNC-2026-0042'
+        ) {
+          return true;
+        }
+
+        // Exclude all other system pre-seeded demonstration challenges
         if (
           docId.startsWith('DEMO-CH-') ||
           reportId.startsWith('NIV-2026-00') ||
@@ -103,6 +384,11 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
         return false;
       });
 
+      // Guarantee that the flagship Tupudana 16-stage report is always present
+      if (!userReports.some(r => r.reportId === 'NIV-JH-RNC-2026-0042' || r.id === 'DEMO-CH-TUPUDANA')) {
+        userReports.unshift(TUPUDANA_FLAGSHIP_REPORT);
+      }
+
       setReports(userReports);
       setLoading(false);
     });
@@ -117,9 +403,16 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
       return;
     }
     const id = selectedReport.id || selectedReport.reportId;
-    const wfChallenge = workflowStore.getChallenge(id);
-    setWfStageNumber(wfChallenge?.stageNumber ?? null);
-    setTimelineEvents(workflowStore.getTimelineEvents(id));
+    const wfChallenge = workflowStore.getChallenge(id) || (id === 'DEMO-CH-TUPUDANA' || id === 'NIV-JH-RNC-2026-0042' ? TUPUDANA_FLAGSHIP_CHALLENGE : undefined);
+    setWfStageNumber(wfChallenge?.stageNumber ?? 16);
+    const events = workflowStore.getTimelineEvents(id);
+    if (events.length > 0) {
+      setTimelineEvents(events);
+    } else if (id === 'DEMO-CH-TUPUDANA' || id === 'NIV-JH-RNC-2026-0042') {
+      setTimelineEvents(TUPUDANA_16_STAGE_TIMELINE);
+    } else {
+      setTimelineEvents([]);
+    }
   }, [selectedReport?.id, selectedReport?.reportId]);
 
   const localizedStatusLabels: Partial<Record<string, string>> = {
@@ -395,13 +688,13 @@ export const CitizenMyReportsTab: React.FC<CitizenMyReportsTabProps> = ({
       {/* ── Detailed Government Incident Tracking Modal ───────────────────────── */}
       {selectedReport && (() => {
         const id = selectedReport.id || selectedReport.reportId;
-        const wfCh = workflowStore.getChallenge(id);
+        const wfCh = workflowStore.getChallenge(id) || (id === 'DEMO-CH-TUPUDANA' || id === 'NIV-JH-RNC-2026-0042' ? TUPUDANA_FLAGSHIP_CHALLENGE : null);
         return (
           <TrackingModal
             report={selectedReport}
-            wfStageNumber={wfStageNumber}
-            wfChallenge={wfCh || null}
-            timelineEvents={timelineEvents}
+            wfStageNumber={wfStageNumber ?? (id === 'DEMO-CH-TUPUDANA' || id === 'NIV-JH-RNC-2026-0042' ? 16 : null)}
+            wfChallenge={wfCh}
+            timelineEvents={timelineEvents.length > 0 ? timelineEvents : (id === 'DEMO-CH-TUPUDANA' || id === 'NIV-JH-RNC-2026-0042' ? TUPUDANA_16_STAGE_TIMELINE : [])}
             onClose={() => setSelectedReport(null)}
           />
         );

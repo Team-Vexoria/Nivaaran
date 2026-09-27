@@ -461,7 +461,7 @@ export const subscribeToChallenges = (callback: (challenges: ChallengeDoc[]) => 
         // IMPORTANT: Never let server data overwrite local DEMO seed challenges.
         // DEMO challenges have curated assignedHEI values that must be preserved.
         const realServerChallenges = serverChallenges
-          .filter((c: any) => !c.id?.startsWith('DEMO-'))
+          .filter((c: any) => !c.id?.startsWith('DEMO-') && c.id !== 'NIV-JH-RNC-2026-0042' && c.reportId !== 'NIV-JH-RNC-2026-0042')
           .map((sc: any) => {
             const local = localChallenges.find((lc: any) => lc.id === sc.id || lc.reportId === sc.reportId);
             if (local) {
@@ -542,7 +542,7 @@ export interface FeedCommentDoc {
   id?: string;
   postId?: string;
   author: string;
-  role: 'Citizen' | 'Government Admin' | 'University Student';
+  role: 'Citizen' | 'Government Admin' | 'University Student' | 'Faculty / Mentor' | 'Industry / MSME';
   text: string;
   timestamp?: string;
   isVerifiedGovt?: boolean;

@@ -16,6 +16,7 @@ import { CollaborationReviewPanel } from '../../components/university/Collaborat
 import { InnovationOutcomesTracker } from '../../components/analytics/InnovationOutcomesTracker';
 import { CrossPortalMessagingHub } from '../../components/communication/CrossPortalMessagingHub';
 import { PFMSDisbursementLedger } from '../../components/gov/PFMSDisbursementLedger';
+import { Building2 } from 'lucide-react';
 import { HelpUserGuide } from '../../components/help/HelpUserGuide';
 
 interface UniversityPortalProps {
@@ -83,6 +84,17 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
   const [selectedDeptForTeam, setSelectedDeptForTeam] = useState<DepartmentInfo | null>(null);
   const [activeProposalChallengeId, setActiveProposalChallengeId] = useState<string>(() => selectedChallengeId);
 
+  const uniAllocatedChallenges = React.useMemo(() => {
+    const list = challenges.filter(c => isAssignedToSelectedUni(c.assignedHEI));
+    return list.sort((a, b) => {
+      const isTupA = a.id === 'DEMO-CH-TUPUDANA' || a.reportId === 'NIV-JH-RNC-2026-0042';
+      const isTupB = b.id === 'DEMO-CH-TUPUDANA' || b.reportId === 'NIV-JH-RNC-2026-0042';
+      if (isTupA && !isTupB) return -1;
+      if (!isTupA && isTupB) return 1;
+      return 0;
+    });
+  }, [challenges, selectedUniversity]);
+
   const assignedChallenge: ChallengeDoc | null = React.useMemo(() => {
     if (selectedChallengeId) {
       const match = challenges.find(c => c.id === selectedChallengeId || c.reportId === selectedChallengeId);
@@ -91,6 +103,10 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
     if (activeChallengeForTeam && isAssignedToSelectedUni(activeChallengeForTeam.assignedHEI)) {
       return activeChallengeForTeam;
     }
+    // Prioritize Tupudana culvert challenge if allocated to this university
+    const tupudana = challenges.find(c => (c.id === 'DEMO-CH-TUPUDANA' || c.reportId === 'NIV-JH-RNC-2026-0042') && isAssignedToSelectedUni(c.assignedHEI));
+    if (tupudana) return tupudana;
+
     // Prioritize challenge directly allocated to this university
     const directlyAllocated = challenges.find(c => isAssignedToSelectedUni(c.assignedHEI));
     if (directlyAllocated) return directlyAllocated;
@@ -101,6 +117,16 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
     }
     return null;
   }, [challenges, selectedChallengeId, activeChallengeForTeam, assignedProject, selectedUniversity]);
+
+  useEffect(() => {
+    if (!selectedChallengeId && assignedChallenge) {
+      const id = assignedChallenge.id || assignedChallenge.reportId;
+      if (id) {
+        setSelectedChallengeId(id);
+        localStorage.setItem('nivaaran_active_challenge_id', id);
+      }
+    }
+  }, [assignedChallenge, selectedChallengeId]);
 
   useEffect(() => {
     if (currentUser) {
@@ -204,6 +230,67 @@ export const UniversityPortal: React.FC<UniversityPortalProps> = ({ onNavigateHo
 
       {/* Main Content Viewport */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+        {/* Active Allocated Challenge Switcher Banner */}
+        {uniAllocatedChallenges.length > 0 && (
+          <div className="bg-white border border-[#E4DDD1] rounded-2xl p-3.5 sm:p-4 mb-5 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-start sm:items-center space-x-3.5 min-w-0">
+              <div className="w-10 h-10 rounded-xl bg-[#2C6E49]/10 text-[#2C6E49] flex items-center justify-center shrink-0 border border-[#2C6E49]/20 shadow-2xs">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#2C6E49] bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    Active HEI R&amp;D Mandate
+                  </span>
+                  {assignedChallenge?.reportId && (
+                    <span className="text-[10px] font-mono font-extrabold text-[#6A6155] bg-[#FAF8F4] px-2 py-0.5 rounded border border-[#E4DDD1]">
+                      {assignedChallenge.reportId}
+                    </span>
+                  )}
+                  <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded border border-emerald-200">
+                    Stage {assignedChallenge?.stageNumber || 16}: {assignedChallenge?.status || 'Active'}
+                  </span>
+                  {assignedChallenge?.district && (
+                    <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200 hidden sm:inline">
+                      📍 {assignedChallenge.village ? `${assignedChallenge.village}, ` : ''}{assignedChallenge.district}
+                    </span>
+                  )}
+                </div>
+                <h3 className="text-sm sm:text-base font-extrabold text-[#201C18] truncate mt-1 font-heading">
+                  {assignedChallenge?.title || 'Select Challenge to View'}
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 shrink-0 self-end md:self-center">
+              <span className="text-xs font-extrabold text-[#6A6155] whitespace-nowrap hidden sm:inline">
+                Assigned Problem:
+              </span>
+              <select
+                aria-label="Select Assigned Problem"
+                value={assignedChallenge?.id || assignedChallenge?.reportId || selectedChallengeId}
+                onChange={(e) => {
+                  const nextId = e.target.value;
+                  setSelectedChallengeId(nextId);
+                  localStorage.setItem('nivaaran_active_challenge_id', nextId);
+                  const found = challenges.find(c => c.id === nextId || c.reportId === nextId);
+                  if (found) setActiveChallengeForTeam(found);
+                }}
+                className="px-3.5 py-2 bg-[#FAF8F4] border-2 border-[#2C6E49]/40 rounded-xl text-xs font-black text-[#201C18] focus:ring-2 focus:ring-[#2C6E49] focus:outline-none cursor-pointer max-w-[280px] sm:max-w-[420px] truncate shadow-xs hover:border-[#2C6E49]"
+              >
+                {uniAllocatedChallenges.map(c => {
+                  const id = c.id || c.reportId;
+                  return (
+                    <option key={id} value={id}>
+                      {c.reportId ? `[${c.reportId}] ` : ''}{c.title}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'intake-queue' && (
           <UniversityIntakeTab
             university={selectedUniversity}

@@ -16,6 +16,75 @@ const daysAgo = (days: number): string =>
 
 export const SEED_CHALLENGES: Challenge[] = [
   {
+    "id": "DEMO-CH-TUPUDANA",
+    "reportId": "NIV-JH-RNC-2026-0042",
+    "title": "Catastrophic Culvert Failure & Roadway Washout on Tupudana–Balalong Industrial Corridor",
+    "description": "Monsoon flash flood surge overtopped the aging 1.8m masonry culvert, causing total foundation scour and a 4.2m deep crater across the roadway. Direct arterial access severed for Hatia rail yard, 35 MSME industrial units, and 14 tribal villages (22,000 residents). Ambulances diverted 14.5 km via Ring Road (+35 mins).",
+    "district": "Ranchi",
+    "block": "Hatia",
+    "village": "Tupudana–Balalong",
+    "locationCoords": {
+      "lat": 23.2842,
+      "lng": 85.3126
+    },
+    "formattedAddress": "Tupudana–Balalong Link Road (KM 4+350), Hatia Block, Ranchi District, Jharkhand",
+    "status": "Closed",
+    "stageNumber": 16,
+    "stageName": "Stage 16: Closure & Open Learning",
+    "category": "Bridge Infrastructure & Transport Safety",
+    "aiAnalysis": {
+      "category": "Bridge Infrastructure & Transport Safety",
+      "categoryCode": "GOV-CIVIC-04",
+      "matchedProblem": "Catastrophic Culvert Failure & Roadway Washout on Tupudana–Balalong Industrial Corridor",
+      "confidenceScore": 96.4,
+      "priorityScore": 94.05,
+      "riskLevel": "CRITICAL",
+      "factors": {
+        "populationImpact": {
+          "score": 23,
+          "max": 25,
+          "reason": "Over 22,000+ citizens and 35 operational MSME factories cut off."
+        },
+        "economicLifeSaving": {
+          "score": 24,
+          "max": 25,
+          "reason": "Arterial freight corridor to Hatia rail freight yard paralyzed."
+        },
+        "resolutionCostFeasibility": {
+          "score": 24,
+          "max": 25,
+          "reason": "Twin-cell box culvert solution funded via SDMF & TIEMA CSR."
+        },
+        "hazardUrgency": {
+          "score": 25,
+          "max": 25,
+          "reason": "Active 4.2m deep chasm on arterial carriageway during monsoon flash flood."
+        }
+      },
+      "reasoning": "Critical infrastructure disaster in Ranchi. Verified through 14 corroborated reports and drone LiDAR diagnostic.",
+      "needsHumanVerification": false,
+      "recommendedUniversityDepts": [
+        "Civil and Environmental Engineering",
+        "Hydraulic Engineering",
+        "Structural Mechanics"
+      ]
+    },
+    "priorityScore": 94.05,
+    "confidenceScore": 96.4,
+    "riskLevel": "CRITICAL",
+    "evidenceUrls": [
+      DISTRICT_PROBLEM_IMAGES['TUPUDANA-CULVERT'] || 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgK4i__LQ6nJDp1_hhwpjez6WsvLfL4TTu1jJJwb-MWw&s=10'
+    ],
+    "govtOfficerNote": "Emergency restoration completed. 5-milestone twin-cell RCC box culvert cast and tested by BIT Mesra. Carriageway re-opened to traffic. Project closed with 100% positive citizen satisfaction and archived to State Knowledge Base.",
+    "govtValidatedBy": "Shri Rahul Sinha, DC Ranchi",
+    "govtValidatedAt": daysAgo(35),
+    "assignedHEI": "Birla Institute of Technology (BIT Mesra), Ranchi",
+    "assignedDept": "Department of Civil and Environmental Engineering",
+    "assignedProjectId": "PRJ-TUPUDANA-0042",
+    "createdAt": daysAgo(42),
+    "updatedAt": daysAgo(1)
+  },
+  {
     "id": "DEMO-CH-001",
     "reportId": "NIV-2026-001",
     "title": "Ground subsidence cracks and toxic CO gas venting near Lodna 4 Pits",
@@ -3334,6 +3403,109 @@ export const SEED_CHALLENGES: Challenge[] = [
 
 export const SEED_PROJECTS: Project[] = [
   {
+    "id": "PRJ-TUPUDANA-0042",
+    "challengeId": "DEMO-CH-TUPUDANA",
+    "challengeTitle": "Catastrophic Culvert Failure & Roadway Washout on Tupudana–Balalong Industrial Corridor",
+    "category": "Bridge Infrastructure & Transport Safety",
+    "district": "Ranchi",
+    "universityId": "UNI-BIT-MESRA",
+    "universityName": "Birla Institute of Technology, Mesra",
+    "facultyMentorName": "Dr. Anand Prakash (BIT Mesra, Ranchi)",
+    "facultyEmail": "aprakash.civil@bitmesra.ac.in",
+    "teamMembers": [
+      {
+        "id": "TM-TUP-01",
+        "name": "Manish Pandey",
+        "departmentName": "Department of Civil Engineering",
+        "role": "Team Lead & Structural Analyst",
+        "skills": ["Structural Analysis", "AutoCAD Civil 3D", "IRC:SP:13", "HEC-RAS"]
+      },
+      {
+        "id": "TM-TUP-02",
+        "name": "Ananya Roy",
+        "departmentName": "Department of Civil Engineering",
+        "role": "Hydrology & Geotechnical Modeler",
+        "skills": ["Hydraulic Modeling", "Geo-Studio", "Foundation Scour Analysis"]
+      },
+      {
+        "id": "TM-TUP-03",
+        "name": "Deepak Kumar Mahato",
+        "departmentName": "Department of Civil Engineering",
+        "role": "CAD Draftsman & Estimation Lead",
+        "skills": ["AutoCAD 2024", "Bar Bending Schedules", "Jharkhand SoR BoQ"]
+      },
+      {
+        "id": "TM-TUP-04",
+        "name": "Rohan Tirkey",
+        "departmentName": "Department of Civil Engineering",
+        "role": "Field Testing & Quality Auditor",
+        "skills": ["NDT Testing", "Concrete Rebound Hammer", "Ultrasonic Pulse Velocity"]
+      }
+    ],
+    "status": "Completed",
+    "milestones": [
+      {
+        "id": "MS-TUP-01",
+        "stageNumber": 8,
+        "title": "Team Formation & Site Topo Survey",
+        "description": "Total Station & Drone LiDAR contour survey along 250m upstream/downstream stream reach",
+        "status": "Completed",
+        "targetDays": 3,
+        "completedAt": daysAgo(35)
+      },
+      {
+        "id": "MS-TUP-02",
+        "stageNumber": 9,
+        "title": "HEC-RAS Hydrological Simulation & DPR",
+        "description": "Peak discharge Q_50 = 42.6 m³/s modeling and twin-cell RCC box culvert (2x 4.5m x 3.0m) design",
+        "status": "Completed",
+        "targetDays": 7,
+        "completedAt": daysAgo(28)
+      },
+      {
+        "id": "MS-TUP-03",
+        "stageNumber": 10,
+        "title": "Industry Co-Funding MoU (TIEMA CSR)",
+        "description": "Tripartite agreement executed: ₹24.05L SDMF + ₹15.00L TIEMA CSR co-funding",
+        "status": "Completed",
+        "targetDays": 10,
+        "completedAt": daysAgo(21)
+      },
+      {
+        "id": "MS-TUP-04",
+        "stageNumber": 11,
+        "title": "RCC Structural Casting & Precast Apron",
+        "description": "M30 grade concrete casting of twin-cell barrel, wingwalls, and cut-off walls with scour aprons",
+        "status": "Completed",
+        "targetDays": 14,
+        "completedAt": daysAgo(14)
+      },
+      {
+        "id": "MS-TUP-05",
+        "stageNumber": 12,
+        "title": "Carriageway Pavement & Approach Restoration",
+        "description": "Granular Sub-Base (GSB), Wet Mix Macadam (WMM), and 40mm Bituminous Concrete laying",
+        "status": "Completed",
+        "targetDays": 21,
+        "completedAt": daysAgo(7)
+      },
+      {
+        "id": "MS-TUP-06",
+        "stageNumber": 13,
+        "title": "Static Load Proof & Citizen Audit Clearance",
+        "description": "2x 40t dumper static load test (0.42mm deflection) and Ward 32 Mukhiya civic signoff",
+        "status": "Completed",
+        "targetDays": 28,
+        "completedAt": daysAgo(2)
+      }
+    ],
+    "proposals": [],
+    "budgetEstimated": 3905000,
+    "budgetApproved": 3905000,
+    "createdAt": daysAgo(42),
+    "updatedAt": daysAgo(1)
+  },
+  {
     "id": "DEMO-PRJ-001",
     "challengeId": "DEMO-CH-001",
     "challengeTitle": "Ground subsidence cracks and toxic CO gas venting near Lodna 4 Pits",
@@ -6601,6 +6773,19 @@ export const SEED_PROJECTS: Project[] = [
 
 export const SEED_PROPOSALS: Proposal[] = [
   {
+    "id": "DEMO-PROP-TUPUDANA-0042",
+    "projectId": "PRJ-TUPUDANA-0042",
+    "title": "Twin-Cell RCC Box Culvert (2x 4.5m x 3.0m) & Hydraulic Scour Restoration: Tupudana–Balalong Industrial Corridor",
+    "description": "Emergency restoration DPR & CAD structural execution replacing collapsed 1.8m masonry arch on KM 4+350 with high-capacity twin-cell RCC box culvert.",
+    "approach": "HEC-RAS 2D hydrodynamic simulation for 50-year flood discharge (42.6 m³/s), IRC:SP:13 & IRC:112 compliant M30 concrete box culvert with 3.5m deep upstream/downstream curtain cut-off walls and gabion mattress anti-scour protection.",
+    "estimatedBudget": 3905000,
+    "estimatedTimeline": "4 weeks",
+    "status": "Approved",
+    "submittedBy": "Manish Pandey (Team Lead, BIT Mesra)",
+    "submittedAt": daysAgo(28),
+    "reviewNote": "Formally sanctioned by Ranchi District Level Committee & RCD. Co-funded via State Disaster Mitigation Fund (₹24.05L) and TIEMA CSR Grant (₹15.00L)."
+  },
+  {
     "id": "DEMO-PROP-001",
     "projectId": "DEMO-PRJ-001",
     "title": "CSR Technology Grant: Ground subsidence cracks and toxic CO gas venting near Lodna",
@@ -7227,6 +7412,198 @@ export const SEED_PROPOSALS: Proposal[] = [
 ];
 
 export const SEED_TIMELINE: TimelineEvent[] = [
+  {
+    "id": "DEMO-TL-TUP-16",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "status_changed",
+    "actor": "Jharkhand State Innovation Council",
+    "actorRole": "Government Department",
+    "description": "Stage 16: Platform Closure & Open Learning — Complete DPR, CAD drawings, and HEC-RAS hydraulic models archived in Provincial Knowledge Repository as a reusable blueprint for all 24 Jharkhand districts.",
+    "previousValue": "Measuring Impact",
+    "newValue": "Closed",
+    "timestamp": daysAgo(1)
+  },
+  {
+    "id": "DEMO-TL-TUP-15",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "impact_measured",
+    "actor": "District Monitoring Cell & Citizen Jury",
+    "actorRole": "Citizen Group",
+    "description": "Stage 15: Impact Measurement & Citizen Verification — Verified 35 minutes saved per commute trip, ₹14.8 Lakhs/month logistics fuel savings for 35 MSMEs, and 100% positive citizen feedback.",
+    "previousValue": "Resolved",
+    "newValue": "Measuring Impact",
+    "timestamp": daysAgo(3)
+  },
+  {
+    "id": "DEMO-TL-TUP-14",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "status_changed",
+    "actor": "Executive Engineer, RCD Ranchi",
+    "actorRole": "Government Department",
+    "description": "Stage 14: Statewide Deployment & Handover — Bituminous road approach surfacing (DBM/BC), W-beam metallic crash barriers, and solar blinkers completed. Carriageway re-opened to heavy traffic.",
+    "previousValue": "Outcome Audit",
+    "newValue": "Resolved",
+    "timestamp": daysAgo(7)
+  },
+  {
+    "id": "DEMO-TL-TUP-13",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "audit_completed",
+    "actor": "BIT Mesra Third-Party Quality Audit Cell",
+    "actorRole": "Faculty / Mentor",
+    "description": "Stage 13: Technical & Community Validation — Non-destructive Ultrasonic Pulse Velocity test (4,410 m/s) and 24-hour static proof load test (2x 40t trucks, 0.42mm deflection vs 5.625mm limit) approved.",
+    "previousValue": "Pilot Active",
+    "newValue": "Outcome Audit",
+    "timestamp": daysAgo(12)
+  },
+  {
+    "id": "DEMO-TL-TUP-12",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "pilot_active",
+    "actor": "Fast-Track Construction Squad",
+    "actorRole": "Contractor",
+    "description": "Stage 12: Field Pilot Deployment — Stream bypass cofferdam installed, foundation excavation down to -2.8m, and M35 RCC bottom raft slab cast with moisture sensor telemetry.",
+    "previousValue": "Prototype Active",
+    "newValue": "Pilot Active",
+    "timestamp": daysAgo(25)
+  },
+  {
+    "id": "DEMO-TL-TUP-11",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "prototype_active",
+    "actor": "BIT Mesra Civil Engineering Team",
+    "actorRole": "University Student",
+    "description": "Stage 11: Engineering Prototype Development — Complete AutoCAD GAD structural reinforcement blueprints, bar bending schedules, and Jharkhand SoR BoQ approved.",
+    "previousValue": "Industry Collaboration",
+    "newValue": "Prototype Active",
+    "timestamp": daysAgo(32)
+  },
+  {
+    "id": "DEMO-TL-TUP-10",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "csr_partnered",
+    "actor": "Tupudana Industrial Estate Manufacturers Association (TIEMA)",
+    "actorRole": "Industry Partner",
+    "description": "Stage 10: Industry & CSR Collaboration — TIEMA sanctioned ₹10.00 Lakhs CSR co-funding alongside ₹29.05 Lakhs from State Disaster Mitigation Fund (SDMF) under DC Ranchi.",
+    "previousValue": "Proposal Submitted",
+    "newValue": "Industry Collaboration",
+    "timestamp": daysAgo(35)
+  },
+  {
+    "id": "DEMO-TL-TUP-09",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "proposal_submitted",
+    "actor": "Dr. Anand Prakash (BIT Mesra Mentor)",
+    "actorRole": "Faculty / Mentor",
+    "description": "Stage 9: Solution Proposal & R&D Workplan — Submitted comprehensive technical diagnostic: HEC-RAS 2D simulation (Q_peak = 42.6 m³/s) and twin-cell RCC box culvert proposal (2x 4.5m x 3.0m).",
+    "previousValue": "In Progress",
+    "newValue": "Proposal Submitted",
+    "timestamp": daysAgo(37)
+  },
+  {
+    "id": "DEMO-TL-TUP-08",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "team_formed",
+    "actor": "BIT Mesra Student Chapter",
+    "actorRole": "University Student",
+    "description": "Stage 8: Team Formation & Project Initiation — Multidisciplinary team DEMO-TEAM-BIT-042 formed with 4 civil & geomatics scholars led by Manish Pandey under Prof. Anand Prakash.",
+    "previousValue": "University Accepted",
+    "newValue": "In Progress",
+    "timestamp": daysAgo(39)
+  },
+  {
+    "id": "DEMO-TL-TUP-07",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "university_accepted",
+    "actor": "Head of Department, Civil Engg, BIT Mesra",
+    "actorRole": "Faculty / Mentor",
+    "description": "Stage 7: University Acceptance — BIT Mesra formally accepted the challenge docket JH-RNC-DPR-0042 within 4 hours 45 minutes.",
+    "previousValue": "HEI Matched",
+    "newValue": "University Accepted",
+    "timestamp": daysAgo(40)
+  },
+  {
+    "id": "DEMO-TL-TUP-06",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "hei_matched",
+    "actor": "Nivaaran HEI Matching Engine",
+    "actorRole": "System AI",
+    "description": "Stage 6: Institution Matching — 4-Factor HEI algorithm matched BIT Mesra Civil & Environmental Engineering (Score 95.3%, Rank #1 statewide, 18.2km proximity).",
+    "previousValue": "Government Validated",
+    "newValue": "HEI Matched",
+    "timestamp": daysAgo(40)
+  },
+  {
+    "id": "DEMO-TL-TUP-05",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "government_validated",
+    "actor": "Shri Rahul Sinha, DC Ranchi",
+    "actorRole": "Government Department",
+    "description": "Stage 5: Validation & Emergency Containment — Field inspection confirmed collapse. Executive Engineer RCD deployed reflective barricades, lighting, and bypass footbridge.",
+    "previousValue": "Prioritized",
+    "newValue": "Government Validated",
+    "timestamp": daysAgo(41)
+  },
+  {
+    "id": "DEMO-TL-TUP-04",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "prioritized",
+    "actor": "Nivaaran AI Triage Engine",
+    "actorRole": "System AI",
+    "description": "Stage 4: Multi-Factor Prioritization — Computed 5-factor mathematical rubric: Severity=25, Urgency=24, Population=23, Evidence=25, Vulnerability=23. Priority Score: 94.05/100 (P1 Emergency).",
+    "previousValue": "Clustered",
+    "newValue": "Prioritized",
+    "timestamp": daysAgo(41)
+  },
+  {
+    "id": "DEMO-TL-TUP-03",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "clustered",
+    "actor": "PostGIS Spatio-Temporal Cluster Engine",
+    "actorRole": "System AI",
+    "description": "Stage 3: Deduplication & Clustering — PostGIS ST_DWithin (250m) and pg_trgm similarity (0.91) merged 14 citizen complaints into Master Challenge CH-JH-RNC-2026-0042.",
+    "previousValue": "Under Review",
+    "newValue": "Clustered",
+    "timestamp": daysAgo(42)
+  },
+  {
+    "id": "DEMO-TL-TUP-02",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "ai_triaged",
+    "actor": "Nivaaran Autonomous Perception Pipeline",
+    "actorRole": "System AI",
+    "description": "Stage 2: AI Understanding — Computer Vision detected structural concrete defect (96.4%) and roadway washout (94.8%). ASR transcribed Nagpuri voice note. Automated PII scrubbing redacted phone/Aadhaar/faces.",
+    "previousValue": "Submitted",
+    "newValue": "Under Review",
+    "timestamp": daysAgo(42)
+  },
+  {
+    "id": "DEMO-TL-TUP-01",
+    "entityType": "challenge",
+    "entityId": "DEMO-CH-TUPUDANA",
+    "action": "submitted",
+    "actor": "Sunil Linda & Mukhiya Rameshwar Oraon",
+    "actorRole": "Citizen Group",
+    "description": "Stage 1: Submission — Grievance lodged via IVR and WhatsApp Civic Bot with 3 geotagged photos of collapsed culvert crater at KM 4+350 Tupudana–Balalong corridor.",
+    "previousValue": undefined,
+    "newValue": "Submitted",
+    "timestamp": daysAgo(42)
+  },
   {
     "id": "DEMO-TL-001",
     "entityType": "challenge",

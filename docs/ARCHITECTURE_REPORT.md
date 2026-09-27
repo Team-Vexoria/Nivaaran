@@ -19,6 +19,7 @@
 8. [Security Architecture](#8-security-architecture)
 9. [Cross-Cutting Concerns](#9-cross-cutting-concerns)
 10. [Source Code Structure](#10-source-code-structure)
+11. [Flagship End-to-End Demo Problem: Tupudana Culvert Failure Case Study](#11-flagship-end-to-end-demo-problem-tupudana-culvert-failure-case-study)
 
 ---
 
@@ -1303,6 +1304,380 @@ The frontend already has working "AI" engines that the backend mirrors server-si
 | `deduplicationService.ts` | Trigram + tag overlap | `AIProvider.similarity` + `pg_trgm` |
 | `domainTaxonomy.ts` | 60 `GOV_DOMAINS` | Seeded reference table |
 | `mapDataService.ts` | `JHARKHAND_BOUNDS`, `CENTROIDS`, `getSeverityColor` | Leaflet constants + `districts` table |
+
+---
+
+## 11. Flagship End-to-End Demo Problem: Tupudana Culvert Failure Case Study
+
+> **Case Docket ID:** `NIV-JH-RNC-2026-0042`  
+> **Problem Classification:** `PUBLIC_INFRASTRUCTURE_ROAD_BRIDGES` (`GOV-CIVIC-04` / Culvert Failure & Arterial Washout)  
+> **Jurisdiction:** Tupudana Industrial Belt & Hatia Block, Ranchi District, Jharkhand  
+> **Geo-Coordinates:** `23.2842° N, 85.3126° E` (EPSG:4326 / WGS 84)  
+> **Severity & Urgency:** **P1 Critical / Emergency Disaster Mitigation** (Composite Score: **94.05 / 100**)  
+> **Primary Stakeholders:** Citizens & Transporters, Road Construction Department (RCD) Jharkhand, DC Ranchi / DDMA, Birla Institute of Technology (BIT Mesra), Tupudana Industrial Estate Manufacturers Association (TIEMA).
+
+---
+
+### 11.1 Incident Overview & Physical Context
+
+In late August 2026, severe localized monsoon cloudbursts over the Hatia–Kanke catchment generated heavy runoff through the Subarnarekha river tributary nallah. At the Tupudana–Balalong arterial link road (chainage `KM 4+350`), an aging single-barrel 1.8m masonry hume-pipe culvert suffered catastrophic structural failure:
+1. **Hydraulic Backwater Surcharge:** Peak flood volume overwhelmed the culvert barrel capacity, resulting in intense scouring of the unreinforced stone masonry wing walls and abutment subgrade.
+2. **Subgrade Liquefaction & Piping:** Water percolated through the road foundation, eroding the granular sub-base and undermining the pavement structure.
+3. **Pavement & Barrel Collapse:** Under combined hydrodynamic uplift and heavy 40-tonne commercial stone tipper axle loading, the culvert barrel caved in. A chasm **4.2 meters deep and 7.8 meters wide** formed across the two-lane carriageway, completely severing vehicular transit.
+4. **Socio-Economic Impact:** 
+   - **Transit Severance:** Direct arterial connection between Hatia Railway Yard, the Tupudana Industrial Area (35 operational MSME stone crushers, foundry units, and agro-processing factories), and 14 peripheral tribal villages (approx. 22,000 residents) was instantly cut.
+   - **Emergency Services:** Ambulances en route to Hatia Sub-Divisional Hospital were forced onto a circuitous 14.5 km detour via the Ring Road, increasing emergency response transit time from 9 minutes to over 48 minutes.
+   - **Daily Commute:** More than 1,200 school students and daily industrial workers were stranded on opposite banks of the swollen torrent.
+
+---
+
+### 11.2 End-to-End Workflow Stages
+
+The complete lifecycle of this crisis demonstrates the operation of Nivaaran's 13 backend modules, AI triage engine, PostGIS spatial layer, HEI collaboration pipeline, and audit ledger across nine distinct operational stages.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor C as Citizen / Mukhiya
+    participant GW as Nivaaran Intake Gateway
+    participant AI as AI Perception & Triage Engine
+    participant DEDUP as PostGIS & Dedup Engine
+    participant GOV as DC Ranchi & RCD Jharkhand
+    participant HEI as BIT Mesra (Civil Engg)
+    participant CSR as TIEMA (CSR Partner)
+    participant LEDGER as Immutable Audit Ledger
+
+    C->>GW: 1. Submits Grievance (IVR/WhatsApp/Web) + Geotagged Photos
+    GW->>AI: Dispatches raw submission payload
+    AI->>AI: 2. Vision defect classification & automated PII masking
+    AI->>DEDUP: 3. Spatial ST_DWithin (250m) & Trigram clustering
+    DEDUP-->>LEDGER: Creates Master Challenge CH-JH-RNC-2026-0042 (14 reports aggregated)
+    AI->>AI: 4. Computes 5-factor Priority Score (94.05/100 -> P1 Emergency)
+    AI->>GOV: 5. Auto-routes ticket to RCD Ranchi & DDMA (4h ACK / 24h Containment SLA)
+    GOV->>GOV: Authorizes containment, traffic diversion & declares site validation
+    AI->>HEI: 6. 4-factor matching engine pairs BIT Mesra Civil & Hydraulic Dept (95.3% match)
+    HEI->>HEI: HoD & Faculty accept challenge; deploy multidisciplinary student team
+    HEI->>HEI: 7. Drone photogrammetry, HEC-RAS 2D modeling & geotechnical SPT testing
+    HEI->>GOV: 8. Delivers twin-cell RCC box culvert CAD/DPR & Jharkhand SoR BoQ (Rs 39.05L)
+    CSR->>GOV: Sanctions Rs 10L CSR co-funding alongside Rs 29.05L SDMF emergency grant
+    GOV->>HEI: 9. Empaneled contractor executes 5-milestone construction with third-party audit
+    HEI->>LEDGER: Uploads ultrasonic pulse velocity & static load deflection test (0.42mm)
+    LEDGER->>C: Push notifications with before/after proofs; feedback loop closed
+```
+
+---
+
+#### Stage 1: Citizen Complaint (Multi-Modal Intake & Geotagged Evidence)
+
+* **Responsible Stakeholders:** 
+  - Primary Complainant: Shri Sunil Linda (Commercial Logistics Transporter, Hatia Truckers Union).
+  - Secondary Informant: Shri Rameshwar Oraon (Gram Pradhan / Mukhiya, Gram Panchayat Balalong).
+* **Intake Channels:** 
+  - Dual-mode submission via Nivaaran IVR Voice Gateway (`+91-651-2400XXX`) and WhatsApp Civic Bot.
+  - Complainant spoke in Nagpuri/Hindi dialect: *"तुपुदाना–बालालोंग मुख्य सड़क की पुरानी पुलिया रात के फ्लैश फ्लड में पूरी तरह टूट गई है। 15 फीट का गड्ढा बन गया है, कोई भी गाड़ी, ऑटो या एम्बुलेंस नहीं जा पा रही है।"*
+* **Captured Payload & Telemetry:**
+  - **Coordinates:** `lat: 23.2842`, `lng: 85.3126` (verified against PostGIS block polygon: `RANCHI_HATIA`).
+  - **Evidence Bundle:** Three high-resolution smartphone photographs capturing:
+    1. Scoured downstream masonry retaining wall and exposed road foundation.
+    2. Overtopped and washed-out bituminous wearing course with a 4.2m crater.
+    3. Heavy turbulent torrent traversing the breached roadbed.
+  - **Citizen Authentication:** Aadhaar-linked OTP authentication via UIDAI gateway; registered mobile number verified.
+* **Initial Workflow State:** `SUBMITTED` (`WorkflowStage: 1`).
+
+---
+
+#### Stage 2: AI Verification & PII Masking (Perception Pipeline & Privacy Protection)
+
+* **Responsible Stakeholders:** Nivaaran Background Worker (`ai.perception.worker`), Whisper/Bhashini ASR Service, Computer Vision Model Pipeline.
+* **Autonomous Operations Executed:**
+  1. **Vernacular Transcription & Entity Extraction:**
+     - ASR converts Nagpuri voice note to English/Hindi canonical text.
+     - Named Entity Recognition (NER) extracts key parameters: `Asset: Culvert/Bridge`, `Location: Tupudana-Balalong link road`, `Damage: Structural collapse`, `Impact: Transit cutoff`.
+  2. **Computer Vision Defect Classification (`AIProvider.VISION`):**
+     - Image analysis identifies feature vectors corresponding to:
+       - `STRUCTURAL_MASONRY_FAILURE` (Confidence: **96.4%**)
+       - `ROADWAY_WASHOUT_CHASM` (Confidence: **94.8%**)
+       - `SURCHARGE_WATER_EROSION` (Confidence: **91.2%**)
+     - Synthesizes technical domain: `PUBLIC_INFRASTRUCTURE_ROAD_BRIDGES` (`GOV-CIVIC-04`).
+  3. **Automated PII Redaction (Privacy Invariant 6):**
+     - Text scrubber masks citizen telephone number (`+91 98351 XXXXX`) and national identity digits.
+     - Computer Vision pipeline detects private vehicle registration plates (`JH-01-XX-XXXX`) in the background of photo #2 and runs OpenCV Gaussian blur ($k=25$).
+     - Bystander facial regions are identified and blurred before database insertion.
+  4. **Evidence Cryptographic Hashing:**
+     - SHA-256 fingerprint generated for sanitized evidence records (`hash: 8f9b4a...c712`) and recorded in `challenge_evidence` table.
+* **Output:** Sanitized, tamper-evident challenge record stored in `challenges` table without PII leakage.
+* **Workflow State Transition:** `SUBMITTED` → `AI_TRIAGED` (`WorkflowStage: 2`).
+
+---
+
+#### Stage 3: Duplicate Detection & Spatial Clustering (Spatio-Temporal Aggregation)
+
+* **Responsible Stakeholders:** Nivaaran Cluster Engine (`ClusterModule`, `deduplicationService.ts`).
+* **Trigger Condition:** Within 4 hours of the collapse, **14 independent citizen grievances** were lodged regarding the same incident from adjacent phone numbers, geotagged between `23.2838° N, 85.3120° E` and `23.2846° N, 85.3132° E`.
+* **Execution Mechanics:**
+  1. **Spatial Buffer Calculation:**
+     ```sql
+     SELECT id, title, location_coords, ST_Distance(
+       geom, ST_SetSRID(ST_MakePoint(85.3126, 23.2842), 4326)::geography
+     ) AS distance_meters
+     FROM challenges
+     WHERE ST_DWithin(
+       geom, ST_SetSRID(ST_MakePoint(85.3126, 23.2842), 4326)::geography, 250
+     ) AND status NOT IN ('CLOSED_RESOLVED', 'REJECTED');
+     ```
+     Result: 13 matching active records found within a 180-meter radius.
+  2. **Lexical & Semantic Similarity:**
+     - PostgreSQL `pg_trgm` similarity score on `title` and `description` vectors:
+       `similarity("Tupudana culvert broken", "Pulia collapsed near Balalong Tupudana") = 0.91`.
+  3. **Master-Cluster Consolidation:**
+     - Nivaaran automatically designates the first validated ticket as the **Master Challenge** (`CH-JH-RNC-2026-0042`).
+     - The other 13 submissions are attached as child references (`is_cluster_master: false`, `master_challenge_id: 'CH-JH-RNC-2026-0042'`).
+     - Aggregates reported impact figures: Cumulative estimated affected citizens updated from 2,000 to **22,000+**, with 35 MSME manufacturing facilities impacted.
+     - All 14 reporting citizens automatically subscribed to push SMS broadcast updates.
+* **Workflow State Transition:** `AI_TRIAGED` → `CLUSTERED` (`WorkflowStage: 3`).
+
+---
+
+#### Stage 4: P1 Priority Scoring (Multi-Factor Mathematical Rubric)
+
+* **Responsible Stakeholders:** Nivaaran AI Triage Engine (`aiTriageEngine.ts`, `PriorityModule`).
+* **Formula & Factor Breakdown:**
+  Nivaaran evaluates civic crises across five weighted dimensions ($W_1 \dots W_5$):
+
+$$\text{Priority Score} = \sum_{i=1}^5 w_i \cdot s_i = w_S S + w_U U + w_P P + w_E E + w_V V$$
+
+| Factor | Weight ($w_i$) | Score ($s_i$, max 25) | Computed Value | Mathematical Rationale |
+|---|---|---|---|---|
+| **Structural Severity ($S$)** | 0.25 | 25.0 / 25 | 6.25 | Complete roadway loss, 4.2m chasm, total structural collapse of drainage asset. |
+| **Hazard Urgency ($U$)** | 0.25 | 24.0 / 25 | 6.00 | Active monsoon flash flood, high risk of vehicles plunging into chasm during darkness. |
+| **Population Impact ($P$)** | 0.20 | 23.0 / 25 | 4.60 | 22,000+ residents cut off; primary ambulance transit diverted +35 minutes. |
+| **Evidence Quality ($E$)** | 0.15 | 25.0 / 25 | 3.75 | 14 corroborated citizen reports, high-res geotagged photos, zero PII anomalies. |
+| **Vulnerability & Economic Loss ($V$)** | 0.15 | 23.0 / 25 | 3.45 | 35 MSMEs halted, stone transport paralyzed, peri-urban tribal agricultural commute severed. |
+| **Total Composite Score** | **1.00** | **119 / 125** | **94.05 / 100** | **Normalized Priority: P1 EMERGENCY / HIGH PRIORITY** |
+
+* **Automated System Actions:**
+  - Emergency P1 Strobe badge attached to challenge ticket on GIS Command Center.
+  - Automatic push dispatch to District Magistrate / Deputy Commissioner (DC) Ranchi emergency dashboard.
+* **Workflow State Transition:** `CLUSTERED` → `PRIORITIZED` (`WorkflowStage: 4`).
+
+---
+
+#### Stage 5: Automatic Government Routing (Jurisdictional Dispatch & Emergency Containment)
+
+* **Responsible Stakeholders:** 
+  - Primary Executing Department: Road Construction Department (RCD), Government of Jharkhand (Executive Engineer, Ranchi Road Division).
+  - District Disaster Authority: Deputy Commissioner (DC) Ranchi & District Disaster Management Authority (DDMA).
+  - Municipal & Industrial Nodal: Tupudana Industrial Area Development Authority (RIADA / JIDCO) & Ranchi Municipal Corporation (RMC).
+  - Law & Order: Hatia / Tupudana Traffic Police Station.
+* **Automated Routing Rules Execution:**
+  - Spatial mapping matches coordinates `(23.2842, 85.3126)` with:
+    - **District:** Ranchi (`DIS-JH-01`)
+    - **Block:** Hatia (`BLK-JH-RNC-04`)
+    - **Competent Road Authority:** RCD Division Ranchi (Road Code: `MDR-RNC-082`).
+* **SLA Timers & Field Actions:**
+  - **4-Hour Acknowledgement SLA:** Acknowledged by Assistant Engineer (RCD Ranchi) within **1 hour 12 minutes**.
+  - **24-Hour Containment SLA:**
+    - Executive Engineer RCD and Hatia Traffic Police deployed within 3 hours.
+    - Full physical barricading with high-visibility reflective drums, solar blinking amber lights, and concrete jersey barriers installed at 100m approaches.
+    - Heavy vehicles diverted to NH-75 Extension / Ring Road; light two-wheeler pedestrian bypass footbridge erected 80 meters upstream within 18 hours.
+  - **Formal Administrative Validation:** DC Ranchi inspects the electronic dossier on the Nivaaran Portal and executes digital transition signature:
+    `transition: VALIDATE -> GOVT_VALIDATED` with note: *"Inspected in situ. Arterial collapse verified. Emergency restoration and HEI bridge engineering required immediately."*
+* **Workflow State Transition:** `PRIORITIZED` → `GOVT_VALIDATED` (`WorkflowStage: 5`).
+
+---
+
+#### Stage 6: Academic & Expert Matching with BIT Mesra (HEI Match Algorithm)
+
+* **Responsible Stakeholders:** Nivaaran HEI Matching Engine (`heiMatchingEngine.ts`), Department of Civil and Environmental Engineering, Birla Institute of Technology (BIT Mesra), Ranchi.
+* **4-Factor HEI Match Scoring Engine:**
+
+$$\text{HEI Match} = 0.40 \cdot S_{\text{domain}} + 0.25 \cdot S_{\text{geo}} + 0.20 \cdot S_{\text{tier}} + 0.15 \cdot S_{\text{lab}}$$
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                               BIT MESRA HEI MATCH EVALUATION                           │
+├───────────────────────┬────────┬────────┬──────────────────────────────────────────────┤
+│ Metric Dimension      │ Weight │ Score  │ Justification                                │
+├───────────────────────┼────────┼────────┼──────────────────────────────────────────────┤
+│ 1. Domain Match       │ 40%    │ 98/100 │ Specialized Civil & Water Resources division │
+│ 2. Proximity (18.2km) │ 25%    │ 94/100 │ PostGIS Haversine distance: 18.2 km via NH   │
+│ 3. Tier & Accreditation│ 20%   │ 95/100 │ Deemed University, NIRF Top Rank, NAAC A+    │
+│ 4. Lab Infrastructure │ 15%    │ 92/100 │ UTM (1000kN), HEC-RAS workstations, Drone Lab│
+├───────────────────────┼────────┼────────┼──────────────────────────────────────────────┤
+│ Composite Match Index │ 100%   │ 95.3%  │ RANK #1 STATEWIDE FOR HYDRAULIC/ROAD DESIGN  │
+└───────────────────────┴────────┴────────┴──────────────────────────────────────────────┘
+```
+
+* **Institutional Acceptance & Nivaaran Research Docket:**
+  - Head of Department (Civil Engineering, BIT Mesra) receives the digital matching docket `JH-RNC-DPR-0042` via the University Portal.
+  - Formal institutional acceptance confirmed within **4 hours 45 minutes**.
+* **Multidisciplinary Project Team Formation (`DEMO-TEAM-BIT-042`):**
+  - **Faculty Mentor:** Dr. Anand Prakash (Professor of Structural & Hydraulic Engineering, BIT Mesra).
+  - **Student Team Lead:** Manish Pandey (Final Year B.Tech Civil Engineering — Structural Analysis).
+  - **Student Co-Investigators:**
+    - Aniket Tirkey (B.Tech Civil — Geotechnical Investigation & Soil Mechanics).
+    - Deepa Mishra (M.Tech Water Resources — Catchment Hydrology & HEC-RAS 2D).
+    - Vivek Sharma (B.Tech Civil & Geomatics — Drone Survey & AutoCAD Detailing).
+* **Workflow State Transition:** `GOVT_VALIDATED` → `INSTITUTION_MATCHED` → `INSTITUTION_ACCEPTED` → `TEAM_FORMED` (`WorkflowStages: 6–8`).
+
+---
+
+#### Stage 7: Technical Assessment & Field Diagnostic
+
+* **Responsible Stakeholders:** BIT Mesra Civil Engineering Project Team, RCD Assistant Engineer, District Geologist.
+* **On-Site Field Investigation (Completed within 48 Hours):**
+  1. **Drone Photogrammetry & Topographic Profiling:**
+     - DJI Matrice 300 RTK drone survey deployed over a 1.5 km reach.
+     - Generated high-density 3D LiDAR point cloud and digital surface model (DSM) with 2cm contour intervals.
+     - Upstream catchment basin measured at **12.8 km²**, comprising rocky ridges with a high runoff coefficient ($C = 0.68$).
+  2. **Hydrological & Hydraulic Simulation (HEC-RAS 2D):**
+     - Computed 50-year return period peak flood discharge:
+       
+$$Q_{\text{peak}} = 0.278 \cdot C \cdot I \cdot A = 0.278 \times 0.68 \times 65\text{ mm/hr} \times 12.8\text{ km}^2 = 42.6\text{ m}^3/\text{s}$$
+
+     - **Root Cause Identified:** The original 1.8m hume pipe possessed a maximum hydraulic capacity of only **$16.8\text{ m}^3/\text{s}$** (a deficit of **60.5%**). During peak storm inflow, headwater overtopped the embankment at **$3.8\text{ m/s}$**, creating severe exit vortex scouring that undermined the unreinforced stone masonry.
+  3. **Geotechnical Core Drilling & Soil Bearing Tests:**
+     - Standard Penetration Test (SPT) conducted across three boreholes to a depth of 6.0 meters.
+     - Subsoil stratigraphy: 0.0m–1.8m silty sand alluvial wash; 1.8m–4.2m soft micaceous sandy silt; >4.2m weathered granite gneiss bedrock.
+     - Safe Bearing Capacity (SBC) of foundation stratum at -2.5m depth: **$115\text{ kN/m}^2$**.
+     - Identified active piping phenomena behind the failed abutment backfill.
+* **Deliverable:** Comprehensive Technical Assessment Report uploaded to Nivaaran repository with raw HEC-RAS `.prj` models and soil lab test reports.
+* **Workflow State Transition:** `TEAM_FORMED` → `PROPOSAL_SUBMITTED` (`WorkflowStage: 9`).
+
+---
+
+#### Stage 8: DPR, CAD & Cost Estimate Generation (Engineering Delivery & Co-Funding)
+
+* **Responsible Stakeholders:** BIT Mesra Project Team, RCD Executive Engineer, TIEMA Executive Committee, DC Ranchi.
+* **Engineering Design Specification:**
+  - **Proposed Replacement:** **Twin-Cell Reinforced Cement Concrete (RCC) Box Culvert**.
+  - **Geometric Parameters:** 
+    - Number of cells: 2 identical barrels.
+    - Clear internal span: **$2 \times 4.5\text{ meters} = 9.0\text{ meters}$ total waterway opening**.
+    - Clear internal height: **$3.0\text{ meters}$** (providing 0.8m freeboard above 50-year High Flood Level of $Q = 42.6\text{ m}^3/\text{s}$).
+    - Total barrel length: 12.0 meters (accommodating a standard 7.5m two-lane carriageway + 1.5m paved shoulders + crash barriers).
+  - **Design Standards Complied:** IRC:SP:13 (Guidelines for Design of Small Bridges & Culverts), IRC:112 (Code of Practice for Concrete Road Bridges), IRC:6 (Standard Specifications for Road Bridges: Loads & Stresses for IRC Class 70R Tracked & Wheeled Loading).
+  - **Structural Highlights:**
+    - Concrete Grade: **M35** high-durability concrete with silica fume admixture.
+    - Reinforcement: **Fe 500D TMT** corrosion-resistant thermo-mechanically treated rebar.
+    - Foundation: 400mm thick continuous RCC raft slab resting on 150mm M15 leveling concrete and 300mm boulder packing.
+    - Scour Mitigation: Upstream and downstream RCC curtain/drop walls (depth 2.0m) tied to 300mm thick wire-mesh stone gabion aprons over non-woven geotextile filter fabric ($300\text{ g/m}^2$).
+* **CAD Deliverables Generated:**
+  - General Arrangement Drawing (GAD) Sheet 1: Key Plan, Plan at Bed Level, Longitudinal Section along Roadway (`DWG-JH-RNC-042-GAD.pdf`).
+  - Structural Reinforcement Detailing Sheet 2: Cross Section of Twin Box, Bar Bending Schedule (BBS), Wingwall Sections (`DWG-JH-RNC-042-STR.pdf`).
+* **Itemized Bill of Quantities (BoQ) & Cost Estimate (Jharkhand RCD SoR 2024–25):**
+
+| Item No. | Jharkhand SoR Code | Description of Civil Work | Quantity | Unit | Rate (₹) | Total Amount (₹) |
+|---|---|---|---|---|---|---|
+| **1** | `RCD-SOR-2.1` | Earthwork excavation in all soils including dewatering and shoring | 480.0 | m³ | 340.00 | ₹1,63,200 |
+| **2** | `RCD-SOR-3.4` | Providing and laying boulder soling with stone spalls compacted | 75.0 | m³ | 1,280.00 | ₹96,000 |
+| **3** | `RCD-SOR-4.1` | Plain Cement Concrete (M15 grade) for leveling course under raft | 38.0 | m³ | 4,850.00 | ₹1,84,300 |
+| **4** | `RCD-SOR-5.8` | Reinforced Cement Concrete (M35 grade) for Raft, Outer Walls, Intermediate Wall, and Top Slab | 148.0 | m³ | 9,800.00 | ₹14,50,400 |
+| **5** | `RCD-SOR-6.2` | Supplying, cutting, bending, and placing Thermo-Mechanically Treated (Fe 500D) reinforcement steel | 17.2 | Tonnes | 68,500.00 | ₹11,78,200 |
+| **6** | `RCD-SOR-8.5` | Wire-mesh galvanized stone gabion apron (1.5m $\times$ 1.0m $\times$ 0.5m) and geotextile filter fabric | 65.0 | m³ | 3,450.00 | ₹2,24,250 |
+| **7** | `RCD-SOR-9.1` | Granular sub-base (GSB) and Wet Mix Macadam (WMM) road approaches (60m total) | 120.0 | m³ | 1,950.00 | ₹2,34,000 |
+| **8** | `RCD-SOR-10.4`| Dense Bituminous Macadam (50mm) and Bituminous Concrete (30mm) surfacing with tack coat | 450.0 | m² | 420.00 | ₹1,89,000 |
+| **9** | `RCD-SOR-12.1`| W-Beam metallic crash barriers, solar blinkers, and retro-reflective hazard signage | 48.0 | Metres | 2,250.00 | ₹1,08,000 |
+| **10**| `RCD-QC-01`   | Third-party quality control, core testing, ultrasonic testing, and contingencies | L.S. | Job | Lump Sum | ₹77,650 |
+| **TOTAL**| | **ESTIMATED PROJECT CAPITAL COST** | | | | **₹39,05,000** |
+
+* **Innovative Public-CSR Co-Financing Architecture:**
+  - **State Disaster Mitigation Fund (SDMF / RCD Head):** **₹29,05,000 (74.4%)** sanctioned under immediate emergency executive powers by DC Ranchi.
+  - **Corporate Social Responsibility (CSR Co-Investment):** **₹10,00,000 (25.6%)** committed by the Tupudana Industrial Estate Manufacturers Association (TIEMA) through Nivaaran's CSR Module, recognizing the commercial value of restoring logistics links.
+* **Administrative Sanction:** Dual-signed Technical Sanction (TS) and Administrative Approval (AA) issued on Nivaaran within **72 hours** of incident report.
+* **Workflow State Transition:** `PROPOSAL_SUBMITTED` → `PROPOSAL_ACCEPTED` → `CSR_PARTNERED` (`WorkflowStages: 9–10`).
+
+---
+
+#### Stage 9: Resolution Tracking, Construction & Verification
+
+* **Responsible Stakeholders:** Empaneled Fast-Track Contractor, Executive Engineer RCD Ranchi, BIT Mesra Third-Party Quality Audit Cell, Gram Pradhan & Complainants.
+* **Milestone-Driven Execution Ledger:**
+  Execution was tracked through five immutable audit milestones on the Nivaaran state machine:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                              5-MILESTONE EXECUTION TIMELINE                            │
+├───────────┬────────┬─────────────────────────────────────────────────┬─────────────────┤
+│ Milestone │ Day    │ Civil Engineering Scope Executed                │ Audit Proof     │
+├───────────┼────────┼─────────────────────────────────────────────────┼─────────────────┤
+│ MS-1      │ Day 4  │ Site containment, stream bypass, cofferdam,     │ Geotagged drone │
+│           │        │ and structural foundation excavation to -2.8m.  │ photo + signoff │
+├───────────┼────────┼─────────────────────────────────────────────────┼─────────────────┤
+│ MS-2      │ Day 12 │ Boulder soling, M15 leveling PCC, bottom raft   │ Cube 7-day test │
+│           │        │ rebar binding and monolithic raft casting (M35).│ (28.4 MPa)      │
+├───────────┼────────┼─────────────────────────────────────────────────┼─────────────────┤
+│ MS-3      │ Day 22 │ Outer/intermediate vertical walls and deck slab │ Curing log +    │
+│           │        │ shuttering, reinforcement tying and M35 casting.│ moisture sensor │
+├───────────┼────────┼─────────────────────────────────────────────────┼─────────────────┤
+│ MS-4      │ Day 32 │ Wing walls, upstream/downstream gabion aprons,  │ Bitumen density │
+│           │        │ GSB/WMM approaches, and DBM/BC blacktopping.    │ core report     │
+├───────────┼────────┼─────────────────────────────────────────────────┼─────────────────┤
+│ MS-5      │ Day 38 │ Static load deflection testing (2x 40t trucks)  │ Load deflection │
+│           │        │ and Ultrasonic Pulse Velocity (UPV) scan.       │ log (0.42mm)    │
+└───────────┴────────┴─────────────────────────────────────────────────┴─────────────────┘
+```
+
+* **Independent Third-Party Verification by BIT Mesra:**
+  - **Ultrasonic Pulse Velocity (UPV) Test:** Average pulse velocity recorded at **$4,410\text{ m/s}$**, confirming excellent concrete density without internal honeycombing or voids.
+  - **Proof Load Testing:** Two fully loaded 40-tonne commercial tipper trucks positioned over the midspan for 24 hours. Central deck deflection recorded by dial gauges: **$0.42\text{ mm}$**, safely below the IRC:112 permissible limit of $L/800 = 4500/800 = \mathbf{5.625\text{ mm}}$.
+* **Public Ledger & Citizen Feedback Loop Closure:**
+  - High-definition before-and-after photographs uploaded to the Nivaaran Public Transparency Portal.
+  - Automated SMS and WhatsApp broadcast delivered in Nagpuri and Hindi to all 14 original complainants and the Balalong Village Mukhiya:
+    *"आपका तुपुदाना पुलिया निर्माण कार्य पूरा हो चुका है और सड़क यातायात हेतु खोल दी गई है। निवारण को अपना फीडबैक दें।"*
+  - Complainants recorded a **5/5 Citizen Satisfaction Rating** on civic responsiveness.
+* **Measurable Societal & Economic Impact Recorded:**
+  - **Travel Time Restored:** Eliminated the 14.5 km circuitous Ring Road detour, saving **35 minutes per commute trip**.
+  - **Economic Savings:** Saved an estimated **₹14.8 Lakhs per month** in commercial freight transit fuel and vehicle wear for Tupudana MSMEs.
+  - **Emergency Access:** Restored 9-minute ambulance response time between 14 villages and Hatia Sub-Divisional Hospital.
+  - **Disaster Resilience:** The new twin-cell RCC box structure provides **$250\%$ of the previous hydraulic discharge capacity**, fully flood-resilient against 50-year extreme rainfall events.
+* **Archival into Provincial Knowledge Repository:**
+  - Complete DPR, CAD schematics, and HEC-RAS hydraulic models archived in the Nivaaran Open Engineering Library as an approved prototype blueprint for culvert replacement across all 24 Jharkhand District Administrations.
+* **Final Lifecycle State:** `RESOLVED` → `IMPACT_MEASURED` → `CLOSED_SUCCESS` (`WorkflowStages: 14–16`).
+
+---
+
+### 11.3 Full 16-Stage Lifecycle Execution Matrix
+
+To satisfy the authoritative 16-stage state machine enforced by the Nivaaran Workflow Engine (`workflowLifecycle.ts` and `Complete_workflow.md`), the following matrix maps the exact execution, responsible stakeholders, inputs, and delivered artifacts across every single stage of the Tupudana crisis:
+
+| Stage # | Lifecycle Key | Workflow Status | Primary Stakeholder | Operational Input | Core Transformation / Action | Output Artifact / Audit Proof |
+|---|---|---|---|---|---|---|
+| **Stage 1** | `SUBMISSION` | `Submitted` | Sunil Linda (Citizen) & Mukhiya | IVR voice note + 3 smartphone photos | Citizen lodges grievance with GPS telemetry (`23.2842, 85.3126`) | Raw challenge record `CH-JH-RNC-2026-0042` |
+| **Stage 2** | `AI_UNDERSTANDING` | `Under Review` | AI Perception Worker | Raw audio + photos + description | Bhashini/Whisper ASR + CV defect classification (96.4%) + regex PII scrubber | Sanitized challenge dossier & SHA-256 evidence hash |
+| **Stage 3** | `DEDUPLICATION_CLUSTERING`| `Clustered` | PostGIS Clustering Engine | 14 concurrent spatial submissions | PostGIS `ST_DWithin` (250m buffer) + `pg_trgm` lexical match (0.91) | Master Challenge with 13 subscriber tickets |
+| **Stage 4** | `PRIORITIZATION` | `Prioritized` | AI Triage Engine | Aggregated hazard & impact data | 5-Factor mathematical rubric evaluation ($S=25, U=24, P=23, E=25, V=23$) | Score **94.05/100** (`P1 Emergency` badge triggered) |
+| **Stage 5** | `VALIDATION` | `Government Validated` | DC Ranchi & RCD Exec Engineer | Triage alert + field photos | On-ground inspection; reflective barricades & bypass footbridge deployed | Digital validation signoff & containment audit |
+| **Stage 6** | `INSTITUTION_MATCHING` | `HEI Matched` | HEI Matching Engine | Taxonomy `GOV-CIVIC-04` + GIS | 4-Factor HEI algorithm matches BIT Mesra Civil Engineering (18.2 km) | Research docket `JH-RNC-DPR-0042` (Match: 95.3%) |
+| **Stage 7** | `UNIVERSITY_ACCEPTANCE` | `University Accepted` | HoD Civil Engg (BIT Mesra) | Institutional matching docket | Academic review of problem scope, lab availability, and syllabus credit | Formal acceptance logged within 4 hours 45 mins |
+| **Stage 8** | `TEAM_FORMATION` | `In Progress` | Prof. Anand Prakash (Mentor) | Student talent registry | Multidisciplinary team formed: 4 B.Tech/M.Tech Civil & Geomatics scholars | Project team `DEMO-TEAM-BIT-042` registered |
+| **Stage 9** | `PROPOSAL` | `Proposal Submitted` | BIT Mesra Project Team | Drone LiDAR + HEC-RAS 2D model | Engineering investigation reveals 60.5% hydraulic capacity deficit; proposes twin box | Detailed Project Report (DPR) & HEC-RAS `.prj` |
+| **Stage 10** | `INDUSTRY_CSR_COLLABORATION`| `Industry Collaboration` | TIEMA & RCD Jharkhand | DPR budget & CSR matching portal | TIEMA pledges ₹10.00L CSR co-funding alongside ₹29.05L SDMF grant | Tripartite Public-Private Partnership MoU |
+| **Stage 11** | `PROTOTYPE` | `Prototype Active` | BIT Mesra CAD Workstation | IRC:SP:13 & IRC:112 design codes | Structural modeling, reinforcement detailing, bar bending schedules, and BoQ | GAD drawings (`DWG-JH-RNC-042-GAD.pdf`) & SoR BoQ |
+| **Stage 12** | `PILOT` | `Pilot Active` | Fast-Track Contractor & RCD | Construction drawings & site permits | Stream bypass cofferdam, trenching to -2.8m, and M35 bottom raft slab cast | 7-day cube test log (28.4 MPa) & drone progress scan |
+| **Stage 13** | `TECHNICAL_COMMUNITY_VALIDATION`| `Outcome Audit` | BIT Mesra Quality Audit Cell | 28-day cured twin-cell structure | Non-destructive UPV scan ($4,410\text{ m/s}$) & 24h proof load deflection test ($0.42\text{ mm}$) | Structural integrity compliance certificate |
+| **Stage 14** | `DEPLOYMENT` | `Resolved` | RCD Ranchi Division | Cured culvert & approach base | Laying 60m bituminous pavement approaches (DBM/BC), crash barriers & blinkers | Roadway re-opened to heavy commercial traffic |
+| **Stage 15** | `IMPACT_MEASUREMENT` | `Measuring Impact` | District Monitoring Cell & Citizens | Traffic telemetry & citizen surveys | Verified 35 mins detour saved, ₹14.8L/mo logistics savings, 100% positive feedback | Social Impact Scorecard & Citizen Audit Ledger |
+| **Stage 16** | `CLOSURE_LEARNING` | `Closed` | State Innovation Council | Full project lifecycle package | Complete DPR, CAD drawings, and HEC-RAS models published to Provincial Knowledge Base | Archival as reproducible template for all 24 districts |
+
+---
+
+### 11.4 Architectural Invariant Traceability Matrix
+
+The Tupudana Culvert Failure demonstration directly validates all ten fundamental architectural invariants of Nivaaran:
+
+| Invariant | System Rule | Demonstration in Tupudana Case |
+|---|---|---|
+| **Inv 1: Challenge Centrality** | Every resource belongs to a challenge | DPR, CAD blueprints, BoQ, HEI allocations, and audit logs are keyed to `CH-JH-RNC-2026-0042`. |
+| **Inv 2: Authoritative State Engine** | No direct status writes; transition endpoint only | All 9 stage changes were processed through `POST /api/v1/challenges/:id/transition`. |
+| **Inv 3: Human Oversight on AI** | AI advises; authenticated humans decide | AI computed P1 score and suggested RCD routing; DC Ranchi and HoD BIT Mesra signed transitions. |
+| **Inv 4: Immutable Evidence** | Evidence files are never hard deleted | Original flood damage photos, drone point clouds, and test cubes are cryptographically hashed. |
+| **Inv 5: Conflict Resolution Gate** | Cannot advance while conflicting data exists | Duplicate reports were merged into a single master ticket before government dispatch. |
+| **Inv 6: Contextual Authorization** | Role + Org + Geo + State scoping | Only RCD Ranchi and BIT Mesra Civil department had write permissions for this ticket. |
+| **Inv 7: Submitter Traceability** | Submitter ID always recorded | Initial citizen telephone & Aadhaar hashed at intake; authenticated OTP audit trail stored. |
+| **Inv 8: 1:1 Challenge-Project Link** | Project strictly bound to parent challenge | Engineering project `DEMO-PRJ-0042` is bound by a foreign key constraint to `CH-JH-RNC-2026-0042`. |
+| **Inv 9: Public/Private Separation** | PII excluded at query time | Public ledger shows technical BoQ and progress photos; citizen telephone numbers are omitted. |
+| **Inv 10: Fault Isolation** | Background job failures do not block lifecycle | ASR/vision services run asynchronously via BullMQ; temporary worker lag never stalls ticket filing. |
 
 ---
 

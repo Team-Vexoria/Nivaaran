@@ -94,8 +94,8 @@ export const StageDetailAccordion: React.FC<StageDetailAccordionProps> = ({
   return (
     <div className="space-y-2">
       {stages.map((st) => {
-        const isDone = st.num < currentStageNum || (st.num === 16 && currentStageNum === 16);
-        const isCurrent = st.num === currentStageNum && currentStageNum !== 16;
+        const isDone = currentStageNum >= 16 || st.num < currentStageNum || (st.num === 16 && currentStageNum === 16);
+        const isCurrent = currentStageNum < 16 && st.num === currentStageNum;
         const isOpen = openStages.has(st.num);
         const phaseKey = getPhaseKey(st.num);
         const colors = PHASE_COLORS[phaseKey] || PHASE_COLORS['Phase 1: Problem Intake & Triage'];
@@ -338,8 +338,8 @@ export const StageDetailAccordionByPhase: React.FC<StageDetailAccordionByPhasePr
     <div className="space-y-4">
       {phases.map(phaseTitle => {
         const phaseStages = allStages.filter(s => s.phase === phaseTitle);
-        const isPhaseDone = phaseStages.every(s => s.num < currentStageNum);
-        const isPhaseCurrent = phaseStages.some(s => s.num === currentStageNum);
+        const isPhaseDone = currentStageNum >= 16 || phaseStages.every(s => s.num < currentStageNum || (s.num === 16 && currentStageNum >= 16));
+        const isPhaseCurrent = currentStageNum < 16 && phaseStages.some(s => s.num === currentStageNum);
 
         return (
           <div key={phaseTitle} className="border border-[#E4DDD1] rounded-xl overflow-hidden bg-[#FAF8F4]/60">

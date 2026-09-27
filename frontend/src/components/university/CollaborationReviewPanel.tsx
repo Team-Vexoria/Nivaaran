@@ -61,6 +61,7 @@ export const CollaborationReviewPanel: React.FC<CollaborationReviewPanelProps> =
     const hasMatch = requests.some(r => r.challengeId === activeChallenge.reportId || r.challengeTitle === activeChallenge.title);
     if (hasMatch) return requests;
 
+    const isTupudana = /culvert|tupudana|washout|balalong/i.test(activeChallenge.title + ' ' + (activeChallenge.summary || ''));
     const isAgri = /agri|lac|kusum|crop|tree/i.test(activeChallenge.title + ' ' + (activeChallenge.summary || ''));
     const isMining = /mine|mining|coal/i.test(activeChallenge.title + ' ' + (activeChallenge.summary || ''));
 
@@ -70,24 +71,26 @@ export const CollaborationReviewPanel: React.FC<CollaborationReviewPanelProps> =
       projectId: activeChallenge.id || activeChallenge.reportId,
       challengeId: activeChallenge.reportId,
       challengeTitle: activeChallenge.title,
-      assignedHEI: university?.name || 'Birsa Agricultural University',
-      orgName: isAgri 
+      assignedHEI: university?.name || 'Birla Institute of Technology, Mesra',
+      orgName: isTupudana
+        ? 'Tupudana Industrial Estate Manufacturers Association (TIEMA) CSR Cell'
+        : isAgri 
         ? 'Jharkhand State Lac Cooperative Federation (JASCOLAMPF) & TRIFED CSR' 
         : isMining 
         ? 'Bharat Coking Coal Limited (BCCL) Safety Division' 
         : 'Tata Steel Rural Development Society (TSRDS)',
-      orgType: 'Foundation / Trust',
-      cinNumber: 'U85300JH2014NPL002194',
-      csrRegistrationNumber: 'CSR00018921',
-      authorizedSignatoryName: isAgri ? 'Arunava Sen' : 'Dr. B. K. Mishra',
-      authorizedSignatoryDesignation: isAgri ? 'Director, CSR Programs' : 'Head CSR',
-      authorizedSignatoryEmail: isAgri ? 'csr@jascolampf.gov.in' : 'csr@tatasteel.com',
+      orgType: isTupudana ? 'MSME' : 'Foundation / Trust',
+      cinNumber: isTupudana ? 'U28112JH2004PTC010892' : 'U85300JH2014NPL002194',
+      csrRegistrationNumber: isTupudana ? 'CSR00021488' : 'CSR00018921',
+      authorizedSignatoryName: isTupudana ? 'Shri R. K. Agarwal' : isAgri ? 'Arunava Sen' : 'Dr. B. K. Mishra',
+      authorizedSignatoryDesignation: isTupudana ? 'President, TIEMA CSR Council' : isAgri ? 'Director, CSR Programs' : 'Head CSR',
+      authorizedSignatoryEmail: isTupudana ? 'csr@tiema-ranchi.org' : isAgri ? 'csr@jascolampf.gov.in' : 'csr@tatasteel.com',
       has12ACertificate: true,
       has80GCertificate: true,
       hasSeparateCsrBankAccount: true,
       auditedFinancialsAvailable: true,
       schedule7Category: 'ix. Contributions to science, technology, engineering, medicine R&D',
-      collaborationTypes: ['CSR Cash Grant', 'Hardware / Component Sponsorship'],
+      collaborationTypes: ['CSR Cash Grant', 'Dedicated Testing Facility'],
       proposedBudgetInr: 1250000,
       sdgAlignment: 'SDG-9 Industry, Innovation & Infrastructure',
       expectedCommunityBeneficiaries: 1200,

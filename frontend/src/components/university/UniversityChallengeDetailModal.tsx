@@ -238,7 +238,7 @@ export const UniversityChallengeDetailModal: React.FC<UniversityChallengeDetailM
                 className="px-5 py-2 bg-[#2C6E49] hover:bg-[#23583a] text-white rounded-xl text-xs font-black flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>Accepted • Open Multidisciplinary Workspace →</span>
+                <span>{challenge.stageNumber && challenge.stageNumber >= 14 ? 'View Complete Engineering Dossier →' : 'Accepted • Open Multidisciplinary Workspace →'}</span>
               </button>
             ) : isAcceptedByOther ? (
               <span className="px-4 py-2 bg-[#EAE4D8] text-[#6A6155] rounded-xl text-xs font-bold border border-[#E4DDD1]">

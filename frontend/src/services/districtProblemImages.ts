@@ -49,7 +49,7 @@ export const DISTRICT_PROBLEM_IMAGES: Record<string, string> = {
   'DEMO-CH-006': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSzTjCXDhIWxs1O-PU_XGtAAgRIcZNJRfePIHHVTlFFAOs70lDBGLzZMs4&s=10',
   // Problem 2: Frequent monsoon flash flood logjams and wooden culvert collapse cutting off Mahuadanr valley
   // Search query: broken wooden bridge flash flood rural road cutoff
-  'DEMO-CH-030': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgK4i__LQ6nJDp1_hhwpjez6WsvLfL4TTu1jJJwb-MWw&s=10',
+  'DEMO-CH-030': 'https://images.unsplash.com/photo-1547683905-f686c993aae5?auto=format&fit=crop&w=800&q=80',
 
   // 7. Sahibganj
   // Problem 1: Severe Ganga riverbank scouring and seasonal road washaway isolating 14 Diara island villages (Rajmahal)
@@ -66,6 +66,11 @@ export const DISTRICT_PROBLEM_IMAGES: Record<string, string> = {
   // Problem 2: Cold storage decay and high post harvest loss in peri urban tomato and green chili crops (Bero / Mandar)
   // Search query: tomato crop rotting post harvest loss rural market india
   'DEMO-CH-032': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6V_4Y7KmquRiuV8ua5kzeYLTJULZpwAOgmP0MDHykcxsgIGkqsgf7SUgM&s=10',
+  // Flagship Demo: Catastrophic Culvert Failure & Roadway Washout on Tupudana–Balalong Industrial Corridor (Hatia)
+  'TUPUDANA-CULVERT': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgK4i__LQ6nJDp1_hhwpjez6WsvLfL4TTu1jJJwb-MWw&s=10',
+  'TUPUDANA-RESTORED': 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?auto=format&fit=crop&w=800&q=80',
+  'DEMO-CH-TUPUDANA': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgK4i__LQ6nJDp1_hhwpjez6WsvLfL4TTu1jJJwb-MWw&s=10',
+  'NIV-JH-RNC-2026-0042': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgK4i__LQ6nJDp1_hhwpjez6WsvLfL4TTu1jJJwb-MWw&s=10',
 
   // 9. Bokaro
   // Problem 1: Thermal power plant fly ash slurry pipeline breach discharging into Konar river intake (Phusro)

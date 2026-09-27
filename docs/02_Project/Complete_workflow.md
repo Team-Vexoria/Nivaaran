@@ -1570,9 +1570,99 @@ This table should eventually map directly to the data model.
 
 ---
 
-# 32. End-to-End Example
+# 32. End-to-End Examples
 
-A complete Nivaaran scenario:
+## 32.1 Flagship Demonstration: Tupudana Culvert Failure Case Study
+
+A comprehensive, realistic end-to-end demonstration of the Nivaaran lifecycle applied to a critical public infrastructure disaster in Jharkhand:
+
+### Problem Profile
+* **Incident ID:** `NIV-JH-RNC-2026-0042`
+* **Classification:** `PUBLIC_INFRASTRUCTURE_ROAD_BRIDGES` (`GOV-CIVIC-04` / Culvert Washout)
+* **Location:** Tupudana–Balalong Arterial Link Road (`KM 4+350`), Hatia Block, Ranchi District (`23.2842° N, 85.3126° E`)
+* **Incident Context:** Flash floods in the Subarnarekha catchment combined with heavy stone-tipper traffic collapsed a 45-year-old 1.8m masonry hume-pipe culvert. A 4.2m deep by 7.8m wide chasm severed access between Hatia Rail Yard, Tupudana Industrial Estate (35 MSMEs), and 14 tribal villages (22,000 residents), forcing ambulances onto a 14.5km detour (+35 mins).
+
+### 9-Stage Operational Workflow
+
+```text
+1. CITIZEN COMPLAINT
+   - Informants: Truck driver (Sunil Linda) + Balalong Mukhiya (Rameshwar Oraon).
+   - Intake: Multilingual IVR (Nagpuri/Hindi) + WhatsApp Civic Bot with 3 geotagged photos.
+   - Initial State: SUBMITTED (Stage 1).
+
+        ↓
+
+2. AI VERIFICATION & PII MASKING
+   - Multimodal Perception: ASR transcription + Computer Vision defect classification (96.4% structural failure, 94.8% washout).
+   - Privacy Guard: Automated PII redaction (citizen phone, Aadhaar, license plates, face blurring).
+   - Tamper Proofing: SHA-256 evidence fingerprint hashed into ledger.
+   - State: AI_TRIAGED (Stage 2).
+
+        ↓
+
+3. DUPLICATE DETECTION & SPATIAL CLUSTERING
+   - PostGIS query ST_DWithin (250m radius) + pg_trgm lexical similarity (0.91) detects 14 independent citizen reports.
+   - Master-Cluster Consolidation: Designates CH-JH-RNC-2026-0042 as Master; 13 secondary reports converted to subscribers.
+   - Aggregated impact updated to 22,000+ residents and 35 MSMEs.
+   - State: CLUSTERED (Stage 3).
+
+        ↓
+
+4. P1 PRIORITY SCORING
+   - 5-Factor Weighted Rubric: Severity (25/25), Urgency (24/25), Population (23/25), Evidence (25/25), Vulnerability (23/25).
+   - Composite Score: 94.05 / 100 -> P1 EMERGENCY.
+   - State: PRIORITIZED (Stage 4).
+
+        ↓
+
+5. AUTOMATIC GOVERNMENT ROUTING
+   - Routing: Road Construction Department (RCD) Jharkhand (Executive Engineer, Ranchi) + DDMA Ranchi.
+   - SLAs: 4h Acknowledgement SLA met in 1h 12m; 24h Site Containment SLA met in 18h (barricades, lighting, pedestrian footbridge).
+   - Human Validation: DC Ranchi executes digital signature to validate.
+   - State: GOVT_VALIDATED (Stage 5).
+
+        ↓
+
+6. ACADEMIC / EXPERT MATCHING WITH BIT MESRA
+   - 4-Factor HEI Match: Domain (Civil/Hydraulics, 98%), Proximity (18.2 km, 94%), Tier (NIRF Top / NAAC A+, 95%), Labs (UTM/HEC-RAS, 92%) = 95.3% Match (Rank #1 statewide).
+   - Acceptance: HoD Civil Engineering accepts in 4h 45m.
+   - Team Formed (DEMO-TEAM-BIT-042): Prof. Anand Prakash (Mentor) + 4 Civil/Water Resources scholars.
+   - State: INSTITUTION_MATCHED -> INSTITUTION_ACCEPTED -> TEAM_FORMED (Stages 6-8).
+
+        ↓
+
+7. TECHNICAL ASSESSMENT & FIELD INVESTIGATION
+   - Drone Photogrammetry: 3D DSM generated from DJI Matrice 300 RTK survey over 12.8 km² catchment.
+   - HEC-RAS 2D Hydrology: 50-year peak discharge calculated at Q_peak = 42.6 m³/s. Original 1.8m pipe had 60.5% capacity deficit, causing 3.8 m/s overtopping velocity.
+   - Geotechnical Testing: 3 SPT boreholes indicate soft micaceous sandy silt (SBC = 115 kN/m² at -2.5m) with active piping erosion.
+   - State: PROPOSAL_SUBMITTED (Stage 9).
+
+        ↓
+
+8. DPR, CAD & COST ESTIMATION
+   - Structural Solution: Twin-Cell Reinforced Cement Concrete (RCC) Box Culvert (2 cells x 4.5m clear span x 3.0m clear height, M35 concrete, Fe 500D TMT rebar, IRC:SP:13 & IRC:112 compliant).
+   - Deliverables: Complete GAD drawings, bar bending schedules, and soil test logs.
+   - Schedule of Rates (Jharkhand RCD SoR 2024-25) BoQ: Total capital cost = ₹39,05,000 (₹39.05 Lakhs).
+   - Innovative Co-Funding: ₹29.05 Lakhs from State Disaster Mitigation Fund (SDMF) + ₹10.00 Lakhs CSR grant from Tupudana Industrial Estate Manufacturers Association (TIEMA).
+   - Administrative Sanction: Technical Sanction and Administrative Approval granted within 72 hours.
+   - State: PROPOSAL_ACCEPTED -> CSR_PARTNERED (Stages 9-10).
+
+        ↓
+
+9. RESOLUTION TRACKING, CONSTRUCTION & VERIFICATION
+   - 5 Milestone Execution: Site containment & excavation (Day 4) -> Raft slab casting (Day 12) -> Walls/Deck casting (Day 22) -> Aprons/Approaches (Day 32) -> Testing (Day 38).
+   - Quality Audit: Third-party UPV scan (4,410 m/s) + 2x 40t truck static proof load test (0.42mm deflection vs 5.625mm limit).
+   - Citizen Loop: Before/after photos published to ledger; SMS/WhatsApp sent to all 14 citizens; 5/5 satisfaction rating.
+   - Measured Impact: 14.5km detour eliminated (-35 mins commute), ₹14.8L/month logistics savings for MSMEs, 9-min emergency ambulance response restored.
+   - Archival: Open-source DPR and HEC-RAS model archived in Nivaaran Provincial Knowledge Repository for all 24 districts.
+   - Final State: RESOLVED -> IMPACT_MEASURED -> CLOSED_SUCCESS (Stages 14-16).
+```
+
+---
+
+## 32.2 Canonical Scenario: Monsoon Waterlogging & School Disruption
+
+The secondary demonstration scenario covers localized community waterlogging:
 
 ```text
 CITIZEN

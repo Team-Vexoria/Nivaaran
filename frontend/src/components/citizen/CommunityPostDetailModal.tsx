@@ -24,6 +24,7 @@ import { getDistrictCentroid } from '../../services/deduplicationService';
 import { tr } from '../../i18n/translationEngine';
 import { SupportedLanguage } from '../../i18n/translations';
 import type { Challenge } from '../../services/workflowTypes';
+import { DISTRICT_PROBLEM_IMAGES } from '../../services/districtProblemImages';
 
 export interface CommunityPostDetailModalProps {
   post: {
@@ -81,34 +82,57 @@ export const CommunityPostDetailModal: React.FC<CommunityPostDetailModalProps> =
   const normalizedTitle = (post.title || '').toLowerCase().trim();
   const postEvidence = post.evidenceUrl || post.evidenceUrls?.[0] || '';
 
-  const matchedChallenge: Challenge | undefined = allChallenges.find(c => {
-    if (post.id && (c.id === post.id || c.reportId === post.id)) return true;
-    if (postEvidence && c.evidenceUrls?.includes(postEvidence)) return true;
-    const cTitle = (c.title || '').toLowerCase().trim();
-    if (normalizedTitle && (cTitle.includes(normalizedTitle) || normalizedTitle.includes(cTitle))) return true;
-    return false;
-  });
+  // Specifically identify Tupudana flagship challenge
+  const isTupudanaPost = 
+    post.id === 'POST-TUPUDANA-001' ||
+    normalizedTitle.includes('tupudana') ||
+    normalizedTitle.includes('0042') ||
+    (post.id && post.id.includes('TUPUDANA')) ||
+    (postEvidence && (postEvidence.includes('TUPUDANA') || postEvidence === DISTRICT_PROBLEM_IMAGES['TUPUDANA-CULVERT']));
+
+  let matchedChallenge: Challenge | undefined;
+
+  if (isTupudanaPost) {
+    matchedChallenge = allChallenges.find(c => c.id === 'DEMO-CH-TUPUDANA' || c.reportId === 'NIV-JH-RNC-2026-0042');
+  }
+
+  if (!matchedChallenge) {
+    matchedChallenge = allChallenges.find(c => {
+      if (post.id && (c.id === post.id || c.reportId === post.id)) return true;
+      const cTitle = (c.title || '').toLowerCase().trim();
+      if (normalizedTitle && (cTitle.includes(normalizedTitle) || normalizedTitle.includes(cTitle))) return true;
+      if (postEvidence && c.evidenceUrls?.includes(postEvidence)) return true;
+      return false;
+    });
+  }
 
   const centroid = getDistrictCentroid(post.district || 'Ranchi') || { lat: 23.3441, lng: 85.3096 };
 
-  // Calculate dynamic priority score and stage number logically if not stored
+  // Calculate dynamic priority score and stage number logically
   const statusStr = (post.status || 'Under Review').toLowerCase();
+  const is100PercentResolved = 
+    isTupudanaPost || 
+    statusStr.includes('100%') || 
+    statusStr.includes('closed') || 
+    statusStr.includes('resolved') ||
+    statusStr.includes('stage 16');
+
   let defaultStageNum = 6;
-  if (statusStr.includes('submitted')) defaultStageNum = 1;
+  if (is100PercentResolved) defaultStageNum = 16;
+  else if (statusStr.includes('submitted')) defaultStageNum = 1;
   else if (statusStr.includes('review')) defaultStageNum = 2;
   else if (statusStr.includes('validat')) defaultStageNum = 5;
   else if (statusStr.includes('team') || statusStr.includes('assign') || statusStr.includes('hei')) defaultStageNum = 8;
   else if (statusStr.includes('prototype')) defaultStageNum = 11;
   else if (statusStr.includes('pilot')) defaultStageNum = 12;
   else if (statusStr.includes('audit')) defaultStageNum = 13;
-  else if (statusStr.includes('deploy') || statusStr.includes('resolved')) defaultStageNum = 14;
-  else if (statusStr.includes('closed')) defaultStageNum = 16;
+  else if (statusStr.includes('deploy')) defaultStageNum = 14;
 
   // Derive dynamic realistic priority score from content length, upvotes and category
-  const dynamicPriority = matchedChallenge?.priorityScore ?? Math.min(
+  const dynamicPriority = matchedChallenge?.priorityScore ?? (isTupudanaPost ? 94.05 : Math.min(
     98,
     Math.max(68, 72 + Math.round((post.upvotes || 0) * 0.25) + ((post.content || '').length > 100 ? 6 : 0))
-  );
+  ));
 
   const dynamicRiskLevel = matchedChallenge?.riskLevel ?? (
     dynamicPriority >= 90 ? 'CRITICAL' : dynamicPriority >= 80 ? 'HIGH' : 'STANDARD'
@@ -116,33 +140,46 @@ export const CommunityPostDetailModal: React.FC<CommunityPostDetailModalProps> =
 
   let resolvedChallenge: Challenge;
   if (matchedChallenge) {
-    resolvedChallenge = matchedChallenge;
+    resolvedChallenge = {
+      ...matchedChallenge,
+      stageNumber: is100PercentResolved ? 16 : (matchedChallenge.stageNumber || defaultStageNum),
+      status: is100PercentResolved ? 'Closed' : matchedChallenge.status,
+      stageName: is100PercentResolved ? 'Stage 16: Resolution Closed & Verified' : matchedChallenge.stageName,
+      assignedHEI: isTupudanaPost ? 'Birla Institute of Technology (BIT Mesra), Ranchi' : matchedChallenge.assignedHEI,
+      assignedDept: isTupudanaPost ? 'Department of Civil and Environmental Engineering' : matchedChallenge.assignedDept,
+      csrSponsor: isTupudanaPost ? 'Tupudana Industrial Area (TIEMA) CSR & SDMF' : matchedChallenge.csrSponsor,
+    };
   } else {
     resolvedChallenge = {
-      id: post.id || `POST-${Date.now()}`,
-      reportId: post.id ? (post.id.startsWith('NIV-') ? post.id : `NIV-2026-${post.id.replace('POST-', '')}`) : 'NIV-2026-COMM',
-      title: post.title || 'Civic Community Challenge',
+      id: isTupudanaPost ? 'DEMO-CH-TUPUDANA' : (post.id || `POST-${Date.now()}`),
+      reportId: isTupudanaPost ? 'NIV-JH-RNC-2026-0042' : (post.id ? (post.id.startsWith('NIV-') ? post.id : `NIV-2026-${post.id.replace('POST-', '')}`) : 'NIV-2026-COMM'),
+      title: isTupudanaPost 
+        ? 'Catastrophic Culvert Failure & Roadway Washout on Tupudana–Balalong Industrial Corridor' 
+        : (post.title || 'Civic Community Challenge'),
       description: post.content || '',
-      district: post.district || 'Ranchi',
-      block: post.block || 'Sadar',
-      village: post.village || post.block || 'Local Habitation',
-      locationCoords: centroid,
-      formattedAddress: `${post.village || post.block || 'Panchayat'}, ${post.district || 'Ranchi'}, Jharkhand`,
-      status: (post.status as any) || 'Under Review',
-      stageNumber: defaultStageNum,
-      stageName: `Stage ${defaultStageNum}: Pipeline Active`,
-      category: post.category || 'Civic Infrastructure',
+      district: isTupudanaPost ? 'Ranchi' : (post.district || 'Ranchi'),
+      block: isTupudanaPost ? 'Hatia' : (post.block || 'Sadar'),
+      village: isTupudanaPost ? 'Tupudana–Balalong' : (post.village || post.block || 'Local Habitation'),
+      locationCoords: isTupudanaPost ? { lat: 23.2842, lng: 85.3126 } : centroid,
+      formattedAddress: isTupudanaPost 
+        ? 'Tupudana–Balalong Link Road (KM 4+350), Hatia Block, Ranchi District, Jharkhand' 
+        : `${post.village || post.block || 'Panchayat'}, ${post.district || 'Ranchi'}, Jharkhand`,
+      status: is100PercentResolved ? 'Closed' : ((post.status as any) || 'Under Review'),
+      stageNumber: is100PercentResolved ? 16 : defaultStageNum,
+      stageName: is100PercentResolved ? 'Stage 16: Resolution Closed & Verified' : `Stage ${defaultStageNum}: Pipeline Active`,
+      category: post.category || 'Bridge Infrastructure & Transport Safety',
       priorityScore: dynamicPriority,
-      confidenceScore: 94,
-      riskLevel: dynamicRiskLevel as any,
+      confidenceScore: isTupudanaPost ? 96.4 : 94,
+      riskLevel: (isTupudanaPost ? 'CRITICAL' : dynamicRiskLevel) as any,
       evidenceUrls: post.evidenceUrls && post.evidenceUrls.length > 0 ? post.evidenceUrls : (post.evidenceUrl ? [post.evidenceUrl] : []),
-      assignedHEI: 'IIT (ISM) Dhanbad & BIT Sindri',
-      assignedDept: 'Civil & Environmental Engineering',
-      csrSponsor: 'State Innovation Grant & District CSR Council',
-      govtOfficerNote: `Field inspection verified by DC ${post.district || 'District'} Administration. Scheduled for academic R&D deployment.`,
-      govtValidatedBy: `Shri District Nodal Officer, ${post.district || 'Jharkhand'}`,
+      assignedHEI: isTupudanaPost ? 'Birla Institute of Technology (BIT Mesra), Ranchi' : 'IIT (ISM) Dhanbad & BIT Sindri',
+      assignedDept: isTupudanaPost ? 'Department of Civil and Environmental Engineering' : 'Civil & Environmental Engineering',
+      csrSponsor: isTupudanaPost ? 'Tupudana Industrial Area (TIEMA) CSR & SDMF' : 'State Innovation Grant & District CSR Council',
+      govtOfficerNote: isTupudanaPost
+        ? 'Emergency restoration completed. 5-milestone twin-cell RCC box culvert cast and tested by BIT Mesra. Carriageway re-opened to traffic. Project closed with 100% positive citizen satisfaction and archived to State Knowledge Base.'
+        : `Field inspection verified by DC ${post.district || 'District'} Administration. Scheduled for academic R&D deployment.`,
+      govtValidatedBy: isTupudanaPost ? 'Shri Rahul Sinha, DC Ranchi' : `Shri District Nodal Officer, ${post.district || 'Jharkhand'}`,
       govtValidatedAt: new Date().toISOString(),
-      citizenReportCount: post.citizenReportCount || 1,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -401,8 +438,15 @@ export const CommunityPostDetailModal: React.FC<CommunityPostDetailModalProps> =
               <Layers className="w-4 h-4 text-emerald-600 mr-1.5 shrink-0" />
               16-Stage Government & University Lifecycle Pipeline
             </span>
-            <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200">
-              Stage {resolvedChallenge.stageNumber} of 16 Active
+            <span className="text-[11px] font-extrabold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+              {resolvedChallenge.stageNumber >= 16 ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline" />
+                  <span>All 16 Stages Completed (100% Resolved)</span>
+                </>
+              ) : (
+                <span>Stage {resolvedChallenge.stageNumber} of 16 Active</span>
+              )}
             </span>
           </div>
 

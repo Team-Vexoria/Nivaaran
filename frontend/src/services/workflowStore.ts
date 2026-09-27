@@ -66,9 +66,13 @@ class WorkflowStore {
         if (this.isWorkflowState(parsed)) {
           // Merge stored challenges with seed data, preserving all stored modifications and progress.
           const seed = createSeedData();
-          const seedMap = new Map(seed.challenges.map((sc: any) => [sc.id, sc]));
+          const seedMap = new Map<string, any>();
+          seed.challenges.forEach((sc: any) => {
+            if (sc.id) seedMap.set(sc.id, sc);
+            if (sc.reportId) seedMap.set(sc.reportId, sc);
+          });
           const cleanParsedChallenges = (parsed.challenges || []).map((c: any) => {
-            const seedCh = c.id ? seedMap.get(c.id) : null;
+            const seedCh = (c.id ? seedMap.get(c.id) : null) || (c.reportId ? seedMap.get(c.reportId) : null);
             let updated = { ...c };
             if (seedCh && seedCh.locationCoords) {
               updated.locationCoords = seedCh.locationCoords;
@@ -82,13 +86,24 @@ class WorkflowStore {
               updated.assignedHEI = seedCh.assignedHEI;
               updated.assignedDept = seedCh.assignedDept;
             }
-            if (seedCh && seedCh.id.startsWith('DEMO-')) {
+            if (seedCh && (seedCh.id.startsWith('DEMO-') || seedCh.id === 'DEMO-CH-TUPUDANA')) {
               updated.title = seedCh.title;
               updated.description = seedCh.description;
               updated.category = seedCh.category;
               updated.assignedHEI = seedCh.assignedHEI;
               updated.assignedDept = seedCh.assignedDept;
               updated.assignedProjectId = seedCh.assignedProjectId;
+              if (seedCh.id === 'DEMO-CH-TUPUDANA') {
+                updated.stageNumber = seedCh.stageNumber;
+                updated.stageName = seedCh.stageName;
+                updated.status = seedCh.status;
+                updated.priorityScore = seedCh.priorityScore;
+                updated.confidenceScore = seedCh.confidenceScore;
+                updated.riskLevel = seedCh.riskLevel;
+                updated.govtOfficerNote = seedCh.govtOfficerNote;
+                updated.govtValidatedBy = seedCh.govtValidatedBy;
+                updated.govtValidatedAt = seedCh.govtValidatedAt;
+              }
             }
             if (c.id && DISTRICT_PROBLEM_IMAGES[c.id]) {
               updated.evidenceUrls = [DISTRICT_PROBLEM_IMAGES[c.id]];
@@ -232,7 +247,17 @@ class WorkflowStore {
   // ── Challenges ──────────────────────────────────────────────────────────────
 
   public getChallenges(): Challenge[] {
-    return this.state.challenges || [];
+    const list = this.state.challenges || [];
+    const hasTupudana = list.some(c => c.id === 'DEMO-CH-TUPUDANA' || c.reportId === 'NIV-JH-RNC-2026-0042');
+    if (!hasTupudana) {
+      const seed = createSeedData();
+      const tupudana = seed.challenges.find(c => c.id === 'DEMO-CH-TUPUDANA');
+      if (tupudana) {
+        list.unshift(tupudana);
+        this.persist({ ...this.state, challenges: list });
+      }
+    }
+    return list;
   }
 
   public getChallenge(id: string): Challenge | undefined {
@@ -419,7 +444,31 @@ class WorkflowStore {
   // ── Projects ────────────────────────────────────────────────────────────────
 
   public getProjects(): Project[] {
-    return this.state.projects || [];
+    const list = this.state.projects || [];
+    const hasTupudana = list.some(p => p.id === 'PRJ-TUPUDANA-0042' || p.challengeId === 'DEMO-CH-TUPUDANA');
+    if (!hasTupudana) {
+      const seed = createSeedData();
+      const tupPrj = seed.projects.find(p => p.id === 'PRJ-TUPUDANA-0042');
+      if (tupPrj) {
+        list.unshift(tupPrj);
+        this.persist({ ...this.state, projects: list });
+      }
+    }
+    return list;
+  }
+
+  public getProposals(): Proposal[] {
+    const list = this.state.proposals || [];
+    const hasTupudana = list.some(p => p.id === 'DEMO-PROP-TUPUDANA-0042');
+    if (!hasTupudana) {
+      const seed = createSeedData();
+      const tupProp = seed.proposals.find(p => p.id === 'DEMO-PROP-TUPUDANA-0042');
+      if (tupProp) {
+        list.unshift(tupProp);
+        this.persist({ ...this.state, proposals: list });
+      }
+    }
+    return list;
   }
 
   public getProject(id: string): Project | undefined {

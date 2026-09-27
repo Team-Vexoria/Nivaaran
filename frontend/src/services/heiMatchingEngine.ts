@@ -52,6 +52,10 @@ export const isAssignedToUniversity = (
       'birla institute of technology',
       'bitmesra',
       'bit ranchi',
+      'birla institute of technology mesra',
+      'birla institute of technology bit mesra ranchi',
+      'bit mesra ranchi',
+      'mesra',
     ],
     'UNI-IIT-ISM-DHANBAD': [
       'iit ism',

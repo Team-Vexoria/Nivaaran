@@ -31,6 +31,22 @@ interface HEITelemetryMeta {
 }
 
 const HEI_TELEMETRY_MAP: Record<string, HEITelemetryMeta> = {
+  'DEMO-CH-TUPUDANA': {
+    facultyLead: 'Dr. Anand Prakash (Head, Structural Engg)',
+    studentLead: 'Manish Pandey (Lead, M.Tech Structural)',
+    sensorType: 'Twin-Cell Pore Pressure & Deflection Transducers',
+    sensorReading: '4 Nodes Synced: 0.2mm shift, 99.8% stability',
+    defaultCsrPartner: 'Tupudana Industrial Area (TIEMA) CSR',
+    defaultGrant: '₹15,00,000 INR (100% Completed & Disbursed)',
+  },
+  'NIV-JH-RNC-2026-0042': {
+    facultyLead: 'Dr. Anand Prakash (Head, Structural Engg)',
+    studentLead: 'Manish Pandey (Lead, M.Tech Structural)',
+    sensorType: 'Twin-Cell Pore Pressure & Deflection Transducers',
+    sensorReading: '4 Nodes Synced: 0.2mm shift, 99.8% stability',
+    defaultCsrPartner: 'Tupudana Industrial Area (TIEMA) CSR',
+    defaultGrant: '₹15,00,000 INR (100% Completed & Disbursed)',
+  },
   'DEMO-CH-001': {
     facultyLead: 'Dr. S. K. Roy (Rock Mechanics & Safety)',
     studentLead: 'Priya Sharma (Lead, M.Tech Mining)',
